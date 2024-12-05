@@ -6,10 +6,23 @@ using TikTokMediaRelayBot;
 
 namespace MediaTelegramBot
 {
+    public enum ContactState
+    {
+        WaitingForLink,
+        WaitingForName,
+        WaitingForConfirmation,
+        Finish
+    }
+    public class UserState
+    {
+        public ContactState State { get; set; }
+    }
+
     class TelegramBot
     {
         private static ITelegramBotClient botClient;
-
+        private static Dictionary<long, UserState> _userStates = new Dictionary<long, UserState>();
+        
         static public async Task Start()
         {
             string telegramBotToken = Config.telegramBotToken;
@@ -30,8 +43,72 @@ namespace MediaTelegramBot
             cts.Cancel();
         }
 
+        private static async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+        {
+            long chatId = 0;
+            if (update.Message != null)
+            {
+                chatId = update.Message.Chat.Id;
+                Console.WriteLine(_userStates.ContainsKey(chatId));
+            }
+
+            // Проверка, если пришел callback-запрос
+            else if (update.CallbackQuery != null)
+            {
+                chatId = update.CallbackQuery.Message.Chat.Id;
+            }
+            switch (_userStates[chatId].State)
+            {
+                case ContactState.WaitingForLink:
+                    await botClient.SendMessage(chatId, "Введите ссылку:");
+                    _userStates[chatId].State = ContactState.WaitingForName;
+                    break;
+
+                case ContactState.WaitingForName:
+                    // Логика обработки логина
+                    await botClient.SendMessage(chatId, "Введите название для контакта:");
+                    _userStates[chatId].State = ContactState.WaitingForConfirmation;
+                    break;
+
+                case ContactState.WaitingForConfirmation:
+                    // Логика обработки пароля
+                    await botClient.SendMessage(chatId, "Подтвердите добавление.");
+                    _userStates[chatId].State = ContactState.Finish;
+                    break;
+
+                case ContactState.Finish:
+                    await botClient.SendMessage(chatId, "Процесс завершен. Можете вернутся в меню.");
+                    await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
+                    // Сброс состояния после завершения
+                    _userStates.Remove(chatId);
+                    break;
+            }
+        }
+
         private static async Task UpdateHandler(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
+            long chatId = 0;
+            if (update == null) return;
+            // Проверка, если пришло сообщение
+            if (update.Message != null)
+            {
+                chatId = update.Message.Chat.Id;
+                Console.WriteLine(_userStates.ContainsKey(chatId));
+            }
+
+            // Проверка, если пришел callback-запрос
+            else if (update.CallbackQuery != null)
+            {
+                chatId = update.CallbackQuery.Message.Chat.Id;
+            }
+
+            
+
+            if (_userStates.ContainsKey(chatId))
+            {
+                await ProcessState(botClient, update, cancellationToken);
+            }
+
             if (update.Message != null && update.Message.Text != null)
             {
                 string pattern = @"^(https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+\/video\/\d+|https?:\/\/vt\.tiktok\.com\/[\w.-]+\/?)$";
@@ -58,6 +135,11 @@ namespace MediaTelegramBot
                 {
                     case "add_contact":
                         await KeyboardUtils.AddContact(botClient, callbackQuery, cancellationToken);
+                        if (!_userStates.ContainsKey(update.CallbackQuery.Message.Chat.Id))
+                        {
+                            _userStates[update.CallbackQuery.Message.Chat.Id] = new UserState { State = ContactState.WaitingForLink };
+                        }
+                        Console.WriteLine(_userStates[update.CallbackQuery.Message.Chat.Id]);
                         break;
                     case "view_contacts":
                         await KeyboardUtils.ViewContacts(botClient, callbackQuery, cancellationToken);
@@ -66,15 +148,7 @@ namespace MediaTelegramBot
                         await KeyboardUtils.WhosTheGenius(botClient, callbackQuery, cancellationToken);
                         break;
                 }
-                // string responseText = "Вы нажали кнопку!";
 
-                // await botClient.SendMessage(
-                //     chatId: callbackQuery.Message.Chat.Id,
-                //     text: responseText,
-                //     cancellationToken: cancellationToken
-                // );
-
-                // Подтверждаем обработку колбэка
                 await botClient.AnswerCallbackQuery(callbackQuery.Id);
             }
         }

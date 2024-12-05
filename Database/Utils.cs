@@ -1,24 +1,26 @@
-using Microsoft.Data.SqlClient;
+using MySql.Data.MySqlClient;  // Импортируем библиотеку для работы с MySQL
+using TikTokMediaRelayBot;
 
-
-namespace DataBase;
-
-
-public class Utils 
+namespace DataBase
 {
-    public static void executeQuery(string query)
+    public class Utils
     {
-        using (SqlConnection connection = new SqlConnection(Database.connectionString))
+        public static void executeVoidQuery(string query)
         {
-            try
+            string connectionString = Config.sqlConnectionString;
+
+            using (MySqlConnection connection = new MySqlConnection(connectionString))
             {
-                connection.Open();
-                SqlCommand command = new SqlCommand(query, connection);
-                command.ExecuteNonQuery();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error creating database: " + ex.Message);
+                try
+                {
+                    connection.Open();
+                    MySqlCommand command = new MySqlCommand(query, connection);
+                    command.ExecuteNonQuery();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Error creating database: " + ex.Message);
+                }
             }
         }
     }

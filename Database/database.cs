@@ -1,4 +1,4 @@
-using Microsoft.Data.SqlClient;
+using MySql.Data.MySqlClient;
 using TikTokMediaRelayBot;
 
 namespace DataBase;
@@ -16,43 +16,112 @@ public class Database
 
     private static void CreateDatabase()
     {
-        string query = "CREATE DATABASE TikTokMediaRelayBot IF NOT EXISTS;";
-
-        Utils.executeQuery(query);
+        string query = "CREATE DATABASE IF NOT EXISTS TikTokMediaRelayBot;";
+        Utils.executeVoidQuery(query);
     }
-    private static void CreateUsersTable()   
+
+    private static void CreateUsersTable()
     {
-        string query = @"USE TikTokMediaRelayBot;
-                        CREATE TABLE IF NOT EXISTS Users (
-                            ID INT PRIMARY KEY IDENTITY,
-                            Name VARCHAR(255) NOT NULL,
-                            Link VARCHAR(255) NOT NULL,
-                            Status VARCHAR(255)
-                        )";
+        string query = @"
+            USE TikTokMediaRelayBot;
+            CREATE TABLE IF NOT EXISTS Users (
+                ID INT PRIMARY KEY AUTO_INCREMENT,
+                TelegramID BIGINT NOT NULL,
+                Name VARCHAR(255) NOT NULL,
+                Link VARCHAR(255) NOT NULL,
+                Status VARCHAR(255)
+            )";
 
-        Utils.executeQuery(query);
+        Utils.executeVoidQuery(query);
     }
+
     private static void CreateContactsTable()
     {
-        string query = @"USE TikTokMediaRelayBot;
-                        CREATE TABLE IF NOT EXISTS Contacts (
-                        UserId INT,
-                        ContactId INT,
-                        PRIMARY KEY (UserId, ContactId),
-                        FOREIGN KEY (UserId) REFERENCES Users(ID),
-                        FOREIGN KEY (ContactId) REFERENCES Users(ID)
-                        )";
+        string query = @"
+            USE TikTokMediaRelayBot;
+            CREATE TABLE IF NOT EXISTS Contacts (
+                UserId INT,
+                ContactId INT,
+                PRIMARY KEY (UserId, ContactId),
+                FOREIGN KEY (UserId) REFERENCES Users(ID),
+                FOREIGN KEY (ContactId) REFERENCES Users(ID)
+            )";
 
-        Utils.executeQuery(query);
+        Utils.executeVoidQuery(query);
+    }
+
+    private static bool CheckExistsUser(int telegramID)
+    {
+        string query = @"
+            USE TikTokMediaRelayBot;
+            SELECT * FROM Users WHERE TelegramID = @telegramID";
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@telegramID", telegramID);
+                MySqlDataReader reader = command.ExecuteReader();
+                return reader.HasRows;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error creating database: " + ex.Message);
+                return false;
+            }
+        }
+    }
+
+    private static void AddUser(string name, string link, int telegramID)
+    {
+        bool user = CheckExistsUser(telegramID);
+
+        if (user)
+        {
+            return;
+        }
+
+        string query = @"
+            USE TikTokMediaRelayBot;
+            INSERT INTO Users (TelegramID, Name, Link) VALUES (@telegramID, @name, @link)";
+
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@name", name);
+                command.Parameters.AddWithValue("@link", link);
+                command.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error creating database: " + ex.Message);
+            }
+        }
+    }
+
+    private static void AddContact(int userId, int contactId)
+    {
+        string query = @"
+            USE TikTokMediaRelayBot;
+            INSERT INTO Contacts (UserId, ContactId) VALUES (@userId, @contactId)";
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@userId", userId);
+                command.Parameters.AddWithValue("@contactId", contactId);
+                command.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error creating database: " + ex.Message);
+            }
+        }
     }
 }
-
-
-
-// При первом запуске бота создается бд
-// Проверяется есть ли человек в бд 
-// если нет то вносятся данные и создается уникальная ссылка для него
-// если есть то просто ничего не делается
-// потом тот кто хочет добавить кого то к себе в контакты должен отправить ссылку человека которого он хочет добавить в контакты
-// потом бот ищет по бд этого человека по ссылке и если находит то пишет этому человеку что его хотят добавить в контакты
-// если не находит то уведомляет об этом как и в случае если не захотели добавлять

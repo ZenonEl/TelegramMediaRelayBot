@@ -1,6 +1,7 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
+using DataBase;
 
 namespace MediaTelegramBot;
 
@@ -29,6 +30,9 @@ public static class KeyboardUtils
                         {
                             InlineKeyboardButton.WithCallbackData("Добавить контакт по ссылке", "add_contact"),
                             InlineKeyboardButton.WithCallbackData("Получить ссылку на себя", "get_self_link"),
+                        },
+                        new[]
+                        {
                             InlineKeyboardButton.WithCallbackData("Обзор всех моих контактов", "view_contacts"),
                         },
                         new[]
@@ -45,6 +49,7 @@ public static class KeyboardUtils
 
     public static Task AddContact(ITelegramBotClient botClient, CallbackQuery callbackQuery, CancellationToken cancellationToken)
     {
+
     return botClient.SendMessage(
                         chatId: callbackQuery.Message.Chat.Id,
                         text: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
