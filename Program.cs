@@ -1,10 +1,14 @@
-﻿namespace TikTokMediaRelayBot
+﻿using DataBase;
+
+namespace TikTokMediaRelayBot
 {
     class Program
     {
         static async Task Main(string[] args)
         {
-            await TelegramBot.Start();
+            Config.loadConfig();
+            Database.initDB();
+            await MediaTelegramBot.TelegramBot.Start();
         }
     }
 }
