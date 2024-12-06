@@ -7,7 +7,7 @@ namespace TikTokMediaRelayBot
         static async Task Main(string[] args)
         {
             Config.loadConfig();
-            Database.initDB();
+            DB.initDB();
             await MediaTelegramBot.TelegramBot.Start();
         }
     }

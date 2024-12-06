@@ -11,6 +11,15 @@ public static class Utils
     public static Task ErrorHandler(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
     {
         Console.WriteLine($"Error occurred: {exception.Message}");
+        Console.WriteLine($"Stack trace: {exception.StackTrace}");
+
+        // Дополнительная информация о внутренних исключениях, если они есть
+        if (exception.InnerException != null)
+        {
+            Console.WriteLine($"Inner exception: {exception.InnerException.Message}");
+            Console.WriteLine($"Inner exception stack trace: {exception.InnerException.StackTrace}");
+        }
+
         return Task.CompletedTask;
     }
 
@@ -76,6 +85,21 @@ public static class KeyboardUtils
         return inlineKeyboard;
     }
 
+    public static InlineKeyboardMarkup GetInboundsKeyboardMarkup(Update update, CancellationToken cancellationToken)
+    {
+        var buttonDataList = DBforInbounds.GetButtonDataFromDatabase(DB.GetUserIDbyTelegramID(update.CallbackQuery.Message.Chat.Id));
+
+        var inlineKeyboardButtons = new List<InlineKeyboardButton[]>();
+
+        foreach (var buttonData in buttonDataList)
+        {
+            var button = InlineKeyboardButton.WithCallbackData(buttonData.ButtonText, buttonData.CallbackData);
+            inlineKeyboardButtons.Add(new[] { button });
+        }
+        inlineKeyboardButtons.Add(new[] { GetReturnButton("main_menu") });
+        return new InlineKeyboardMarkup(inlineKeyboardButtons);
+    }
+
     public static Task SendInlineKeyboardMenu(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         var inlineKeyboard = new InlineKeyboardMarkup(new[]
@@ -83,7 +107,7 @@ public static class KeyboardUtils
                         new[]
                         {
                             InlineKeyboardButton.WithCallbackData("Добавить контакт по ссылке", "add_contact"),
-                            InlineKeyboardButton.WithCallbackData("Получить ссылку на себя", "get_self_link"),
+                            InlineKeyboardButton.WithCallbackData("Моя ссылка", "get_self_link"),
                         },
                         new[]
                         {
@@ -112,16 +136,21 @@ public static class KeyboardUtils
 
     public static Task GetSelfLink(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        string link = Database.GetSelfLink(update.CallbackQuery.Message.Chat.Id);
+        string link = DB.GetSelfLink(update.CallbackQuery.Message.Chat.Id);
         return Utils.SendMessage(botClient, update, GetReturnButtonMarkup(), cancellationToken, $"Ваша ссылка: <code>{link}</code>");
     }
 
     public static Task ViewInboundInviteLinks(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         string text = $@"Ваши входящие приглашения:
+(Нажимая на кнопку вы тем самым принимаете запрос на добавление в свои контакты)";
+        return Utils.SendMessage(botClient, update, GetInboundsKeyboardMarkup(update, cancellationToken), cancellationToken, text);
+    }
 
-{Database.GetInboundInviteLinks(update.CallbackQuery.Message.Chat.Id)}";
-        return Utils.SendMessage(botClient, update, GetReturnButtonMarkup(), cancellationToken, text);
+    public static Task AcceptInboundInvite(Update update)
+    {
+        DBforInbounds.SetContactStatus(long.Parse(update.CallbackQuery.Data.Split(':')[1]), update.CallbackQuery.Message.Chat.Id, "accepted");
+        return Task.CompletedTask;
     }
 
     public static Task ViewContacts(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)

@@ -74,7 +74,7 @@ namespace MediaTelegramBot
                 }
                 else if (update.Message.Text == "/start")
                 {
-                    Database.AddUser(update.Message.Chat.FirstName, update.Message.Chat.Id);
+                    DB.AddUser(update.Message.Chat.FirstName, update.Message.Chat.Id);
                     await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                 }
                 else
@@ -85,6 +85,7 @@ namespace MediaTelegramBot
             else if (update.CallbackQuery != null)
             {
                 var callbackQuery = update.CallbackQuery;
+                Console.WriteLine($"Callback Query: {callbackQuery.Data}");
                 switch (callbackQuery.Data)
                 {
                     case "main_menu":
@@ -108,6 +109,12 @@ namespace MediaTelegramBot
                         break;
                     case "whos_the_genius":
                         await KeyboardUtils.WhosTheGenius(botClient, update, cancellationToken);
+                        break;
+                    default:
+                        if (callbackQuery.Data.StartsWith("user_accept_inbounds_invite:")) 
+                        {
+                           await KeyboardUtils.AcceptInboundInvite(update);
+                        }
                         break;
                 }
             }
@@ -138,31 +145,46 @@ namespace MediaTelegramBot
             await botClient.SendMessage(chatId, "Не удалось получить ссылку на видео после 5 попыток.");
         }
 
-        static async Task SendVideoToTelegram(string videoUrl, long chatId)
+    public static async Task SendVideoToTelegram(string videoUrl, long chatId, ITelegramBotClient botClient)
+    {
+        using (HttpClient httpClient = new HttpClient())
         {
-            using (HttpClient httpClient = new HttpClient())
-            {
-                var response = await httpClient.GetAsync(videoUrl);
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    var videoStream = await response.Content.ReadAsStreamAsync();
-                    
-                    using (var stream = new MemoryStream())
-                    {
-                        await videoStream.CopyToAsync(stream);
-                        stream.Position = 0; 
+            var response = await httpClient.GetAsync(videoUrl);
 
-                        await botClient.SendDocument(chatId, InputFile.FromStream(stream, "video.mp4"), caption: "Вот ваше видео!");
-                        Console.WriteLine("Видео успешно отправлено в Telegram.");
-                    }
-                }
-                else
+            if (response.IsSuccessStatusCode)
+            {
+                var videoStream = await response.Content.ReadAsStreamAsync();
+
+                using (var stream = new MemoryStream())
                 {
-                    Console.WriteLine($"Ошибка при скачивании видео: {response.StatusCode}");
-                    await botClient.SendMessage(chatId, "Ошибка при скачивании видео.");
+                    await videoStream.CopyToAsync(stream);
+                    stream.Position = 0;
+
+                    var message = await botClient.SendDocument(chatId, InputFile.FromStream(stream, "video.mp4"), caption: "Вот ваше видео!");
+                    Console.WriteLine("Видео успешно отправлено в Telegram.");
+
+                    // Отправка видео контактам
+                    await SendVideoToContacts(message.Document.FileId, chatId, botClient);
                 }
             }
+            else
+            {
+                Console.WriteLine($"Ошибка при скачивании видео: {response.StatusCode}");
+                await botClient.SendMessage(chatId, "Ошибка при скачивании видео.");
+            }
         }
+    }
+
+    private static async Task SendVideoToContacts(string fileId, long userId, ITelegramBotClient botClient)
+    {
+        var contactUserIds = await GetContactUserIds(userId);
+
+        foreach (var contactUserId in contactUserIds)
+        {
+            await botClient.SendDocument(contactUserId, InputFile.FromFileId(fileId), caption: "Вам отправили видео!");
+            Console.WriteLine($"Видео успешно отправлено контакту с ID: {contactUserId}");
+        }
+    }
+
     }
 }
