@@ -2,7 +2,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using DataBase;
-using Microsoft.AspNetCore.Diagnostics;
+
 
 namespace MediaTelegramBot;
 
@@ -55,7 +55,6 @@ public static class Utils
                                 );
         return Task.CompletedTask;
     }
-
 }
 
 public static class KeyboardUtils
@@ -117,6 +116,14 @@ public static class KeyboardUtils
         return Utils.SendMessage(botClient, update, GetReturnButtonMarkup(), cancellationToken, $"Ваша ссылка: <code>{link}</code>");
     }
 
+    public static Task ViewInboundInviteLinks(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    {
+        string text = $@"Ваши входящие приглашения:
+
+{Database.GetInboundInviteLinks(update.CallbackQuery.Message.Chat.Id)}";
+        return Utils.SendMessage(botClient, update, GetReturnButtonMarkup(), cancellationToken, text);
+    }
+
     public static Task ViewContacts(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         return Utils.SendMessage(botClient, update, GetReturnButtonMarkup(), cancellationToken, "Ваши контакты:");
@@ -136,4 +143,27 @@ public static class KeyboardUtils
 Приятного пользования!";
         return Utils.SendMessage(botClient, update, GetReturnButtonMarkup(), cancellationToken, text);
     }
+
 }
+
+public static class ReplyKeyboardUtils
+{
+
+    public static ReplyKeyboardMarkup GetSingleButtonKeyboardMarkup(string text)
+    {
+        var replyKeyboard = new ReplyKeyboardMarkup(new[]
+        {
+            new KeyboardButton(text)
+        })
+        {
+            ResizeKeyboard = true
+        };
+        return replyKeyboard;
+    }
+
+    public async static Task RemoveReplyMarkup(ITelegramBotClient botClient, long chatId, CancellationToken cancellationToken)
+    {
+        var sentMessage = await botClient.SendMessage(chatId, "ㅤ", cancellationToken: cancellationToken, replyMarkup: new ReplyKeyboardRemove()); 
+        await botClient.DeleteMessage(chatId, sentMessage.MessageId, cancellationToken);
+    }
+    }

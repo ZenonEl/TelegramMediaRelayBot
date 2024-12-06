@@ -1,3 +1,4 @@
+using DataBase;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -15,6 +16,9 @@ public enum ContactState
 
 public class ProcessContactState
 {
+
+    static string link;
+
     private static ContactState[] _allStates = (ContactState[])Enum.GetValues(typeof(ContactState));
 
     public static ContactState[] GetAllStates()
@@ -31,29 +35,57 @@ public class ProcessContactState
             case ContactState.WaitingForLink:
                 if (update.CallbackQuery != null && update.CallbackQuery.Data == "main_menu")
                 {
+                    await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
                     await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                     TelegramBot.userStates.Remove(chatId);
                     return;
                 }
-                await botClient.SendMessage(chatId, "По этой ссылке найден:", cancellationToken: cancellationToken);
+                link = update.Message.Text;
+                if (Database.SearchContactByLink(link) == -1)
+                {
+                    await botClient.SendMessage(chatId, "По этой ссылке никто не найден.", cancellationToken: cancellationToken);
+                    await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
+                    TelegramBot.userStates.Remove(chatId);
+                    return;
+                }
+                await botClient.SendMessage(chatId, "По этой ссылке найден один человек.", cancellationToken: cancellationToken, 
+                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup("Дальше"));
                 TelegramBot.userStates[chatId].State = ContactState.WaitingForName;
                 break;
 
             case ContactState.WaitingForName:
-                await botClient.SendMessage(chatId, "Подтвердите добавление:", cancellationToken: cancellationToken);
+                string text_data = $@"Ссылка: {link} 
+Имя: {Database.GetUserNameByID(Database.SearchContactByLink(link))}";
+                await botClient.SendMessage(chatId, "Подтвердите добавление (в противном случае напишите /start): " + text_data, cancellationToken: cancellationToken,
+                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup("Дальше"));
                 TelegramBot.userStates[chatId].State = ContactState.WaitingForConfirmation;
                 break;
 
             case ContactState.WaitingForConfirmation:
-                await botClient.SendMessage(chatId, "Ожидайте когда контакт также добавит вас в свой список.", cancellationToken: cancellationToken);
+                if (update.Message.Text == "/start")
+                {
+                    await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
+                    await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
+                    TelegramBot.userStates.Remove(chatId);
+                    return;
+                }
+                Database.AddContact(chatId, link);
+                await SendNotification(botClient, chatId, cancellationToken);
+                await botClient.SendMessage(chatId, "Теперь ожидайте когда контакт также добавит вас в свой список.", 
+                                            cancellationToken: cancellationToken, replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup("Ждёмс..."));
                 TelegramBot.userStates[chatId].State = ContactState.FinishAddContact;
                 break;
 
             case ContactState.FinishAddContact:
-                await botClient.SendMessage(chatId, "Процесс завершен. Можете вернутся в меню.", cancellationToken: cancellationToken);
+                await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                 TelegramBot.userStates.Remove(chatId);
                 break;
         }
+    }
+
+    public static async Task SendNotification(ITelegramBotClient botClient, long chatId, CancellationToken cancellationToken)
+    {
+        await botClient.SendMessage(Database.GetTelegramIDbyUserID(Database.SearchContactByLink(link)), $"Пользователь {Database.GetUserNameByTelegramID(chatId)} хочет добавить вас в свои контакты.", cancellationToken: cancellationToken);
     }
 }

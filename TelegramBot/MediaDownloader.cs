@@ -92,13 +92,16 @@ namespace MediaTelegramBot
                         break;
                     case "add_contact":
                         await KeyboardUtils.AddContact(botClient, update, cancellationToken);
-                        if (!userStates.ContainsKey(update.CallbackQuery.Message.Chat.Id))
+                        if (!userStates.ContainsKey(chatId))
                         {
-                            userStates[update.CallbackQuery.Message.Chat.Id] = new UserState { State = ContactState.WaitingForLink };
+                            userStates[chatId] = new UserState { State = ContactState.WaitingForLink };
                         }
                         break;
                     case "get_self_link":
                         await KeyboardUtils.GetSelfLink(botClient, update, cancellationToken);
+                        break;
+                    case "view_inbound_invite_links":
+                        await KeyboardUtils.ViewInboundInviteLinks(botClient, update, cancellationToken);
                         break;
                     case "view_contacts":
                         await KeyboardUtils.ViewContacts(botClient, update, cancellationToken);

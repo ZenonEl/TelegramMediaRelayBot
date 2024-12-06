@@ -106,19 +106,154 @@ public class Database
         }
     }
 
-    private static void AddContact(int userId, int contactId)
+    public static string GetUserNameByID(int UserID)
     {
         string query = @"
             USE TikTokMediaRelayBot;
-            INSERT INTO Contacts (UserId, ContactId) VALUES (@userId, @contactId)";
+            SELECT Name FROM Users WHERE ID = @UserID";
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
             try
             {
                 connection.Open();
                 MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@userId", userId);
-                command.Parameters.AddWithValue("@contactId", contactId);
+                command.Parameters.AddWithValue("@UserID", UserID);
+                MySqlDataReader reader = command.ExecuteReader();
+                if (reader.Read())
+                {
+                    return reader.GetString("Name");
+                }
+                return "";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error creating database: " + ex.Message);
+                return "Not found";
+            }
+        }
+    }
+
+    public static long GetTelegramIDbyUserID(int UserID)
+    {
+        string query = @"
+            USE TikTokMediaRelayBot;
+            SELECT TelegramID FROM Users WHERE ID = @UserID";
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@UserID", UserID);
+                MySqlDataReader reader = command.ExecuteReader();
+                if (reader.Read())
+                {
+                    return reader.GetInt64(reader.GetOrdinal("TelegramID"));
+                }
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error creating database: " + ex.Message);
+                return -1;
+            }
+        }
+    }
+
+    public static string GetUserNameByTelegramID(long telegramID)
+    {
+        string query = @"
+            USE TikTokMediaRelayBot;
+            SELECT Name FROM Users WHERE TelegramID = @telegramID";
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@telegramID", telegramID);
+                MySqlDataReader reader = command.ExecuteReader();
+                if (reader.Read())
+                {
+                    return reader.GetString("Name");
+                }
+                return "";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error creating database: " + ex.Message);
+                return "Not found";
+            }
+        }
+    }
+    public static int SearchContactByLink(string link)
+    {
+        string query = @"
+            USE TikTokMediaRelayBot;
+            SELECT * FROM Users WHERE Link = @link";
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@link", link);
+                MySqlDataReader reader = command.ExecuteReader();
+                if (reader.Read())
+                {
+                    return reader.GetInt32("ID");
+                }
+                return -1;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error creating database: " + ex.Message);
+                return -1;
+            }
+        }
+    }
+
+    private static int SearchContactByTelegramID(long telegramID)
+    {
+        string query = @"
+            USE TikTokMediaRelayBot;
+            SELECT * FROM Users WHERE TelegramID = @telegramID";
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@telegramID", telegramID);
+                MySqlDataReader reader = command.ExecuteReader();
+                if (reader.Read())
+                {
+                    return reader.GetInt32("ID");
+                }
+                return -1;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error creating database: " + ex.Message);
+                return -1;
+            }
+        }
+    }
+
+    public static void AddContact(long telegramID, string link)
+    {
+        string query = @"
+            USE TikTokMediaRelayBot;
+            INSERT INTO Contacts (UserId, ContactId, Status) VALUES (@userId, @contactId, @status)";
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@userId", SearchContactByTelegramID(telegramID));
+                command.Parameters.AddWithValue("@contactId", SearchContactByLink(link));
+                command.Parameters.AddWithValue("@status", "waiting_for_accept");
                 command.ExecuteNonQuery();
             }
             catch (Exception ex)
