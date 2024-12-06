@@ -3,16 +3,11 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Polling;
 using System.Text.RegularExpressions;
 using TikTokMediaRelayBot;
+using DataBase;
 
 namespace MediaTelegramBot
 {
-    public enum ContactState
-    {
-        WaitingForLink,
-        WaitingForName,
-        WaitingForConfirmation,
-        Finish
-    }
+
     public class UserState
     {
         public ContactState State { get; set; }
@@ -21,7 +16,7 @@ namespace MediaTelegramBot
     class TelegramBot
     {
         private static ITelegramBotClient botClient;
-        private static Dictionary<long, UserState> _userStates = new Dictionary<long, UserState>();
+        public static Dictionary<long, UserState> userStates = [];
         
         static public async Task Start()
         {
@@ -43,70 +38,28 @@ namespace MediaTelegramBot
             cts.Cancel();
         }
 
-        private static async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+        public static async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
-            long chatId = 0;
-            if (update.Message != null)
+            long chatId = Utils.GetIDfromUpdate(update);
+            if (Utils.CheckNonZeroID(chatId)) return;
+
+            var all_contact_states = ProcessContactState.GetAllStates();
+
+            if (all_contact_states.Contains(userStates[chatId].State))
             {
-                chatId = update.Message.Chat.Id;
-                Console.WriteLine(_userStates.ContainsKey(chatId));
-            }
-
-            // Проверка, если пришел callback-запрос
-            else if (update.CallbackQuery != null)
-            {
-                chatId = update.CallbackQuery.Message.Chat.Id;
-            }
-            switch (_userStates[chatId].State)
-            {
-                case ContactState.WaitingForLink:
-                    await botClient.SendMessage(chatId, "Введите ссылку:");
-                    _userStates[chatId].State = ContactState.WaitingForName;
-                    break;
-
-                case ContactState.WaitingForName:
-                    // Логика обработки логина
-                    await botClient.SendMessage(chatId, "Введите название для контакта:");
-                    _userStates[chatId].State = ContactState.WaitingForConfirmation;
-                    break;
-
-                case ContactState.WaitingForConfirmation:
-                    // Логика обработки пароля
-                    await botClient.SendMessage(chatId, "Подтвердите добавление.");
-                    _userStates[chatId].State = ContactState.Finish;
-                    break;
-
-                case ContactState.Finish:
-                    await botClient.SendMessage(chatId, "Процесс завершен. Можете вернутся в меню.");
-                    await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-                    // Сброс состояния после завершения
-                    _userStates.Remove(chatId);
-                    break;
+                await ProcessContactState.ProcessState(botClient, update, cancellationToken);
             }
         }
 
         private static async Task UpdateHandler(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
-            long chatId = 0;
-            if (update == null) return;
-            // Проверка, если пришло сообщение
-            if (update.Message != null)
-            {
-                chatId = update.Message.Chat.Id;
-                Console.WriteLine(_userStates.ContainsKey(chatId));
-            }
+            long chatId = Utils.GetIDfromUpdate(update);
+            if (Utils.CheckNonZeroID(chatId)) return;
 
-            // Проверка, если пришел callback-запрос
-            else if (update.CallbackQuery != null)
-            {
-                chatId = update.CallbackQuery.Message.Chat.Id;
-            }
-
-            
-
-            if (_userStates.ContainsKey(chatId))
+            if (userStates.ContainsKey(chatId))
             {
                 await ProcessState(botClient, update, cancellationToken);
+                return;
             }
 
             if (update.Message != null && update.Message.Text != null)
@@ -121,6 +74,7 @@ namespace MediaTelegramBot
                 }
                 else if (update.Message.Text == "/start")
                 {
+                    Database.AddUser(update.Message.Chat.FirstName, update.Message.Chat.Id);
                     await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                 }
                 else
@@ -133,23 +87,26 @@ namespace MediaTelegramBot
                 var callbackQuery = update.CallbackQuery;
                 switch (callbackQuery.Data)
                 {
+                    case "main_menu":
+                        await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
+                        break;
                     case "add_contact":
-                        await KeyboardUtils.AddContact(botClient, callbackQuery, cancellationToken);
-                        if (!_userStates.ContainsKey(update.CallbackQuery.Message.Chat.Id))
+                        await KeyboardUtils.AddContact(botClient, update, cancellationToken);
+                        if (!userStates.ContainsKey(update.CallbackQuery.Message.Chat.Id))
                         {
-                            _userStates[update.CallbackQuery.Message.Chat.Id] = new UserState { State = ContactState.WaitingForLink };
+                            userStates[update.CallbackQuery.Message.Chat.Id] = new UserState { State = ContactState.WaitingForLink };
                         }
-                        Console.WriteLine(_userStates[update.CallbackQuery.Message.Chat.Id]);
+                        break;
+                    case "get_self_link":
+                        await KeyboardUtils.GetSelfLink(botClient, update, cancellationToken);
                         break;
                     case "view_contacts":
-                        await KeyboardUtils.ViewContacts(botClient, callbackQuery, cancellationToken);
+                        await KeyboardUtils.ViewContacts(botClient, update, cancellationToken);
                         break;
                     case "whos_the_genius":
-                        await KeyboardUtils.WhosTheGenius(botClient, callbackQuery, cancellationToken);
+                        await KeyboardUtils.WhosTheGenius(botClient, update, cancellationToken);
                         break;
                 }
-
-                await botClient.AnswerCallbackQuery(callbackQuery.Id);
             }
         }
 

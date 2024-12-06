@@ -23,5 +23,10 @@ namespace DataBase
                 }
             }
         }
+        public static string GenerateUserLink()
+        {
+            return Guid.NewGuid().ToString();
+        }
     }
+
 }

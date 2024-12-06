@@ -42,6 +42,7 @@ public class Database
             CREATE TABLE IF NOT EXISTS Contacts (
                 UserId INT,
                 ContactId INT,
+                status VARCHAR(255),
                 PRIMARY KEY (UserId, ContactId),
                 FOREIGN KEY (UserId) REFERENCES Users(ID),
                 FOREIGN KEY (ContactId) REFERENCES Users(ID)
@@ -50,7 +51,7 @@ public class Database
         Utils.executeVoidQuery(query);
     }
 
-    private static bool CheckExistsUser(int telegramID)
+    private static bool CheckExistsUser(long telegramID)
     {
         string query = @"
             USE TikTokMediaRelayBot;
@@ -73,9 +74,10 @@ public class Database
         }
     }
 
-    private static void AddUser(string name, string link, int telegramID)
+    public static void AddUser(string name, long telegramID)
     {
         bool user = CheckExistsUser(telegramID);
+        string link = Utils.GenerateUserLink();
 
         if (user)
         {
@@ -92,13 +94,14 @@ public class Database
             {
                 connection.Open();
                 MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@telegramID", telegramID);
                 command.Parameters.AddWithValue("@name", name);
                 command.Parameters.AddWithValue("@link", link);
                 command.ExecuteNonQuery();
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error creating database: " + ex.Message);
+                Console.WriteLine("Error inserting data to Users: " + ex.Message);
             }
         }
     }
@@ -123,5 +126,40 @@ public class Database
                 Console.WriteLine("Error creating database: " + ex.Message);
             }
         }
+    }
+    private static string GetLink(long telegramID)
+    {
+        string query = @"
+            USE TikTokMediaRelayBot;
+            SELECT Link FROM Users WHERE TelegramID = @telegramID";
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@telegramID", telegramID);
+                MySqlDataReader reader = command.ExecuteReader();
+                if (reader.Read())
+                {
+                    return reader.GetString("Link");
+                }
+                return "";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error creating database: " + ex.Message);
+                return "";
+            }
+        }
+    }
+
+    public static string GetSelfLink(long telegramID)
+    {
+        if (CheckExistsUser(telegramID))
+        {
+            return GetLink(telegramID);
+        }
+        return "";
     }
 }
