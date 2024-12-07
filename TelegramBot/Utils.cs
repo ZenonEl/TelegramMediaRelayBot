@@ -87,7 +87,7 @@ public static class KeyboardUtils
 
     public static InlineKeyboardMarkup GetInboundsKeyboardMarkup(Update update, CancellationToken cancellationToken)
     {
-        var buttonDataList = DBforInbounds.GetButtonDataFromDatabase(DB.GetUserIDbyTelegramID(update.CallbackQuery.Message.Chat.Id));
+        var buttonDataList = DBforInbounds.GetButtonDataFromDatabase(DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery.Message.Chat.Id));
 
         var inlineKeyboardButtons = new List<InlineKeyboardButton[]>();
 
@@ -136,7 +136,7 @@ public static class KeyboardUtils
 
     public static Task GetSelfLink(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        string link = DB.GetSelfLink(update.CallbackQuery.Message.Chat.Id);
+        string link = DBforGetters.GetSelfLink(update.CallbackQuery.Message.Chat.Id);
         return Utils.SendMessage(botClient, update, GetReturnButtonMarkup(), cancellationToken, $"Ваша ссылка: <code>{link}</code>");
     }
 

@@ -70,11 +70,12 @@ namespace MediaTelegramBot
                 if (regex.IsMatch(update.Message.Text))
                 {
                     string videoUrl = update.Message.Text;
+                    await botClient.SendMessage(update.Message.Chat.Id, "Подождите, идет скачивание видео...", cancellationToken: cancellationToken);
                     await HandleVideoRequest(botClient, videoUrl, update.Message.Chat.Id);
                 }
                 else if (update.Message.Text == "/start")
                 {
-                    DB.AddUser(update.Message.Chat.FirstName, update.Message.Chat.Id);
+                    CoreDB.AddUser(update.Message.Chat.FirstName, update.Message.Chat.Id);
                     await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                 }
                 else
@@ -113,7 +114,7 @@ namespace MediaTelegramBot
                     default:
                         if (callbackQuery.Data.StartsWith("user_accept_inbounds_invite:")) 
                         {
-                           await KeyboardUtils.AcceptInboundInvite(update);
+                            await KeyboardUtils.AcceptInboundInvite(update);
                         }
                         break;
                 }
@@ -134,7 +135,7 @@ namespace MediaTelegramBot
 
                 if (!string.IsNullOrEmpty(downloadLink))
                 {
-                    await SendVideoToTelegram(downloadLink, chatId);
+                    await SendVideoToTelegram(downloadLink, chatId, botClient);
                     return;
                 }
 
@@ -162,9 +163,12 @@ namespace MediaTelegramBot
 
                     var message = await botClient.SendDocument(chatId, InputFile.FromStream(stream, "video.mp4"), caption: "Вот ваше видео!");
                     Console.WriteLine("Видео успешно отправлено в Telegram.");
+                    string FileId;
+                    if (message.Video != null && message.Video.FileId != null) FileId = message.Video.FileId;
+                    else FileId = message.Document.FileId;
 
                     // Отправка видео контактам
-                    await SendVideoToContacts(message.Document.FileId, chatId, botClient);
+                    await SendVideoToContacts(FileId, chatId, botClient);
                 }
             }
             else
@@ -175,15 +179,17 @@ namespace MediaTelegramBot
         }
     }
 
-    private static async Task SendVideoToContacts(string fileId, long userId, ITelegramBotClient botClient)
+    private static async Task SendVideoToContacts(string fileId, long telegramId, ITelegramBotClient botClient)
     {
-        var contactUserIds = await GetContactUserIds(userId);
-
+        var contactUserIds = await CoreDB.GetContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(telegramId));
+        Console.WriteLine($"Количество контактов: {contactUserIds.Count}");
         foreach (var contactUserId in contactUserIds)
         {
+            Console.WriteLine($"Отправка видео контакту с ID: {contactUserId}");
             await botClient.SendDocument(contactUserId, InputFile.FromFileId(fileId), caption: "Вам отправили видео!");
             Console.WriteLine($"Видео успешно отправлено контакту с ID: {contactUserId}");
         }
+        if (contactUserIds.Count > 0) await botClient.SendMessage(telegramId, $"Видео успешно отправлено всем ({contactUserIds.Count}) контактам.");
     }
 
     }
