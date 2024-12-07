@@ -1,152 +1,109 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Polling;
-using System.Text.RegularExpressions;
+using Telegram.Bot.Types.Enums;
 using TikTokMediaRelayBot;
 using DataBase;
 
-namespace MediaTelegramBot
-{
+namespace MediaTelegramBot;
 
-    public class UserState
+
+public class UserState
+{
+    public ContactState State { get; set; }
+}
+
+class TelegramBot
+{
+    private static ITelegramBotClient botClient;
+    public static Dictionary<long, UserState> userStates = [];
+    
+    static public async Task Start()
     {
-        public ContactState State { get; set; }
+        string telegramBotToken = Config.telegramBotToken;
+        botClient = new TelegramBotClient(telegramBotToken);
+
+        var me = await botClient.GetMe();
+        Console.WriteLine($"Hello, I am {me.Id} ready and my name is {me.FirstName}.");
+
+        var cts = new CancellationTokenSource();
+        var receiverOptions = new ReceiverOptions
+        {
+            AllowedUpdates = { }
+        };
+
+        botClient.StartReceiving(UpdateHandler, Utils.ErrorHandler, receiverOptions, cancellationToken: cts.Token);
+        Console.WriteLine("Press any key to exit");
+        Console.ReadKey();
+        cts.Cancel();
     }
 
-    class TelegramBot
+    public static async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        private static ITelegramBotClient botClient;
-        public static Dictionary<long, UserState> userStates = [];
-        
-        static public async Task Start()
+        long chatId = Utils.GetIDfromUpdate(update);
+        if (Utils.CheckNonZeroID(chatId)) return;
+
+        var all_contact_states = ProcessContactState.GetAllStates();
+
+        if (all_contact_states.Contains(userStates[chatId].State))
         {
-            string telegramBotToken = Config.telegramBotToken;
-            botClient = new TelegramBotClient(telegramBotToken);
+            await ProcessContactState.ProcessState(botClient, update, cancellationToken);
+        }
+    }
 
-            var me = await botClient.GetMe();
-            Console.WriteLine($"Hello, I am {me.Id} ready and my name is {me.FirstName}.");
+    private static async Task UpdateHandler(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    {
+        long chatId = Utils.GetIDfromUpdate(update);
+        if (Utils.CheckNonZeroID(chatId)) return;
 
-            var cts = new CancellationTokenSource();
-            var receiverOptions = new ReceiverOptions
-            {
-                AllowedUpdates = { }
-            };
-
-            botClient.StartReceiving(UpdateHandler, Utils.ErrorHandler, receiverOptions, cancellationToken: cts.Token);
-            Console.WriteLine("Press any key to exit");
-            Console.ReadKey();
-            cts.Cancel();
+        if (update.Message != null && update.Message.Chat.Type == ChatType.Group || update.Message.Chat.Type == ChatType.Supergroup)
+        {
+            await GroupUpdateHandler.HandleGroupUpdate(update, botClient, cancellationToken);
+            return;
         }
 
-        public static async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+        if (userStates.ContainsKey(chatId))
         {
-            long chatId = Utils.GetIDfromUpdate(update);
-            if (Utils.CheckNonZeroID(chatId)) return;
-
-            var all_contact_states = ProcessContactState.GetAllStates();
-
-            if (all_contact_states.Contains(userStates[chatId].State))
-            {
-                await ProcessContactState.ProcessState(botClient, update, cancellationToken);
-            }
+            await ProcessState(botClient, update, cancellationToken);
+            return;
         }
 
-        private static async Task UpdateHandler(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+        if (update.Message != null && update.Message.Text != null)
         {
-            long chatId = Utils.GetIDfromUpdate(update);
-            if (Utils.CheckNonZeroID(chatId)) return;
+            await PrivateUpdateHandler.ProcessMessage(botClient, update, cancellationToken, chatId);
+        }
+        else if (update.CallbackQuery != null)
+        {
+            await PrivateUpdateHandler.ProcessCallbackQuery(botClient, update, cancellationToken, chatId);
+        }
+    }
 
-            if (userStates.ContainsKey(chatId))
+    public static async Task HandleVideoRequest(ITelegramBotClient botClient, string videoUrl, long chatId, bool groupChat = false)
+    {
+        string inputId = "s_input";
+        string downloadButtonClass = "btn-red";
+        string finalDownloadButtonClass = "dl-success";
+        string finalDownloadButtonID = "ConvertToVideo";
+        int maxAttempts = 5;
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            string downloadLink = VideoGet.GetDownloadLink(videoUrl, inputId, downloadButtonClass, finalDownloadButtonClass, finalDownloadButtonID);
+
+            if (!string.IsNullOrEmpty(downloadLink))
             {
-                await ProcessState(botClient, update, cancellationToken);
+                await SendVideoToTelegram(downloadLink, chatId, botClient, groupChat);
                 return;
             }
 
-            if (update.Message != null && update.Message.Text != null)
-            {
-                string pattern = @"^(https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+\/video\/\d+|https?:\/\/vt\.tiktok\.com\/[\w.-]+\/?)$";
-                Regex regex = new Regex(pattern);
-
-                if (regex.IsMatch(update.Message.Text))
-                {
-                    string videoUrl = update.Message.Text;
-                    await botClient.SendMessage(update.Message.Chat.Id, "Подождите, идет скачивание видео...", cancellationToken: cancellationToken);
-                    await HandleVideoRequest(botClient, videoUrl, update.Message.Chat.Id);
-                }
-                else if (update.Message.Text == "/start")
-                {
-                    CoreDB.AddUser(update.Message.Chat.FirstName, update.Message.Chat.Id);
-                    await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-                }
-                else
-                {
-                    await botClient.SendMessage(update.Message.Chat.Id, "И что мне с этим делать?", cancellationToken: cancellationToken);
-                }
-            }
-            else if (update.CallbackQuery != null)
-            {
-                var callbackQuery = update.CallbackQuery;
-                Console.WriteLine($"Callback Query: {callbackQuery.Data}");
-                switch (callbackQuery.Data)
-                {
-                    case "main_menu":
-                        await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-                        break;
-                    case "add_contact":
-                        await KeyboardUtils.AddContact(botClient, update, cancellationToken);
-                        if (!userStates.ContainsKey(chatId))
-                        {
-                            userStates[chatId] = new UserState { State = ContactState.WaitingForLink };
-                        }
-                        break;
-                    case "get_self_link":
-                        await KeyboardUtils.GetSelfLink(botClient, update, cancellationToken);
-                        break;
-                    case "view_inbound_invite_links":
-                        await KeyboardUtils.ViewInboundInviteLinks(botClient, update, cancellationToken);
-                        break;
-                    case "view_contacts":
-                        await KeyboardUtils.ViewContacts(botClient, update, cancellationToken);
-                        break;
-                    case "whos_the_genius":
-                        await KeyboardUtils.WhosTheGenius(botClient, update, cancellationToken);
-                        break;
-                    default:
-                        if (callbackQuery.Data.StartsWith("user_accept_inbounds_invite:")) 
-                        {
-                            await KeyboardUtils.AcceptInboundInvite(update);
-                        }
-                        break;
-                }
-            }
+            Console.WriteLine($"Attempt {attempt} failed. Retrying...");
+            await Task.Delay(2000);
         }
 
-        private static async Task HandleVideoRequest(ITelegramBotClient botClient, string videoUrl, long chatId)
-        {
-            string inputId = "s_input";
-            string downloadButtonClass = "btn-red";
-            string finalDownloadButtonClass = "dl-success";
-            string finalDownloadButtonID = "ConvertToVideo";
-            int maxAttempts = 5;
+        await botClient.SendMessage(chatId, "Не удалось получить ссылку на видео после 5 попыток.");
+    }
 
-            for (int attempt = 1; attempt <= maxAttempts; attempt++)
-            {
-                string downloadLink = VideoGet.GetDownloadLink(videoUrl, inputId, downloadButtonClass, finalDownloadButtonClass, finalDownloadButtonID);
-
-                if (!string.IsNullOrEmpty(downloadLink))
-                {
-                    await SendVideoToTelegram(downloadLink, chatId, botClient);
-                    return;
-                }
-
-                Console.WriteLine($"Attempt {attempt} failed. Retrying...");
-                await Task.Delay(2000);
-            }
-
-            await botClient.SendMessage(chatId, "Не удалось получить ссылку на видео после 5 попыток.");
-        }
-
-    public static async Task SendVideoToTelegram(string videoUrl, long chatId, ITelegramBotClient botClient)
+    public static async Task SendVideoToTelegram(string videoUrl, long chatId, ITelegramBotClient botClient, bool groupChat = false)
     {
         using (HttpClient httpClient = new HttpClient())
         {
@@ -167,8 +124,7 @@ namespace MediaTelegramBot
                     if (message.Video != null && message.Video.FileId != null) FileId = message.Video.FileId;
                     else FileId = message.Document.FileId;
 
-                    // Отправка видео контактам
-                    await SendVideoToContacts(FileId, chatId, botClient);
+                    if (!groupChat) await SendVideoToContacts(FileId, chatId, botClient);
                 }
             }
             else
@@ -182,15 +138,12 @@ namespace MediaTelegramBot
     private static async Task SendVideoToContacts(string fileId, long telegramId, ITelegramBotClient botClient)
     {
         var contactUserIds = await CoreDB.GetContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(telegramId));
-        Console.WriteLine($"Количество контактов: {contactUserIds.Count}");
+
         foreach (var contactUserId in contactUserIds)
         {
-            Console.WriteLine($"Отправка видео контакту с ID: {contactUserId}");
             await botClient.SendDocument(contactUserId, InputFile.FromFileId(fileId), caption: "Вам отправили видео!");
-            Console.WriteLine($"Видео успешно отправлено контакту с ID: {contactUserId}");
         }
-        if (contactUserIds.Count > 0) await botClient.SendMessage(telegramId, $"Видео успешно отправлено всем ({contactUserIds.Count}) контактам.");
-    }
 
+        if (contactUserIds.Count > 0) await botClient.SendMessage(telegramId, $"Видео успешно отправлено всем ({contactUserIds.Count}) контактам.");
     }
 }

@@ -110,10 +110,10 @@ public class CoreDB
     {
         var contactUserIds = new List<long>();
         var TelegramIDs = new List<long>();
-        string query = @"
-            SELECT UserId
+        string query = @$"
+            SELECT UserId, ContactId
             FROM Contacts
-            WHERE ContactId = @UserId OR UserId = @UserId AND status = 'waiting_for_accept'";
+            WHERE ContactId = @UserId OR UserId = @UserId AND status = '{ContactsStatus.Accepted}'";
 
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
@@ -128,7 +128,9 @@ public class CoreDB
                     while (await reader.ReadAsync())
                     {
                         long contactUserId = reader.GetInt64("UserId");
-                        contactUserIds.Add(contactUserId);
+                        long contactId = reader.GetInt64("ContactId");
+                        if (contactUserId != userId) contactUserIds.Add(contactUserId);
+                        if (userId != contactId) contactUserIds.Add(contactId);
                     }
                     foreach (var contactUserId in contactUserIds)
                     {
@@ -158,7 +160,7 @@ public class CoreDB
                 MySqlCommand command = new MySqlCommand(query, connection);
                 command.Parameters.AddWithValue("@userId", DBforGetters.GetContactByTelegramID(telegramID));
                 command.Parameters.AddWithValue("@contactId", DBforGetters.GetContactByLink(link));
-                command.Parameters.AddWithValue("@status", "waiting_for_accept");
+                command.Parameters.AddWithValue("@status", ContactsStatus.WaitingForAccept);
                 command.ExecuteNonQuery();
             }
             catch (Exception ex)
