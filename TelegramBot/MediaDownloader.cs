@@ -1,8 +1,8 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Polling;
-using Telegram.Bot.Types.Enums;
 using TikTokMediaRelayBot;
+using System.Text.RegularExpressions;
 using DataBase;
 
 namespace MediaTelegramBot;
@@ -13,7 +13,7 @@ public class UserState
     public ContactState State { get; set; }
 }
 
-class TelegramBot
+partial class TelegramBot
 {
     private static ITelegramBotClient botClient;
     public static Dictionary<long, UserState> userStates = [];
@@ -56,29 +56,34 @@ class TelegramBot
         long chatId = Utils.GetIDfromUpdate(update);
         if (Utils.CheckNonZeroID(chatId)) return;
 
-        if (update.Message != null && update.Message.Chat.Type == ChatType.Group || update.Message.Chat.Type == ChatType.Supergroup)
+        if (Utils.CheckPrivateChatType(update))
         {
-            await GroupUpdateHandler.HandleGroupUpdate(update, botClient, cancellationToken);
-            return;
-        }
+            if (userStates.ContainsKey(chatId))
+            {
+                await ProcessState(botClient, update, cancellationToken);
+                return;
+            }
 
-        if (userStates.ContainsKey(chatId))
-        {
-            await ProcessState(botClient, update, cancellationToken);
-            return;
+            if (update.Message != null && update.Message.Text != null)
+            {
+                await PrivateUpdateHandler.ProcessMessage(botClient, update, cancellationToken, chatId);
+            }
+            else if (update.CallbackQuery != null)
+            {
+                await PrivateUpdateHandler.ProcessCallbackQuery(botClient, update, cancellationToken, chatId);
+            }
         }
-
-        if (update.Message != null && update.Message.Text != null)
+        else 
         {
-            await PrivateUpdateHandler.ProcessMessage(botClient, update, cancellationToken, chatId);
-        }
-        else if (update.CallbackQuery != null)
-        {
-            await PrivateUpdateHandler.ProcessCallbackQuery(botClient, update, cancellationToken, chatId);
+            if (update.Message != null && update.Message.Text != null && update.Message.Text.Contains("/"))
+            {
+                await GroupUpdateHandler.HandleGroupUpdate(update, botClient, cancellationToken);
+                return;
+            }
         }
     }
 
-    public static async Task HandleVideoRequest(ITelegramBotClient botClient, string videoUrl, long chatId, bool groupChat = false)
+    public static async Task HandleVideoRequest(ITelegramBotClient botClient, string videoUrl, long chatId, bool groupChat = false, string caption = "")
     {
         string inputId = "s_input";
         string downloadButtonClass = "btn-red";
@@ -92,7 +97,7 @@ class TelegramBot
 
             if (!string.IsNullOrEmpty(downloadLink))
             {
-                await SendVideoToTelegram(downloadLink, chatId, botClient, groupChat);
+                await SendVideoToTelegram(downloadLink, chatId, botClient, groupChat, caption);
                 return;
             }
 
@@ -103,7 +108,7 @@ class TelegramBot
         await botClient.SendMessage(chatId, "Не удалось получить ссылку на видео после 5 попыток.");
     }
 
-    public static async Task SendVideoToTelegram(string videoUrl, long chatId, ITelegramBotClient botClient, bool groupChat = false)
+    public static async Task SendVideoToTelegram(string videoUrl, long chatId, ITelegramBotClient botClient, bool groupChat = false, string caption = "")
     {
         using (HttpClient httpClient = new HttpClient())
         {
@@ -118,13 +123,13 @@ class TelegramBot
                     await videoStream.CopyToAsync(stream);
                     stream.Position = 0;
 
-                    var message = await botClient.SendDocument(chatId, InputFile.FromStream(stream, "video.mp4"), caption: "Вот ваше видео!");
+                    var message = await botClient.SendDocument(chatId, InputFile.FromStream(stream, "video.mp4"), caption: "Вот ваше видео! С текстом: \n\n" + caption);
                     Console.WriteLine("Видео успешно отправлено в Telegram.");
                     string FileId;
                     if (message.Video != null && message.Video.FileId != null) FileId = message.Video.FileId;
                     else FileId = message.Document.FileId;
 
-                    if (!groupChat) await SendVideoToContacts(FileId, chatId, botClient);
+                    // if (!groupChat) await SendVideoToContacts(FileId, chatId, botClient, caption);
                 }
             }
             else
@@ -135,15 +140,22 @@ class TelegramBot
         }
     }
 
-    private static async Task SendVideoToContacts(string fileId, long telegramId, ITelegramBotClient botClient)
+    private static async Task SendVideoToContacts(string fileId, long telegramId, ITelegramBotClient botClient, string caption = "")
     {
         var contactUserIds = await CoreDB.GetContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(telegramId));
+        Console.WriteLine($"Рассылка видео для ({contactUserIds.Count}) пользователей.");
+
+        DateTime now = DateTime.Now;
+        string name = DBforGetters.GetUserNameByTelegramID(telegramId);
 
         foreach (var contactUserId in contactUserIds)
         {
-            await botClient.SendDocument(contactUserId, InputFile.FromFileId(fileId), caption: "Вам отправили видео!");
+            await botClient.SendDocument(contactUserId, InputFile.FromFileId(fileId), caption: $"Ваш контакт {name} отправили видео!\n#{now:yyyy-MM-dd_HH:mm:ss}_{name}\n\n{caption}");
         }
 
-        if (contactUserIds.Count > 0) await botClient.SendMessage(telegramId, $"Видео успешно отправлено всем ({contactUserIds.Count}) контактам.");
+        if (contactUserIds.Count > 0) await botClient.SendMessage(telegramId, $"Видео успешно отправлено всем ({contactUserIds.Count}) контактам.\n#{now:yyyy_MM_dd_HH_mm_ss}_{MyRegex().Replace(name, "_")}");
     }
+
+    [GeneratedRegex(@"[^a-zA-Zа-яА-Я0-9]")]
+    private static partial Regex MyRegex();
 }

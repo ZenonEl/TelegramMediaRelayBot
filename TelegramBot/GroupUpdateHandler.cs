@@ -12,8 +12,8 @@ public class GroupUpdateHandler
 {
     public static async Task HandleGroupUpdate(Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        if (!update.Message.Text.Contains("/link")) return;
-
+        if (update.Message.Text.Contains("/link"))
+        {
         string cleanedText = update.Message.Text.Replace("/link", "").Trim();
         update.Message.Text = cleanedText;
         Console.WriteLine(update.Message.Text);
@@ -26,6 +26,13 @@ public class GroupUpdateHandler
             string videoUrl = update.Message.Text;
             await botClient.SendMessage(update.Message.Chat.Id, "Подождите, идет скачивание видео...", cancellationToken: cancellationToken);
             await TelegramBot.HandleVideoRequest(botClient, videoUrl, update.Message.Chat.Id, true);
+        }
+        }
+        else if (update.Message.Text == "/help")
+        {
+            string text = @"Просто отправь мне команду: /link [ссылка_на_тт_видео]
+PS: квадратные скобки не нужны :)";
+            await botClient.SendMessage(update.Message.Chat.Id, text, cancellationToken: cancellationToken);
         }
     }
 }

@@ -1,5 +1,6 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using DataBase;
 
@@ -43,6 +44,13 @@ public static class Utils
         return false;
     }
 
+    public static bool CheckPrivateChatType(Update update)
+    {
+        if (update.Message != null && update.Message.Chat.Type == ChatType.Private) return true;
+        if (update.CallbackQuery != null && update.CallbackQuery.Message.Chat.Type == ChatType.Private) return true;
+        return false;
+    }
+
     public static Task SendMessage(ITelegramBotClient botClient, Update update, InlineKeyboardMarkup inlineKeyboard
                                     ,CancellationToken cancellationToken, string text = "Выберите опцию:")
     {
@@ -53,14 +61,14 @@ public static class Utils
                                                 text: text,
                                                 replyMarkup: inlineKeyboard,
                                                 cancellationToken: cancellationToken,
-                                                parseMode: Telegram.Bot.Types.Enums.ParseMode.Html
+                                                parseMode: ParseMode.Html
                                 );
         if (update.Message != null) return botClient.SendMessage(
                                     chatId: chatId,
                                     text: text,
                                     replyMarkup: inlineKeyboard,
                                     cancellationToken: cancellationToken,
-                                    parseMode: Telegram.Bot.Types.Enums.ParseMode.Html
+                                    parseMode: ParseMode.Html
                                 );
         return Task.CompletedTask;
     }
@@ -106,16 +114,16 @@ public static class KeyboardUtils
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData("Добавить контакт по ссылке", "add_contact"),
+                            InlineKeyboardButton.WithCallbackData("Добавить контакт", "add_contact"),
                             InlineKeyboardButton.WithCallbackData("Моя ссылка", "get_self_link"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData("Обзор входящих запросов на добавления в мои контакты.", "view_inbound_invite_links"),
+                            InlineKeyboardButton.WithCallbackData("Обзор входящих запросов на добавления в мои контакты", "view_inbound_invite_links"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData("Обзор моих заявок на добавления в контакты.", "view_outbound_invite_links"),
+                            InlineKeyboardButton.WithCallbackData("Обзор моих заявок на добавления в контакты", "view_outbound_invite_links"),
                         },
                         new[]
                         {
