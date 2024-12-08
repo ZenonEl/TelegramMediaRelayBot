@@ -5,10 +5,15 @@ namespace TikTokMediaRelayBot;
 
 public class VideoGet
 {
-    public static string GetDownloadLink(string videoUrl, string inputId, string downloadButtonClass, string finalDownloadButtonClass, string finalDownloadButtonID)
+    public static async Task<string> GetDownloadLink(string videoUrl)
     {
         var firefoxOptions = new FirefoxOptions();
-        
+
+        string inputId = Config.inputId;
+        string downloadButtonClass = Config.downloadButtonClass;
+        string finalDownloadButtonClass = Config.finalDownloadButtonClass;
+        string finalDownloadButtonID = Config.finalDownloadButtonID;
+
         firefoxOptions.SetPreference("network.proxy.type", 1);
         firefoxOptions.SetPreference("network.proxy.socks", "127.0.0.1");
         firefoxOptions.SetPreference("network.proxy.socks_port", 9150);
@@ -25,7 +30,7 @@ public class VideoGet
             var downloadButton = driver.FindElement(By.ClassName(downloadButtonClass));
             downloadButton.Click();
 
-            Thread.Sleep(5000);
+            await Task.Delay(5000);
 
             bool downloadSuccess = false;
             string downloadLink = "";
@@ -46,7 +51,7 @@ public class VideoGet
                         js.ExecuteScript("arguments[0].click();", finalDownloadLinkElement);
                     }
 
-                    Thread.Sleep(5000);
+                    await Task.Delay(5000);
 
                     downloadLink = finalDownloadLinkElement.GetDomAttribute("href");
                 }

@@ -93,9 +93,9 @@ public static class KeyboardUtils
         return inlineKeyboard;
     }
 
-    public static InlineKeyboardMarkup GetInboundsKeyboardMarkup(Update update, CancellationToken cancellationToken)
+    public static async Task<InlineKeyboardMarkup> GetInboundsKeyboardMarkup(Update update)
     {
-        var buttonDataList = DBforInbounds.GetButtonDataFromDatabase(DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery.Message.Chat.Id));
+        var buttonDataList = DBforInbounds.GetButtonDataFromDatabase(await DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery.Message.Chat.Id));
 
         var inlineKeyboardButtons = new List<InlineKeyboardButton[]>();
 
@@ -137,22 +137,26 @@ public static class KeyboardUtils
         return Utils.SendMessage(botClient, update, inlineKeyboard, cancellationToken);
     }
 
+}
+
+public static class CallbackQueryMenuUtils
+{
     public static Task AddContact(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        return Utils.SendMessage(botClient, update, GetReturnButtonMarkup(), cancellationToken, "Укажите ссылку человека:");
+        return Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, "Укажите ссылку человека:");
     }
 
     public static Task GetSelfLink(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         string link = DBforGetters.GetSelfLink(update.CallbackQuery.Message.Chat.Id);
-        return Utils.SendMessage(botClient, update, GetReturnButtonMarkup(), cancellationToken, $"Ваша ссылка: <code>{link}</code>");
+        return Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, $"Ваша ссылка: <code>{link}</code>");
     }
 
-    public static Task ViewInboundInviteLinks(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    public static async Task ViewInboundInviteLinks(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         string text = $@"Ваши входящие приглашения:
 (Нажимая на кнопку вы тем самым принимаете запрос на добавление в свои контакты)";
-        return Utils.SendMessage(botClient, update, GetInboundsKeyboardMarkup(update, cancellationToken), cancellationToken, text);
+        await Utils.SendMessage(botClient, update, await KeyboardUtils.GetInboundsKeyboardMarkup(update), cancellationToken, text);
     }
 
     public static Task AcceptInboundInvite(Update update)
@@ -161,9 +165,20 @@ public static class KeyboardUtils
         return Task.CompletedTask;
     }
 
-    public static Task ViewContacts(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    public static async Task ViewContacts(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        return Utils.SendMessage(botClient, update, GetReturnButtonMarkup(), cancellationToken, "Ваши контакты:");
+        var contactUserTGIds = await CoreDB.GetContactUserTGIds(await DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery.Message.Chat.Id));
+        var contactUsersInfo = new List<string>();
+        
+        foreach (var contactUserId in contactUserTGIds)
+        {
+            int id = await DBforGetters.GetUserIDbyTelegramID(contactUserId);
+            string username = await DBforGetters.GetUserNameByTelegramID(contactUserId);
+            string link = DBforGetters.GetSelfLink(contactUserId);
+
+            contactUsersInfo.Add($"\nПользователь с ID: {id}\nИменем: {username}\nСсылкой: <code>{link}</>");
+        }
+        await Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, $"Ваши контакты:\n\n{string.Join("\n", contactUsersInfo)}");
     }
 
     public static Task WhosTheGenius(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
@@ -178,7 +193,7 @@ public static class KeyboardUtils
 Удобно!
 
 Приятного пользования!";
-        return Utils.SendMessage(botClient, update, GetReturnButtonMarkup(), cancellationToken, text);
+        return Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, text);
     }
 
 }

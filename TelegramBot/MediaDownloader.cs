@@ -85,15 +85,12 @@ partial class TelegramBot
 
     public static async Task HandleVideoRequest(ITelegramBotClient botClient, string videoUrl, long chatId, bool groupChat = false, string caption = "")
     {
-        string inputId = "s_input";
-        string downloadButtonClass = "btn-red";
-        string finalDownloadButtonClass = "dl-success";
-        string finalDownloadButtonID = "ConvertToVideo";
-        int maxAttempts = 5;
+
+        int maxAttempts = Config.maxAttempts;
 
         for (int attempt = 1; attempt <= maxAttempts; attempt++)
         {
-            string downloadLink = VideoGet.GetDownloadLink(videoUrl, inputId, downloadButtonClass, finalDownloadButtonClass, finalDownloadButtonID);
+            string downloadLink = await VideoGet.GetDownloadLink(videoUrl);
 
             if (!string.IsNullOrEmpty(downloadLink))
             {
@@ -125,11 +122,12 @@ partial class TelegramBot
 
                     var message = await botClient.SendDocument(chatId, InputFile.FromStream(stream, "video.mp4"), caption: "Вот ваше видео! С текстом: \n\n" + caption);
                     Console.WriteLine("Видео успешно отправлено в Telegram.");
+
                     string FileId;
                     if (message.Video != null && message.Video.FileId != null) FileId = message.Video.FileId;
                     else FileId = message.Document.FileId;
 
-                    // if (!groupChat) await SendVideoToContacts(FileId, chatId, botClient, caption);
+                    if (!groupChat) await SendVideoToContacts(FileId, chatId, botClient, caption);
                 }
             }
             else
@@ -142,18 +140,19 @@ partial class TelegramBot
 
     private static async Task SendVideoToContacts(string fileId, long telegramId, ITelegramBotClient botClient, string caption = "")
     {
-        var contactUserIds = await CoreDB.GetContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(telegramId));
-        Console.WriteLine($"Рассылка видео для ({contactUserIds.Count}) пользователей.");
+        var contactUserTGIds = await CoreDB.GetContactUserTGIds(await DBforGetters.GetUserIDbyTelegramID(telegramId));
+        Console.WriteLine($"Рассылка видео для ({contactUserTGIds.Count}) пользователей.");
 
         DateTime now = DateTime.Now;
-        string name = DBforGetters.GetUserNameByTelegramID(telegramId);
+        string name = await DBforGetters.GetUserNameByTelegramID(telegramId);
+        string text = $"Ваш контакт {name} отправил видео!\n#{now:yyyy_MM_dd_HH_mm_ss}_{MyRegex().Replace(name, "_")}\n\n{caption}";
 
-        foreach (var contactUserId in contactUserIds)
+        foreach (var contactUserId in contactUserTGIds)
         {
-            await botClient.SendDocument(contactUserId, InputFile.FromFileId(fileId), caption: $"Ваш контакт {name} отправили видео!\n#{now:yyyy-MM-dd_HH:mm:ss}_{name}\n\n{caption}");
+            await botClient.SendDocument(contactUserId, InputFile.FromFileId(fileId), caption: text);
         }
 
-        if (contactUserIds.Count > 0) await botClient.SendMessage(telegramId, $"Видео успешно отправлено всем ({contactUserIds.Count}) контактам.\n#{now:yyyy_MM_dd_HH_mm_ss}_{MyRegex().Replace(name, "_")}");
+        if (contactUserTGIds.Count > 0) await botClient.SendMessage(telegramId, $"Видео успешно отправлено всем ({contactUserTGIds.Count}) контактам.\n#{now:yyyy_MM_dd_HH_mm_ss}_{MyRegex().Replace(name, "_")}");
     }
 
     [GeneratedRegex(@"[^a-zA-Zа-яА-Я0-9]")]

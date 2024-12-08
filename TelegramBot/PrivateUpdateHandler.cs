@@ -86,35 +86,35 @@ public class PrivateUpdateHandler
     public static async Task ProcessCallbackQuery(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
     {
         var callbackQuery = update.CallbackQuery;
-        Console.WriteLine($"Callback Query: {callbackQuery.Data}");
+        Console.WriteLine($"Callback Query: {callbackQuery.Data} from {callbackQuery.From.Id} chatId {chatId}");
         switch (callbackQuery.Data)
         {
             case "main_menu":
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                 break;
             case "add_contact":
-                await KeyboardUtils.AddContact(botClient, update, cancellationToken);
+                await CallbackQueryMenuUtils.AddContact(botClient, update, cancellationToken);
                 if (!TelegramBot.userStates.ContainsKey(chatId))
                 {
                     TelegramBot.userStates[chatId] = new UserState { State = ContactState.WaitingForLink };
                 }
                 break;
             case "get_self_link":
-                await KeyboardUtils.GetSelfLink(botClient, update, cancellationToken);
+                await CallbackQueryMenuUtils.GetSelfLink(botClient, update, cancellationToken);
                 break;
             case "view_inbound_invite_links":
-                await KeyboardUtils.ViewInboundInviteLinks(botClient, update, cancellationToken);
+                await CallbackQueryMenuUtils.ViewInboundInviteLinks(botClient, update, cancellationToken);
                 break;
             case "view_contacts":
-                await KeyboardUtils.ViewContacts(botClient, update, cancellationToken);
+                await CallbackQueryMenuUtils.ViewContacts(botClient, update, cancellationToken);
                 break;
             case "whos_the_genius":
-                await KeyboardUtils.WhosTheGenius(botClient, update, cancellationToken);
+                await CallbackQueryMenuUtils.WhosTheGenius(botClient, update, cancellationToken);
                 break;
             default:
                 if (callbackQuery.Data.StartsWith("user_accept_inbounds_invite:")) 
                 {
-                    await KeyboardUtils.AcceptInboundInvite(update);
+                    await CallbackQueryMenuUtils.AcceptInboundInvite(update);
                 }
                 break;
         }

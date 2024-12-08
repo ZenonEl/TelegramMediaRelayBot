@@ -31,6 +31,16 @@ public class DBforGetters
             }
         }
     }
+
+    public static string GetSelfLink(long telegramID)
+    {
+        if (CoreDB.CheckExistsUser(telegramID))
+        {
+            return GetLink(telegramID);
+        }
+        return "";
+    }
+
     public static string GetUserNameByID(int UserID)
     {
         string query = @"
@@ -85,7 +95,7 @@ public class DBforGetters
         }
     }
 
-    public static int GetUserIDbyTelegramID(long TelegramID)
+    public static async Task<int> GetUserIDbyTelegramID(long TelegramID)
     {
         string query = @"
             USE TikTokMediaRelayBot;
@@ -163,7 +173,7 @@ public class DBforGetters
             }
         }
     }
-    public static string GetUserNameByTelegramID(long telegramID)
+    public static async Task<string> GetUserNameByTelegramID(long telegramID)
     {
         string query = @"
             USE TikTokMediaRelayBot;
@@ -190,13 +200,5 @@ public class DBforGetters
         }
     }
 
-    public static string GetSelfLink(long telegramID)
-    {
-        if (CoreDB.CheckExistsUser(telegramID))
-        {
-            return GetLink(telegramID);
-        }
-        return "";
-    }
 }
 

@@ -12,6 +12,7 @@ public class CoreDB
         CreateDatabase();
         CreateUsersTable();
         CreateContactsTable();
+        CreateMutedContactsTable();
     }
 
     private static void CreateDatabase()
@@ -46,6 +47,25 @@ public class CoreDB
                 PRIMARY KEY (UserId, ContactId),
                 FOREIGN KEY (UserId) REFERENCES Users(ID),
                 FOREIGN KEY (ContactId) REFERENCES Users(ID)
+            )";
+
+        Utils.executeVoidQuery(query);
+    }
+
+    private static void CreateMutedContactsTable()
+    {
+        string query = @"
+            USE TikTokMediaRelayBot;
+            CREATE TABLE IF NOT EXISTS MutedContacts (
+                MutedId INT PRIMARY KEY AUTO_INCREMENT,
+                MutedByUserId INT NOT NULL,
+                MutedContactId INT NOT NULL,
+                MuteDate DATETIME NOT NULL,
+                ExpirationDate DATETIME NULL,
+                IsActive BOOLEAN NOT NULL DEFAULT TRUE,
+                UNIQUE (MutedByUserId, MutedContactId),
+                FOREIGN KEY (MutedByUserId) REFERENCES Contacts(UserId),
+                FOREIGN KEY (MutedContactId) REFERENCES Contacts(ContactId)
             )";
 
         Utils.executeVoidQuery(query);
@@ -106,6 +126,32 @@ public class CoreDB
         }
     }
 
+    public static void AddContact(long telegramID, string link)
+    {
+        string query = @"
+            USE TikTokMediaRelayBot;
+            INSERT INTO Contacts (UserId, ContactId, Status) VALUES (@userId, @contactId, @status)";
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@userId", DBforGetters.GetContactByTelegramID(telegramID));
+                command.Parameters.AddWithValue("@contactId", DBforGetters.GetContactByLink(link));
+                command.Parameters.AddWithValue("@status", ContactsStatus.WaitingForAccept);
+                command.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error creating database: " + ex.Message);
+            }
+        }
+    }
+
+    public static void AddMutedContact(long telegramID, string link)
+    {}
+
     public static async Task<List<long>> GetContactUserTGIds(int userId)
     {
         var contactUserIds = new List<long>();
@@ -147,26 +193,4 @@ public class CoreDB
         return TelegramIDs;
     }
 
-    public static void AddContact(long telegramID, string link)
-    {
-        string query = @"
-            USE TikTokMediaRelayBot;
-            INSERT INTO Contacts (UserId, ContactId, Status) VALUES (@userId, @contactId, @status)";
-        using (MySqlConnection connection = new MySqlConnection(connectionString))
-        {
-            try
-            {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@userId", DBforGetters.GetContactByTelegramID(telegramID));
-                command.Parameters.AddWithValue("@contactId", DBforGetters.GetContactByLink(link));
-                command.Parameters.AddWithValue("@status", ContactsStatus.WaitingForAccept);
-                command.ExecuteNonQuery();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error creating database: " + ex.Message);
-            }
-        }
-    }
 }
