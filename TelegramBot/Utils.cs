@@ -80,7 +80,7 @@ public static class Utils
         TelegramBot.userStates.Remove(chatId);
     }
 
-    public static async Task<bool> HandleStateBreakCommand(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId, string command = "start")
+    public static async Task<bool> HandleStateBreakCommand(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId, string command = "/start")
     {
         if (update.Message.Text == command)
         {

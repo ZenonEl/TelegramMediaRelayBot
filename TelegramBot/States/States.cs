@@ -24,6 +24,8 @@ public enum ContactState
 public enum UserMuteState
 {
     WaitingForLinkOrID,
+    WaitingForMuteTime,
     WaitingForConfirmation,
+    ApplyForMute,
     Finish
 }

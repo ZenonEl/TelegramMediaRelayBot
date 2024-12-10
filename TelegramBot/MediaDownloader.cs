@@ -95,7 +95,6 @@ partial class TelegramBot
         for (int attempt = 1; attempt <= maxAttempts; attempt++)
         {
             string downloadLink = await VideoGet.GetDownloadLink(videoUrl);
-            Console.WriteLine(downloadLink + "  111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111");
             if (!string.IsNullOrEmpty(downloadLink) && downloadLink != "#")
             {
                 await SendVideoToTelegram(downloadLink, chatId, botClient, groupChat, caption);

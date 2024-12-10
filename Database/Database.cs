@@ -64,8 +64,8 @@ public class CoreDB
                 ExpirationDate DATETIME NULL,
                 IsActive BOOLEAN NOT NULL DEFAULT TRUE,
                 UNIQUE (MutedByUserId, MutedContactId),
-                FOREIGN KEY (MutedByUserId) REFERENCES Contacts(UserId),
-                FOREIGN KEY (MutedContactId) REFERENCES Contacts(ContactId)
+                FOREIGN KEY (MutedByUserId) REFERENCES Users(ID),
+                FOREIGN KEY (MutedContactId) REFERENCES Users(ID)
             )";
 
         Utils.executeVoidQuery(query);
@@ -149,8 +149,37 @@ public class CoreDB
         }
     }
 
-    public static void AddMutedContact(long telegramID, string link)
-    {}
+    public static void AddMutedContact(int mutedByUserId, int mutedContactId, DateTime? expirationDate = null, DateTime muteDate = default)
+    {
+        if (muteDate == default)
+        {
+            muteDate = DateTime.Now;
+        }
+
+        string query = @"
+            USE TikTokMediaRelayBot;
+            INSERT INTO MutedContacts (MutedByUserId, MutedContactId, MuteDate, ExpirationDate) VALUES (@mutedByUserId, @mutedContactId, @muteDate, @expirationDate)";
+        
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@mutedByUserId", mutedByUserId);
+                command.Parameters.AddWithValue("@mutedContactId", mutedContactId);
+                command.Parameters.AddWithValue("@muteDate", muteDate);                
+                command.Parameters.AddWithValue("@expirationDate", (object)expirationDate ?? DBNull.Value);
+                
+                command.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error creating database: " + ex.Message);
+            }
+        }
+    }
+
 
     public static async Task<List<long>> GetContactUserTGIds(int userId)
     {
