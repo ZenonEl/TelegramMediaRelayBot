@@ -4,6 +4,7 @@ using Telegram.Bot.Polling;
 using TikTokMediaRelayBot;
 using System.Text.RegularExpressions;
 using DataBase;
+using Serilog;
 
 namespace MediaTelegramBot;
 
@@ -16,7 +17,7 @@ public class UserState
 partial class TelegramBot
 {
     private static ITelegramBotClient botClient;
-    public static Dictionary<long, UserState> userStates = [];
+    public static Dictionary<long, IUserState> userStates = new Dictionary<long, IUserState>();
     
     static public async Task Start()
     {
@@ -43,13 +44,16 @@ partial class TelegramBot
         long chatId = Utils.GetIDfromUpdate(update);
         if (Utils.CheckNonZeroID(chatId)) return;
 
-        var all_contact_states = ProcessContactState.GetAllStates();
-
-        if (all_contact_states.Contains(userStates[chatId].State))
+        if (userStates[chatId] is IUserState userState)
         {
-            await ProcessContactState.ProcessState(botClient, update, cancellationToken);
+            string currentUserStatus = userState.GetCurrentState();
+            Console.WriteLine($"Текущее состояние пользователя: {currentUserStatus}");
+
+            await userState.ProcessState(botClient, update, cancellationToken);
+
         }
     }
+
 
     private static async Task UpdateHandler(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
@@ -66,6 +70,7 @@ partial class TelegramBot
 
             if (update.Message != null && update.Message.Text != null)
             {
+                CoreDB.AddUser(update.Message.Chat.FirstName, update.Message.Chat.Id);
                 await PrivateUpdateHandler.ProcessMessage(botClient, update, cancellationToken, chatId);
             }
             else if (update.CallbackQuery != null)
@@ -85,25 +90,25 @@ partial class TelegramBot
 
     public static async Task HandleVideoRequest(ITelegramBotClient botClient, string videoUrl, long chatId, bool groupChat = false, string caption = "")
     {
-
         int maxAttempts = Config.maxAttempts;
 
         for (int attempt = 1; attempt <= maxAttempts; attempt++)
         {
             string downloadLink = await VideoGet.GetDownloadLink(videoUrl);
-
-            if (!string.IsNullOrEmpty(downloadLink))
+            Console.WriteLine(downloadLink + "  111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111");
+            if (!string.IsNullOrEmpty(downloadLink) && downloadLink != "#")
             {
                 await SendVideoToTelegram(downloadLink, chatId, botClient, groupChat, caption);
+                Console.WriteLine("Видео успешно получено.");
                 return;
             }
 
             Console.WriteLine($"Attempt {attempt} failed. Retrying...");
-            await Task.Delay(2000);
         }
 
         await botClient.SendMessage(chatId, "Не удалось получить ссылку на видео после 5 попыток.");
     }
+
 
     public static async Task SendVideoToTelegram(string videoUrl, long chatId, ITelegramBotClient botClient, bool groupChat = false, string caption = "")
     {

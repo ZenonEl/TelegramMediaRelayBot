@@ -1,14 +1,14 @@
-namespace Scheduler;
+namespace TikTokMediaRelayBot;
 
 
 class Scheduler
 {
     public static void Init()
     {
-        CheckForUnmuteContacts();
+        _ = CheckForUnmuteContacts();
     }
 
-    private static void CheckForUnmuteContacts()
+    private static async Task CheckForUnmuteContacts()
     {
 
     }

@@ -1,74 +1,76 @@
-using OpenQA.Selenium;
-using OpenQA.Selenium.Firefox;
+using Microsoft.Playwright;
+using System.Threading.Tasks;
 
 namespace TikTokMediaRelayBot;
+
 
 public class VideoGet
 {
     public static async Task<string> GetDownloadLink(string videoUrl)
     {
-        var firefoxOptions = new FirefoxOptions();
-
-        string inputId = Config.inputId;
-        string downloadButtonClass = Config.downloadButtonClass;
-        string finalDownloadButtonClass = Config.finalDownloadButtonClass;
-        string finalDownloadButtonID = Config.finalDownloadButtonID;
-
-        firefoxOptions.SetPreference("network.proxy.type", 1);
-        firefoxOptions.SetPreference("network.proxy.socks", "127.0.0.1");
-        firefoxOptions.SetPreference("network.proxy.socks_port", 9150);
-        firefoxOptions.SetPreference("network.proxy.socks_version", 5);
-        firefoxOptions.AddArgument("--headless");
-
-        using (var driver = new FirefoxDriver(firefoxOptions))
+        using (var playwright = await Playwright.CreateAsync().ConfigureAwait(false))
         {
-            driver.Navigate().GoToUrl("https://tikvideo.app/ru");
+            var launchOptions = new BrowserTypeLaunchOptions
+            {
+                Headless = true,
+                Proxy = new Proxy
+                {
+                    Server = "socks5://localhost:9150"
+                }
+            };
 
-            var inputField = driver.FindElement(By.Id(inputId));
-            inputField.SendKeys(videoUrl);
+            var browser = await playwright.Firefox.LaunchAsync(launchOptions);
+            var page = await browser.NewPageAsync();
 
-            var downloadButton = driver.FindElement(By.ClassName(downloadButtonClass));
-            downloadButton.Click();
+            Console.WriteLine("Браузер инициализирован. Открытие страницы...");
+            await page.GotoAsync("https://tikvideo.app/ru");
 
-            await Task.Delay(5000);
-
-            bool downloadSuccess = false;
-            string downloadLink = "";
-
+            Console.WriteLine("Ввод URL видео...");
+            await page.FillAsync($"#{Config.inputId}", videoUrl);
             try
             {
-                var finalDownloadLinkElement = driver.FindElement(By.ClassName(finalDownloadButtonClass));
-                downloadLink = finalDownloadLinkElement.GetDomAttribute("href");
+                await page.ClickAsync($".{Config.downloadButtonClass}");
+            }
+            catch (PlaywrightException)
+            {
+                await page.EvaluateAsync("arguments[0].click();", await page.QuerySelectorAsync($".{Config.downloadButtonClass}"));
+            }
+
+            Console.WriteLine("Ожидание загрузки...");
+            await Task.Delay(5000);
+            // await page.WaitForSelectorAsync($".{Config.finalDownloadButtonClass}", new PageWaitForSelectorOptions { Timeout = 1000 });
+
+            string downloadLink = "";
+            try
+            {
+                var finalDownloadLinkElement = await page.QuerySelectorAsync($".{Config.finalDownloadButtonClass}");
+                downloadLink = await finalDownloadLinkElement.GetAttributeAsync("href");
+                Console.WriteLine($"Ссылка на скачивание1111111111111: {downloadLink}");
                 if (downloadLink == "#")
                 {
                     try
                     {
-                        finalDownloadLinkElement.Click();
+                        await finalDownloadLinkElement.ClickAsync();
                     }
-                    catch (ElementClickInterceptedException)
+                    catch (PlaywrightException)
                     {
-                        IJavaScriptExecutor js = driver;
-                        js.ExecuteScript("arguments[0].click();", finalDownloadLinkElement);
+                        await page.EvaluateAsync("arguments[0].click();", finalDownloadLinkElement);
                     }
-
-                    await Task.Delay(5000);
-
-                    downloadLink = finalDownloadLinkElement.GetDomAttribute("href");
+                    Console.WriteLine("Ожидание загрузки..2222222222.");
+                    await Task.Delay(3000);
+                    downloadLink = await finalDownloadLinkElement.GetAttributeAsync("href");
                 }
-
-                downloadSuccess = true; 
             }
-            catch (NoSuchElementException)
+            catch (PlaywrightException)
             {
-                Console.WriteLine($"Не удалось найти ссылку для скачивания видео.");
+                Console.WriteLine("Не удалось найти ссылку для скачивания видео.");
             }
 
-            if (!downloadSuccess)
-            {
-                return null; 
-            }
+            Console.WriteLine($"Ссылка на скачивание: {downloadLink}");
+            await browser.CloseAsync();
 
-            return downloadLink; 
+            return string.IsNullOrEmpty(downloadLink) ? null : downloadLink;
         }
     }
 }
+

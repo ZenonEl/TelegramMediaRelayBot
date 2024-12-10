@@ -1,5 +1,5 @@
 using MySql.Data.MySqlClient;
-using TikTokMediaRelayBot;
+using Serilog;
 
 namespace DataBase;
 
@@ -26,7 +26,7 @@ public class DBforGetters
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error creating database: " + ex.Message);
+                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(GetLink));
                 return "";
             }
         }
@@ -62,7 +62,7 @@ public class DBforGetters
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error creating database: " + ex.Message);
+                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(GetUserNameByID));
                 return "Not found";
             }
         }
@@ -89,7 +89,7 @@ public class DBforGetters
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error creating database: " + ex.Message);
+                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(GetTelegramIDbyUserID));
                 return -1;
             }
         }
@@ -116,12 +116,12 @@ public class DBforGetters
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error creating database: " + ex.Message);
+                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(GetUserIDbyTelegramID));
                 return -1;
             }
         }
     }
-    public static int GetContactByLink(string link)
+    public static int GetContactIDByLink(string link)
     {
         string query = @"
             USE TikTokMediaRelayBot;
@@ -142,7 +142,7 @@ public class DBforGetters
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error creating database: " + ex.Message);
+                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(GetContactIDByLink));
                 return -1;
             }
         }
@@ -168,7 +168,7 @@ public class DBforGetters
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error creating database: " + ex.Message);
+                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(GetContactByTelegramID));
                 return -1;
             }
         }
@@ -194,7 +194,7 @@ public class DBforGetters
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error creating database: " + ex.Message);
+                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(GetUserNameByTelegramID));
                 return "Not found";
             }
         }

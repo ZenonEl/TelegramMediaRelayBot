@@ -138,7 +138,7 @@ public class CoreDB
                 connection.Open();
                 MySqlCommand command = new MySqlCommand(query, connection);
                 command.Parameters.AddWithValue("@userId", DBforGetters.GetContactByTelegramID(telegramID));
-                command.Parameters.AddWithValue("@contactId", DBforGetters.GetContactByLink(link));
+                command.Parameters.AddWithValue("@contactId", DBforGetters.GetContactIDByLink(link));
                 command.Parameters.AddWithValue("@status", ContactsStatus.WaitingForAccept);
                 command.ExecuteNonQuery();
             }

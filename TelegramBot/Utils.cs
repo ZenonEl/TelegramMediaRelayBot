@@ -72,11 +72,30 @@ public static class Utils
                                 );
         return Task.CompletedTask;
     }
+
+    public static async Task AlertMessageAndShowMenu(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId, string text)
+    {
+        await botClient.SendMessage(chatId, text, cancellationToken: cancellationToken);
+        await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
+        TelegramBot.userStates.Remove(chatId);
+    }
+
+    public static async Task<bool> HandleStateBreakCommand(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId, string command = "start")
+    {
+        if (update.Message.Text == command)
+        {
+            await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
+            await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
+            TelegramBot.userStates.Remove(chatId);
+            return true;
+        }
+        return false;
+    }
 }
 
 public static class KeyboardUtils
 {
-    public static InlineKeyboardButton GetReturnButton(string callback, string text = "Назад")
+    public static InlineKeyboardButton GetReturnButton(string callback = "main_menu", string text = "Назад")
     {
         return InlineKeyboardButton.WithCallbackData(text, callback);
     }
@@ -106,6 +125,22 @@ public static class KeyboardUtils
         }
         inlineKeyboardButtons.Add(new[] { GetReturnButton("main_menu") });
         return new InlineKeyboardMarkup(inlineKeyboardButtons);
+    }
+
+    public static InlineKeyboardMarkup GetViewContactsKeyboardMarkup()
+    {
+        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+                    {
+                        new[]
+                        {
+                            InlineKeyboardButton.WithCallbackData("Замутить пользователя (отключить получение сообщений)", "mute_user")
+                        },
+                        new[]
+                        {
+                            GetReturnButton()
+                        },
+                    });
+        return inlineKeyboard;
     }
 
     public static Task SendInlineKeyboardMenu(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
@@ -178,7 +213,7 @@ public static class CallbackQueryMenuUtils
 
             contactUsersInfo.Add($"\nПользователь с ID: {id}\nИменем: {username}\nСсылкой: <code>{link}</>");
         }
-        await Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, $"Ваши контакты:\n\n{string.Join("\n", contactUsersInfo)}");
+        await Utils.SendMessage(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), cancellationToken, $"Ваши контакты:\n{string.Join("\n", contactUsersInfo)}");
     }
 
     public static Task WhosTheGenius(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)

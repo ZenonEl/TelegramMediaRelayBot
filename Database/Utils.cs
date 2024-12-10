@@ -1,4 +1,5 @@
 using MySql.Data.MySqlClient;  // Импортируем библиотеку для работы с MySQL
+using Serilog;
 using TikTokMediaRelayBot;
 
 namespace DataBase
@@ -19,7 +20,7 @@ namespace DataBase
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Error creating database: " + ex.Message);
+                    Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(executeVoidQuery));
                 }
             }
         }

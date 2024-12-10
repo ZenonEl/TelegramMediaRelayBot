@@ -1,4 +1,5 @@
 ﻿using DataBase;
+using Serilog;
 
 namespace TikTokMediaRelayBot
 {
@@ -6,9 +7,26 @@ namespace TikTokMediaRelayBot
     {
         static async Task Main(string[] args)
         {
-            Config.loadConfig();
-            CoreDB.initDB();
-            await MediaTelegramBot.TelegramBot.Start();
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .Enrich.FromLogContext()
+                .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss} [{Level}] {Message} {Exception}{NewLine}").CreateLogger();
+
+            try 
+            {
+                Config.loadConfig();
+                CoreDB.initDB();
+                Scheduler.Init();
+                await MediaTelegramBot.TelegramBot.Start();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(Main));
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
         }
     }
 }

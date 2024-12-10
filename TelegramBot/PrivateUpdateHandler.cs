@@ -2,7 +2,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Polling;
 using System.Text.RegularExpressions;
-using TikTokMediaRelayBot;
+using MediaTelegramBot.Menu;
 using DataBase;
 
 namespace MediaTelegramBot;
@@ -12,8 +12,10 @@ public class PrivateUpdateHandler
 {
     public static async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
     {
-        string pattern = @"^(https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+\/video\/\d+|https?:\/\/vt\.tiktok\.com\/[\w.-]+\/?)(?:\?.*|/.*)$";
+        Console.WriteLine($"Message: {update.Message.Text} from {update.Message.From.Id}");
+        string pattern = @"^(https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+\/(video|photo)\/\d+|https?:\/\/vt\.tiktok\.com\/[\w.-]+\/?)(\?.*|\/.*)?$";
         Regex regex = new Regex(pattern);
+
 
         string messageText = update.Message.Text;
         string link = "";
@@ -41,12 +43,12 @@ public class PrivateUpdateHandler
             {
                 string videoUrl = match.Groups[1].Value;
                 await botClient.SendMessage(chatId, "Подождите, идет скачивание видео...", cancellationToken: cancellationToken);
-                await TelegramBot.HandleVideoRequest(botClient, videoUrl, chatId, caption: text);
+                
+                _ = TelegramBot.HandleVideoRequest(botClient, videoUrl, chatId, caption: text);
             }
         }
         else if (update.Message.Text == "/start")
         {
-            CoreDB.AddUser(update.Message.Chat.FirstName, update.Message.Chat.Id);
             await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
         }
         else if (update.Message.Text == "/help")
@@ -96,7 +98,7 @@ public class PrivateUpdateHandler
                 await CallbackQueryMenuUtils.AddContact(botClient, update, cancellationToken);
                 if (!TelegramBot.userStates.ContainsKey(chatId))
                 {
-                    TelegramBot.userStates[chatId] = new UserState { State = ContactState.WaitingForLink };
+                    TelegramBot.userStates[chatId] = new ProcessContactState();
                 }
                 break;
             case "get_self_link":
@@ -107,6 +109,9 @@ public class PrivateUpdateHandler
                 break;
             case "view_contacts":
                 await CallbackQueryMenuUtils.ViewContacts(botClient, update, cancellationToken);
+                break;
+            case "mute_user":
+                await Contacts.MuteUserContact(botClient, update, cancellationToken, chatId);
                 break;
             case "whos_the_genius":
                 await CallbackQueryMenuUtils.WhosTheGenius(botClient, update, cancellationToken);
