@@ -3,18 +3,41 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Polling;
 using System.Text.RegularExpressions;
 using MediaTelegramBot.Menu;
-using Serilog;
+using TikTokMediaRelayBot.SitesConfig;
 
 namespace MediaTelegramBot;
 
 
 public class PrivateUpdateHandler
 {
+    private static string ExtractDomain(string link)
+    {
+        var uri = new Uri(link);
+        return uri.Host;
+    }
+
+    // Метод для проверки, соответствует ли ссылка паттернам
+    private static bool IsLinkMatchPattern(string link, List<string> patterns)
+    {
+        foreach (var pattern in patterns)
+        {
+            if (Regex.IsMatch(link, pattern))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
     public static async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
     {
-        string pattern = @"^(https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+\/(video|photo)\/\d+|https?:\/\/vt\.tiktok\.com\/[\w.-]+\/?)(\?.*|\/.*)?$";
-        Regex regex = new Regex(pattern);
+        // Проверка на команду /start
+        // if (update.Message.Text == "/start")
+        // {
+        //     await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
+        //     return;
+        // }
 
+        // Проверка на ссылку
         string messageText = update.Message.Text;
         string link = "";
         string text = "";
@@ -28,24 +51,47 @@ public class PrivateUpdateHandler
         }
         else
         {
-            if (regex.IsMatch(messageText))
-            {
-                link = messageText.Trim();
-            }
+            link = messageText.Trim();
         }
 
-        if (regex.IsMatch(link))
+        // Извлечение домена из ссылки
+        string domain = ExtractDomain(link);
+
+        // Поиск домена в списке доменов
+        if (SitesConfig.Domains.Contains(domain))
         {
-            Match match = regex.Match(link);
-            if (match.Success)
+            // Получение Getter по домену
+            // Retrieve Getter by domain
+            var getter = SitesConfig.GetGetterByDomain(domain);
+
+            if (getter != null)
             {
-                string videoUrl = match.Groups[1].Value;
-                await botClient.SendMessage(chatId, "Подождите, идет скачивание видео...", cancellationToken: cancellationToken);
-                
-                _ = TelegramBot.HandleVideoRequest(botClient, videoUrl, chatId, caption: text);
+                var patterns = getter.Patterns;
+                var elementsPath = getter.elements_path;
+
+                // Check if the link matches any pattern
+                if (IsLinkMatchPattern(link, patterns))
+                {
+                    await botClient.SendMessage(chatId, "Подождите, идет скачивание видео...", cancellationToken: cancellationToken);
+
+                    // Call the video handling function with the correct types
+                    _ = TelegramBot.HandleVideoRequest(botClient, link, chatId, text, elementsPath);
+                }
+                else
+                {
+                    await botClient.SendMessage(chatId, "Ссылка не соответствует паттернам.", cancellationToken: cancellationToken);
+                }
+            }
+            else
+            {
+                await botClient.SendMessage(chatId, "Домен найден, но Getter не определен.", cancellationToken: cancellationToken);
             }
         }
-        else if (update.Message.Text == "/start")
+        else
+        {
+            await botClient.SendMessage(chatId, "Домен не найден в конфигурации.", cancellationToken: cancellationToken);
+        }
+        if (update.Message.Text == "/start")
         {
             await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
         }

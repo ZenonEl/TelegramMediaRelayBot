@@ -1,5 +1,6 @@
 ﻿using DataBase;
 using Serilog;
+using TikTokMediaRelayBot.SitesConfig;
 
 namespace TikTokMediaRelayBot
 {
@@ -14,9 +15,10 @@ namespace TikTokMediaRelayBot
 
             try 
             {
-                Config.loadConfig();
+                Config.LoadConfig();
                 CoreDB.initDB();
                 Scheduler.Scheduler.Init();
+                SitesConfig.SitesConfig.LoadConfig();
                 await MediaTelegramBot.TelegramBot.Start();
             }
             catch (Exception ex)

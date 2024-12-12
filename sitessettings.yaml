@@ -1,0 +1,45 @@
+defaults:
+  elements_path:
+    - type: id
+      value: s_input
+      action: Fill
+      input_value: "{videoUrl}"
+    - type: class
+      value: btn-red
+      action: Click
+      delay: 5000
+    - type: class
+      value: dl-success
+      action: QuerySelector
+      delay: 5000
+      attribute: href
+      condition:
+        check_value: "#"
+        action_if_true: Click
+        delay_after_action: 3000
+        recheck_attribute: true
+
+sites:
+  - name: TikTokMediaRelay
+    getters:
+      - patterns:
+          - "https://www.tiktok.com/*"
+        elements_path:
+          - type: id
+            value: s_input
+            action: Fill
+            input_value: "{videoUrl}"
+          - type: class
+            value: btn-red
+            action: Click
+            delay: 5000
+          - type: class
+            value: dl-success
+            action: QuerySelector
+            delay: 5000
+            attribute: href
+            condition:
+              check_value: "#"
+              action_if_true: Click
+              delay_after_action: 3000
+              recheck_attribute: true

@@ -19,6 +19,7 @@
     <None Update="appsettings.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <PackageReference Include="YamlDotNet" Version="16.2.1" />
   </ItemGroup>
 
 </Project>
