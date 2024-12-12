@@ -95,7 +95,7 @@ public class DBforGetters
         }
     }
 
-    public static async Task<int> GetUserIDbyTelegramID(long TelegramID)
+    public static int GetUserIDbyTelegramID(long TelegramID)
     {
         string query = @"
             USE TikTokMediaRelayBot;
@@ -199,6 +199,40 @@ public class DBforGetters
             }
         }
     }
+    public static List<long> GetUsersIdForMuteContactId(int contactId)
+    {
+        string query = @"
+            USE TikTokMediaRelayBot;
+            SELECT MutedByUserId FROM MutedContacts WHERE MutedContactId = @contactId AND IsActive = 1";
+        
+        List<int> mutedByUserIds = new List<int>();
+        var TelegramIDs = new List<long>();
 
+        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@contactId", contactId);
+                MySqlDataReader reader = command.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    mutedByUserIds.Add(reader.GetInt32("MutedByUserId"));
+                }
+                foreach (var contactUserId in mutedByUserIds)
+                {
+                    TelegramIDs.Add(GetTelegramIDbyUserID(contactUserId));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(GetUsersIdForMuteContactId));
+            }
+        }
+
+        return TelegramIDs;
+    }
 }
 

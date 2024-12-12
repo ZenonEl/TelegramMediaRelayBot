@@ -26,6 +26,12 @@ public enum UserMuteState
     WaitingForLinkOrID,
     WaitingForMuteTime,
     WaitingForConfirmation,
-    ApplyForMute,
+    Finish
+}
+
+public enum UserUnMuteState
+{
+    WaitingForLinkOrID,
+    WaitingForUnMute,
     Finish
 }

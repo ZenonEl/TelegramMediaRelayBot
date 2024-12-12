@@ -3,7 +3,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Polling;
 using System.Text.RegularExpressions;
 using MediaTelegramBot.Menu;
-using DataBase;
+using Serilog;
 
 namespace MediaTelegramBot;
 
@@ -12,7 +12,7 @@ public class PrivateUpdateHandler
 {
     public static async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
     {
-        Console.WriteLine($"Message: {update.Message.Text} from {update.Message.From.Id}");
+        Log.Information($"Message: {update.Message.Text} from {update.Message.From.Id}", nameof(ProcessMessage));
         string pattern = @"^(https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+\/(video|photo)\/\d+|https?:\/\/vt\.tiktok\.com\/[\w.-]+\/?)(\?.*|\/.*)?$";
         Regex regex = new Regex(pattern);
 
@@ -88,7 +88,7 @@ public class PrivateUpdateHandler
     public static async Task ProcessCallbackQuery(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
     {
         var callbackQuery = update.CallbackQuery;
-        Console.WriteLine($"Callback Query: {callbackQuery.Data} from {callbackQuery.From.Id} chatId {chatId}");
+        Log.Information($"Callback Query: {callbackQuery.Data} from {callbackQuery.From.Id} chatId {chatId}", nameof(ProcessCallbackQuery));
         switch (callbackQuery.Data)
         {
             case "main_menu":
@@ -108,10 +108,13 @@ public class PrivateUpdateHandler
                 await CallbackQueryMenuUtils.ViewInboundInviteLinks(botClient, update, cancellationToken);
                 break;
             case "view_contacts":
-                await CallbackQueryMenuUtils.ViewContacts(botClient, update, cancellationToken);
+                await Contacts.ViewContacts(botClient, update, cancellationToken);
                 break;
             case "mute_user":
                 await Contacts.MuteUserContact(botClient, update, cancellationToken, chatId);
+                break;
+            case "unmute_user":
+                await Contacts.UnMuteUserContact(botClient, update, cancellationToken, chatId);
                 break;
             case "whos_the_genius":
                 await CallbackQueryMenuUtils.WhosTheGenius(botClient, update, cancellationToken);

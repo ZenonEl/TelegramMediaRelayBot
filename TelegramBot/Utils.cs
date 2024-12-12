@@ -114,7 +114,7 @@ public static class KeyboardUtils
 
     public static async Task<InlineKeyboardMarkup> GetInboundsKeyboardMarkup(Update update)
     {
-        var buttonDataList = DBforInbounds.GetButtonDataFromDatabase(await DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery.Message.Chat.Id));
+        var buttonDataList = DBforInbounds.GetButtonDataFromDatabase(DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery.Message.Chat.Id));
 
         var inlineKeyboardButtons = new List<InlineKeyboardButton[]>();
 
@@ -133,7 +133,8 @@ public static class KeyboardUtils
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData("Замутить пользователя (отключить получение сообщений)", "mute_user")
+                            InlineKeyboardButton.WithCallbackData("Замутить пользователя", "mute_user"),
+                            InlineKeyboardButton.WithCallbackData("Размутить пользователя", "unmute_user"),
                         },
                         new[]
                         {
@@ -200,22 +201,6 @@ public static class CallbackQueryMenuUtils
         return Task.CompletedTask;
     }
 
-    public static async Task ViewContacts(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
-    {
-        var contactUserTGIds = await CoreDB.GetContactUserTGIds(await DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery.Message.Chat.Id));
-        var contactUsersInfo = new List<string>();
-        
-        foreach (var contactUserId in contactUserTGIds)
-        {
-            int id = await DBforGetters.GetUserIDbyTelegramID(contactUserId);
-            string username = await DBforGetters.GetUserNameByTelegramID(contactUserId);
-            string link = DBforGetters.GetSelfLink(contactUserId);
-
-            contactUsersInfo.Add($"\nПользователь с ID: {id}\nИменем: {username}\nСсылкой: <code>{link}</>");
-        }
-        await Utils.SendMessage(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), cancellationToken, $"Ваши контакты:\n{string.Join("\n", contactUsersInfo)}");
-    }
-
     public static Task WhosTheGenius(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         string text = @"Всем привет! 
@@ -227,7 +212,9 @@ public static class CallbackQueryMenuUtils
 Теперь благодаря ему я могу запустить простого бота хоть у себя на ПК. Выставить список контактов от кого я хочу получать видосики и всё, облегчил жизнь и себе, и своим знакомым.
 Удобно!
 
-Приятного пользования!";
+Приятного пользования!
+
+PS: В будущем планируется сделать бота универсальным реле. Где через конфиг можно будет выставить поддерживаемые сайты и то как боту с ними работать.";
         return Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, text);
     }
 

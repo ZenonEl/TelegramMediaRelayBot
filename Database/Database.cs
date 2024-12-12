@@ -1,4 +1,5 @@
 using MySql.Data.MySqlClient;
+using Serilog;
 using TikTokMediaRelayBot;
 
 namespace DataBase;
@@ -149,7 +150,7 @@ public class CoreDB
         }
     }
 
-    public static void AddMutedContact(int mutedByUserId, int mutedContactId, DateTime? expirationDate = null, DateTime muteDate = default)
+    public static bool AddMutedContact(int mutedByUserId, int mutedContactId, DateTime? expirationDate = null, DateTime muteDate = default)
     {
         if (muteDate == default)
         {
@@ -158,8 +159,13 @@ public class CoreDB
 
         string query = @"
             USE TikTokMediaRelayBot;
-            INSERT INTO MutedContacts (MutedByUserId, MutedContactId, MuteDate, ExpirationDate) VALUES (@mutedByUserId, @mutedContactId, @muteDate, @expirationDate)";
-        
+            INSERT INTO MutedContacts (MutedByUserId, MutedContactId, MuteDate, ExpirationDate)
+            VALUES (@mutedByUserId, @mutedContactId, @muteDate, @expirationDate)
+            ON DUPLICATE KEY UPDATE
+                MuteDate = @muteDate,
+                ExpirationDate = @expirationDate,
+                IsActive = 1";
+
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
             try
@@ -168,18 +174,43 @@ public class CoreDB
                 MySqlCommand command = new MySqlCommand(query, connection);
                 command.Parameters.AddWithValue("@mutedByUserId", mutedByUserId);
                 command.Parameters.AddWithValue("@mutedContactId", mutedContactId);
-                command.Parameters.AddWithValue("@muteDate", muteDate);                
+                command.Parameters.AddWithValue("@muteDate", muteDate);
                 command.Parameters.AddWithValue("@expirationDate", (object)expirationDate ?? DBNull.Value);
-                
+
                 command.ExecuteNonQuery();
+                return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error creating database: " + ex.Message);
+                Log.Error("Error creating database: " + ex.Message);
+                return false;
             }
         }
     }
 
+    public static void UnMutedContact(int userId, int contactId)
+    {
+        string query = @"
+            UPDATE MutedContacts
+            SET IsActive = 0
+            WHERE MutedByUserId = @userId AND MutedContactId = @contactId";
+
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@userId", userId);
+                command.Parameters.AddWithValue("@contactId", contactId);
+                command.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(UnMutedContact));
+            }
+        }
+    }
 
     public static async Task<List<long>> GetContactUserTGIds(int userId)
     {

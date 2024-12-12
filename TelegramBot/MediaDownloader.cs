@@ -144,19 +144,26 @@ partial class TelegramBot
 
     private static async Task SendVideoToContacts(string fileId, long telegramId, ITelegramBotClient botClient, string caption = "")
     {
-        var contactUserTGIds = await CoreDB.GetContactUserTGIds(await DBforGetters.GetUserIDbyTelegramID(telegramId));
-        Console.WriteLine($"Рассылка видео для ({contactUserTGIds.Count}) пользователей.");
+        int userId = DBforGetters.GetUserIDbyTelegramID(telegramId);
+        Log.Information($"Пользователь {userId} отправляет видео.", nameof(SendVideoToContacts));
+        var contactUserTGIds = await CoreDB.GetContactUserTGIds(userId);
+        var mutedByUserIds = DBforGetters.GetUsersIdForMuteContactId(userId);
+        var filteredContactUserTGIds = contactUserTGIds.Except(mutedByUserIds).ToList();
+
+        Log.Information($"Рассылка видео для ({filteredContactUserTGIds.Count}) пользователей.", nameof(SendVideoToContacts));
+        Log.Information($"Пользователь {userId} в муте у: {mutedByUserIds.Count}", nameof(SendVideoToContacts));
 
         DateTime now = DateTime.Now;
         string name = await DBforGetters.GetUserNameByTelegramID(telegramId);
         string text = $"Ваш контакт {name} отправил видео!\n#{now:yyyy_MM_dd_HH_mm_ss}_{MyRegex().Replace(name, "_")}\n\n{caption}";
 
-        foreach (var contactUserId in contactUserTGIds)
+        foreach (var contactUserId in filteredContactUserTGIds)
         {
             await botClient.SendDocument(contactUserId, InputFile.FromFileId(fileId), caption: text);
         }
 
-        if (contactUserTGIds.Count > 0) await botClient.SendMessage(telegramId, $"Видео успешно отправлено всем ({contactUserTGIds.Count}) контактам.\n#{now:yyyy_MM_dd_HH_mm_ss}_{MyRegex().Replace(name, "_")}");
+        if (filteredContactUserTGIds.Count > 0) await botClient.SendMessage(telegramId, $"Видео успешно отправлено всем ({filteredContactUserTGIds.Count}) контактам.\n#{now:yyyy_MM_dd_HH_mm_ss}_{MyRegex().Replace(name, "_")}");
+        if (mutedByUserIds.Count > 0) await botClient.SendMessage(telegramId, $"Вы находитесь с мутом у каких то контактов ({mutedByUserIds.Count}).");
     }
 
     [GeneratedRegex(@"[^a-zA-Zа-яА-Я0-9]")]
