@@ -253,4 +253,24 @@ public class CoreDB
         return TelegramIDs;
     }
 
+    public static void UnMuteByMuteId(int muteId)
+    {
+        string query = @"
+            USE TikTokMediaRelayBot;
+            UPDATE MutedContacts SET IsActive = 0 WHERE MutedId = @muteId";
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@muteId", muteId);
+                command.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(UnMuteByMuteId));
+            }
+        }
+    }
 }

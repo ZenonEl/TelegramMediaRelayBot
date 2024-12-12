@@ -234,5 +234,37 @@ public class DBforGetters
 
         return TelegramIDs;
     }
+    public static List<int> GetExpiredMutes()
+    {
+        string query = @"
+            SELECT MutedId 
+            FROM MutedContacts 
+            WHERE ExpirationDate <= NOW() 
+            AND IsActive = 1;";
+
+        List<int> expiredMuteIds = new List<int>();
+
+        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                MySqlDataReader reader = command.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    int mutedId = reader.GetInt32("MutedId");
+                    expiredMuteIds.Add(mutedId);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(GetExpiredMutes));
+            }
+        }
+
+        return expiredMuteIds;
+    }
 }
 

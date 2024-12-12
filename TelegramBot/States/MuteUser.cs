@@ -48,8 +48,10 @@ public class ProcessUserMuteState : IUserState
                 int contactId; 
                 if (int.TryParse(update.Message.Text, out contactId))
                 {
+                    List<long> allowedIds = await CoreDB.GetContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(update.Message.Chat.Id));
                     string name = DBforGetters.GetUserNameByID(contactId);
-                    if (name == "")
+
+                    if (name == "" || !allowedIds.Contains(mutedContactId))
                     {
                         await Utils.AlertMessageAndShowMenu(botClient, update, cancellationToken, chatId, "По этому ID никто не найден.");
                         return;
@@ -61,7 +63,9 @@ public class ProcessUserMuteState : IUserState
                 {
                     string link = update.Message.Text;
                     contactId = DBforGetters.GetContactIDByLink(link);
-                    if (contactId == -1)
+                    List<long> allowedIds = await CoreDB.GetContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(update.Message.Chat.Id));
+                    
+                    if (contactId == -1 || !allowedIds.Contains(mutedContactId))
                     {
                         await Utils.AlertMessageAndShowMenu(botClient, update, cancellationToken, chatId, "По этой ссылке никто не найден.");
                         return;
@@ -142,5 +146,4 @@ public class ProcessUserMuteState : IUserState
                 break;
         }
     }
-
 }

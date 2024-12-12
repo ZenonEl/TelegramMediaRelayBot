@@ -12,10 +12,8 @@ public class PrivateUpdateHandler
 {
     public static async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
     {
-        Log.Information($"Message: {update.Message.Text} from {update.Message.From.Id}", nameof(ProcessMessage));
         string pattern = @"^(https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+\/(video|photo)\/\d+|https?:\/\/vt\.tiktok\.com\/[\w.-]+\/?)(\?.*|\/.*)?$";
         Regex regex = new Regex(pattern);
-
 
         string messageText = update.Message.Text;
         string link = "";
@@ -88,7 +86,7 @@ public class PrivateUpdateHandler
     public static async Task ProcessCallbackQuery(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
     {
         var callbackQuery = update.CallbackQuery;
-        Log.Information($"Callback Query: {callbackQuery.Data} from {callbackQuery.From.Id} chatId {chatId}", nameof(ProcessCallbackQuery));
+
         switch (callbackQuery.Data)
         {
             case "main_menu":

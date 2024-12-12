@@ -16,7 +16,7 @@ namespace TikTokMediaRelayBot
             {
                 Config.loadConfig();
                 CoreDB.initDB();
-                Scheduler.Init();
+                Scheduler.Scheduler.Init();
                 await MediaTelegramBot.TelegramBot.Start();
             }
             catch (Exception ex)

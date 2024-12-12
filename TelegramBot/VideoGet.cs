@@ -1,4 +1,5 @@
 using Microsoft.Playwright;
+using Serilog;
 using System.Threading.Tasks;
 
 namespace TikTokMediaRelayBot;
@@ -6,7 +7,7 @@ namespace TikTokMediaRelayBot;
 
 public class VideoGet
 {
-    public static async Task<string> GetDownloadLink(string videoUrl)
+    public static async Task<string?> GetDownloadLink(string videoUrl)
     {
         using (var playwright = await Playwright.CreateAsync().ConfigureAwait(false))
         {
@@ -22,11 +23,12 @@ public class VideoGet
             var browser = await playwright.Firefox.LaunchAsync(launchOptions);
             var page = await browser.NewPageAsync();
 
-            Console.WriteLine("Браузер инициализирован. Открытие страницы...");
+            Log.Debug("Браузер инициализирован. Открытие страницы...");
             await page.GotoAsync("https://tikvideo.app/ru");
 
-            Console.WriteLine("Ввод URL видео...");
+            Log.Debug("Ввод URL видео...");
             await page.FillAsync($"#{Config.inputId}", videoUrl);
+
             try
             {
                 await page.ClickAsync($".{Config.downloadButtonClass}");
@@ -36,7 +38,7 @@ public class VideoGet
                 await page.EvaluateAsync("arguments[0].click();", await page.QuerySelectorAsync($".{Config.downloadButtonClass}"));
             }
 
-            Console.WriteLine("Ожидание загрузки...");
+            Log.Debug("Ожидание загрузки...");
             await Task.Delay(5000);
 
             string downloadLink = "";
@@ -60,7 +62,7 @@ public class VideoGet
             }
             catch (PlaywrightException)
             {
-                Console.WriteLine("Не удалось найти ссылку для скачивания видео.");
+                Log.Error("Не удалось найти ссылку для скачивания видео. {MethodName}", nameof(GetDownloadLink));
             }
 
             await browser.CloseAsync();

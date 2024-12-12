@@ -25,7 +25,7 @@ partial class TelegramBot
         botClient = new TelegramBotClient(telegramBotToken);
 
         var me = await botClient.GetMe();
-        Console.WriteLine($"Hello, I am {me.Id} ready and my name is {me.FirstName}.");
+        Log.Information($"Hello, I am {me.Id} ready and my name is {me.FirstName}.");
 
         var cts = new CancellationTokenSource();
         var receiverOptions = new ReceiverOptions
@@ -34,7 +34,7 @@ partial class TelegramBot
         };
 
         botClient.StartReceiving(UpdateHandler, Utils.ErrorHandler, receiverOptions, cancellationToken: cts.Token);
-        Console.WriteLine("Press any key to exit");
+        Log.Information("Press any key to exit");
         Console.ReadKey();
         cts.Cancel();
     }
@@ -46,11 +46,7 @@ partial class TelegramBot
 
         if (userStates[chatId] is IUserState userState)
         {
-            string currentUserStatus = userState.GetCurrentState();
-            Console.WriteLine($"Текущее состояние пользователя: {currentUserStatus}");
-
             await userState.ProcessState(botClient, update, cancellationToken);
-
         }
     }
 
@@ -59,6 +55,8 @@ partial class TelegramBot
     {
         long chatId = Utils.GetIDfromUpdate(update);
         if (Utils.CheckNonZeroID(chatId)) return;
+
+        LogEvent(update, chatId);
 
         if (Utils.CheckPrivateChatType(update))
         {
@@ -98,11 +96,11 @@ partial class TelegramBot
             if (!string.IsNullOrEmpty(downloadLink) && downloadLink != "#")
             {
                 await SendVideoToTelegram(downloadLink, chatId, botClient, groupChat, caption);
-                Console.WriteLine("Видео успешно получено.");
+                Log.Debug("Видео успешно получено.");
                 return;
             }
 
-            Console.WriteLine($"Attempt {attempt} failed. Retrying...");
+            Log.Warning($"Attempt {attempt} failed. Retrying...");
         }
 
         await botClient.SendMessage(chatId, "Не удалось получить ссылку на видео после 5 попыток.");
@@ -123,9 +121,11 @@ partial class TelegramBot
                 {
                     await videoStream.CopyToAsync(stream);
                     stream.Position = 0;
+                    string text = "";
+                    if (caption != "") text = " С текстом: \n\n" + caption;
 
-                    var message = await botClient.SendDocument(chatId, InputFile.FromStream(stream, "video.mp4"), caption: "Вот ваше видео! С текстом: \n\n" + caption);
-                    Console.WriteLine("Видео успешно отправлено в Telegram.");
+                    var message = await botClient.SendDocument(chatId, InputFile.FromStream(stream, "video.mp4"), caption: "Вот ваше видео!" + text);
+                    Log.Information("Видео успешно отправлено в Telegram.");
 
                     string FileId;
                     if (message.Video != null && message.Video.FileId != null) FileId = message.Video.FileId;
@@ -136,7 +136,7 @@ partial class TelegramBot
             }
             else
             {
-                Console.WriteLine($"Ошибка при скачивании видео: {response.StatusCode}");
+                Log.Error($"Ошибка при скачивании видео: {response.StatusCode}");
                 await botClient.SendMessage(chatId, "Ошибка при скачивании видео.");
             }
         }
@@ -145,7 +145,6 @@ partial class TelegramBot
     private static async Task SendVideoToContacts(string fileId, long telegramId, ITelegramBotClient botClient, string caption = "")
     {
         int userId = DBforGetters.GetUserIDbyTelegramID(telegramId);
-        Log.Information($"Пользователь {userId} отправляет видео.", nameof(SendVideoToContacts));
         var contactUserTGIds = await CoreDB.GetContactUserTGIds(userId);
         var mutedByUserIds = DBforGetters.GetUsersIdForMuteContactId(userId);
         var filteredContactUserTGIds = contactUserTGIds.Except(mutedByUserIds).ToList();
@@ -164,6 +163,39 @@ partial class TelegramBot
 
         if (filteredContactUserTGIds.Count > 0) await botClient.SendMessage(telegramId, $"Видео успешно отправлено всем ({filteredContactUserTGIds.Count}) контактам.\n#{now:yyyy_MM_dd_HH_mm_ss}_{MyRegex().Replace(name, "_")}");
         if (mutedByUserIds.Count > 0) await botClient.SendMessage(telegramId, $"Вы находитесь с мутом у каких то контактов ({mutedByUserIds.Count}).");
+    }
+
+    public static void LogEvent(Update update, long chatId)
+    {
+        string currentUserStatus = "";
+        string logMessage = "";
+        string callbackData = "";
+        long userId = 0;
+
+        if (update.CallbackQuery != null)
+        {
+            logMessage = "CallbackQuery";
+            callbackData = update.CallbackQuery.Data;
+            userId = update.CallbackQuery.From.Id;
+        }
+        else if (update.Message != null && update.Message.Text != null)
+        {
+            logMessage = "Message";
+            callbackData = update.Message.Text;
+            userId = update.Message.From.Id;
+            if (!Utils.CheckPrivateChatType(update))
+            {
+                if (!update.Message.Text.Contains("/link") || !update.Message.Text.Contains("/help")) return;
+            }
+        }
+
+        if (userStates.TryGetValue(chatId, out IUserState? value))
+        {
+            IUserState userState = value;
+            currentUserStatus = userState.GetCurrentState();
+        }
+
+        Log.Information($"Event: {logMessage}, UserId: {userId}, ChatId: {chatId}, {logMessage}: {callbackData}, State: {currentUserStatus}");
     }
 
     [GeneratedRegex(@"[^a-zA-Zа-яА-Я0-9]")]
