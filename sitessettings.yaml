@@ -24,6 +24,10 @@ sites:
     getters:
       - patterns:
           - "https://www.tiktok.com/*"
+          - "https://vt.tiktok.com/*"
+        sites_getters:
+          - "https://tikvideo.app/ru"
+          - "https://tiksave.io/ru"
         elements_path:
           - type: id
             value: s_input
@@ -43,3 +47,25 @@ sites:
               action_if_true: Click
               delay_after_action: 3000
               recheck_attribute: true
+      - patterns:
+        - "https://www.youtube.com/watch?v=*"
+        sites_getters:
+          - "https://en1.savefrom.net/1-youtube-video-downloader-3vV/"
+        elements_path:
+          - type: id
+            value: videoLinkInput
+            action: Fill
+            input_value: "{videoUrl}"
+          - type: id
+            value: .input-container button
+            action: Click
+            delay: 5000
+          - type: class
+            value: download-button-progress
+            action: QuerySelector
+            delay: 5000
+          - type: id
+            value: downloadButton
+            action: Click
+            attribute: href
+

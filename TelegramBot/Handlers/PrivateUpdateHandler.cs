@@ -4,6 +4,7 @@ using Telegram.Bot.Polling;
 using System.Text.RegularExpressions;
 using MediaTelegramBot.Menu;
 using TikTokMediaRelayBot.SitesConfig;
+using Serilog;
 
 namespace MediaTelegramBot;
 
@@ -17,17 +18,29 @@ public class PrivateUpdateHandler
     }
 
     // Метод для проверки, соответствует ли ссылка паттернам
-    private static bool IsLinkMatchPattern(string link, List<string> patterns)
+private static bool IsLinkMatchPattern(string link, List<string> patterns)
+{
+    foreach (var pattern in patterns)
     {
-        foreach (var pattern in patterns)
+        Log.Debug($"Проверка ссылки на соответствие паттерну: {pattern}, link: {link}");
+
+        // Преобразуем паттерн в регулярное выражение
+        string regexPattern = ConvertPatternToRegex(pattern);
+
+        if (Regex.IsMatch(link, regexPattern))
         {
-            if (Regex.IsMatch(link, pattern))
-            {
-                return true;
-            }
+            return true;
         }
-        return false;
     }
+    return false;
+}
+
+private static string ConvertPatternToRegex(string pattern)
+{
+    // Заменяем * на .* (любое количество символов)
+    // Заменяем ? на . (один символ)
+    return "^" + Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$";
+}
     public static async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
     {
         // Проверка на команду /start
@@ -68,6 +81,7 @@ public class PrivateUpdateHandler
             {
                 var patterns = getter.Patterns;
                 var elementsPath = getter.elements_path;
+                var sitesGetters = getter.sites_getters;
 
                 // Check if the link matches any pattern
                 if (IsLinkMatchPattern(link, patterns))
@@ -75,7 +89,7 @@ public class PrivateUpdateHandler
                     await botClient.SendMessage(chatId, "Подождите, идет скачивание видео...", cancellationToken: cancellationToken);
 
                     // Call the video handling function with the correct types
-                    _ = TelegramBot.HandleVideoRequest(botClient, link, chatId, text, elementsPath);
+                    _ = TelegramBot.HandleVideoRequest(botClient, link, chatId, text, elementsPath, sitesGetters);
                 }
                 else
                 {

@@ -87,13 +87,13 @@ partial class TelegramBot
         }
     }
 
-    public static async Task HandleVideoRequest(ITelegramBotClient botClient, string videoUrl, long chatId, string text, List<ElementAction> elementsPath, bool groupChat = false, string caption = "")
+    public static async Task HandleVideoRequest(ITelegramBotClient botClient, string videoUrl, long chatId, string text, List<ElementAction> elementsPath, List<string> sitesGetters, bool groupChat = false, string caption = "")
     {
         int maxAttempts = Config.maxAttempts;
 
         for (int attempt = 1; attempt <= maxAttempts; attempt++)
         {
-            string downloadLink = await VideoGet.GetDownloadLink(videoUrl, elementsPath);
+            string downloadLink = await VideoGet.GetDownloadLink(videoUrl, elementsPath, sitesGetters);
             if (!string.IsNullOrEmpty(downloadLink) && downloadLink != "#")
             {
                 await SendVideoToTelegram(downloadLink, chatId, botClient, groupChat, caption);
@@ -132,7 +132,7 @@ partial class TelegramBot
                     if (message.Video != null && message.Video.FileId != null) FileId = message.Video.FileId;
                     else FileId = message.Document.FileId;
 
-                    if (!groupChat) await SendVideoToContacts(FileId, chatId, botClient, caption);
+                    // if (!groupChat) await SendVideoToContacts(FileId, chatId, botClient, caption);
                 }
             }
             else

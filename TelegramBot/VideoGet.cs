@@ -2,13 +2,14 @@ using Microsoft.Playwright;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace TikTokMediaRelayBot
 {
     public class VideoGet
     {
-        public static async Task<string?> GetDownloadLink(string videoUrl, List<ElementAction> elementsPath)
+        public static async Task<string?> GetDownloadLink(string videoUrl, List<ElementAction> elementsPath, List<string> sitesGetters)
         {
             using (var playwright = await Playwright.CreateAsync().ConfigureAwait(false))
             {
@@ -24,8 +25,12 @@ namespace TikTokMediaRelayBot
                 var browser = await playwright.Firefox.LaunchAsync(launchOptions);
                 var page = await browser.NewPageAsync();
 
+                // Выбираем случайный геттер из sites_getters
+                var randomSiteGetter = sitesGetters[new Random().Next(sitesGetters.Count)];
+                Log.Debug($"Выбран случайный геттер: {randomSiteGetter}");
+
                 Log.Debug("Браузер инициализирован. Открытие страницы...");
-                await page.GotoAsync("https://tikvideo.app/ru");
+                await page.GotoAsync(randomSiteGetter);
 
                 foreach (var action in elementsPath)
                 {
@@ -33,17 +38,20 @@ namespace TikTokMediaRelayBot
                     await PerformAction(page, action, videoUrl);
                 }
 
-                // Retrieve the final download link
-                Log.Debug("Поиск финального элемента для получения ссылки...");
-                var finalDownloadLinkElement = await page.QuerySelectorAsync($"#{Config.finalDownloadButtonClass}");
+                // Получение финальной ссылки на скачивание видео из последнего элемента в elements_path
+                var lastAction = elementsPath.Last();
+                var finalSelector = GetSelector(lastAction);
+                Log.Debug($"Поиск финального элемента для получения ссылки: {finalSelector}");
+
+                var finalDownloadLinkElement = await page.QuerySelectorAsync(finalSelector);
                 if (finalDownloadLinkElement == null)
                 {
-                    Log.Error("Не удалось найти финальный элемент для получения ссылки.");
+                    Log.Error($"Не удалось найти финальный элемент для получения ссылки: {finalSelector}");
                     await browser.CloseAsync();
                     return null;
                 }
 
-                string downloadLink = await finalDownloadLinkElement.GetAttributeAsync("href");
+                string downloadLink = await finalDownloadLinkElement.GetAttributeAsync(lastAction.Attribute);
                 Log.Debug($"Получена ссылка: {downloadLink}");
 
                 if (downloadLink == "#")
@@ -51,7 +59,7 @@ namespace TikTokMediaRelayBot
                     Log.Debug("Ссылка недействительна. Попытка повторного клика...");
                     try
                     {
-                        await finalDownloadLinkElement.ClickAsync();
+                        await page.EvaluateAsync("arguments[0].click();", finalDownloadLinkElement);
                         Log.Debug("Повторный клик выполнен.");
                     }
                     catch (PlaywrightException ex)
@@ -60,7 +68,7 @@ namespace TikTokMediaRelayBot
                         await page.EvaluateAsync("arguments[0].click();", finalDownloadLinkElement);
                     }
                     await Task.Delay(3000);
-                    downloadLink = await finalDownloadLinkElement.GetAttributeAsync("href");
+                    downloadLink = await finalDownloadLinkElement.GetAttributeAsync(lastAction.Attribute);
                     Log.Debug($"После повторного клика получена ссылка: {downloadLink}");
                 }
 
@@ -72,63 +80,64 @@ namespace TikTokMediaRelayBot
         }
 
         private static async Task PerformAction(IPage page, ElementAction action, string videoUrl)
+{
+    string selector = GetSelector(action);
+    Log.Debug($"Поиск элемента с селектором: {selector}");
+    IElementHandle element = await page.WaitForSelectorAsync(selector);
+
+    if (element == null)
+    {
+        Log.Error($"Элемент не найден: {selector}");
+        return;
+    }
+
+    Log.Debug($"Элемент найден: {selector}");
+
+    switch (action.Action.ToLower())
+    {
+        case "fill":
+            Log.Debug($"Заполнение элемента '{selector}' значением: {action.InputValue.Replace("{videoUrl}", videoUrl)}");
+            await element.FillAsync(action.InputValue.Replace("{videoUrl}", videoUrl));
+            break;
+
+        case "click":
+            Log.Debug($"Клик по элементу: {selector}");
+            // Используем JavaScript для клика, чтобы избежать блокирующих окон
+            await page.EvaluateAsync("(element) => element.click()", element);
+            break;
+
+        case "queryselector":
+            Log.Debug($"QuerySelector выполнен для элемента: {selector}");
+            break;
+
+        case "getattribute":
+            Log.Debug($"Получение атрибута '{action.Attribute}' для элемента: {selector}");
+            string attributeValue = await element.GetAttributeAsync(action.Attribute);
+            Log.Debug($"Значение атрибута: {attributeValue}");
+            break;
+
+        default:
+            Log.Error($"Неподдерживаемое действие: {action.Action}");
+            throw new ArgumentException($"Unsupported action: {action.Action}");
+    }
+
+    if (action.Delay > 0)
+    {
+        Log.Debug($"Ожидание задержки: {action.Delay} мс");
+        await Task.Delay(action.Delay);
+    }
+
+    if (action.Condition != null && action.Attribute != null)
+    {
+        string attributeValue = await element.GetAttributeAsync(action.Attribute);
+        Log.Debug($"Проверка условия для атрибута '{action.Attribute}': ожидаемое значение = {action.Condition.CheckValue}, текущее значение = {attributeValue}");
+        if (attributeValue == action.Condition.CheckValue)
         {
-            string selector = GetSelector(action);
-            Log.Debug($"Поиск элемента с селектором: {selector}");
-            IElementHandle element = await page.WaitForSelectorAsync(selector);
-
-            if (element == null)
-            {
-                Log.Error($"Элемент не найден: {selector}");
-                return;
-            }
-
-            Log.Debug($"Элемент найден: {selector}");
-
-            switch (action.Action.ToLower())
-            {
-                case "fill":
-                    Log.Debug($"Заполнение элемента '{selector}' значением: {action.InputValue.Replace("{videoUrl}", videoUrl)}");
-                    await element.FillAsync(action.InputValue.Replace("{videoUrl}", videoUrl));
-                    break;
-
-                case "click":
-                    Log.Debug($"Клик по элементу: {selector}");
-                    await element.ClickAsync();
-                    break;
-
-                case "queryselector":
-                    Log.Debug($"QuerySelector выполнен для элемента: {selector}");
-                    break;
-
-                case "getattribute":
-                    Log.Debug($"Получение атрибута '{action.Attribute}' для элемента: {selector}");
-                    string attributeValue = await element.GetAttributeAsync(action.Attribute);
-                    Log.Debug($"Значение атрибута: {attributeValue}");
-                    break;
-
-                default:
-                    Log.Error($"Неподдерживаемое действие: {action.Action}");
-                    throw new ArgumentException($"Unsupported action: {action.Action}");
-            }
-
-            if (action.Delay > 0)
-            {
-                Log.Debug($"Ожидание задержки: {action.Delay} мс");
-                await Task.Delay(action.Delay);
-            }
-
-            if (action.Condition != null && action.Attribute != null)
-            {
-                string attributeValue = await element.GetAttributeAsync(action.Attribute);
-                Log.Debug($"Проверка условия для атрибута '{action.Attribute}': ожидаемое значение = {action.Condition.CheckValue}, текущее значение = {attributeValue}");
-                if (attributeValue == action.Condition.CheckValue)
-                {
-                    Log.Debug("Условие выполнено. Выполнение дополнительного действия...");
-                    await PerformConditionAction(page, element, action.Condition);
-                }
-            }
+            Log.Debug("Условие выполнено. Выполнение дополнительного действия...");
+            await PerformConditionAction(page, element, action.Condition);
         }
+    }
+}
 
         private static async Task PerformConditionAction(IPage page, IElementHandle element, ConditionAction condition)
         {
@@ -166,6 +175,7 @@ namespace TikTokMediaRelayBot
             }
         }
     }
+}
 
     public class ElementAction
     {
@@ -185,4 +195,3 @@ namespace TikTokMediaRelayBot
         public int DelayAfterAction { get; set; }
         public bool RecheckAttribute { get; set; }
     }
-}

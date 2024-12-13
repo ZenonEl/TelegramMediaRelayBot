@@ -14,10 +14,10 @@ namespace TikTokMediaRelayBot.SitesConfig
         public List<Site> Sites { get; set; }
     }
 
-public class DefaultsConfig
-{
-    public List<ElementAction> elements_path { get; set; }
-}
+    public class DefaultsConfig
+    {
+        public List<ElementAction> elements_path { get; set; }
+    }
 
     public class Site
     {
@@ -28,6 +28,7 @@ public class DefaultsConfig
     public class Getter
     {
         public List<string> Patterns { get; set; }
+        public List<string> sites_getters { get; set; } // Добавлено свойство sites_getters
         public List<ElementAction> elements_path { get; set; }
     }
 
@@ -41,8 +42,8 @@ public class DefaultsConfig
             var yaml = File.ReadAllText("sitessettings.yaml");
 
             var deserializer = new DeserializerBuilder()
-    .WithNamingConvention(UnderscoredNamingConvention.Instance)
-    .Build();
+                .WithNamingConvention(UnderscoredNamingConvention.Instance) // Используем snake_case для десериализации
+                .Build();
 
             var config = deserializer.Deserialize<SiteConfig>(yaml);
 
@@ -55,9 +56,9 @@ public class DefaultsConfig
             {
                 foreach (var getter in site.Getters)
                 {
-                    if (getter.Patterns == null || getter.elements_path == null)
+                    if (getter.Patterns == null || getter.elements_path == null || getter.sites_getters == null)
                     {
-                        continue;
+                        continue; // Пропускаем геттеры с отсутствующими данными
                     }
 
                     foreach (var pattern in getter.Patterns)
