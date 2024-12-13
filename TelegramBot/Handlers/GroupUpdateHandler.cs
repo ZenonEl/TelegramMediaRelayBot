@@ -26,7 +26,7 @@ public class GroupUpdateHandler
             {
                 string videoUrl = update.Message.Text;
                 await botClient.SendMessage(update.Message.Chat.Id, "Подождите, идет скачивание видео...", cancellationToken: cancellationToken);
-                // _ = TelegramBot.HandleVideoRequest(botClient, videoUrl, update.Message.Chat.Id, true);
+                _ = TelegramBot.HandleVideoRequest(botClient, videoUrl, update.Message.Chat.Id, true);
             }
             else
             {

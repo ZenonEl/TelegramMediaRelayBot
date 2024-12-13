@@ -10,8 +10,9 @@ namespace TikTokMediaRelayBot
         public static string inputId = "s_input";
         public static string downloadButtonClass = "btn-red";
         public static string finalDownloadButtonClass = "dl-success";
+        public static string finalDownloadButtonID = "ConvertToVideo";
         public static int maxAttempts = 5;
-        public static void LoadConfig()
+        public static void loadConfig()
         {
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
