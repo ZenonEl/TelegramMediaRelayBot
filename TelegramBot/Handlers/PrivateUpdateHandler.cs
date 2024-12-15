@@ -1,8 +1,7 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Polling;
-using System.Text.RegularExpressions;
 using MediaTelegramBot.Menu;
+using MediaTelegramBot.Utils;
 using Serilog;
 
 namespace MediaTelegramBot;
@@ -12,11 +11,9 @@ public class PrivateUpdateHandler
 {
     public static async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
     {
-        string pattern = @"^(https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+\/(video|photo)\/\d+|https?:\/\/vt\.tiktok\.com\/[\w.-]+\/?)(\?.*|\/.*)?$";
-        Regex regex = new Regex(pattern);
 
         string messageText = update.Message.Text;
-        string link = "";
+        string link;
         string text = "";
 
         int newLineIndex = messageText.IndexOf('\n');
@@ -28,22 +25,13 @@ public class PrivateUpdateHandler
         }
         else
         {
-            if (regex.IsMatch(messageText))
-            {
-                link = messageText.Trim();
-            }
+            link = messageText.Trim();
         }
 
-        if (regex.IsMatch(link))
+        if (Utils.Utils.IsLink(link))
         {
-            Match match = regex.Match(link);
-            if (match.Success)
-            {
-                string videoUrl = match.Groups[1].Value;
-                await botClient.SendMessage(chatId, "Подождите, идет скачивание видео...", cancellationToken: cancellationToken);
-                
-                _ = TelegramBot.HandleVideoRequest(botClient, videoUrl, chatId, caption: text);
-            }
+            await botClient.SendMessage(chatId, "Подождите, идет скачивание видео...", cancellationToken: cancellationToken);
+            _ = TelegramBot.HandleVideoRequest(botClient, link, chatId, caption: text);
         }
         else if (update.Message.Text == "/start")
         {
@@ -74,8 +62,10 @@ public class PrivateUpdateHandler
 3) Нажимаете по этой кнопочке и всё. Человек добавлен, да, пока что таким образом :)
 
 <b>Приятного пользования! Проект ещё очень и очень молод, постоянно улучшается и меняется, поэтому следите за обновлениями!
-Либо вручную, либо через человека, что дал вам ссылку на этого чудо бота :D</>";
-            await Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken, helpText);
+Либо вручную, либо через человека, что дал вам ссылку на этого чудо бота :D</>
+
+Ссылки которые должны поддерживаться можно найти <a href='https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md'>здесь</a>";
+            await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken, helpText);
         }
         else
         {
@@ -93,7 +83,7 @@ public class PrivateUpdateHandler
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                 break;
             case "add_contact":
-                await CallbackQueryMenuUtils.AddContact(botClient, update, cancellationToken);
+                await Contacts.AddContact(botClient, update, cancellationToken);
                 if (!TelegramBot.userStates.ContainsKey(chatId))
                 {
                     TelegramBot.userStates[chatId] = new ProcessContactState();

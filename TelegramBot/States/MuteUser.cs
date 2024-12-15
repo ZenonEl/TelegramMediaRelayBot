@@ -1,6 +1,7 @@
 using DataBase;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using MediaTelegramBot.Utils;
 
 
 namespace MediaTelegramBot;
@@ -32,8 +33,8 @@ public class ProcessUserMuteState : IUserState
 
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        long chatId = Utils.GetIDfromUpdate(update);
-        if (Utils.CheckNonZeroID(chatId)) return;
+        long chatId = Utils.Utils.GetIDfromUpdate(update);
+        if (Utils.Utils.CheckNonZeroID(chatId)) return;
 
         if (!TelegramBot.userStates.ContainsKey(chatId))
         {
@@ -53,7 +54,7 @@ public class ProcessUserMuteState : IUserState
 
                     if (name == "" || !allowedIds.Contains(mutedContactId))
                     {
-                        await Utils.AlertMessageAndShowMenu(botClient, update, cancellationToken, chatId, "По этому ID никто не найден.");
+                        await Utils.Utils.AlertMessageAndShowMenu(botClient, update, cancellationToken, chatId, "По этому ID никто не найден.");
                         return;
                     }
                     await botClient.SendMessage(chatId, $"Будем работать с этим контактом?\nID: {contactId} Имя: {name} ?", cancellationToken: cancellationToken,
@@ -67,7 +68,7 @@ public class ProcessUserMuteState : IUserState
                     
                     if (contactId == -1 || !allowedIds.Contains(mutedContactId))
                     {
-                        await Utils.AlertMessageAndShowMenu(botClient, update, cancellationToken, chatId, "По этой ссылке никто не найден.");
+                        await Utils.Utils.AlertMessageAndShowMenu(botClient, update, cancellationToken, chatId, "По этой ссылке никто не найден.");
                         return;
                     }
                     string name = DBforGetters.GetUserNameByID(contactId);
@@ -81,7 +82,7 @@ public class ProcessUserMuteState : IUserState
                 break;
 
             case UserMuteState.WaitingForConfirmation:
-                if (await Utils.HandleStateBreakCommand(botClient, update, cancellationToken, chatId)) return;
+                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, cancellationToken, chatId)) return;
 
                 string text = @"
 Чтобы перевести секунды в другие единицы времени, используйте следующие соотношения:
@@ -133,16 +134,16 @@ public class ProcessUserMuteState : IUserState
                 break;
 
             case UserMuteState.Finish:
-                if (await Utils.HandleStateBreakCommand(botClient, update, cancellationToken, chatId)) return;
+                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, cancellationToken, chatId)) return;
                 await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
 
                 TelegramBot.userStates.Remove(chatId);
                 if (!CoreDB.AddMutedContact(mutedByUserId, mutedContactId, expirationDate))
                 {
-                    await Utils.AlertMessageAndShowMenu(botClient, update, cancellationToken, chatId, "Произошла ошибка. Действия отменены.");
+                    await Utils.Utils.AlertMessageAndShowMenu(botClient, update, cancellationToken, chatId, "Произошла ошибка. Действия отменены.");
                     return;
                 }
-                await Utils.AlertMessageAndShowMenu(botClient, update, cancellationToken, chatId, "Мут установлен.");
+                await Utils.Utils.AlertMessageAndShowMenu(botClient, update, cancellationToken, chatId, "Мут установлен.");
                 break;
         }
     }

@@ -1,74 +1,54 @@
-using Microsoft.Playwright;
-using Serilog;
-using System.Threading.Tasks;
-
-namespace TikTokMediaRelayBot;
+using System.Diagnostics;
 
 
-public class VideoGet
+namespace TikTokMediaRelayBot
 {
-    public static async Task<string?> GetDownloadLink(string videoUrl)
+    public class VideoGet
     {
-        using (var playwright = await Playwright.CreateAsync().ConfigureAwait(false))
+        private static readonly string YtDlpPath = Path.Combine(Directory.GetCurrentDirectory(), "yt-dlp");
+        private static readonly string Proxy = "socks5://127.0.0.1:9150";
+
+        public static async Task<byte[]?> DownloadVideoAsync(string videoUrl)
         {
-            var launchOptions = new BrowserTypeLaunchOptions
-            {
-                Headless = true,
-                Proxy = new Proxy
-                {
-                    Server = "socks5://localhost:9150"
-                }
-            };
-
-            var browser = await playwright.Firefox.LaunchAsync(launchOptions);
-            var page = await browser.NewPageAsync();
-
-            Log.Debug("Браузер инициализирован. Открытие страницы...");
-            await page.GotoAsync("https://tikvideo.app/ru");
-
-            Log.Debug("Ввод URL видео...");
-            await page.FillAsync($"#{Config.inputId}", videoUrl);
-
             try
             {
-                await page.ClickAsync($".{Config.downloadButtonClass}");
-            }
-            catch (PlaywrightException)
-            {
-                await page.EvaluateAsync("arguments[0].click();", await page.QuerySelectorAsync($".{Config.downloadButtonClass}"));
-            }
-
-            Log.Debug("Ожидание загрузки...");
-            await Task.Delay(5000);
-
-            string downloadLink = "";
-            try
-            {
-                var finalDownloadLinkElement = await page.QuerySelectorAsync($".{Config.finalDownloadButtonClass}");
-                downloadLink = await finalDownloadLinkElement.GetAttributeAsync("href");
-                if (downloadLink == "#")
+                ProcessStartInfo startInfo = new ProcessStartInfo
                 {
-                    try
+                    FileName = YtDlpPath,
+                    Arguments = $"--proxy \"{Proxy}\" -f bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best --output - {videoUrl}",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using (Process process = new Process { StartInfo = startInfo })
+                {
+                    process.Start();
+
+                    using (MemoryStream memoryStream = new MemoryStream())
                     {
-                        await finalDownloadLinkElement.ClickAsync();
+                        await process.StandardOutput.BaseStream.CopyToAsync(memoryStream);
+                        byte[] videoBytes = memoryStream.ToArray();
+
+                        if (process.ExitCode == 0)
+                        {
+                            return videoBytes;
+                        }
+                        else
+                        {
+                            string error = await process.StandardError.ReadToEndAsync();
+                            Console.WriteLine($"Ошибка при скачивании видео: {error}");
+                            return null;
+                        }
                     }
-                    catch (PlaywrightException)
-                    {
-                        await page.EvaluateAsync("arguments[0].click();", finalDownloadLinkElement);
-                    }
-                    await Task.Delay(3000);
-                    downloadLink = await finalDownloadLinkElement.GetAttributeAsync("href");
                 }
             }
-            catch (PlaywrightException)
+            catch (Exception ex)
             {
-                Log.Error("Не удалось найти ссылку для скачивания видео. {MethodName}", nameof(GetDownloadLink));
+                Console.WriteLine($"Произошла ошибка: {ex.Message}");
+                return null;
             }
-
-            await browser.CloseAsync();
-
-            return string.IsNullOrEmpty(downloadLink) ? null : downloadLink;
         }
     }
 }
-

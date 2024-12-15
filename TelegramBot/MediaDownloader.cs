@@ -33,7 +33,7 @@ partial class TelegramBot
             AllowedUpdates = { }
         };
 
-        botClient.StartReceiving(UpdateHandler, Utils.ErrorHandler, receiverOptions, cancellationToken: cts.Token);
+        botClient.StartReceiving(UpdateHandler, Utils.Utils.ErrorHandler, receiverOptions, cancellationToken: cts.Token);
         Log.Information("Press any key to exit");
         Console.ReadKey();
         cts.Cancel();
@@ -41,8 +41,8 @@ partial class TelegramBot
 
     public static async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        long chatId = Utils.GetIDfromUpdate(update);
-        if (Utils.CheckNonZeroID(chatId)) return;
+        long chatId = Utils.Utils.GetIDfromUpdate(update);
+        if (Utils.Utils.CheckNonZeroID(chatId)) return;
 
         if (userStates[chatId] is IUserState userState)
         {
@@ -53,12 +53,12 @@ partial class TelegramBot
 
     private static async Task UpdateHandler(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        long chatId = Utils.GetIDfromUpdate(update);
-        if (Utils.CheckNonZeroID(chatId)) return;
+        long chatId = Utils.Utils.GetIDfromUpdate(update);
+        if (Utils.Utils.CheckNonZeroID(chatId)) return;
 
         LogEvent(update, chatId);
 
-        if (Utils.CheckPrivateChatType(update))
+        if (Utils.Utils.CheckPrivateChatType(update))
         {
             if (userStates.ContainsKey(chatId))
             {
@@ -88,57 +88,36 @@ partial class TelegramBot
 
     public static async Task HandleVideoRequest(ITelegramBotClient botClient, string videoUrl, long chatId, bool groupChat = false, string caption = "")
     {
-        int maxAttempts = Config.maxAttempts;
 
-        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        byte[]? videoBytes = await VideoGet.DownloadVideoAsync(videoUrl);
+        if (videoBytes != null)
         {
-            string downloadLink = await VideoGet.GetDownloadLink(videoUrl);
-            if (!string.IsNullOrEmpty(downloadLink) && downloadLink != "#")
-            {
-                await SendVideoToTelegram(downloadLink, chatId, botClient, groupChat, caption);
-                Log.Debug("Видео успешно получено.");
-                return;
-            }
-
-            Log.Warning($"Attempt {attempt} failed. Retrying...");
+            await SendVideoToTelegram(videoBytes, chatId, botClient, groupChat, caption);
+            Log.Debug("Видео успешно получено.");
+            return;
         }
 
-        await botClient.SendMessage(chatId, "Не удалось получить ссылку на видео после 5 попыток.");
+        await botClient.SendMessage(chatId, "Не удалось обработать ссылку.");
     }
 
 
-    public static async Task SendVideoToTelegram(string videoUrl, long chatId, ITelegramBotClient botClient, bool groupChat = false, string caption = "")
+    public static async Task SendVideoToTelegram(byte[] videoBytes, long chatId, ITelegramBotClient botClient, bool groupChat = false, string caption = "")
     {
-        using (HttpClient httpClient = new HttpClient())
+        using (var stream = new MemoryStream(videoBytes))
         {
-            var response = await httpClient.GetAsync(videoUrl);
+            stream.Position = 0;
+            string text = caption != "" ? " С текстом: \n\n" + caption : "";
 
-            if (response.IsSuccessStatusCode)
-            {
-                var videoStream = await response.Content.ReadAsStreamAsync();
+            var message = await botClient.SendDocument(chatId, InputFile.FromStream(stream, "video.mp4"), caption: "Вот ваше видео!" + text);
+            Log.Debug("Видео успешно отправлено в Telegram.");
 
-                using (var stream = new MemoryStream())
-                {
-                    await videoStream.CopyToAsync(stream);
-                    stream.Position = 0;
-                    string text = "";
-                    if (caption != "") text = " С текстом: \n\n" + caption;
-
-                    var message = await botClient.SendDocument(chatId, InputFile.FromStream(stream, "video.mp4"), caption: "Вот ваше видео!" + text);
-                    Log.Information("Видео успешно отправлено в Telegram.");
-
-                    string FileId;
-                    if (message.Video != null && message.Video.FileId != null) FileId = message.Video.FileId;
-                    else FileId = message.Document.FileId;
-
-                    if (!groupChat) await SendVideoToContacts(FileId, chatId, botClient, caption);
-                }
-            }
+            string FileId;
+            if (message.Video != null && message.Video.FileId != null)
+                FileId = message.Video.FileId;
             else
-            {
-                Log.Error($"Ошибка при скачивании видео: {response.StatusCode}");
-                await botClient.SendMessage(chatId, "Ошибка при скачивании видео.");
-            }
+                FileId = message.Document.FileId;
+
+            if (!groupChat) await SendVideoToContacts(FileId, chatId, botClient, caption);
         }
     }
 
@@ -149,8 +128,8 @@ partial class TelegramBot
         var mutedByUserIds = DBforGetters.GetUsersIdForMuteContactId(userId);
         var filteredContactUserTGIds = contactUserTGIds.Except(mutedByUserIds).ToList();
 
-        Log.Information($"Рассылка видео для ({filteredContactUserTGIds.Count}) пользователей.", nameof(SendVideoToContacts));
-        Log.Information($"Пользователь {userId} в муте у: {mutedByUserIds.Count}", nameof(SendVideoToContacts));
+        Log.Information($"Рассылка видео для ({filteredContactUserTGIds.Count}) пользователей.");
+        Log.Information($"Пользователь {userId} в муте у: {mutedByUserIds.Count}");
 
         DateTime now = DateTime.Now;
         string name = await DBforGetters.GetUserNameByTelegramID(telegramId);
@@ -183,7 +162,7 @@ partial class TelegramBot
             logMessage = "Message";
             callbackData = update.Message.Text;
             userId = update.Message.From.Id;
-            if (!Utils.CheckPrivateChatType(update))
+            if (!Utils.Utils.CheckPrivateChatType(update))
             {
                 if (!update.Message.Text.Contains("/link") || !update.Message.Text.Contains("/help")) return;
             }

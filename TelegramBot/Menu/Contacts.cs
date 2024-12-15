@@ -1,7 +1,6 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
+using MediaTelegramBot.Utils;
 using DataBase;
 
 
@@ -11,6 +10,10 @@ namespace MediaTelegramBot.Menu;
 
 public class Contacts
 {
+    public static Task AddContact(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    {
+        return Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, "Укажите ссылку человека:");
+    }
     public static async Task MuteUserContact(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
     {
         await botClient.SendMessage(update.CallbackQuery.Message.Chat.Id, "Чтобы замутить человека (вы не будете получать от него видео) вам нужно указать либо его ID либо его ссылку");
@@ -35,6 +38,6 @@ public class Contacts
 
             contactUsersInfo.Add($"\nПользователь с ID: {id}\nИменем: {username}\nСсылкой: <code>{link}</>");
         }
-        await Utils.SendMessage(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), cancellationToken, $"Ваши контакты:\n{string.Join("\n", contactUsersInfo)}");
+        await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), cancellationToken, $"Ваши контакты:\n{string.Join("\n", contactUsersInfo)}");
     }
 }

@@ -1,6 +1,7 @@
 using DataBase;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using MediaTelegramBot.Utils;
 
 
 namespace MediaTelegramBot;
@@ -29,8 +30,8 @@ public class ProcessContactState : IUserState
 
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        long chatId = Utils.GetIDfromUpdate(update);
-        if (Utils.CheckNonZeroID(chatId)) return;
+        long chatId = Utils.Utils.GetIDfromUpdate(update);
+        if (Utils.Utils.CheckNonZeroID(chatId)) return;
 
         switch (currentState)
         {
@@ -47,7 +48,7 @@ public class ProcessContactState : IUserState
                 
                 if (DBforGetters.GetContactIDByLink(link) == -1)
                 {
-                    await Utils.AlertMessageAndShowMenu(botClient, update, cancellationToken, chatId, "По этой ссылке никто не найден.");
+                    await Utils.Utils.AlertMessageAndShowMenu(botClient, update, cancellationToken, chatId, "По этой ссылке никто не найден.");
                     return;
                 }
                 
@@ -67,7 +68,7 @@ public class ProcessContactState : IUserState
                 break;
 
             case ContactState.WaitingForConfirmation:
-                if (await Utils.HandleStateBreakCommand(botClient, update, cancellationToken, chatId)) return;
+                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, cancellationToken, chatId)) return;
                 
                 CoreDB.AddContact(chatId, link);
                 
