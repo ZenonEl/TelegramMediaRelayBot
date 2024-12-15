@@ -53,6 +53,13 @@
     <data name="YourContacts" xml:space="preserve">
     <value>Ваши контакты:</value>
     </data>
+    <data name="ContactInfo" xml:space="preserve">
+    <value>
+Контакт с ID: {0}
+Именем: {1}
+Ссылкой: &lt;code&gt;{2}&lt;/code&gt;
+</value>
+    </data>
     <data name="NoUserFoundByLink" xml:space="preserve">
     <value>По этой ссылке никто не найден.</value>
     </data>
@@ -191,5 +198,33 @@
     </data>
     <data name="ChooseOptionText" xml:space="preserve">
     <value>Выберите опцию:</value>
+    </data>
+    <data name="FailedToProcessLink" xml:space="preserve">
+    <value>Не удалось обработать ссылку.</value>
+    </data>
+    <data name="HereIsYourVideo" xml:space="preserve">
+    <value>Вот ваше видео! </value>
+    </data>
+    <data name="VideoSentToContacts" xml:space="preserve">
+    <value>Видео успешно отправлено всем ({0}) контактам.
+
+#{1}_{2}</value>
+    </data>
+    <data name="MutedByContacts" xml:space="preserve">
+    <value>Вы находитесь в муте у некоторых контактов ({0}).</value>
+    </data>
+    <data name="ContactSentVideo" xml:space="preserve">
+    <value>{0} отправил видео!
+#{1}_{2}
+
+
+{3}
+</value>
+    </data>
+    <data name="WithText" xml:space="preserve">
+    <value>С текстом:
+
+
+</value>
     </data>
 </root>

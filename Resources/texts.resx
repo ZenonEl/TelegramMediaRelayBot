@@ -53,6 +53,13 @@
     <data name="YourContacts" xml:space="preserve">
     <value>Your contacts:</value>
     </data>
+    <data name="ContactInfo" xml:space="preserve">
+      <value>
+Contact with ID: {0}
+Name: {1}
+Link: &lt;code&gt;{2}&lt;/code&gt;
+</value>
+    </data>
     <data name="NoUserFoundByLink" xml:space="preserve">
     <value>No one was found by this link.</value>
     </data>
@@ -191,5 +198,33 @@ The last step and we will mute them. Now enter the mute time in seconds:</value>
     </data>
     <data name="ChooseOptionText" xml:space="preserve">
       <value>Choose an option:</value>
+    </data>
+    <data name="FailedToProcessLink" xml:space="preserve">
+        <value>Failed to process the link.</value>
+    </data>
+    <data name="HereIsYourVideo" xml:space="preserve">
+        <value>Here is your video!</value>
+    </data>
+    <data name="VideoSentToContacts" xml:space="preserve">
+        <value>Video successfully sent to all ({0}) contacts.
+
+#{1}_{2}</value>
+    </data>
+    <data name="MutedByContacts" xml:space="preserve">
+        <value>You are muted by some contacts ({0}).</value>
+    </data>
+    <data name="ContactSentVideo" xml:space="preserve">
+        <value>{0} sent a video!
+#{1}_{2}
+
+
+{3}
+</value>
+    </data>
+    <data name="WithText" xml:space="preserve">
+        <value>With text:
+
+
+</value>
     </data>
 </root>

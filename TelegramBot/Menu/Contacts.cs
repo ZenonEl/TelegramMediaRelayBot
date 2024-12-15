@@ -36,7 +36,7 @@ public class Contacts
             string username = await DBforGetters.GetUserNameByTelegramID(contactUserId);
             string link = DBforGetters.GetSelfLink(contactUserId);
 
-            contactUsersInfo.Add($"\nID: {id}\n{username}\n<code>{link}</>");
+            contactUsersInfo.Add(string.Format(Config.resourceManager.GetString("ContactInfo", System.Globalization.CultureInfo.CurrentUICulture), id, username, link));
         }
 
         await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), cancellationToken, $"{Config.resourceManager.GetString("YourContacts", System.Globalization.CultureInfo.CurrentUICulture)}\n{string.Join("\n", contactUsersInfo)}");

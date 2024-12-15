@@ -8,7 +8,6 @@ using Serilog;
 
 namespace MediaTelegramBot;
 
-
 public class UserState
 {
     public ContactState State { get; set; }
@@ -50,7 +49,6 @@ partial class TelegramBot
         }
     }
 
-
     private static async Task UpdateHandler(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         long chatId = Utils.Utils.GetIDfromUpdate(update);
@@ -88,28 +86,28 @@ partial class TelegramBot
 
     public static async Task HandleVideoRequest(ITelegramBotClient botClient, string videoUrl, long chatId, bool groupChat = false, string caption = "")
     {
-
         byte[]? videoBytes = await VideoGet.DownloadVideoAsync(videoUrl);
         if (videoBytes != null)
         {
             await SendVideoToTelegram(videoBytes, chatId, botClient, groupChat, caption);
-            Log.Debug("Видео успешно получено.");
+            Log.Debug("Video successfully received.");
             return;
         }
 
-        await botClient.SendMessage(chatId, "Не удалось обработать ссылку.");
+        await botClient.SendMessage(chatId, Config.resourceManager.GetString("FailedToProcessLink", System.Globalization.CultureInfo.CurrentUICulture));
     }
-
 
     public static async Task SendVideoToTelegram(byte[] videoBytes, long chatId, ITelegramBotClient botClient, bool groupChat = false, string caption = "")
     {
         using (var stream = new MemoryStream(videoBytes))
         {
             stream.Position = 0;
-            string text = caption != "" ? " С текстом: \n\n" + caption : "";
+            string text = caption != "" ? Config.resourceManager.GetString("WithText", System.Globalization.CultureInfo.CurrentUICulture) + caption : "";
 
-            var message = await botClient.SendDocument(chatId, InputFile.FromStream(stream, "video.mp4"), caption: "Вот ваше видео!" + text);
-            Log.Debug("Видео успешно отправлено в Telegram.");
+            var message = await botClient.SendDocument(chatId, InputFile.FromStream(stream, "video.mp4"), 
+                                                        caption: Config.resourceManager.GetString("HereIsYourVideo", 
+                                                        System.Globalization.CultureInfo.CurrentUICulture) + text);
+            Log.Debug("Video successfully sent to Telegram.");
 
             string FileId;
             if (message.Video != null && message.Video.FileId != null)
@@ -128,20 +126,28 @@ partial class TelegramBot
         var mutedByUserIds = DBforGetters.GetUsersIdForMuteContactId(userId);
         var filteredContactUserTGIds = contactUserTGIds.Except(mutedByUserIds).ToList();
 
-        Log.Information($"Рассылка видео для ({filteredContactUserTGIds.Count}) пользователей.");
-        Log.Information($"Пользователь {userId} в муте у: {mutedByUserIds.Count}");
+        Log.Information($"Sending video to ({filteredContactUserTGIds.Count}) users.");
+        Log.Information($"User {userId} is muted by: {mutedByUserIds.Count}");
 
         DateTime now = DateTime.Now;
         string name = await DBforGetters.GetUserNameByTelegramID(telegramId);
-        string text = $"Ваш контакт {name} отправил видео!\n#{now:yyyy_MM_dd_HH_mm_ss}_{MyRegex().Replace(name, "_")}\n\n{caption}";
+        string text = string.Format(Config.resourceManager.GetString("ContactSentVideo", System.Globalization.CultureInfo.CurrentUICulture), 
+                                    name, now.ToString("yyyy_MM_dd_HH_mm_ss"), MyRegex().Replace(name, "_"), caption);
 
         foreach (var contactUserId in filteredContactUserTGIds)
         {
             await botClient.SendDocument(contactUserId, InputFile.FromFileId(fileId), caption: text);
         }
 
-        if (filteredContactUserTGIds.Count > 0) await botClient.SendMessage(telegramId, $"Видео успешно отправлено всем ({filteredContactUserTGIds.Count}) контактам.\n#{now:yyyy_MM_dd_HH_mm_ss}_{MyRegex().Replace(name, "_")}");
-        if (mutedByUserIds.Count > 0) await botClient.SendMessage(telegramId, $"Вы находитесь с мутом у каких то контактов ({mutedByUserIds.Count}).");
+        if (filteredContactUserTGIds.Count > 0) await botClient.SendMessage(telegramId, 
+                                                                            string.Format(Config.resourceManager.GetString("VideoSentToContacts", 
+                                                                            System.Globalization.CultureInfo.CurrentUICulture), 
+                                                                            filteredContactUserTGIds.Count, now.ToString("yyyy_MM_dd_HH_mm_ss"), 
+                                                                            MyRegex().Replace(name, "_")));
+        if (mutedByUserIds.Count > 0) await botClient.SendMessage(telegramId, 
+                                                                string.Format(Config.resourceManager.GetString("MutedByContacts", 
+                                                                System.Globalization.CultureInfo.CurrentUICulture), mutedByUserIds.Count));
+
     }
 
     public static void LogEvent(Update update, long chatId)

@@ -10,7 +10,7 @@ class Scheduler
     public static void Init()
     {
         _unMuteTimer = new Timer(async _ => await CheckForUnmuteContacts(), null, TimeSpan.Zero, TimeSpan.FromSeconds(10));
-        Log.Information("Скедулер запушен.", nameof(Scheduler));
+        Log.Information("Scheduler started");
     }
 
     private static async Task CheckForUnmuteContacts()
