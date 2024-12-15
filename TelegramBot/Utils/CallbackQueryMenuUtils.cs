@@ -1,7 +1,7 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using DataBase;
-
+using TikTokMediaRelayBot;
 
 namespace MediaTelegramBot.Utils;
 
@@ -10,13 +10,12 @@ public static class CallbackQueryMenuUtils
     public static Task GetSelfLink(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         string link = DBforGetters.GetSelfLink(update.CallbackQuery.Message.Chat.Id);
-        return Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, $"Ваша ссылка: <code>{link}</code>");
+        return Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(Config.resourceManager.GetString("YourLink", System.Globalization.CultureInfo.CurrentUICulture), link));
     }
 
     public static async Task ViewInboundInviteLinks(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        string text = $@"Ваши входящие приглашения:
-(Нажимая на кнопку вы тем самым принимаете запрос на добавление в свои контакты)";
+        string text = Config.resourceManager.GetString("YourInboundInvitations", System.Globalization.CultureInfo.CurrentUICulture);
         await Utils.SendMessage(botClient, update, await KeyboardUtils.GetInboundsKeyboardMarkup(update), cancellationToken, text);
     }
 
@@ -28,19 +27,7 @@ public static class CallbackQueryMenuUtils
 
     public static Task WhosTheGenius(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        string text = @"Всем привет! 
-Я, ZenonEl создатель этого мешка с кодом и алгоритмами.
-Мой GitHub: https://github.com/ZenonEl/
-
-Идея создания этого бота возникла у меня, когда в очередной раз мои знакомые были вынуждены присылать видео с Тик Тока (которым я не пользуюсь) вручную (скачивая его и отправляя... потом удаляя видео с телефона...).
-В общем, и я подумал, что было бы здорово облегчить все эти монотонные действия для них и решил создать этого самого бота
-Теперь благодаря ему я могу запустить простого бота хоть у себя на ПК. Выставить список контактов от кого я хочу получать видосики и всё, облегчил жизнь и себе, и своим знакомым.
-Удобно!
-
-Приятного пользования!
-
-PS: В будущем планируется сделать бота универсальным реле. Где через конфиг можно будет выставить поддерживаемые сайты и то как боту с ними работать.";
+        string text = Config.resourceManager.GetString("WhosTheGeniusText", System.Globalization.CultureInfo.CurrentUICulture);
         return Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, text);
     }
-
 }

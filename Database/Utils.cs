@@ -20,7 +20,7 @@ namespace DataBase
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(executeVoidQuery));
+                    Log.Error(ex, "An error occurred in the method{MethodName}", nameof(executeVoidQuery));
                 }
             }
         }

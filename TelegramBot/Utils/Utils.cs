@@ -3,6 +3,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using TikTokMediaRelayBot;
 
 
 namespace MediaTelegramBot.Utils;
@@ -50,25 +51,37 @@ public static class Utils
         return false;
     }
 
-    public static Task SendMessage(ITelegramBotClient botClient, Update update, InlineKeyboardMarkup inlineKeyboard
-                                    ,CancellationToken cancellationToken, string text = "Выберите опцию:")
+    public static Task SendMessage(ITelegramBotClient botClient, Update update, InlineKeyboardMarkup inlineKeyboard,
+                                    CancellationToken cancellationToken, string text = null)
     {
+        // Используем локализованную строку для текста по умолчанию
+        text ??= Config.resourceManager.GetString("ChooseOptionText", System.Globalization.CultureInfo.CurrentUICulture);
+
         long chatId = GetIDfromUpdate(update);
-        if (update.CallbackQuery != null) return botClient.EditMessageText(
-                                                chatId: chatId,
-                                                messageId: update.CallbackQuery.Message.MessageId,
-                                                text: text,
-                                                replyMarkup: inlineKeyboard,
-                                                cancellationToken: cancellationToken,
-                                                parseMode: ParseMode.Html
-                                );
-        if (update.Message != null) return botClient.SendMessage(
-                                    chatId: chatId,
-                                    text: text,
-                                    replyMarkup: inlineKeyboard,
-                                    cancellationToken: cancellationToken,
-                                    parseMode: ParseMode.Html
-                                );
+
+        if (update.CallbackQuery != null)
+        {
+            return botClient.EditMessageText(
+                chatId: chatId,
+                messageId: update.CallbackQuery.Message.MessageId,
+                text: text,
+                replyMarkup: inlineKeyboard,
+                cancellationToken: cancellationToken,
+                parseMode: ParseMode.Html
+            );
+        }
+
+        if (update.Message != null)
+        {
+            return botClient.SendMessage(
+                chatId: chatId,
+                text: text,
+                replyMarkup: inlineKeyboard,
+                cancellationToken: cancellationToken,
+                parseMode: ParseMode.Html
+            );
+        }
+
         return Task.CompletedTask;
     }
 

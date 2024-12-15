@@ -1,9 +1,8 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
-
+using TikTokMediaRelayBot;
 
 namespace MediaTelegramBot;
-
 
 public class GroupUpdateHandler
 {
@@ -17,18 +16,17 @@ public class GroupUpdateHandler
             if (Utils.Utils.IsLink(link))
             {
                 string videoUrl = update.Message.Text;
-                await botClient.SendMessage(update.Message.Chat.Id, "Подождите, идет скачивание видео...", cancellationToken: cancellationToken);
+                await botClient.SendMessage(update.Message.Chat.Id, Config.resourceManager.GetString("WaitDownloadingVideo", System.Globalization.CultureInfo.CurrentUICulture), cancellationToken: cancellationToken);
                 _ = TelegramBot.HandleVideoRequest(botClient, videoUrl, update.Message.Chat.Id, true);
             }
             else
             {
-                await botClient.SendMessage(update.Message.Chat.Id, "И что мне с этим делать? Не тот формат ссылки.", cancellationToken: cancellationToken);
+                await botClient.SendMessage(update.Message.Chat.Id, Config.resourceManager.GetString("InvalidLinkFormat", System.Globalization.CultureInfo.CurrentUICulture), cancellationToken: cancellationToken);
             }
         }
         else if (update.Message.Text == "/help")
         {
-            string text = @"Просто отправь мне команду: /link [ссылка_на_тт_видео]
-PS: квадратные скобки не нужны :)";
+            string text = Config.resourceManager.GetString("GroupHelpText", System.Globalization.CultureInfo.CurrentUICulture);
             await botClient.SendMessage(update.Message.Chat.Id, text, cancellationToken: cancellationToken);
         }
     }

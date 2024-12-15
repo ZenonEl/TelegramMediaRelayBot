@@ -2,11 +2,9 @@ using DataBase;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using MediaTelegramBot.Utils;
-
+using TikTokMediaRelayBot;
 
 namespace MediaTelegramBot;
-
-
 
 public class ProcessContactState : IUserState
 {
@@ -43,47 +41,47 @@ public class ProcessContactState : IUserState
                     TelegramBot.userStates.Remove(chatId);
                     return;
                 }
-                
+
                 link = update.Message.Text;
-                
+
                 if (DBforGetters.GetContactIDByLink(link) == -1)
                 {
-                    await Utils.Utils.AlertMessageAndShowMenu(botClient, update, cancellationToken, chatId, "По этой ссылке никто не найден.");
+                    await Utils.Utils.AlertMessageAndShowMenu(botClient, update, cancellationToken, chatId, Config.resourceManager.GetString("NoUserFoundByLink", System.Globalization.CultureInfo.CurrentUICulture));
                     return;
                 }
-                
-                await botClient.SendMessage(chatId, "По этой ссылке найден один человек.", cancellationToken: cancellationToken,
-                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup("Дальше"));
-                
+
+                await botClient.SendMessage(chatId, Config.resourceManager.GetString("UserFoundByLink", System.Globalization.CultureInfo.CurrentUICulture), cancellationToken: cancellationToken,
+                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.resourceManager.GetString("NextButtonText", System.Globalization.CultureInfo.CurrentUICulture)));
+
                 currentState = ContactState.WaitingForName;
                 break;
 
             case ContactState.WaitingForName:
-                string text_data = $"Ссылка: {link} \nИмя: {DBforGetters.GetUserNameByID(DBforGetters.GetContactIDByLink(link))}";
-                
-                await botClient.SendMessage(chatId, "Подтвердите добавление (в противном случае напишите /start): " + text_data, cancellationToken: cancellationToken,
-                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup("Дальше"));
-                
+                string text_data = $"{Config.resourceManager.GetString("LinkText", System.Globalization.CultureInfo.CurrentUICulture)}: {link} \n{Config.resourceManager.GetString("NameText", System.Globalization.CultureInfo.CurrentUICulture)}: {DBforGetters.GetUserNameByID(DBforGetters.GetContactIDByLink(link))}";
+
+                await botClient.SendMessage(chatId, Config.resourceManager.GetString("ConfirmAdditionText", System.Globalization.CultureInfo.CurrentUICulture) + text_data, cancellationToken: cancellationToken,
+                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.resourceManager.GetString("NextButtonText", System.Globalization.CultureInfo.CurrentUICulture)));
+
                 currentState = ContactState.WaitingForConfirmation;
                 break;
 
             case ContactState.WaitingForConfirmation:
                 if (await Utils.Utils.HandleStateBreakCommand(botClient, update, cancellationToken, chatId)) return;
-                
+
                 CoreDB.AddContact(chatId, link);
-                
+
                 await SendNotification(botClient, chatId, cancellationToken);
-                await botClient.SendMessage(chatId, "Теперь ожидайте когда контакт также добавит вас в свой список.", 
-                                            cancellationToken: cancellationToken, replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup("Ждёмс..."));
-                
+                await botClient.SendMessage(chatId, Config.resourceManager.GetString("WaitForContactConfirmation", System.Globalization.CultureInfo.CurrentUICulture),
+                                            cancellationToken: cancellationToken, replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.resourceManager.GetString("WaitForButtonText", System.Globalization.CultureInfo.CurrentUICulture)));
+
                 currentState = ContactState.FinishAddContact;
-                
+
                 break;
 
             case ContactState.FinishAddContact:
                 await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-                
+
                 TelegramBot.userStates.Remove(chatId);
                 break;
         }
@@ -91,6 +89,8 @@ public class ProcessContactState : IUserState
 
     public async Task SendNotification(ITelegramBotClient botClient, long chatId, CancellationToken cancellationToken)
     {
-        await botClient.SendMessage(DBforGetters.GetTelegramIDbyUserID(DBforGetters.GetContactIDByLink(link)), $"Пользователь {DBforGetters.GetUserNameByTelegramID(chatId)} хочет добавить вас в свои контакты.", cancellationToken: cancellationToken);
+        await botClient.SendMessage(DBforGetters.GetTelegramIDbyUserID(DBforGetters.GetContactIDByLink(link)), 
+                                    string.Format(Config.resourceManager.GetString("UserWantsToAddYou", System.Globalization.CultureInfo.CurrentUICulture), DBforGetters.GetUserNameByTelegramID(chatId)), 
+                                    cancellationToken: cancellationToken);
     }
 }

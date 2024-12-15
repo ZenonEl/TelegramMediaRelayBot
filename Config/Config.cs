@@ -1,3 +1,4 @@
+using System.Resources;
 using Microsoft.Extensions.Configuration;
 
 namespace TikTokMediaRelayBot
@@ -6,6 +7,7 @@ namespace TikTokMediaRelayBot
     {
         public static string telegramBotToken;
         public static string sqlConnectionString;
+        public static ResourceManager resourceManager = new ResourceManager("TikTokMediaRelayBot.Resources.texts", typeof(Program).Assembly);
 
         public static int maxAttempts = 5;
         public static void loadConfig()

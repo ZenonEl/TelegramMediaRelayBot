@@ -26,7 +26,7 @@ public class DBforGetters
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(GetLink));
+                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetLink));
                 return "";
             }
         }
@@ -62,7 +62,7 @@ public class DBforGetters
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(GetUserNameByID));
+                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetUserNameByID));
                 return "Not found";
             }
         }
@@ -89,7 +89,7 @@ public class DBforGetters
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(GetTelegramIDbyUserID));
+                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetTelegramIDbyUserID));
                 return -1;
             }
         }
@@ -116,7 +116,7 @@ public class DBforGetters
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(GetUserIDbyTelegramID));
+                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetUserIDbyTelegramID));
                 return -1;
             }
         }
@@ -142,7 +142,7 @@ public class DBforGetters
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(GetContactIDByLink));
+                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetContactIDByLink));
                 return -1;
             }
         }
@@ -168,7 +168,7 @@ public class DBforGetters
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(GetContactByTelegramID));
+                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetContactByTelegramID));
                 return -1;
             }
         }
@@ -194,7 +194,7 @@ public class DBforGetters
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(GetUserNameByTelegramID));
+                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetUserNameByTelegramID));
                 return "Not found";
             }
         }
@@ -228,7 +228,7 @@ public class DBforGetters
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(GetUsersIdForMuteContactId));
+                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetUsersIdForMuteContactId));
             }
         }
 
@@ -260,7 +260,7 @@ public class DBforGetters
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(GetExpiredMutes));
+                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetExpiredMutes));
             }
         }
 

@@ -1,4 +1,5 @@
-﻿using DataBase;
+﻿using System.Globalization;
+using DataBase;
 using Serilog;
 
 namespace TikTokMediaRelayBot
@@ -7,11 +8,15 @@ namespace TikTokMediaRelayBot
     {
         static async Task Main(string[] args)
         {
+            CultureInfo currentCulture = CultureInfo.CurrentUICulture;
+
+            Thread.CurrentThread.CurrentUICulture = currentCulture;
+            Thread.CurrentThread.CurrentCulture = currentCulture;
+
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
                 .Enrich.FromLogContext()
                 .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss} [{Level}] {Message} {Exception}{NewLine}").CreateLogger();
-
             try 
             {
                 Config.loadConfig();
@@ -21,7 +26,7 @@ namespace TikTokMediaRelayBot
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(Main));
+                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(Main));
             }
             finally
             {

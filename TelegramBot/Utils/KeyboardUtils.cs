@@ -2,18 +2,19 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using DataBase;
-
+using TikTokMediaRelayBot;
 
 namespace MediaTelegramBot.Utils;
 
 public static class KeyboardUtils
 {
-    public static InlineKeyboardButton GetReturnButton(string callback = "main_menu", string text = "Назад")
+    public static InlineKeyboardButton GetReturnButton(string callback = "main_menu", string text = null)
     {
+        text ??= Config.resourceManager.GetString("BackButtonText", System.Globalization.CultureInfo.CurrentUICulture);
         return InlineKeyboardButton.WithCallbackData(text, callback);
     }
 
-    public static InlineKeyboardMarkup GetReturnButtonMarkup(string callback = "main_menu", string text = "Назад")
+    public static InlineKeyboardMarkup GetReturnButtonMarkup(string callback = "main_menu", string text = null)
     {
         var inlineKeyboard = new InlineKeyboardMarkup(new[]
                     {
@@ -46,8 +47,8 @@ public static class KeyboardUtils
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData("Замутить пользователя", "mute_user"),
-                            InlineKeyboardButton.WithCallbackData("Размутить пользователя", "unmute_user"),
+                            InlineKeyboardButton.WithCallbackData(Config.resourceManager.GetString("MuteUserButtonText", System.Globalization.CultureInfo.CurrentUICulture), "mute_user"),
+                            InlineKeyboardButton.WithCallbackData(Config.resourceManager.GetString("UnmuteUserButtonText", System.Globalization.CultureInfo.CurrentUICulture), "unmute_user"),
                         },
                         new[]
                         {
@@ -63,28 +64,26 @@ public static class KeyboardUtils
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData("Добавить контакт", "add_contact"),
-                            InlineKeyboardButton.WithCallbackData("Моя ссылка", "get_self_link"),
+                            InlineKeyboardButton.WithCallbackData(Config.resourceManager.GetString("AddContactButtonText", System.Globalization.CultureInfo.CurrentUICulture), "add_contact"),
+                            InlineKeyboardButton.WithCallbackData(Config.resourceManager.GetString("MyLinkButtonText", System.Globalization.CultureInfo.CurrentUICulture), "get_self_link"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData("Обзор входящих запросов на добавления в мои контакты", "view_inbound_invite_links"),
+                            InlineKeyboardButton.WithCallbackData(Config.resourceManager.GetString("ViewInboundInvitesButtonText", System.Globalization.CultureInfo.CurrentUICulture), "view_inbound_invite_links"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData("Обзор моих заявок на добавления в контакты", "view_outbound_invite_links"),
+                            InlineKeyboardButton.WithCallbackData(Config.resourceManager.GetString("ViewOutboundInvitesButtonText", System.Globalization.CultureInfo.CurrentUICulture), "view_outbound_invite_links"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData("Обзор всех моих контактов", "view_contacts"),
+                            InlineKeyboardButton.WithCallbackData(Config.resourceManager.GetString("ViewAllContactsButtonText", System.Globalization.CultureInfo.CurrentUICulture), "view_contacts"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData("Заглянуть за кулисы", "whos_the_genius")
+                            InlineKeyboardButton.WithCallbackData(Config.resourceManager.GetString("BehindTheScenesButtonText", System.Globalization.CultureInfo.CurrentUICulture), "whos_the_genius")
                         }
                     });
         return Utils.SendMessage(botClient, update, inlineKeyboard, cancellationToken);
     }
-
 }
-

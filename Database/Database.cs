@@ -207,7 +207,7 @@ public class CoreDB
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(UnMutedContact));
+                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(UnMutedContact));
             }
         }
     }
@@ -269,7 +269,7 @@ public class CoreDB
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(UnMuteByMuteId));
+                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(UnMuteByMuteId));
             }
         }
     }

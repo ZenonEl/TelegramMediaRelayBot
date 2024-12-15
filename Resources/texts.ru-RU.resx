@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <data name="WaitDownloadingVideo" xml:space="preserve">
+        <value>Подождите, идет скачивание видео...</value>
+    </data>
+    <data name="WhatShouldIDoWithThis" xml:space="preserve">
+        <value>И что мне с этим делать?</value>
+    </data>
+    <data name="HelpText" xml:space="preserve">
+        <value>&lt;b&gt;Работа с ссылками для ТТ&lt;/b&gt;: 
+                Просто отправь мне ссылку. Вот пример того как может выглядеть твоё сообщение: 
+    ссылка_на_тт_видео
+
+    Какой то твой крутой мега текст который будет под видео прислан всем твоим контактактикам, если ты их кнш заблаговременно добавил :D
+    Кстати советую использовать хештеги для навигации по видосам. Удобно будет искать как тому кто отправил так и тому кто получил :)
+
+                &lt;b&gt;Добавление контактов:&lt;/b&gt;
+    1) Нужен тот кто будет согласен связаться с вами и возможно подвергнутся спам атакам из видео.
+    2) Вы даете ему свою (или берете его) ссылку вида: 1234ab56-cde-78fg-01hi-2j34k56790 (Ссылку можно найти в главном меню в кнопке Моя ссылка).
+    3) Потом нажимаете кнопочку Добавить контакт в главном меню. После нажатия вас попросят указать ссылку другого человека которого вы хотите добавить, вида: 1234ab56-cde-78fg-01hi-2j34k56790
+    Просто ссылка, больше писать ничего не нужно. Если ссылка будет не действительна и никого не будет по ней найдено то вас об этом уведомят и вернут обратно в главное меню
+    Также &lt;s&gt;если вдруг, вы решили не мучать человека видосиками, то&lt;/s&gt; можете нажать кнопочку Назад, процесс добавления будет остановлен. И вас вернет обратно в главное меню.
+    4) В случае если кто то найден, вас об этом уведомят и останется лишь нажать на пару кнопочек.
+    5) Будет показана информация о человеке и попросят подтверждения на отправку запроса к нему. &lt;s&gt;Это будет последний ваш момент одуматься и отказаться добавлять человека в контакты, будьте так сказать аккуратны.&lt;/s&gt;
+    6) Человек получит уведомление о запросе и вам останется лишь ждать когда вас добавят в ответ. После этого ваши видео будут рассылаться по вашим контактам (куда вы только что добавили нового человека).
+
+                &lt;b&gt;Как принять заявку в контакты:&lt;/b&gt;
+    1) Нажимаете кнопочку ''Обзор входящих запросов на добавления в мои контакты.''
+    2) Находите нужную кнопочку с именем того кого вы знаете и хотите добавить к себе в контакты
+    3) Нажимаете по этой кнопочке и всё. Человек добавлен, да, пока что таким образом :)
+
+    &lt;b&gt;Приятного пользования! Проект ещё очень и очень молод, постоянно улучшается и меняется, поэтому следите за обновлениями!
+    Либо вручную, либо через человека, что дал вам ссылку на этого чудо бота :D&lt;/b&gt;
+
+    Ссылки которые должны поддерживаться можно найти &lt;a href='https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md'&gt;здесь&lt;/a&gt;</value>
+    </data>
+    <data name="InvalidLinkFormat" xml:space="preserve">
+    <value>И что мне с этим делать? Не тот формат ссылки.</value>
+    </data>
+    <data name="GroupHelpText" xml:space="preserve">
+    <value>Просто отправь мне команду: /link [ссылка_на_тт_видео]
+    PS: квадратные скобки не нужны :)</value>
+    </data>
+    <data name="SpecifyContactLink" xml:space="preserve">
+    <value>Укажите ссылку человека:</value>
+    </data>
+    <data name="MuteUserInstructions" xml:space="preserve">
+    <value>Чтобы замутить человека (вы не будете получать от него видео) вам нужно указать либо его ID либо его ссылку</value>
+    </data>
+    <data name="UnmuteUserInstructions" xml:space="preserve">
+    <value>Чтобы размутить человека (вы снова будете получать от него видео) вам нужно указать либо его ID либо его ссылку</value>
+    </data>
+    <data name="YourContacts" xml:space="preserve">
+    <value>Ваши контакты:</value>
+    </data>
+    <data name="NoUserFoundByLink" xml:space="preserve">
+    <value>По этой ссылке никто не найден.</value>
+    </data>
+    <data name="UserFoundByLink" xml:space="preserve">
+    <value>По этой ссылке найден один человек.</value>
+    </data>
+    <data name="NextButtonText" xml:space="preserve">
+    <value>Дальше</value>
+    </data>
+    <data name="LinkText" xml:space="preserve">
+    <value>Ссылка</value>
+    </data>
+    <data name="NameText" xml:space="preserve">
+    <value>Имя</value>
+    </data>
+    <data name="ConfirmAdditionText" xml:space="preserve">
+    <value>Подтвердите добавление (в противном случае напишите /start): </value>
+    </data>
+    <data name="WaitForContactConfirmation" xml:space="preserve">
+    <value>Теперь ожидайте, когда контакт также добавит вас в свой список.</value>
+    </data>
+    <data name="WaitForButtonText" xml:space="preserve">
+    <value>Ждёмс...</value>
+    </data>
+    <data name="UserWantsToAddYou" xml:space="preserve">
+    <value>Пользователь {0} хочет добавить вас в свои контакты.</value>
+    </data>
+<data name="NoUserFoundByID" xml:space="preserve">
+  <value>По этому ID никто не найден.</value>
+</data>
+<data name="WillWorkWithContact" xml:space="preserve">
+  <value>Будем работать с этим контактом?\nID: {0} Имя: {1} ?</value>
+</data>
+<data name="ConfirmDecision" xml:space="preserve">
+  <value>Подтвердите решение (в противном случае напишите /start)</value>
+</data>
+<data name="MuteTimeInstructions" xml:space="preserve">
+  <value>
+Чтобы перевести секунды в другие единицы времени, используйте следующие соотношения:
+
+    1 минута = 60 секунд
+    1 час = 60 минут = 3600 секунд
+    1 день = 24 часа = 1440 минут = 86400 секунд
+
+Таким образом, для перевода:
+
+    Чтобы перевести секунды в минуты, разделите количество секунд на 60.
+    Чтобы перевести секунды в часы, разделите количество секунд на 3600.
+    Чтобы перевести секунды в дни, разделите количество секунд на 86400.
+    
+    Последний шаг и мы его замутим. Теперь введите время мута в секундах:</value>
+    </data>
+    <data name="IndefinitelyButtonText" xml:space="preserve">
+    <value>Бессрочно</value>
+    </data>
+    <data name="UserWillBeUnmuted" xml:space="preserve">
+    <value>Пользователь будет размучен в {0:yyyy-MM-dd HH:mm:ss} (через {1} секунд).</value>
+    </data>
+    <data name="UserWillBeUnmutedAt" xml:space="preserve">
+    <value>Пользователь будет размучен в {0:yyyy-MM-dd HH:mm:ss}.</value>
+    </data>
+    <data name="UserWillBeMutedIndefinitely" xml:space="preserve">
+    <value>Пользователь будет замучен бессрочно.</value>
+    </data>
+    <data name="InvalidMuteTimeFormat" xml:space="preserve">
+    <value>Пожалуйста, введите время мута в секундах или дату в формате ГГГГ-ММ-ДД ЧЧ:ММ:СС. Или напишите 'Бессрочно'.</value>
+    </data>
+    <data name="ConfirmFinalDecision" xml:space="preserve">
+    <value>Проверьте своё решение и подтвердите его, если вы уверены, что это то, что вам нужно (в противном случае напишите /start)</value>
+    </data>
+    <data name="ActionCancelledError" xml:space="preserve">
+    <value>Произошла ошибка. Действия отменены.</value>
+    </data>
+    <data name="MuteSet" xml:space="preserve">
+    <value>Мут установлен.</value>
+    </data>
+    <data name="UserInMute" xml:space="preserve">
+    <value>Пользователь находится в муте {0}\nВы действительно хотите его размутить? Если нет, то напишите /start</value>
+    </data>
+    <data name="TimePlaceholder" xml:space="preserve">
+    <value>{время}</value>
+    </data>
+    <data name="YesButtonText" xml:space="preserve">
+    <value>Да</value>
+    </data>
+    <data name="UserUnmuted" xml:space="preserve">
+    <value>Пользователь размучен.</value>
+    </data>
+    <data name="YourLink" xml:space="preserve">
+    <value>Ваша ссылка: <code>{0}</code></value>
+    </data>
+    <data name="YourInboundInvitations" xml:space="preserve">
+    <value>Ваши входящие приглашения:
+    (Нажимая на кнопку, вы тем самым принимаете запрос на добавление в свои контакты)</value>
+    </data>
+    <data name="WhosTheGeniusText" xml:space="preserve">
+    <value>Всем привет! 
+    Я, ZenonEl, создатель этого мешка с кодом и алгоритмами.
+    Мой GitHub: https://github.com/ZenonEl/
+
+    Идея создания этого бота возникла у меня, когда в очередной раз мои знакомые были вынуждены присылать видео с Тик Тока (которым я не пользуюсь) вручную (скачивая его и отправляя... потом удаляя видео с телефона...).
+    В общем, и я подумал, что было бы здорово облегчить все эти монотонные действия для них и решил создать этого самого бота.
+    Теперь благодаря ему я могу запустить простого бота хоть у себя на ПК. Выставить список контактов от кого я хочу получать видосики и всё, облегчил жизнь и себе, и своим знакомым.
+    Удобно!
+
+    Приятного пользования!
+
+    PS: В будущем планируется сделать бота универсальным реле. Где через конфиг можно будет выставить поддерживаемые сайты и то, как боту с ними работать.</value>
+    </data>
+    <data name="BackButtonText" xml:space="preserve">
+    <value>Назад</value>
+    </data>
+    <data name="MuteUserButtonText" xml:space="preserve">
+    <value>Замутить пользователя</value>
+    </data>
+    <data name="UnmuteUserButtonText" xml:space="preserve">
+    <value>Размутить пользователя</value>
+    </data>
+    <data name="AddContactButtonText" xml:space="preserve">
+    <value>Добавить контакт</value>
+    </data>
+    <data name="MyLinkButtonText" xml:space="preserve">
+    <value>Моя ссылка</value>
+    </data>
+    <data name="ViewInboundInvitesButtonText" xml:space="preserve">
+    <value>Обзор входящих запросов на добавления в мои контакты</value>
+    </data>
+    <data name="ViewOutboundInvitesButtonText" xml:space="preserve">
+    <value>Обзор моих заявок на добавления в контакты</value>
+    </data>
+    <data name="ViewAllContactsButtonText" xml:space="preserve">
+    <value>Обзор всех моих контактов</value>
+    </data>
+    <data name="BehindTheScenesButtonText" xml:space="preserve">
+    <value>Заглянуть за кулисы</value>
+    </data>
+    <data name="ChooseOptionText" xml:space="preserve">
+    <value>Выберите опцию:</value>
+    </data>
+</root>

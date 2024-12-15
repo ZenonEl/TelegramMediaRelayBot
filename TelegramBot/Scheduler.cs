@@ -26,7 +26,7 @@ class Scheduler
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Произошла ошибка в методе {MethodName}", nameof(CheckForUnmuteContacts));
+            Log.Error(ex, "An error occurred in the method{MethodName}", nameof(CheckForUnmuteContacts));
         }
     }
 }
