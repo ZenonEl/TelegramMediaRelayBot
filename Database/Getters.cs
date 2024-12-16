@@ -175,7 +175,7 @@ public class DBforGetters
             }
         }
     }
-    public static async Task<string> GetUserNameByTelegramID(long telegramID)
+    public static string GetUserNameByTelegramID(long telegramID)
     {
         string query = @"
             USE TikTokMediaRelayBot;
@@ -285,7 +285,7 @@ public class DBforGetters
                 {
                     return reader.GetDateTime("ExpirationDate").ToString("yyyy-MM-dd HH:mm:ss");
                 }
-                return Config.resourceManager.GetString("NoActiveMute", CultureInfo.CurrentUICulture);
+                return Config.resourceManager.GetString("NoActiveMute", CultureInfo.CurrentUICulture)!;
             }
             catch (Exception ex)
             {

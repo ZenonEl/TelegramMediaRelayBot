@@ -19,7 +19,7 @@ namespace TikTokMediaRelayBot
                 .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss} [{Level}] {Message} {Exception}{NewLine}").CreateLogger();
             try 
             {
-                Config.loadConfig();
+                Config.LoadConfig();
                 CoreDB.initDB();
                 Scheduler.Scheduler.Init();
                 await MediaTelegramBot.TelegramBot.Start();

@@ -50,7 +50,7 @@ public class DBforInbounds
         return contactUserIds;
     }
 
-    private static Tuple<string, string> GetUserData(int contactUserId)
+    private static Tuple<string, string>? GetUserData(int contactUserId)
     {
         string queryUsers = @"
             SELECT Name, TelegramID
@@ -67,8 +67,8 @@ public class DBforInbounds
             {
                 if (readerUsers.Read())
                 {
-                    string name = readerUsers["Name"].ToString();
-                    string telegramId = readerUsers["TelegramID"].ToString();
+                    string name = readerUsers["Name"].ToString()!;
+                    string telegramId = readerUsers["TelegramID"].ToString()!;
                     return new Tuple<string, string>(name, telegramId);
                 }
             }

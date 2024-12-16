@@ -14,7 +14,7 @@ public class PrivateUpdateHandler
 
     public static async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
     {
-        string messageText = update.Message.Text;
+        string messageText = update.Message!.Text!;
         string link;
         string text = "";
 
@@ -32,7 +32,7 @@ public class PrivateUpdateHandler
 
         if (Utils.Utils.IsLink(link))
         {
-            await botClient.SendMessage(chatId, Config.resourceManager.GetString("WaitDownloadingVideo", CultureInfo.CurrentUICulture), cancellationToken: cancellationToken);
+            await botClient.SendMessage(chatId, Config.resourceManager.GetString("WaitDownloadingVideo", CultureInfo.CurrentUICulture)!, cancellationToken: cancellationToken);
             _ = TelegramBot.HandleVideoRequest(botClient, link, chatId, caption: text);
         }
         else if (update.Message.Text == "/start")
@@ -41,12 +41,12 @@ public class PrivateUpdateHandler
         }
         else if (update.Message.Text == "/help")
         {
-            string helpText = Config.resourceManager.GetString("HelpText", CultureInfo.CurrentUICulture);
+            string helpText = Config.resourceManager.GetString("HelpText", CultureInfo.CurrentUICulture)!;
             await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken, helpText);
         }
         else
         {
-            await botClient.SendMessage(update.Message.Chat.Id, Config.resourceManager.GetString("WhatShouldIDoWithThis", CultureInfo.CurrentUICulture), cancellationToken: cancellationToken);
+            await botClient.SendMessage(update.Message.Chat.Id, Config.resourceManager.GetString("WhatShouldIDoWithThis", CultureInfo.CurrentUICulture)!, cancellationToken: cancellationToken);
         }
     }
 
@@ -54,7 +54,7 @@ public class PrivateUpdateHandler
     {
         var callbackQuery = update.CallbackQuery;
 
-        switch (callbackQuery.Data)
+        switch (callbackQuery!.Data)
         {
             case "main_menu":
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
@@ -85,7 +85,7 @@ public class PrivateUpdateHandler
                 await CallbackQueryMenuUtils.WhosTheGenius(botClient, update, cancellationToken);
                 break;
             default:
-                if (callbackQuery.Data.StartsWith("user_accept_inbounds_invite:")) 
+                if (callbackQuery.Data!.StartsWith("user_accept_inbounds_invite:")) 
                 {
                     await CallbackQueryMenuUtils.AcceptInboundInvite(update);
                 }

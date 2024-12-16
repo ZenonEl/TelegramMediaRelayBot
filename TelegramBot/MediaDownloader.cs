@@ -5,6 +5,7 @@ using TikTokMediaRelayBot;
 using System.Text.RegularExpressions;
 using DataBase;
 using Serilog;
+using System.Globalization;
 
 namespace MediaTelegramBot;
 
@@ -15,12 +16,12 @@ public class UserState
 
 partial class TelegramBot
 {
-    private static ITelegramBotClient botClient;
+    private static ITelegramBotClient? botClient;
     public static Dictionary<long, IUserState> userStates = new Dictionary<long, IUserState>();
     
     static public async Task Start()
     {
-        string telegramBotToken = Config.telegramBotToken;
+        string telegramBotToken = Config.telegramBotToken!;
         botClient = new TelegramBotClient(telegramBotToken);
 
         var me = await botClient.GetMe();
@@ -66,7 +67,7 @@ partial class TelegramBot
 
             if (update.Message != null && update.Message.Text != null)
             {
-                CoreDB.AddUser(update.Message.Chat.FirstName, update.Message.Chat.Id);
+                CoreDB.AddUser(update.Message.Chat.FirstName!, update.Message.Chat.Id);
                 await PrivateUpdateHandler.ProcessMessage(botClient, update, cancellationToken, chatId);
             }
             else if (update.CallbackQuery != null)
@@ -94,7 +95,7 @@ partial class TelegramBot
             return;
         }
 
-        await botClient.SendMessage(chatId, Config.resourceManager.GetString("FailedToProcessLink", System.Globalization.CultureInfo.CurrentUICulture));
+        await botClient.SendMessage(chatId, Config.resourceManager.GetString("FailedToProcessLink", CultureInfo.CurrentUICulture)!);
     }
 
     public static async Task SendVideoToTelegram(byte[] videoBytes, long chatId, ITelegramBotClient botClient, bool groupChat = false, string caption = "")
@@ -102,18 +103,18 @@ partial class TelegramBot
         using (var stream = new MemoryStream(videoBytes))
         {
             stream.Position = 0;
-            string text = caption != "" ? Config.resourceManager.GetString("WithText", System.Globalization.CultureInfo.CurrentUICulture) + caption : "";
+            string text = caption != "" ? Config.resourceManager.GetString("WithText", CultureInfo.CurrentUICulture)! + caption : "";
 
             var message = await botClient.SendDocument(chatId, InputFile.FromStream(stream, "video.mp4"), 
                                                         caption: Config.resourceManager.GetString("HereIsYourVideo", 
-                                                        System.Globalization.CultureInfo.CurrentUICulture) + text);
+                                                        CultureInfo.CurrentUICulture)! + text);
             Log.Debug("Video successfully sent to Telegram.");
 
             string FileId;
             if (message.Video != null && message.Video.FileId != null)
                 FileId = message.Video.FileId;
             else
-                FileId = message.Document.FileId;
+                FileId = message.Document!.FileId;
 
             if (!groupChat) await SendVideoToContacts(FileId, chatId, botClient, caption);
         }
@@ -130,8 +131,8 @@ partial class TelegramBot
         Log.Information($"User {userId} is muted by: {mutedByUserIds.Count}");
 
         DateTime now = DateTime.Now;
-        string name = await DBforGetters.GetUserNameByTelegramID(telegramId);
-        string text = string.Format(Config.resourceManager.GetString("ContactSentVideo", System.Globalization.CultureInfo.CurrentUICulture), 
+        string name = DBforGetters.GetUserNameByTelegramID(telegramId);
+        string text = string.Format(Config.resourceManager.GetString("ContactSentVideo", CultureInfo.CurrentUICulture)!, 
                                     name, now.ToString("yyyy_MM_dd_HH_mm_ss"), MyRegex().Replace(name, "_"), caption);
 
         foreach (var contactUserId in filteredContactUserTGIds)
@@ -141,12 +142,12 @@ partial class TelegramBot
 
         if (filteredContactUserTGIds.Count > 0) await botClient.SendMessage(telegramId, 
                                                                             string.Format(Config.resourceManager.GetString("VideoSentToContacts", 
-                                                                            System.Globalization.CultureInfo.CurrentUICulture), 
+                                                                            CultureInfo.CurrentUICulture)!, 
                                                                             filteredContactUserTGIds.Count, now.ToString("yyyy_MM_dd_HH_mm_ss"), 
                                                                             MyRegex().Replace(name, "_")));
         if (mutedByUserIds.Count > 0) await botClient.SendMessage(telegramId, 
                                                                 string.Format(Config.resourceManager.GetString("MutedByContacts", 
-                                                                System.Globalization.CultureInfo.CurrentUICulture), mutedByUserIds.Count));
+                                                                CultureInfo.CurrentUICulture)!, mutedByUserIds.Count));
 
     }
 
@@ -160,14 +161,14 @@ partial class TelegramBot
         if (update.CallbackQuery != null)
         {
             logMessage = "CallbackQuery";
-            callbackData = update.CallbackQuery.Data;
+            callbackData = update.CallbackQuery.Data!;
             userId = update.CallbackQuery.From.Id;
         }
         else if (update.Message != null && update.Message.Text != null)
         {
             logMessage = "Message";
             callbackData = update.Message.Text;
-            userId = update.Message.From.Id;
+            userId = update.Message.From!.Id;
             if (!Utils.Utils.CheckPrivateChatType(update))
             {
                 if (!update.Message.Text.Contains("/link") || !update.Message.Text.Contains("/help")) return;

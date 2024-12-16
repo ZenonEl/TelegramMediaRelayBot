@@ -1,4 +1,4 @@
-using MySql.Data.MySqlClient;  // Импортируем библиотеку для работы с MySQL
+using MySql.Data.MySqlClient;
 using Serilog;
 using TikTokMediaRelayBot;
 

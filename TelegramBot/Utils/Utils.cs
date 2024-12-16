@@ -33,7 +33,7 @@ public static class Utils
         }
         else if (update.CallbackQuery != null)
         {
-            return update.CallbackQuery.Message.Chat.Id;
+            return update.CallbackQuery.Message!.Chat.Id;
         }
         return 0;
     }
@@ -47,15 +47,14 @@ public static class Utils
     public static bool CheckPrivateChatType(Update update)
     {
         if (update.Message != null && update.Message.Chat.Type == ChatType.Private) return true;
-        if (update.CallbackQuery != null && update.CallbackQuery.Message.Chat.Type == ChatType.Private) return true;
+        if (update.CallbackQuery != null && update.CallbackQuery.Message!.Chat.Type == ChatType.Private) return true;
         return false;
     }
 
     public static Task SendMessage(ITelegramBotClient botClient, Update update, InlineKeyboardMarkup inlineKeyboard,
-                                    CancellationToken cancellationToken, string text = null)
+                                    CancellationToken cancellationToken, string? text = null)
     {
-        // Используем локализованную строку для текста по умолчанию
-        text ??= Config.resourceManager.GetString("ChooseOptionText", System.Globalization.CultureInfo.CurrentUICulture);
+        text ??= Config.resourceManager.GetString("ChooseOptionText", System.Globalization.CultureInfo.CurrentUICulture)!;
 
         long chatId = GetIDfromUpdate(update);
 
@@ -63,7 +62,7 @@ public static class Utils
         {
             return botClient.EditMessageText(
                 chatId: chatId,
-                messageId: update.CallbackQuery.Message.MessageId,
+                messageId: update.CallbackQuery.Message!.MessageId,
                 text: text,
                 replyMarkup: inlineKeyboard,
                 cancellationToken: cancellationToken,
@@ -94,7 +93,7 @@ public static class Utils
 
     public static async Task<bool> HandleStateBreakCommand(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId, string command = "/start")
     {
-        if (update.Message.Text == command)
+        if (update.Message!.Text == command)
         {
             await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
             await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
@@ -109,7 +108,7 @@ public static class Utils
         if (string.IsNullOrWhiteSpace(input))
             return false;
 
-        return Uri.TryCreate(input, UriKind.Absolute, out Uri uriResult)
+        return Uri.TryCreate(input, UriKind.Absolute, out Uri? uriResult)
                             && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
     }
 }
