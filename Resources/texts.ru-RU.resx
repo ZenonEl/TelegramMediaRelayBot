@@ -91,7 +91,7 @@
   <value>По этому ID никто не найден.</value>
 </data>
 <data name="WillWorkWithContact" xml:space="preserve">
-  <value>Будем работать с этим контактом?\nID: {0} Имя: {1} ?</value>
+  <value>Будем работать с этим контактом? ID: {0} Имя: {1} ?</value>
 </data>
 <data name="ConfirmDecision" xml:space="preserve">
   <value>Подтвердите решение (в противном случае напишите /start)</value>
@@ -137,10 +137,11 @@
     <value>Мут установлен.</value>
     </data>
     <data name="UserInMute" xml:space="preserve">
-    <value>Пользователь находится в муте {0}\nВы действительно хотите его размутить? Если нет, то напишите /start</value>
+    <value>Пользователь находится в муте до: {0}
+Вы действительно хотите его размутить? Если нет, то напишите /start</value>
     </data>
-    <data name="TimePlaceholder" xml:space="preserve">
-    <value>{время}</value>
+    <data name="NoActiveMute" xml:space="preserve">
+Контакт сейчас не находится в состоянии мута
     </data>
     <data name="YesButtonText" xml:space="preserve">
     <value>Да</value>

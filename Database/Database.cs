@@ -89,7 +89,7 @@ public class CoreDB
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error creating database: " + ex.Message);
+                Log.Error("Error creating database: " + ex.Message);
                 return false;
             }
         }
@@ -122,7 +122,7 @@ public class CoreDB
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error inserting data to Users: " + ex.Message);
+                Log.Error("Error inserting data to Users: " + ex.Message);
             }
         }
     }
@@ -145,7 +145,7 @@ public class CoreDB
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error creating database: " + ex.Message);
+                Log.Error("Error creating database: " + ex.Message);
             }
         }
     }
@@ -246,7 +246,7 @@ public class CoreDB
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error retrieving contact user IDs: " + ex.Message);
+                Log.Error("Error retrieving contact user IDs: " + ex.Message);
             }
         }
 

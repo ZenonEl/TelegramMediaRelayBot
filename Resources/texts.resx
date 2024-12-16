@@ -91,7 +91,8 @@ Link: &lt;code&gt;{2}&lt;/code&gt;
   <value>No one was found by this ID.</value>
 </data>
 <data name="WillWorkWithContact" xml:space="preserve">
-  <value>Will we work with this contact?\nID: {0} Name: {1} ?</value>
+  <value>Will we work with this contact?
+ID: {0} Name: {1} ?</value>
 </data>
 <data name="ConfirmDecision" xml:space="preserve">
   <value>Confirm your decision (otherwise, write /start)</value>
@@ -137,10 +138,11 @@ The last step and we will mute them. Now enter the mute time in seconds:</value>
     <value>Mute has been set.</value>
     </data>
     <data name="UserInMute" xml:space="preserve">
-    <value>The user is muted {0}\nDo you really want to unmute them? If not, write /start</value>
+    <value>The user is muted until: {0}
+Do you really want to unmute them? If not, write /start</value>
     </data>
-    <data name="TimePlaceholder" xml:space="preserve">
-    <value>{time}</value>
+    <data name="NoActiveMute" xml:space="preserve">
+The contact is not in a mutation state right now
     </data>
     <data name="YesButtonText" xml:space="preserve">
     <value>Yes</value>

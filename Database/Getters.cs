@@ -1,5 +1,7 @@
+using System.Globalization;
 using MySql.Data.MySqlClient;
 using Serilog;
+using TikTokMediaRelayBot;
 
 namespace DataBase;
 
@@ -263,8 +265,34 @@ public class DBforGetters
                 Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetExpiredMutes));
             }
         }
-
         return expiredMuteIds;
+    }
+
+    public static string GetActiveMuteTimeByContactID(int contactID)
+    {
+        string query = @"
+            USE TikTokMediaRelayBot;
+            SELECT ExpirationDate FROM MutedContacts WHERE MutedContactId = @contactID AND IsActive = 1";
+        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@contactID", contactID);
+                MySqlDataReader reader = command.ExecuteReader();
+                if (reader.Read())
+                {
+                    return reader.GetDateTime("ExpirationDate").ToString("yyyy-MM-dd HH:mm:ss");
+                }
+                return Config.resourceManager.GetString("NoActiveMute", CultureInfo.CurrentUICulture);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetActiveMuteTimeByContactID));
+                return "";
+            }
+        }
     }
 }
 
