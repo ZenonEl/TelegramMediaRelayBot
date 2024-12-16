@@ -1,5 +1,5 @@
 using System.Diagnostics;
-
+using Serilog;
 
 namespace TikTokMediaRelayBot
 {
@@ -12,41 +12,70 @@ namespace TikTokMediaRelayBot
         {
             try
             {
+                Log.Debug("Starting video download.");
+                Log.Debug($"Yt-dlp path: {YtDlpPath}");
+
+                string tempFilePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.mp4");
+                Log.Debug($"Temporary file path: {tempFilePath}");
+
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
                     FileName = YtDlpPath,
-                    Arguments = $"--proxy \"{Proxy}\" -f bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best --output - {videoUrl}",
+                    Arguments = $"--proxy \"{Proxy}\" -v -f bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best --output {tempFilePath} {videoUrl}",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
 
+                Log.Debug($"Arguments: {startInfo.Arguments}");
+
                 using (Process process = new Process { StartInfo = startInfo })
                 {
                     process.Start();
+                    Log.Debug("Process started.");
 
-                    using (MemoryStream memoryStream = new MemoryStream())
+                    Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+                    Task<string> errorTask = process.StandardError.ReadToEndAsync();
+
+                    await Task.WhenAll(outputTask, errorTask);
+
+                    process.WaitForExit();
+
+                    string output = await outputTask;
+                    string error = await errorTask;
+
+                    Log.Debug($"Output: {output}");
+                    Log.Debug($"Error: {error}");
+
+                    if (process.ExitCode == 0)
                     {
-                        await process.StandardOutput.BaseStream.CopyToAsync(memoryStream);
-                        byte[] videoBytes = memoryStream.ToArray();
-
-                        if (process.ExitCode == 0)
+                        try
                         {
+                            byte[] videoBytes = File.ReadAllBytes(tempFilePath);
+                            Log.Debug("Download completed.");
+
+                            File.Delete(tempFilePath);
+                            Log.Debug("Temporary file deleted.");
+
                             return videoBytes;
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            string error = await process.StandardError.ReadToEndAsync();
-                            Console.WriteLine($"Ошибка при скачивании видео: {error}");
+                            Log.Error($"Error reading file: {ex.Message}");
                             return null;
                         }
+                    }
+                    else
+                    {
+                        Log.Error($"Ошибка при скачивании видео: {error}");
+                        return null;
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Произошла ошибка: {ex.Message}");
+                Log.Error($"Произошла ошибка: {ex.Message}");
                 return null;
             }
         }
