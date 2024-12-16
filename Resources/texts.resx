@@ -209,7 +209,7 @@ The contact is not in a mutation state right now
     </data>
     <data name="VideoSentToContacts" xml:space="preserve">
         <value>Video successfully sent to all ({0}) contacts.
-
+&lt;code&gt;#{1}&lt;/code&gt;
 #{1}_{2}</value>
     </data>
     <data name="MutedByContacts" xml:space="preserve">
@@ -217,15 +217,14 @@ The contact is not in a mutation state right now
     </data>
     <data name="ContactSentVideo" xml:space="preserve">
         <value>{0} sent a video!
+&lt;code&gt;#{1}&lt;/code&gt;
 #{1}_{2}
-
 
 {3}
 </value>
     </data>
     <data name="WithText" xml:space="preserve">
         <value>With text:
-
 
 </value>
     </data>

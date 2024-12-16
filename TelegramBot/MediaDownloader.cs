@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using DataBase;
 using Serilog;
 using System.Globalization;
+using Telegram.Bot.Types.Enums;
 
 namespace MediaTelegramBot;
 
@@ -107,7 +108,7 @@ partial class TelegramBot
 
             var message = await botClient.SendDocument(chatId, InputFile.FromStream(stream, "video.mp4"), 
                                                         caption: Config.resourceManager.GetString("HereIsYourVideo", 
-                                                        CultureInfo.CurrentUICulture)! + text);
+                                                        CultureInfo.CurrentUICulture)! + text, parseMode: ParseMode.Html);
             Log.Debug("Video successfully sent to Telegram.");
 
             string FileId;
@@ -144,7 +145,7 @@ partial class TelegramBot
                                                                             string.Format(Config.resourceManager.GetString("VideoSentToContacts", 
                                                                             CultureInfo.CurrentUICulture)!, 
                                                                             filteredContactUserTGIds.Count, now.ToString("yyyy_MM_dd_HH_mm_ss"), 
-                                                                            MyRegex().Replace(name, "_")));
+                                                                            MyRegex().Replace(name, "_")), parseMode: ParseMode.Html);
         if (mutedByUserIds.Count > 0) await botClient.SendMessage(telegramId, 
                                                                 string.Format(Config.resourceManager.GetString("MutedByContacts", 
                                                                 CultureInfo.CurrentUICulture)!, mutedByUserIds.Count));

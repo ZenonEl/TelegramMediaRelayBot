@@ -208,7 +208,7 @@
     </data>
     <data name="VideoSentToContacts" xml:space="preserve">
     <value>Видео успешно отправлено всем ({0}) контактам.
-
+&lt;code&gt;#{1}&lt;/code&gt;
 #{1}_{2}</value>
     </data>
     <data name="MutedByContacts" xml:space="preserve">
@@ -216,15 +216,14 @@
     </data>
     <data name="ContactSentVideo" xml:space="preserve">
     <value>{0} отправил видео!
+&lt;code&gt;#{1}&lt;/code&gt;
 #{1}_{2}
-
 
 {3}
 </value>
     </data>
     <data name="WithText" xml:space="preserve">
     <value>С текстом:
-
 
 </value>
     </data>
