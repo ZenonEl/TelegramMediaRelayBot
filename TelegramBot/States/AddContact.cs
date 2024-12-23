@@ -3,7 +3,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using MediaTelegramBot.Utils;
 using TikTokMediaRelayBot;
-using System.Globalization;
+
 
 namespace MediaTelegramBot;
 
@@ -47,33 +47,33 @@ public class ProcessContactState : IUserState
 
                 if (DBforGetters.GetContactIDByLink(link) == -1)
                 {
-                    await Utils.Utils.AlertMessageAndShowMenu(botClient, update, cancellationToken, chatId, Config.resourceManager.GetString("NoUserFoundByLink", CultureInfo.CurrentUICulture)!);
+                    await Utils.Utils.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByLink"));
                     return;
                 }
 
-                await botClient.SendMessage(chatId, Config.resourceManager.GetString("UserFoundByLink", CultureInfo.CurrentUICulture)!, cancellationToken: cancellationToken,
-                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.resourceManager.GetString("NextButtonText", CultureInfo.CurrentUICulture)!));
+                await botClient.SendMessage(chatId, Config.GetResourceString("UserFoundByLink"), cancellationToken: cancellationToken,
+                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.GetResourceString("NextButtonText")));
 
                 currentState = ContactState.WaitingForName;
                 break;
 
             case ContactState.WaitingForName:
-                string text_data = $"{Config.resourceManager.GetString("LinkText", CultureInfo.CurrentUICulture)}: {link} \n{Config.resourceManager.GetString("NameText", CultureInfo.CurrentUICulture)}: {DBforGetters.GetUserNameByID(DBforGetters.GetContactIDByLink(link))}";
+                string text_data = $"{Config.GetResourceString("LinkText")}: {link} \n{Config.GetResourceString("NameText")}: {DBforGetters.GetUserNameByID(DBforGetters.GetContactIDByLink(link))}";
 
-                await botClient.SendMessage(chatId, Config.resourceManager.GetString("ConfirmAdditionText", CultureInfo.CurrentUICulture) + text_data, cancellationToken: cancellationToken,
-                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.resourceManager.GetString("NextButtonText", CultureInfo.CurrentUICulture)!));
+                await botClient.SendMessage(chatId, Config.GetResourceString("ConfirmAdditionText") + text_data, cancellationToken: cancellationToken,
+                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.GetResourceString("NextButtonText")));
 
                 currentState = ContactState.WaitingForConfirmation;
                 break;
 
             case ContactState.WaitingForConfirmation:
-                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, cancellationToken, chatId)) return;
+                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId)) return;
 
                 CoreDB.AddContact(chatId, link);
 
                 await SendNotification(botClient, chatId, cancellationToken);
-                await botClient.SendMessage(chatId, Config.resourceManager.GetString("WaitForContactConfirmation", CultureInfo.CurrentUICulture)!,
-                                            cancellationToken: cancellationToken, replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.resourceManager.GetString("WaitForButtonText", CultureInfo.CurrentUICulture)!));
+                await botClient.SendMessage(chatId, Config.GetResourceString("WaitForContactConfirmation"),
+                                            cancellationToken: cancellationToken, replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.GetResourceString("WaitForButtonText")));
 
                 currentState = ContactState.FinishAddContact;
 
@@ -91,7 +91,7 @@ public class ProcessContactState : IUserState
     public async Task SendNotification(ITelegramBotClient botClient, long chatId, CancellationToken cancellationToken)
     {
         await botClient.SendMessage(DBforGetters.GetTelegramIDbyUserID(DBforGetters.GetContactIDByLink(link)), 
-                                    string.Format(Config.resourceManager.GetString("UserWantsToAddYou", CultureInfo.CurrentUICulture)!, DBforGetters.GetUserNameByTelegramID(chatId)), 
+                                    string.Format(Config.GetResourceString("UserWantsToAddYou"), DBforGetters.GetUserNameByTelegramID(chatId)), 
                                     cancellationToken: cancellationToken);
     }
 }

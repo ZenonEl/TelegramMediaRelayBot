@@ -35,3 +35,9 @@ public enum UserUnMuteState
     WaitingForUnMute,
     Finish
 }
+
+public enum UserProcessOutboundState
+{
+    ProcessAction,
+    Finish
+}

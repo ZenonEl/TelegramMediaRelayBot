@@ -2,10 +2,8 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using MediaTelegramBot.Menu;
 using MediaTelegramBot.Utils;
-using Serilog;
-using System.Resources;
-using System.Globalization;
 using TikTokMediaRelayBot;
+
 
 namespace MediaTelegramBot;
 
@@ -32,8 +30,8 @@ public class PrivateUpdateHandler
 
         if (Utils.Utils.IsLink(link))
         {
-            await botClient.SendMessage(chatId, Config.resourceManager.GetString("WaitDownloadingVideo", CultureInfo.CurrentUICulture)!, cancellationToken: cancellationToken);
-            _ = TelegramBot.HandleVideoRequest(botClient, link, chatId, caption: text);
+            Message statusMessage = await botClient.SendMessage(chatId, Config.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
+            _ = TelegramBot.HandleVideoRequest(botClient, link, chatId, statusMessage, caption: text);
         }
         else if (update.Message.Text == "/start")
         {
@@ -41,12 +39,12 @@ public class PrivateUpdateHandler
         }
         else if (update.Message.Text == "/help")
         {
-            string helpText = Config.resourceManager.GetString("HelpText", CultureInfo.CurrentUICulture)!;
+            string helpText = Config.GetResourceString("HelpText");
             await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken, helpText);
         }
         else
         {
-            await botClient.SendMessage(update.Message.Chat.Id, Config.resourceManager.GetString("WhatShouldIDoWithThis", CultureInfo.CurrentUICulture)!, cancellationToken: cancellationToken);
+            await botClient.SendMessage(update.Message.Chat.Id, Config.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken);
         }
     }
 
@@ -60,34 +58,41 @@ public class PrivateUpdateHandler
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                 break;
             case "add_contact":
-                await Contacts.AddContact(botClient, update, cancellationToken);
+                await Contacts.AddContact(botClient, update);
                 if (!TelegramBot.userStates.ContainsKey(chatId))
                 {
                     TelegramBot.userStates[chatId] = new ProcessContactState();
                 }
                 break;
             case "get_self_link":
-                await CallbackQueryMenuUtils.GetSelfLink(botClient, update, cancellationToken);
+                await CallbackQueryMenuUtils.GetSelfLink(botClient, update);
                 break;
             case "view_inbound_invite_links":
-                await CallbackQueryMenuUtils.ViewInboundInviteLinks(botClient, update, cancellationToken);
+                await CallbackQueryMenuUtils.ViewInboundInviteLinks(botClient, update);
+                break;
+            case "view_outbound_invite_links":
+                await CallbackQueryMenuUtils.ViewOutboundInviteLinks(botClient, update);
                 break;
             case "view_contacts":
-                await Contacts.ViewContacts(botClient, update, cancellationToken);
+                await Contacts.ViewContacts(botClient, update);
                 break;
             case "mute_user":
-                await Contacts.MuteUserContact(botClient, update, cancellationToken, chatId);
+                await Contacts.MuteUserContact(botClient, update, chatId);
                 break;
             case "unmute_user":
-                await Contacts.UnMuteUserContact(botClient, update, cancellationToken, chatId);
+                await Contacts.UnMuteUserContact(botClient, update, chatId);
                 break;
             case "whos_the_genius":
-                await CallbackQueryMenuUtils.WhosTheGenius(botClient, update, cancellationToken);
+                await CallbackQueryMenuUtils.WhosTheGenius(botClient, update);
                 break;
             default:
                 if (callbackQuery.Data!.StartsWith("user_accept_inbounds_invite:")) 
                 {
                     await CallbackQueryMenuUtils.AcceptInboundInvite(update);
+                }
+                else if (callbackQuery.Data!.StartsWith("user_show_outbound_invite:"))
+                {
+                    await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId);
                 }
                 break;
         }

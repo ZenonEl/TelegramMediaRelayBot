@@ -1,4 +1,4 @@
-using System.Globalization;
+
 using MySql.Data.MySqlClient;
 using Serilog;
 using TikTokMediaRelayBot;
@@ -285,7 +285,7 @@ public class DBforGetters
                 {
                     return reader.GetDateTime("ExpirationDate").ToString("yyyy-MM-dd HH:mm:ss");
                 }
-                return Config.resourceManager.GetString("NoActiveMute", CultureInfo.CurrentUICulture)!;
+                return Config.GetResourceString("NoActiveMute");
             }
             catch (Exception ex)
             {

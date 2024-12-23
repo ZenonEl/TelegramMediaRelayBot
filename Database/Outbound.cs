@@ -1,23 +1,23 @@
 using MySql.Data.MySqlClient;
 using Serilog;
-using TikTokMediaRelayBot;
 
 namespace DataBase;
 
 
-public class DBforInbounds
+public class DBforOutbound
 {
-    public static List<ButtonData> GetInboundsButtonData(int userId)
+    public static List<ButtonData> GetOutboundButtonData(int userId)
     {
         var buttonDataList = new List<ButtonData>();
+        Log.Information($"{userId}");
         var contactUserIds = GetContactUserIds(userId);
 
         foreach (var contactUserId in contactUserIds)
         {
-            var userData = GetUserDataByContactId(contactUserId);
+            var userData = GetUserDataByUserId(contactUserId);
             if (userData != null)
             {
-                buttonDataList.Add(new ButtonData { ButtonText = userData.Item1, CallbackData = "user_accept_inbounds_invite:" + userData.Item2 });
+                buttonDataList.Add(new ButtonData { ButtonText = userData.Item1, CallbackData = "user_show_outbound_invite:" + userData.Item2 });
             }
         }
 
@@ -28,9 +28,9 @@ public class DBforInbounds
     {
         var contactUserIds = new List<int>();
         string queryContacts = @"
-            SELECT UserId
+            SELECT ContactId
             FROM Contacts
-            WHERE ContactId = @UserId AND status = 'waiting_for_accept'";
+            WHERE UserId = @UserId AND status = 'waiting_for_accept'";
 
         using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
         {
@@ -42,7 +42,7 @@ public class DBforInbounds
             {
                 while (readerContacts.Read())
                 {
-                    int contactUserId = readerContacts.GetInt32("UserId");
+                    int contactUserId = readerContacts.GetInt32("ContactId");
                     contactUserIds.Add(contactUserId);
                 }
             }
@@ -51,17 +51,17 @@ public class DBforInbounds
         return contactUserIds;
     }
 
-    private static Tuple<string, string>? GetUserDataByContactId(int contactId)
+    private static Tuple<string, string>? GetUserDataByUserId(int userId)
     {
         string queryUsers = @"
             SELECT Name, TelegramID
             FROM Users
-            WHERE ID = @contactId";
+            WHERE ID = @userId";
 
         using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
         {
             MySqlCommand commandUsers = new MySqlCommand(queryUsers, connection);
-            commandUsers.Parameters.AddWithValue("@contactId", contactId);
+            commandUsers.Parameters.AddWithValue("@userId", userId);
             connection.Open();
 
             using (MySqlDataReader readerUsers = commandUsers.ExecuteReader())
@@ -78,7 +78,7 @@ public class DBforInbounds
         return null;
     }
 
-    public static void SetContactStatus(long SenderTelegramID, long AccepterTelegramID, string status)
+    public static void DeleteOutboundContact(long SenderTelegramID, long AccepterTelegramID, string status)
     {
         string query = @"
             USE TikTokMediaRelayBot;

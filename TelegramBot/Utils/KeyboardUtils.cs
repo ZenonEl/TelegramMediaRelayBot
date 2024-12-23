@@ -3,7 +3,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using DataBase;
 using TikTokMediaRelayBot;
-using System.Globalization;
+
 
 namespace MediaTelegramBot.Utils;
 
@@ -11,7 +11,7 @@ public static class KeyboardUtils
 {
     public static InlineKeyboardButton GetReturnButton(string callback = "main_menu", string? text = null)
     {
-        text ??= Config.resourceManager.GetString("BackButtonText", CultureInfo.CurrentUICulture)!;
+        text ??= Config.GetResourceString("BackButtonText");
         return InlineKeyboardButton.WithCallbackData(text, callback);
     }
 
@@ -29,7 +29,7 @@ public static class KeyboardUtils
 
     public static InlineKeyboardMarkup GetInboundsKeyboardMarkup(Update update)
     {
-        var buttonDataList = DBforInbounds.GetButtonDataFromDatabase(DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id));
+        var buttonDataList = DBforInbounds.GetInboundsButtonData(DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id));
 
         var inlineKeyboardButtons = new List<InlineKeyboardButton[]>();
 
@@ -42,14 +42,45 @@ public static class KeyboardUtils
         return new InlineKeyboardMarkup(inlineKeyboardButtons);
     }
 
+    public static InlineKeyboardMarkup GetOutboundKeyboardMarkup(long userId)
+    {
+        var buttonDataList = DBforOutbound.GetOutboundButtonData(DBforGetters.GetUserIDbyTelegramID(userId));
+
+        var inlineKeyboardButtons = new List<InlineKeyboardButton[]>();
+
+        foreach (var buttonData in buttonDataList)
+        {
+            var button = InlineKeyboardButton.WithCallbackData(buttonData.ButtonText, buttonData.CallbackData);
+            inlineKeyboardButtons.Add(new[] { button });
+        }
+        inlineKeyboardButtons.Add(new[] { GetReturnButton("main_menu") });
+        return new InlineKeyboardMarkup(inlineKeyboardButtons);
+    }
+
+    public static InlineKeyboardMarkup GetOutboundActionsKeyboardMarkup(string userId)
+    {
+        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+                    {
+                        new[]
+                        {
+                            InlineKeyboardButton.WithCallbackData("Config.GetResourceString(DeclineButtonText)", $"revoke_outbound_invite:{userId}"),
+                        },
+                        new[]
+                        {
+                            GetReturnButton()
+                        },
+                    });
+        return inlineKeyboard;
+    }
+
     public static InlineKeyboardMarkup GetViewContactsKeyboardMarkup()
     {
         var inlineKeyboard = new InlineKeyboardMarkup(new[]
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.resourceManager.GetString("MuteUserButtonText", CultureInfo.CurrentUICulture)!, "mute_user"),
-                            InlineKeyboardButton.WithCallbackData(Config.resourceManager.GetString("UnmuteUserButtonText", CultureInfo.CurrentUICulture)!, "unmute_user"),
+                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("MuteUserButtonText"), "mute_user"),
+                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("UnmuteUserButtonText"), "unmute_user"),
                         },
                         new[]
                         {
@@ -65,24 +96,24 @@ public static class KeyboardUtils
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.resourceManager.GetString("AddContactButtonText", CultureInfo.CurrentUICulture)!, "add_contact"),
-                            InlineKeyboardButton.WithCallbackData(Config.resourceManager.GetString("MyLinkButtonText", CultureInfo.CurrentUICulture)!, "get_self_link"),
+                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("AddContactButtonText"), "add_contact"),
+                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("MyLinkButtonText"), "get_self_link"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.resourceManager.GetString("ViewInboundInvitesButtonText", CultureInfo.CurrentUICulture)!, "view_inbound_invite_links"),
+                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("ViewInboundInvitesButtonText"), "view_inbound_invite_links"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.resourceManager.GetString("ViewOutboundInvitesButtonText", CultureInfo.CurrentUICulture)!, "view_outbound_invite_links"),
+                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("ViewOutboundInvitesButtonText"), "view_outbound_invite_links"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.resourceManager.GetString("ViewAllContactsButtonText", CultureInfo.CurrentUICulture)!, "view_contacts"),
+                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("ViewAllContactsButtonText"), "view_contacts"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.resourceManager.GetString("BehindTheScenesButtonText", CultureInfo.CurrentUICulture)!, "whos_the_genius")
+                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("BehindTheScenesButtonText"), "whos_the_genius")
                         }
                     });
         return Utils.SendMessage(botClient, update, inlineKeyboard, cancellationToken);

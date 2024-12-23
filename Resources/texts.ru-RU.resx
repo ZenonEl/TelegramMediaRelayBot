@@ -201,7 +201,7 @@
     <value>Выберите опцию:</value>
     </data>
     <data name="FailedToProcessLink" xml:space="preserve">
-    <value>Не удалось обработать ссылку.</value>
+    <value>Не удалось обработать ссылку. Попробуйте запрос позже через время, если не помогло — значит ссылка не поддерживается или происходит ошибка на каком то этапе при скачивании видео.</value>
     </data>
     <data name="HereIsYourVideo" xml:space="preserve">
     <value>Вот ваше видео! </value>
@@ -226,5 +226,14 @@
     <value>С текстом:
 
 </value>
+    </data>
+    <data name="WaitSendingVideo" xml:space="preserve">
+    <value>Начало рассылки пользователям...</value>
+    </data>
+    <data name="VideoSuccessfullySent" xml:space="preserve">
+    <value>Рассылка окончена!</value>
+    </data>
+    <data name="WaitForUpload" xml:space="preserve">
+    <value>Отправка видео в телеграм...</value>
     </data>
 </root>

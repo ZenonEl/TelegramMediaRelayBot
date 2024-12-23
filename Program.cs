@@ -12,14 +12,15 @@ namespace TikTokMediaRelayBot
 
             Thread.CurrentThread.CurrentUICulture = currentCulture;
             Thread.CurrentThread.CurrentCulture = currentCulture;
+            Config.LoadConfig();
 
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Debug()
+                .MinimumLevel.Is(Config.logLevel)
                 .Enrich.FromLogContext()
                 .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss} [{Level}] {Message} {Exception}{NewLine}").CreateLogger();
             try 
             {
-                Config.LoadConfig();
+                Log.Information($"Log level: {Config.logLevel}");
                 CoreDB.initDB();
                 Scheduler.Scheduler.Init();
                 await MediaTelegramBot.TelegramBot.Start();

@@ -10,7 +10,8 @@ namespace MediaTelegramBot.Utils;
 
 public static class Utils
 {
-    public static Task ErrorHandler(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
+    public static CancellationToken cancellationToken = TelegramBot.cancellationToken;
+    public static Task ErrorHandler(ITelegramBotClient _, Exception exception, CancellationToken __)
     {
         Log.Error($"Error occurred: {exception.Message}");
         Log.Error($"Stack trace: {exception.StackTrace}");
@@ -54,7 +55,7 @@ public static class Utils
     public static Task SendMessage(ITelegramBotClient botClient, Update update, InlineKeyboardMarkup inlineKeyboard,
                                     CancellationToken cancellationToken, string? text = null)
     {
-        text ??= Config.resourceManager.GetString("ChooseOptionText", System.Globalization.CultureInfo.CurrentUICulture)!;
+        text ??= Config.GetResourceString("ChooseOptionText");
 
         long chatId = GetIDfromUpdate(update);
 
@@ -84,14 +85,14 @@ public static class Utils
         return Task.CompletedTask;
     }
 
-    public static async Task AlertMessageAndShowMenu(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId, string text)
+    public static async Task AlertMessageAndShowMenu(ITelegramBotClient botClient, Update update, long chatId, string text)
     {
         await botClient.SendMessage(chatId, text, cancellationToken: cancellationToken);
         await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
         TelegramBot.userStates.Remove(chatId);
     }
 
-    public static async Task<bool> HandleStateBreakCommand(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId, string command = "/start")
+    public static async Task<bool> HandleStateBreakCommand(ITelegramBotClient botClient, Update update, long chatId, string command = "/start")
     {
         if (update.Message!.Text == command)
         {
@@ -113,4 +114,88 @@ public static class Utils
     }
 }
 
+public class ProgressReportingStream : Stream
+    {
+        private readonly Stream _baseStream;
+        private readonly long _totalBytes;
+        private long _bytesRead;
+        private readonly DateTimeOffset _startTime;
 
+        public event Action<string>? OnProgress;
+
+        public ProgressReportingStream(Stream baseStream)
+        {
+            _baseStream = baseStream;
+            _totalBytes = _baseStream.Length;
+            _startTime = DateTimeOffset.Now;
+        }
+
+        public override bool CanRead => _baseStream.CanRead;
+        public override bool CanSeek => _baseStream.CanSeek;
+        public override bool CanWrite => _baseStream.CanWrite;
+        public override long Length => _baseStream.Length;
+        public override long Position
+        {
+            get => _baseStream.Position;
+            set => _baseStream.Position = value;
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            int bytesRead = _baseStream.Read(buffer, offset, count);
+            _bytesRead += bytesRead;
+
+            string progressMessage = GenerateProgressMessage();
+            OnProgress?.Invoke(progressMessage);
+
+            return bytesRead;
+        }
+
+        private string GenerateProgressMessage()
+        {
+            double percentage = _bytesRead * 100.0 / _totalBytes;
+            TimeSpan elapsedTime = DateTimeOffset.Now - _startTime;
+
+            double speed = elapsedTime.TotalSeconds > 0 ? _bytesRead / elapsedTime.TotalSeconds : 0;
+
+            long remainingBytes = _totalBytes - _bytesRead;
+            TimeSpan eta = speed > 0 ? TimeSpan.FromSeconds(remainingBytes / speed) : TimeSpan.Zero;
+
+            string speedFormatted = FormatSpeed(speed);
+            string etaFormatted = FormatTime(eta);
+
+            return $"[Video Upload] {percentage:F1}% of {FormatSize(_totalBytes)} at {speedFormatted}/s ETA {etaFormatted}";
+        }
+
+        private static string FormatSpeed(double speed)
+        {
+            if (speed < 1024)
+                return $"{speed:F2} B";
+            else if (speed < 1024 * 1024)
+                return $"{speed / 1024:F2} KiB";
+            else
+                return $"{speed / (1024 * 1024):F2} MiB";
+        }
+
+        private static string FormatSize(long size)
+        {
+            if (size < 1024)
+                return $"{size} B";
+            else if (size < 1024 * 1024)
+                return $"{size / 1024} KiB";
+            else
+                return $"{size / (1024 * 1024)} MiB";
+        }
+
+        private static string FormatTime(TimeSpan time)
+        {
+            if (time.TotalSeconds < 1)
+                return "00:00";
+            return $"{time.Minutes:D2}:{time.Seconds:D2}";
+        }
+
+        public override void Flush() => _baseStream.Flush();
+        public override long Seek(long offset, SeekOrigin origin) => _baseStream.Seek(offset, origin);
+        public override void SetLength(long value) => _baseStream.SetLength(value);
+        public override void Write(byte[] buffer, int offset, int count) => _baseStream.Write(buffer, offset, count);
+    }
