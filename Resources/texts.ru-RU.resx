@@ -236,4 +236,13 @@
     <data name="WaitForUpload" xml:space="preserve">
     <value>Отправка видео в телеграм...</value>
     </data>
+    <data name="YourOutboundInvitations" xml:space="preserve">
+    <value>Ваши запросы на добавление в контакты:</value>
+    </data>
+    <data name="OutboundInviteMenu" xml:space="preserve">
+    <value>Выберите действие:</value>
+    </data>
+    <data name="DeclineButtonText" xml:space="preserve">
+    <value>Отменить заявку на добавление</value>
+    </data>
 </root>

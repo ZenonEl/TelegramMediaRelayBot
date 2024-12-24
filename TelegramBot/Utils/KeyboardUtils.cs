@@ -63,7 +63,7 @@ public static class KeyboardUtils
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData("Config.GetResourceString(DeclineButtonText)", $"revoke_outbound_invite:{userId}"),
+                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("DeclineButtonText"), $"revoke_outbound_invite:{userId}"),
                         },
                         new[]
                         {

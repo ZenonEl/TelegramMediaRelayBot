@@ -24,14 +24,14 @@ public static class CallbackQueryMenuUtils
 
     public static async Task ViewOutboundInviteLinks(ITelegramBotClient botClient, Update update)
     {
-        string text = "Config.GetResourceString(YourOutboundInvitations)";
+        string text = Config.GetResourceString("YourOutboundInvitations");
         await Utils.SendMessage(botClient, update, KeyboardUtils.GetOutboundKeyboardMarkup(Utils.GetIDfromUpdate(update)), cancellationToken, text);
     }
 
     public static async Task ShowOutboundInvite(ITelegramBotClient botClient, Update update, long chatId)
     {
         string userId = update.CallbackQuery!.Data!.Split(':')[1];
-        await Utils.SendMessage(botClient, update, KeyboardUtils.GetOutboundActionsKeyboardMarkup(userId), cancellationToken, "sssssssss");
+        await Utils.SendMessage(botClient, update, KeyboardUtils.GetOutboundActionsKeyboardMarkup(userId), cancellationToken, Config.GetResourceString("OutboundInviteMenu"));
         TelegramBot.userStates[chatId] = new ProcessUserProcessOutboundState();
     }
 

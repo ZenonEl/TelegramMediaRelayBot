@@ -35,12 +35,12 @@ public class ProcessUserMuteState : IUserState
         long chatId = Utils.Utils.GetIDfromUpdate(update);
         if (Utils.Utils.CheckNonZeroID(chatId)) return;
 
-        if (!TelegramBot.userStates.ContainsKey(chatId))
+        if (!TelegramBot.userStates.TryGetValue(chatId, out IUserState? value))
         {
             return;
         }
 
-        var userState = (ProcessUserMuteState)TelegramBot.userStates[chatId];
+        var userState = (ProcessUserMuteState)value;
 
         switch (userState.currentState)
         {

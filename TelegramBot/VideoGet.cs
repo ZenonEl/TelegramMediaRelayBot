@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using DotNetTor.SocksPort;
 using Serilog;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -8,8 +9,8 @@ namespace TikTokMediaRelayBot
     public class VideoGet
     {
         private static readonly string YtDlpPath = Path.Combine(Directory.GetCurrentDirectory(), "yt-dlp");
-        private static readonly string Proxy = "socks5://127.0.0.1:9150";
-        private static readonly string[] ColonSpaceSeparator = new[] { ": " };
+        private static readonly string Proxy = Config.proxy;
+        private static readonly string[] ColonSpaceSeparator = [": "];
 
         public static async Task<byte[]?> DownloadVideoAsync(ITelegramBotClient botClient, string videoUrl, Message statusMessage, CancellationToken cancellationToken)
         {
@@ -21,7 +22,11 @@ namespace TikTokMediaRelayBot
                 string tempDirPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
                 Directory.CreateDirectory(tempDirPath);
                 Log.Debug($"Temporary directory path: {tempDirPath}");
-
+                using (var httpClient = new HttpClient(new SocksPortHandler(Config.torSocksHost, socksPort: Config.torSocksPort)))
+                {
+                    var result = await httpClient.GetStringAsync("https://check.torproject.org/api/ip");
+                    Log.Debug("New Tor IP: " + result);
+                }
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
                     FileName = YtDlpPath,
