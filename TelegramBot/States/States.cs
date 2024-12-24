@@ -36,8 +36,15 @@ public enum UserUnMuteState
     Finish
 }
 
-public enum UserProcessOutboundState
+public enum UserOutboundState
 {
+    ProcessAction,
+    Finish
+}
+
+public enum UserInboundState
+{
+    SelectInvite,
     ProcessAction,
     Finish
 }

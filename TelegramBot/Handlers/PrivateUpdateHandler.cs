@@ -68,7 +68,7 @@ public class PrivateUpdateHandler
                 await CallbackQueryMenuUtils.GetSelfLink(botClient, update);
                 break;
             case "view_inbound_invite_links":
-                await CallbackQueryMenuUtils.ViewInboundInviteLinks(botClient, update);
+                await CallbackQueryMenuUtils.ViewInboundInviteLinks(botClient, update, chatId);
                 break;
             case "view_outbound_invite_links":
                 await CallbackQueryMenuUtils.ViewOutboundInviteLinks(botClient, update);
@@ -86,11 +86,7 @@ public class PrivateUpdateHandler
                 await CallbackQueryMenuUtils.WhosTheGenius(botClient, update);
                 break;
             default:
-                if (callbackQuery.Data!.StartsWith("user_accept_inbounds_invite:")) 
-                {
-                    await CallbackQueryMenuUtils.AcceptInboundInvite(update);
-                }
-                else if (callbackQuery.Data!.StartsWith("user_show_outbound_invite:"))
+                if (callbackQuery.Data!.StartsWith("user_show_outbound_invite:"))
                 {
                     await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId);
                 }

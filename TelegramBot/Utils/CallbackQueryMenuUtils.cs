@@ -16,10 +16,11 @@ public static class CallbackQueryMenuUtils
         return Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(Config.GetResourceString("YourLink"), link));
     }
 
-    public static async Task ViewInboundInviteLinks(ITelegramBotClient botClient, Update update)
+    public static async Task ViewInboundInviteLinks(ITelegramBotClient botClient, Update update, long chatId)
     {
         string text = Config.GetResourceString("YourInboundInvitations");
         await Utils.SendMessage(botClient, update, KeyboardUtils.GetInboundsKeyboardMarkup(update), cancellationToken, text);
+        TelegramBot.userStates[chatId] = new UserProcessInboundState();
     }
 
     public static async Task ViewOutboundInviteLinks(ITelegramBotClient botClient, Update update)
@@ -32,12 +33,18 @@ public static class CallbackQueryMenuUtils
     {
         string userId = update.CallbackQuery!.Data!.Split(':')[1];
         await Utils.SendMessage(botClient, update, KeyboardUtils.GetOutboundActionsKeyboardMarkup(userId), cancellationToken, Config.GetResourceString("OutboundInviteMenu"));
-        TelegramBot.userStates[chatId] = new ProcessUserProcessOutboundState();
+        TelegramBot.userStates[chatId] = new UserProcessOutboundState();
     }
 
     public static Task AcceptInboundInvite(Update update)
     {
         DBforInbounds.SetContactStatus(long.Parse(update.CallbackQuery!.Data!.Split(':')[1]), update.CallbackQuery.Message!.Chat.Id, "accepted");
+        return Task.CompletedTask;
+    }
+
+    public static Task DeclineInboundInvite(Update update)
+    {
+        DBforInbounds.SetContactStatus(long.Parse(update.CallbackQuery!.Data!.Split(':')[1]), update.CallbackQuery.Message!.Chat.Id, "declined");
         return Task.CompletedTask;
     }
 

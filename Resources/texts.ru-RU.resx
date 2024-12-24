@@ -146,6 +146,9 @@
     <data name="YesButtonText" xml:space="preserve">
     <value>Да</value>
     </data>
+    <data name="NoButtonText" xml:space="preserve">
+    <value>Нет</value>
+    </data>
     <data name="UserUnmuted" xml:space="preserve">
     <value>Пользователь размучен.</value>
     </data>
@@ -171,7 +174,7 @@
     PS: В будущем планируется сделать бота универсальным реле. Где через конфиг можно будет выставить поддерживаемые сайты и то, как боту с ними работать.</value>
     </data>
     <data name="BackButtonText" xml:space="preserve">
-    <value>Назад</value>
+    <value>Назад в меню</value>
     </data>
     <data name="MuteUserButtonText" xml:space="preserve">
     <value>Замутить пользователя</value>
@@ -241,6 +244,9 @@
     </data>
     <data name="OutboundInviteMenu" xml:space="preserve">
     <value>Выберите действие:</value>
+    </data>
+    <data name="AcceptButtonText" xml:space="preserve">
+    <value>Принять заявку на добавление</value>
     </data>
     <data name="DeclineButtonText" xml:space="preserve">
     <value>Отменить заявку на добавление</value>

@@ -17,7 +17,7 @@ public class DBforInbounds
             var userData = GetUserDataByContactId(contactUserId);
             if (userData != null)
             {
-                buttonDataList.Add(new ButtonData { ButtonText = userData.Item1, CallbackData = "user_accept_inbounds_invite:" + userData.Item2 });
+                buttonDataList.Add(new ButtonData { ButtonText = userData.Item1, CallbackData = "user_show_inbounds_invite:" + userData.Item2 });
             }
         }
 

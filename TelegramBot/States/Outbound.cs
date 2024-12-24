@@ -7,18 +7,18 @@ using TikTokMediaRelayBot;
 
 namespace MediaTelegramBot;
 
-public class ProcessUserProcessOutboundState : IUserState
+public class UserProcessOutboundState : IUserState
 {
-    public UserProcessOutboundState currentState;
+    public UserOutboundState currentState;
 
-    public ProcessUserProcessOutboundState()
+    public UserProcessOutboundState()
     {
-        currentState = UserProcessOutboundState.ProcessAction;
+        currentState = UserOutboundState.ProcessAction;
     }
 
-    public static UserProcessOutboundState[] GetAllStates()
+    public static UserOutboundState[] GetAllStates()
     {
-        return (UserProcessOutboundState[])Enum.GetValues(typeof(UserProcessOutboundState));
+        return (UserOutboundState[])Enum.GetValues(typeof(UserOutboundState));
     }
 
     public string GetCurrentState()
@@ -36,23 +36,23 @@ public class ProcessUserProcessOutboundState : IUserState
             return;
         }
 
-        var userState = (ProcessUserProcessOutboundState)value;
+        var userState = (UserProcessOutboundState)value;
 
         switch (userState.currentState)
         {
-            case UserProcessOutboundState.ProcessAction:
+            case UserOutboundState.ProcessAction:
                 if (update.CallbackQuery != null && update.CallbackQuery.Data!.Contains("revoke_outbound_invite:"))
                 {
                     await botClient.SendMessage(chatId, "Вы точно хотите отозвать приглашение? (в противном случае введите команду /start)", cancellationToken: cancellationToken,
                                                 replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.GetResourceString("YesButtonText")));
-                    userState.currentState = UserProcessOutboundState.Finish;
+                    userState.currentState = UserOutboundState.Finish;
                     return;
                 }
                 TelegramBot.userStates.Remove(chatId);
                 await CallbackQueryMenuUtils.ViewOutboundInviteLinks(botClient, update);
                 break;
 
-            case UserProcessOutboundState.Finish:
+            case UserOutboundState.Finish:
                 if (update.Message != null && update.Message.Text == Config.GetResourceString("YesButtonText"))
                 {
                     TelegramBot.userStates.Remove(chatId);

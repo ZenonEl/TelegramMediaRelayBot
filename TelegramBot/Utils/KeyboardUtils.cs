@@ -73,6 +73,46 @@ public static class KeyboardUtils
         return inlineKeyboard;
     }
 
+    public static InlineKeyboardMarkup GetInBoundActionsKeyboardMarkup(string userId, string callbackData)
+    {
+        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+                    {
+                        new[]
+                        {
+                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("AcceptButtonText"), $"user_accept_inbounds_invite:{userId}"),
+                        },
+                        new[]
+                        {
+                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("DeclineButtonText"), $"user_decline_inbounds_invite:{userId}"),
+                        },
+                        new[]
+                        {
+                            GetReturnButton(callbackData)
+                        },
+                    });
+        return inlineKeyboard;
+    }
+
+    public static InlineKeyboardMarkup GetConfirmForActionKeyboardMarkup(string acceptCallback, string denyCallback)
+    {
+        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+                    {
+                        new[]
+                        {
+                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("YesButtonText"), acceptCallback),
+                        },
+                        new[]
+                        {
+                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("NoButtonText"), denyCallback),
+                        },
+                        new[]
+                        {
+                            GetReturnButton()
+                        },
+                    });
+        return inlineKeyboard;
+    }
+
     public static InlineKeyboardMarkup GetViewContactsKeyboardMarkup()
     {
         var inlineKeyboard = new InlineKeyboardMarkup(new[]

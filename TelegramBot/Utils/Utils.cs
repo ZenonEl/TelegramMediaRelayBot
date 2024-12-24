@@ -52,7 +52,7 @@ public static class Utils
         return false;
     }
 
-    public static Task SendMessage(ITelegramBotClient botClient, Update update, InlineKeyboardMarkup inlineKeyboard,
+    public static Task SendMessage(ITelegramBotClient botClient, Update update, InlineKeyboardMarkup replyMarkup,
                                     CancellationToken cancellationToken, string? text = null)
     {
         text ??= Config.GetResourceString("ChooseOptionText");
@@ -65,7 +65,7 @@ public static class Utils
                 chatId: chatId,
                 messageId: update.CallbackQuery.Message!.MessageId,
                 text: text,
-                replyMarkup: inlineKeyboard,
+                replyMarkup: replyMarkup,
                 cancellationToken: cancellationToken,
                 parseMode: ParseMode.Html
             );
@@ -76,7 +76,7 @@ public static class Utils
             return botClient.SendMessage(
                 chatId: chatId,
                 text: text,
-                replyMarkup: inlineKeyboard,
+                replyMarkup: replyMarkup,
                 cancellationToken: cancellationToken,
                 parseMode: ParseMode.Html
             );
