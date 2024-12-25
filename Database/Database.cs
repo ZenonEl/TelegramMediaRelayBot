@@ -219,7 +219,7 @@ public class CoreDB
         string query = @$"
             SELECT UserId, ContactId
             FROM Contacts
-            WHERE ContactId = @UserId OR UserId = @UserId AND status = '{ContactsStatus.Accepted}'";
+            WHERE ContactId = @UserId AND status = '{ContactsStatus.Accepted}' OR UserId = @UserId AND status = '{ContactsStatus.Accepted}'";
 
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
