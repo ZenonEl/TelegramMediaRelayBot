@@ -1,4 +1,3 @@
-using DataBase;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using MediaTelegramBot.Utils;
@@ -45,7 +44,7 @@ public class UserProcessInboundState : IUserState
                 {
                     string userId = update.CallbackQuery.Data.Split(':')[1];
                     await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
-                                                cancellationToken, "Выберите действие с запросом:");
+                                                cancellationToken, Config.GetResourceString("SelectAction"));
                     userState.currentState = UserInboundState.ProcessAction;
                     return;
                 }
@@ -69,12 +68,12 @@ public class UserProcessInboundState : IUserState
                 if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("user_accept_inbounds_invite:"))
                 {
                     await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_accept_invite:{userID}", $"decline_accept_invite:{userID}"),
-                    cancellationToken, "Вы точно хотите принять запрос? (в противном случае введите команду /start)");
+                    cancellationToken, Config.GetResourceString("WaitAcceptInboundInvite"));
                 }
                 else if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("user_decline_inbounds_invite:"))
                 {
                     await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_decline_invite:{userID}", $"decline_decline_invite:{userID}"), 
-                    cancellationToken, "Вы точно хотите отменить запрос? (в противном случае введите команду /start)");
+                    cancellationToken, Config.GetResourceString("WaitDeclineInboundInvite"));
                 }
 
                 userState.currentState = UserInboundState.Finish;
@@ -93,7 +92,7 @@ public class UserProcessInboundState : IUserState
                 {
                     string userId = update.CallbackQuery.Data.Split(':')[1];
                     await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
-                                                cancellationToken, "Выберите действие с запросом:");
+                                                cancellationToken, Config.GetResourceString("SelectAction"));
                     userState.currentState = UserInboundState.ProcessAction;
                     return;
                 }

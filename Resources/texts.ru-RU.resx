@@ -251,4 +251,13 @@
     <data name="DeclineButtonText" xml:space="preserve">
     <value>Отменить заявку на добавление</value>
     </data>
+    <data name="WaitAcceptInboundInvite" xml:space="preserve">
+    <value>Вы точно хотите принять запрос? (в противном случае введите команду /start)</value>
+    </data>
+    <data name="WaitDeclineInboundInvite" xml:space="preserve">
+    <value>Вы точно хотите отменить запрос? (в противном случае введите команду /start)</value>
+    </data>
+    <data name="SelectAction" xml:space="preserve">
+    <value>Выберите действие с запросом:</value>
+    </data>
 </root>
