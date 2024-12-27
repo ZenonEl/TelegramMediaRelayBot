@@ -46,7 +46,7 @@
         <value>You are muted by some contacts ({0}).</value>
     </data>
     <data name="YourLink" xml:space="preserve">
-        <value>Your link: &lt;code&gt;#{0}&lt;/code&gt;</value>
+        <value>Your link: &lt;code&gt;{0}&lt;/code&gt;</value>
     </data>
 
     <!-- Contact management -->

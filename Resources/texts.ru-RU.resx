@@ -46,7 +46,7 @@
         <value>Вы находитесь в муте у некоторых контактов ({0}).</value>
     </data>
     <data name="YourLink" xml:space="preserve">
-        <value>Ваша ссылка: &lt;code&gt;#{0}&lt;/code&gt;</value>
+        <value>Ваша ссылка: &lt;code&gt;{0}&lt;/code&gt;</value>
     </data>
 
     <!-- Работа с контактами -->
