@@ -20,8 +20,8 @@ public class PrivateUpdateHandler
 
         if (newLineIndex != -1)
         {
-            link = messageText.Substring(0, newLineIndex).Trim();
-            text = messageText.Substring(newLineIndex + 1).Trim();
+            link = messageText[..newLineIndex].Trim();
+            text = messageText[(newLineIndex + 1)..].Trim();
         }
         else
         {

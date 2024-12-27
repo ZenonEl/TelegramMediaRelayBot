@@ -102,7 +102,8 @@ partial class TelegramBot
         await botClient.SendMessage(chatId, Config.GetResourceString("FailedToProcessLink"));
     }
 
-    public static async Task SendVideoToTelegram(byte[] videoBytes, long chatId, ITelegramBotClient botClient, Message statusMessage, bool groupChat = false, string caption = "")
+    public static async Task SendVideoToTelegram(byte[] videoBytes, long chatId, ITelegramBotClient botClient,
+                                                Message statusMessage, bool groupChat = false, string caption = "")
     {
         using (var memoryStream = new MemoryStream(videoBytes))
         using (var progressStream = new Utils.ProgressReportingStream(memoryStream))
@@ -132,6 +133,13 @@ partial class TelegramBot
             progressStream.Position = 0;
 
             string text = caption != "" ? Config.GetResourceString("WithText") + caption : "";
+            if (groupChat)
+            {
+                User me = await botClient.GetMe();
+                DateTime now = DateTime.Now;
+                text = string.Format(Config.GetResourceString("ContactSentVideo"), 
+                                            me.FirstName, now.ToString("yyyy_MM_dd_HH_mm_ss"), MyRegex().Replace(me.FirstName, "_"), caption);
+            }
 
             Log.Debug("Starting video upload to Telegram.");
 
@@ -178,7 +186,7 @@ partial class TelegramBot
         }
     }
 
-    private static async Task SendVideoToContacts(string fileId, long telegramId, ITelegramBotClient botClient, Message statusMessage, string caption = "")
+    private static async Task SendVideoToContacts(string fileId, long telegramId, ITelegramBotClient botClient, Message statusMessage, string text = "")
     {
         int userId = DBforGetters.GetUserIDbyTelegramID(telegramId);
         var contactUserTGIds = await CoreDB.GetContactUserTGIds(userId);
@@ -190,8 +198,6 @@ partial class TelegramBot
 
         DateTime now = DateTime.Now;
         string name = DBforGetters.GetUserNameByTelegramID(telegramId);
-        string text = string.Format(Config.GetResourceString("ContactSentVideo"), 
-                                    name, now.ToString("yyyy_MM_dd_HH_mm_ss"), MyRegex().Replace(name, "_"), caption);
 
         int sentCount = 0;
 
