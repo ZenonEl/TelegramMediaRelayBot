@@ -8,16 +8,23 @@ namespace TelegramMediaRelayBot
     {
         static async Task Main(string[] args)
         {
+            Config.LoadConfig();
+
             CultureInfo currentCulture = CultureInfo.CurrentUICulture;
+
+            if (Config.language != null)
+            {
+                currentCulture = new CultureInfo(Config.language);
+            }
 
             Thread.CurrentThread.CurrentUICulture = currentCulture;
             Thread.CurrentThread.CurrentCulture = currentCulture;
-            Config.LoadConfig();
 
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Is(Config.logLevel)
                 .Enrich.FromLogContext()
                 .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss} [{Level}] {Message} {Exception}{NewLine}").CreateLogger();
+
             try 
             {
                 Log.Information($"Log level: {Config.logLevel}");

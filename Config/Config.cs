@@ -9,6 +9,7 @@ namespace TelegramMediaRelayBot
         public static string? telegramBotToken;
         public static string? sqlConnectionString;
         public static string databaseName = "TelegramMediaRelayBot";
+        public static string? language;
         public static string proxy = "";
         public static int UserUnMuteCheckInterval = 20; // Seconds
 
@@ -37,6 +38,7 @@ namespace TelegramMediaRelayBot
             telegramBotToken = configuration["AppSettings:TelegramBotToken"]!;
             sqlConnectionString = configuration["AppSettings:SqlConnectionString"]!;
             databaseName = configuration["AppSettings:DatabaseName"]!;
+            language = configuration["AppSettings:Language"]!;
             proxy = configuration["AppSettings:Proxy"]!;
 
             videoGetDelay = int.Parse(configuration["MessageDelaySettings:VideoGetDelay"]!);
