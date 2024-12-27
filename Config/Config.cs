@@ -2,12 +2,13 @@ using System.Resources;
 using Serilog.Events;
 using Microsoft.Extensions.Configuration;
 
-namespace TikTokMediaRelayBot
+namespace TelegramMediaRelayBot
 {
     class Config
     {
         public static string? telegramBotToken;
         public static string? sqlConnectionString;
+        public static string databaseName = "TelegramMediaRelayBot";
         public static string proxy = "";
         public static int UserUnMuteCheckInterval = 20; // Seconds
 
@@ -25,7 +26,7 @@ namespace TikTokMediaRelayBot
         public static int torControlPort = 9051;
         public static int TorChangingChainInterval = 5; // Minutes
 
-        private static ResourceManager resourceManager = new ResourceManager("TikTokMediaRelayBot.Resources.texts", typeof(Program).Assembly);
+        private static ResourceManager resourceManager = new ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
         public static void LoadConfig()
         {
             var configuration = new ConfigurationBuilder()
@@ -35,6 +36,7 @@ namespace TikTokMediaRelayBot
 
             telegramBotToken = configuration["AppSettings:TelegramBotToken"]!;
             sqlConnectionString = configuration["AppSettings:SqlConnectionString"]!;
+            databaseName = configuration["AppSettings:DatabaseName"]!;
             proxy = configuration["AppSettings:Proxy"]!;
 
             videoGetDelay = int.Parse(configuration["MessageDelaySettings:VideoGetDelay"]!);

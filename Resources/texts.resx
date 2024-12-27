@@ -1,219 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
+    <!-- General messages -->
     <data name="WaitDownloadingVideo" xml:space="preserve">
-        <value>Please wait, the video is downloading...</value>
+        <value>Please wait, the video is being downloaded...</value>
     </data>
     <data name="WhatShouldIDoWithThis" xml:space="preserve">
         <value>What should I do with this?</value>
     </data>
-    <data name="HelpText" xml:space="preserve">
-        <value>&lt;b&gt;Working with TikTok links&lt;/b&gt;: 
-                Simply send me a link. Here's an example of how your message might look: 
-    tiktok_video_link
-
-    Some cool text that will be sent along with the video to all your contacts, if you've added them in advance :D
-    I recommend using hashtags for video navigation. It will be convenient for both the sender and the recipient :)
-
-                &lt;b&gt;Adding contacts:&lt;/b&gt;
-    1) You need someone who agrees to connect with you and might be subjected to spam attacks from videos.
-    2) You give them your (or take their) link in the format: 1234ab56-cde-78fg-01hi-2j34k56790 (You can find the link in the main menu under the "My Link" button).
-    3) Then you press the "Add Contact" button in the main menu. After that, you will be asked to specify the link of the person you want to add, in the format: 1234ab56-cde-78fg-01hi-2j34k56790
-    Just the link, nothing else needs to be written. If the link is invalid and no one is found, you will be notified and returned to the main menu.
-    Also, &lt;s&gt;if you suddenly decide not to bother the person with videos, you&lt;/s&gt; can press the "Back" button, and the process will be stopped. You will be returned to the main menu.
-    4) If someone is found, you will be notified, and you will only need to press a couple of buttons.
-    5) Information about the person will be shown, and you will be asked to confirm sending a request to them. &lt;s&gt;This will be your last chance to reconsider and refuse to add the person to your contacts, so be careful.&lt;/s&gt;
-    6) The person will receive a notification about the request, and you will only need to wait until they add you in return. After that, your videos will be sent to your contacts (where you just added a new person).
-
-                &lt;b&gt;How to accept a contact request:&lt;/b&gt;
-    1) Press the "View incoming requests to add to my contacts" button.
-    2) Find the button with the name of the person you know and want to add to your contacts.
-    3) Press that button, and that's it. The person is added, for now, that's how it works :)
-
-    &lt;b&gt;Enjoy using it! The project is still very young, constantly improving and changing, so keep an eye on updates!
-    Either manually or through the person who gave you the link to this amazing bot :D&lt;/b&gt;
-
-    Links that should be supported can be found &lt;a href='https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md'&gt;here&lt;/a&gt;</value>
-    </data>
     <data name="InvalidLinkFormat" xml:space="preserve">
-    <value>What should I do with this? Not the right link format.</value>
-    </data>
-    <data name="GroupHelpText" xml:space="preserve">
-    <value>Simply send me the command: /link [tiktok_video_link]
-    PS: square brackets are not needed :)</value>
-    </data>
-    <data name="SpecifyContactLink" xml:space="preserve">
-    <value>Specify the person's link:</value>
-    </data>
-    <data name="MuteUserInstructions" xml:space="preserve">
-    <value>To mute a user (you will not receive videos from them), you need to specify either their ID or their link.</value>
-    </data>
-    <data name="UnmuteUserInstructions" xml:space="preserve">
-    <value>To unmute a user (you will start receiving videos from them again), you need to specify either their ID or their link.</value>
-    </data>
-    <data name="YourContacts" xml:space="preserve">
-    <value>Your contacts:</value>
-    </data>
-    <data name="ContactInfo" xml:space="preserve">
-      <value>
-Contact with ID: {0}
-Name: {1}
-Link: &lt;code&gt;{2}&lt;/code&gt;
-</value>
-    </data>
-    <data name="NoUserFoundByLink" xml:space="preserve">
-    <value>No one was found by this link.</value>
-    </data>
-    <data name="UserFoundByLink" xml:space="preserve">
-    <value>One person was found by this link.</value>
-    </data>
-    <data name="NextButtonText" xml:space="preserve">
-    <value>Next</value>
-    </data>
-    <data name="LinkText" xml:space="preserve">
-    <value>Link</value>
-    </data>
-    <data name="NameText" xml:space="preserve">
-    <value>Name</value>
-    </data>
-    <data name="ConfirmAdditionText" xml:space="preserve">
-    <value>Confirm the addition (otherwise, write /start): </value>
-    </data>
-    <data name="WaitForContactConfirmation" xml:space="preserve">
-    <value>Now wait until the contact also adds you to their list.</value>
-    </data>
-    <data name="WaitForButtonText" xml:space="preserve">
-    <value>Waiting...</value>
-    </data>
-    <data name="UserWantsToAddYou" xml:space="preserve">
-    <value>User {0} wants to add you to their contacts.</value>
-    </data>
-<data name="NoUserFoundByID" xml:space="preserve">
-  <value>No one was found by this ID.</value>
-</data>
-<data name="WillWorkWithContact" xml:space="preserve">
-  <value>Will we work with this contact?
-ID: {0} Name: {1} ?</value>
-</data>
-<data name="ConfirmDecision" xml:space="preserve">
-  <value>Confirm your decision (otherwise, write /start)</value>
-</data>
-<data name="MuteTimeInstructions" xml:space="preserve">
-  <value>
-To convert seconds to other units of time, use the following ratios:
-
-    1 minute = 60 seconds
-    1 hour = 60 minutes = 3600 seconds
-    1 day = 24 hours = 1440 minutes = 86400 seconds
-
-Thus, for conversion:
-
-    To convert seconds to minutes, divide the number of seconds by 60.
-    To convert seconds to hours, divide the number of seconds by 3600.
-    To convert seconds to days, divide the number of seconds by 86400.
-    
-The last step and we will mute them. Now enter the mute time in seconds:</value>
-    </data>
-    <data name="IndefinitelyButtonText" xml:space="preserve">
-    <value>Indefinitely</value>
-    </data>
-    <data name="UserWillBeUnmuted" xml:space="preserve">
-    <value>The user will be unmuted on {0:yyyy-MM-dd HH:mm:ss} (in {1} seconds).</value>
-    </data>
-    <data name="UserWillBeUnmutedAt" xml:space="preserve">
-    <value>The user will be unmuted on {0:yyyy-MM-dd HH:mm:ss}.</value>
-    </data>
-    <data name="UserWillBeMutedIndefinitely" xml:space="preserve">
-    <value>The user will be muted indefinitely.</value>
-    </data>
-    <data name="InvalidMuteTimeFormat" xml:space="preserve">
-    <value>Please enter the mute time in seconds or a date in the format YYYY-MM-DD HH:MM:SS. Or write 'Indefinitely'.</value>
-    </data>
-    <data name="ConfirmFinalDecision" xml:space="preserve">
-    <value>Check your decision and confirm it if you are sure that this is what you need (otherwise, write /start)</value>
-    </data>
-    <data name="ActionCancelledError" xml:space="preserve">
-    <value>An error occurred. Actions have been canceled.</value>
-    </data>
-    <data name="MuteSet" xml:space="preserve">
-    <value>Mute has been set.</value>
-    </data>
-    <data name="UserInMute" xml:space="preserve">
-    <value>The user is muted until: {0}
-Do you really want to unmute them? If not, write /start</value>
-    </data>
-    <data name="NoActiveMute" xml:space="preserve">
-The contact is not in a mutation state right now
-    </data>
-    <data name="YesButtonText" xml:space="preserve">
-    <value>Yes</value>
-    </data>
-    <data name="UserUnmuted" xml:space="preserve">
-    <value>The user has been unmuted.</value>
-    </data>
-    <data name="YourLink" xml:space="preserve">
-    <value>Your link: <code>{0}</code></value>
-    </data>
-    <data name="YourInboundInvitations" xml:space="preserve">
-    <value>Your incoming invitations:
-    (By pressing the button, you accept the request to add to your contacts)</value>
-    </data>
-    <data name="WhosTheGeniusText" xml:space="preserve">
-    <value>Hello everyone! 
-    I am ZenonEl, the creator of this bag of code and algorithms.
-    My GitHub: https://github.com/ZenonEl/
-
-    The idea of creating this bot came to me when my acquaintances were again forced to send TikTok videos (which I don't use) manually (downloading them and sending... then deleting the video from the phone...).
-    In general, I thought it would be great to simplify these monotonous actions for them and decided to create this bot.
-    Now, thanks to it, I can run a simple bot even on my PC. Set a list of contacts from whom I want to receive videos, and that's it, I've made life easier for myself and my acquaintances.
-    Convenient!
-
-    Enjoy using it!
-
-    PS: In the future, it is planned to make the bot a universal relay. Where through the config, you can set the supported sites and how the bot should work with them.</value>
-    </data>
-    <data name="BackButtonText" xml:space="preserve">
-    <value>Back</value>
-    </data>
-    <data name="MuteUserButtonText" xml:space="preserve">
-    <value>Mute user</value>
-    </data>
-    <data name="UnmuteUserButtonText" xml:space="preserve">
-    <value>Unmute user</value>
-    </data>
-    <data name="AddContactButtonText" xml:space="preserve">
-    <value>Add contact</value>
-    </data>
-    <data name="MyLinkButtonText" xml:space="preserve">
-    <value>My link</value>
-    </data>
-    <data name="ViewInboundInvitesButtonText" xml:space="preserve">
-    <value>View incoming requests to add to my contacts</value>
-    </data>
-    <data name="ViewOutboundInvitesButtonText" xml:space="preserve">
-    <value>View my requests to add to contacts</value>
-    </data>
-    <data name="ViewAllContactsButtonText" xml:space="preserve">
-    <value>View all my contacts</value>
-    </data>
-    <data name="BehindTheScenesButtonText" xml:space="preserve">
-    <value>Behind the scenes</value>
-    </data>
-    <data name="ChooseOptionText" xml:space="preserve">
-      <value>Choose an option:</value>
+        <value>What should I do with this? The link format is incorrect.</value>
     </data>
     <data name="FailedToProcessLink" xml:space="preserve">
-        <value>Failed to process the link.</value>
+        <value>Failed to process the link. Try again later, and if it still doesn't work, the link may not be supported or an error occurred during the video download.</value>
     </data>
     <data name="HereIsYourVideo" xml:space="preserve">
-        <value>Here is your video!</value>
-    </data>
-    <data name="VideoSentToContacts" xml:space="preserve">
-        <value>Video successfully sent to all ({0}) contacts.
-&lt;code&gt;#{1}&lt;/code&gt;
-#{1}_{2}</value>
-    </data>
-    <data name="MutedByContacts" xml:space="preserve">
-        <value>You are muted by some contacts ({0}).</value>
+        <value>Here is your video! </value>
     </data>
     <data name="ContactSentVideo" xml:space="preserve">
         <value>{0} sent a video!
@@ -221,11 +22,225 @@ The contact is not in a mutation state right now
 #{1}_{2}
 
 {3}
-</value>
+        </value>
     </data>
     <data name="WithText" xml:space="preserve">
-        <value>With text:
+        <value>With text:</value>
+    </data>
+    <data name="WaitSendingVideo" xml:space="preserve">
+        <value>Starting video distribution to users...</value>
+    </data>
+    <data name="VideoSuccessfullySent" xml:space="preserve">
+        <value>Distribution completed!</value>
+    </data>
+    <data name="VideoSentToContacts" xml:space="preserve">
+        <value>Video successfully sent to all ({0}) contacts.
 
+&lt;code&gt;#{1}&lt;/code&gt;
+#{1}_{2}</value>
+    </data>
+    <data name="WaitForUpload" xml:space="preserve">
+        <value>Uploading video to Telegram...</value>
+    </data>
+    <data name="MutedByContacts" xml:space="preserve">
+        <value>You are muted by some contacts ({0}).</value>
+    </data>
+    <data name="YourLink" xml:space="preserve">
+        <value>Your link: &lt;code&gt;#{0}&lt;/code&gt;</value>
+    </data>
+
+    <!-- Contact management -->
+    <data name="SpecifyContactLink" xml:space="preserve">
+        <value>Please provide the person's link:</value>
+    </data>
+    <data name="NoUserFoundByLink" xml:space="preserve">
+        <value>No one was found using this link.</value>
+    </data>
+    <data name="UserFoundByLink" xml:space="preserve">
+        <value>One person was found using this link.</value>
+    </data>
+    <data name="ConfirmAdditionText" xml:space="preserve">
+        <value>Confirm the addition (otherwise, type /start): </value>
+    </data>
+    <data name="WaitForContactConfirmation" xml:space="preserve">
+        <value>Now wait for the contact to add you to their list as well.</value>
+    </data>
+    <data name="UserWantsToAddYou" xml:space="preserve">
+        <value>User {0} wants to add you to their contacts.</value>
+    </data>
+    <data name="NoUserFoundByID" xml:space="preserve">
+        <value>No one was found with this ID.</value>
+    </data>
+    <data name="WillWorkWithContact" xml:space="preserve">
+        <value>Shall we work with this contact? 
+ID: {0} 
+Name: {1} ?</value>
+    </data>
+    <data name="ConfirmDecision" xml:space="preserve">
+        <value>Confirm your decision (otherwise, type /start)</value>
+    </data>
+    <data name="YourContacts" xml:space="preserve">
+        <value>Your contacts:</value>
+    </data>
+    <data name="ContactInfo" xml:space="preserve">
+        <value>Contact with ID: {0} 
+Name: {1} 
+Link: &lt;code&gt;{2}&lt;/code&gt;</value>
+    </data>
+    <data name="YourInboundInvitations" xml:space="preserve">
+        <value>Your incoming invitations:</value>
+    </data>
+    <data name="YourOutboundInvitations" xml:space="preserve">
+        <value>Your outgoing contact requests:</value>
+    </data>
+    <data name="OutboundInviteMenu" xml:space="preserve">
+        <value>Choose an action:</value>
+    </data>
+    <data name="WaitAcceptInboundInvite" xml:space="preserve">
+        <value>Are you sure you want to accept the request? (otherwise, type /start)</value>
+    </data>
+    <data name="WaitDeclineInboundInvite" xml:space="preserve">
+        <value>Are you sure you want to decline the request? (otherwise, type /start)</value>
+    </data>
+    <data name="SelectAction" xml:space="preserve">
+        <value>Choose an action for the request:</value>
+    </data>
+
+    <!-- Mutes and unmutes -->
+    <data name="MuteUserInstructions" xml:space="preserve">
+        <value>To mute a person (you won't receive videos from them), you need to provide either their ID or their link.</value>
+    </data>
+    <data name="UnmuteUserInstructions" xml:space="preserve">
+        <value>To unmute a person (you will receive videos from them again), you need to provide either their ID or their link.</value>
+    </data>
+    <data name="MuteTimeInstructions" xml:space="preserve">
+<value>To convert seconds to other time units, use the following ratios: 
+
+1 minute = 60 seconds, 1 hour = 3600 seconds, 1 day = 86400 seconds. 
+
+Enter the mute time in seconds or a date in the format YYYY-MM-DD HH:MM:SS:</value>
+    </data>
+    <data name="UserWillBeUnmuted" xml:space="preserve">
+        <value>The user will be unmuted at {0:yyyy-MM-dd HH:mm:ss} (in {1} seconds).</value>
+    </data>
+    <data name="UserWillBeUnmutedAt" xml:space="preserve">
+        <value>The user will be unmuted at {0:yyyy-MM-dd HH:mm:ss}.</value>
+    </data>
+    <data name="UserWillBeMutedIndefinitely" xml:space="preserve">
+        <value>The user will be muted indefinitely.</value>
+    </data>
+    <data name="InvalidMuteTimeFormat" xml:space="preserve">
+        <value>Please enter the mute time in seconds or a date in the format YYYY-MM-DD HH:MM:SS. Or type 'Indefinitely'.</value>
+    </data>
+    <data name="ConfirmFinalDecision" xml:space="preserve">
+        <value>Review your decision and confirm it if you are sure this is what you need (otherwise, type /start)</value>
+    </data>
+    <data name="MuteSet" xml:space="preserve">
+        <value>Mute has been set.</value>
+    </data>
+    <data name="UserInMute" xml:space="preserve">
+        <value>The user is muted until: {0} 
+Are you sure you want to unmute them? If not, type /start</value>
+    </data>
+    <data name="NoActiveMute" xml:space="preserve">
+        <value>The contact is not currently muted.</value>
+    </data>
+    <data name="UserUnmuted" xml:space="preserve">
+        <value>The user has been unmuted.</value>
+    </data>
+    <data name="IndefinitelyButtonText" xml:space="preserve">
+        <value>Indefinitely</value>
+    </data>
+    <!-- Buttons and interface texts -->
+    <data name="NextButtonText" xml:space="preserve">
+        <value>Next</value>
+    </data>
+    <data name="LinkText" xml:space="preserve">
+        <value>Link</value>
+    </data>
+    <data name="NameText" xml:space="preserve">
+        <value>Name</value>
+    </data>
+    <data name="YesButtonText" xml:space="preserve">
+        <value>Yes</value>
+    </data>
+    <data name="NoButtonText" xml:space="preserve">
+        <value>No</value>
+    </data>
+    <data name="BackButtonText" xml:space="preserve">
+        <value>Back to menu</value>
+    </data>
+    <data name="MuteUserButtonText" xml:space="preserve">
+        <value>Mute user</value>
+    </data>
+    <data name="UnmuteUserButtonText" xml:space="preserve">
+        <value>Unmute user</value>
+    </data>
+    <data name="AddContactButtonText" xml:space="preserve">
+        <value>Add contact</value>
+    </data>
+    <data name="MyLinkButtonText" xml:space="preserve">
+        <value>My link</value>
+    </data>
+    <data name="ViewInboundInvitesButtonText" xml:space="preserve">
+        <value>View incoming contact requests</value>
+    </data>
+    <data name="ViewOutboundInvitesButtonText" xml:space="preserve">
+        <value>View my outgoing contact requests</value>
+    </data>
+    <data name="ViewAllContactsButtonText" xml:space="preserve">
+        <value>View all my contacts</value>
+    </data>
+    <data name="BehindTheScenesButtonText" xml:space="preserve">
+        <value>Behind the scenes</value>
+    </data>
+    <data name="ChooseOptionText" xml:space="preserve">
+        <value>Choose an option:</value>
+    </data>
+    <data name="AcceptButtonText" xml:space="preserve">
+        <value>Accept contact request</value>
+    </data>
+    <data name="DeclineButtonText" xml:space="preserve">
+        <value>Decline contact request</value>
+    </data>
+
+    <!-- Informational messages -->
+    <data name="HelpText" xml:space="preserve">
+        <value>&lt;b&gt;Working with video links:&lt;/b&gt; 
+Just send me a link. Here's an example of what your message might look like: 
+
+video_link Some cool text that will be sent along with the video to all your contacts, if you've added them beforehand :D 
+
+By the way, I recommend using hashtags for video navigation. It will be convenient for both the sender and the receiver :) 
+
+&lt;b&gt;Adding contacts:&lt;/b&gt; 
+1) You need someone who is willing to connect with you and possibly be subjected to video spam attacks. 
+2) You give them your (or take their) link in the format: 1234ab56-cde-78fg-01hi-2j34k56790 (You can find the link in the main menu under the "My Link" button). 
+3) Then click the "Add Contact" button in the main menu. After clicking, you will be asked to provide the link of the person you want to add, in the format: 1234ab56-cde-78fg-01hi-2j34k56790 Just the link, no need to write anything else. If the link is invalid and no one is found, you will be notified and returned to the main menu. 
+Also, &lt;s&gt;if you decide not to bother the person with videos,&lt;/s&gt; you can click the "Back" button, and the process will be stopped. You will be returned to the main menu. 
+4) If someone is found, you will be notified, and all that's left is to click a couple of buttons. 
+5) Information about the person will be shown, and you will be asked to confirm sending the request to them. &lt;s&gt;This will be your last chance to reconsider and refuse to add the person to your contacts, so be careful.&lt;/s&gt; 
+6) The person will receive a notification about the request, and all you have to do is wait for them to accept it. After that, your videos will be sent to your contacts (including the new person you just added). 
+
+&lt;b&gt;How to accept a contact request:&lt;/b&gt; 
+1) Click the "View Incoming Contact Requests" button. 
+2) Find the button with the name of the person you know and want to add to your contacts. 
+3) Click on that button, and that's it. You will be presented with a decision menu. 
+
+&lt;b&gt;Enjoy using the bot! The project is still very young, constantly improving and changing, so keep an eye on updates! Either manually or through the person who gave you the link to this wonderful bot :D&lt;/b&gt; 
+
+Links that should be supported can be found &lt;a href='https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md'&gt;here&lt;/a&gt;
 </value>
+    </data>
+    <data name="GroupHelpText" xml:space="preserve">
+        <value>Just send me the command: 
+/link [video_link] 
+
+PS: The square brackets are not needed :)</value>
+    </data>
+    <data name="WhosTheGeniusText" xml:space="preserve">
+        <value>Hello everyone! I'm ZenonEl, the creator of this bag of code and algorithms. My GitHub: https://github.com/ZenonEl/ 
+
+The idea for this bot came to me when, once again, my friends had to manually send me TikTok videos (which I don't use) by downloading them, sending them, and then deleting them from their phones... So, I thought it would be great to simplify all these monotonous actions for them and decided to create this bot. Now, thanks to it, I can run a simple bot on my PC, set up a list of contacts from whom I want to receive videos, and that's it—making life easier for both myself and my friends. Convenient! Enjoy using it!</value>
     </data>
 </root>

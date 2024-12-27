@@ -1,7 +1,7 @@
 using Serilog;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using TikTokMediaRelayBot;
+using TelegramMediaRelayBot;
 
 namespace MediaTelegramBot;
 

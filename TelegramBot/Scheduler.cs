@@ -2,7 +2,7 @@ using DataBase;
 using DotNetTor.SocksPort;
 using Serilog;
 
-namespace TikTokMediaRelayBot.Scheduler;
+namespace TelegramMediaRelayBot.Scheduler;
 
 class Scheduler
 {

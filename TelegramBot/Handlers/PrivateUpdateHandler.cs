@@ -2,7 +2,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using MediaTelegramBot.Menu;
 using MediaTelegramBot.Utils;
-using TikTokMediaRelayBot;
+using TelegramMediaRelayBot;
 
 
 namespace MediaTelegramBot;

@@ -1,7 +1,7 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Polling;
-using TikTokMediaRelayBot;
+using TelegramMediaRelayBot;
 using System.Text.RegularExpressions;
 using DataBase;
 using Serilog;
@@ -186,7 +186,7 @@ partial class TelegramBot
         }
     }
 
-    private static async Task SendVideoToContacts(string fileId, long telegramId, ITelegramBotClient botClient, Message statusMessage, string text = "")
+    private static async Task SendVideoToContacts(string fileId, long telegramId, ITelegramBotClient botClient, Message statusMessage, string caption = "")
     {
         int userId = DBforGetters.GetUserIDbyTelegramID(telegramId);
         var contactUserTGIds = await CoreDB.GetContactUserTGIds(userId);
@@ -198,7 +198,8 @@ partial class TelegramBot
 
         DateTime now = DateTime.Now;
         string name = DBforGetters.GetUserNameByTelegramID(telegramId);
-
+        string text = string.Format(Config.GetResourceString("ContactSentVideo"), 
+                                    name, now.ToString("yyyy_MM_dd_HH_mm_ss"), MyRegex().Replace(name, "_"), caption);
         int sentCount = 0;
 
         foreach (var contactUserId in filteredContactUserTGIds)

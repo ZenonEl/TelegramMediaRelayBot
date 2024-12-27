@@ -2,7 +2,7 @@
 using DataBase;
 using Serilog;
 
-namespace TikTokMediaRelayBot
+namespace TelegramMediaRelayBot
 {
     class Program
     {

@@ -4,7 +4,7 @@ using Serilog;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
-namespace TikTokMediaRelayBot
+namespace TelegramMediaRelayBot
 {
     public class VideoGet
     {

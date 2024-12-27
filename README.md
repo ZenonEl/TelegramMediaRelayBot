@@ -68,8 +68,11 @@
 ## Usage
 
 ### Supported Commands
-- **/start** — Start the bot and display the main menu.
-- **/help** — Get help on using the bot.
+P — Private chats  
+G — Group chats  
+- **/start** — Start the bot and display the main menu. (P)  
+- **/help** — Get help on how to use the bot. (P/G)  
+- **/link** — Get video by link in a group chat. (G)  
 
 ### Adding Contacts
 1. Get your unique link in the main menu (button **My Link**) and share it.
@@ -92,7 +95,7 @@
 - Ability to recreate the personal link within the bot (with the option to delete all contacts or keep them).
 - Ability to enable a filter for accessing the bot (for example, you can only start using the bot by using someone's referral link).
 - (Under consideration) Administrative functions for managing the bot within itself.
-- Creating a ready-to-use executable file.
+- ~~Creating a ready-to-use executable file.~~
 - And various other improvements and fixes ✨
 
 ## Logging

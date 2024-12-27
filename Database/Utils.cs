@@ -1,6 +1,6 @@
 using MySql.Data.MySqlClient;
 using Serilog;
-using TikTokMediaRelayBot;
+using TelegramMediaRelayBot;
 
 namespace DataBase
 {

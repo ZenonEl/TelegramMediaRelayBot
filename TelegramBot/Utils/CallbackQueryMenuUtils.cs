@@ -1,7 +1,7 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using DataBase;
-using TikTokMediaRelayBot;
+using TelegramMediaRelayBot;
 
 
 namespace MediaTelegramBot.Utils;

@@ -1,7 +1,7 @@
 
 using MySql.Data.MySqlClient;
 using Serilog;
-using TikTokMediaRelayBot;
+using TelegramMediaRelayBot;
 
 namespace DataBase;
 
@@ -9,8 +9,8 @@ public class DBforGetters
 {
     private static string GetLink(long telegramID)
     {
-        string query = @"
-            USE TikTokMediaRelayBot;
+        string query = @$"
+            USE {Config.databaseName};
             SELECT Link FROM Users WHERE TelegramID = @telegramID";
         using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
         {
@@ -45,8 +45,8 @@ public class DBforGetters
 
     public static string GetUserNameByID(int UserID)
     {
-        string query = @"
-            USE TikTokMediaRelayBot;
+        string query = @$"
+            USE {Config.databaseName};
             SELECT Name FROM Users WHERE ID = @UserID";
         using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
         {
@@ -72,8 +72,8 @@ public class DBforGetters
 
     public static long GetTelegramIDbyUserID(int UserID)
     {
-        string query = @"
-            USE TikTokMediaRelayBot;
+        string query = @$"
+            USE {Config.databaseName};
             SELECT TelegramID FROM Users WHERE ID = @UserID";
         using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
         {
@@ -99,8 +99,8 @@ public class DBforGetters
 
     public static int GetUserIDbyTelegramID(long TelegramID)
     {
-        string query = @"
-            USE TikTokMediaRelayBot;
+        string query = @$"
+            USE {Config.databaseName};
             SELECT ID FROM Users WHERE TelegramID = @TelegramID";
         using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
         {
@@ -125,8 +125,8 @@ public class DBforGetters
     }
     public static int GetContactIDByLink(string link)
     {
-        string query = @"
-            USE TikTokMediaRelayBot;
+        string query = @$"
+            USE {Config.databaseName};
             SELECT * FROM Users WHERE Link = @link";
         using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
         {
@@ -151,8 +151,8 @@ public class DBforGetters
     }
     public static int GetContactByTelegramID(long telegramID)
     {
-        string query = @"
-            USE TikTokMediaRelayBot;
+        string query = @$"
+            USE {Config.databaseName};
             SELECT * FROM Users WHERE TelegramID = @telegramID";
         using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
         {
@@ -177,8 +177,8 @@ public class DBforGetters
     }
     public static string GetUserNameByTelegramID(long telegramID)
     {
-        string query = @"
-            USE TikTokMediaRelayBot;
+        string query = @$"
+            USE {Config.databaseName};
             SELECT Name FROM Users WHERE TelegramID = @telegramID";
         using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
         {
@@ -203,8 +203,8 @@ public class DBforGetters
     }
     public static List<long> GetUsersIdForMuteContactId(int contactId)
     {
-        string query = @"
-            USE TikTokMediaRelayBot;
+        string query = @$"
+            USE {Config.databaseName};
             SELECT MutedByUserId FROM MutedContacts WHERE MutedContactId = @contactId AND IsActive = 1";
         
         List<int> mutedByUserIds = new List<int>();
@@ -270,8 +270,8 @@ public class DBforGetters
 
     public static string GetActiveMuteTimeByContactID(int contactID)
     {
-        string query = @"
-            USE TikTokMediaRelayBot;
+        string query = @$"
+            USE {Config.databaseName};
             SELECT ExpirationDate FROM MutedContacts WHERE MutedContactId = @contactID AND IsActive = 1";
         using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
         {

@@ -1,6 +1,6 @@
 using MySql.Data.MySqlClient;
 using Serilog;
-using TikTokMediaRelayBot;
+using TelegramMediaRelayBot;
 
 namespace DataBase;
 
@@ -18,14 +18,14 @@ public class CoreDB
 
     private static void CreateDatabase()
     {
-        string query = "CREATE DATABASE IF NOT EXISTS TikTokMediaRelayBot;";
+        string query = $"CREATE DATABASE IF NOT EXISTS {Config.databaseName};";
         Utils.executeVoidQuery(query);
     }
 
     private static void CreateUsersTable()
     {
-        string query = @"
-            USE TikTokMediaRelayBot;
+        string query = @$"
+            USE {Config.databaseName};
             CREATE TABLE IF NOT EXISTS Users (
                 ID INT PRIMARY KEY AUTO_INCREMENT,
                 TelegramID BIGINT NOT NULL,
@@ -39,8 +39,8 @@ public class CoreDB
 
     private static void CreateContactsTable()
     {
-        string query = @"
-            USE TikTokMediaRelayBot;
+        string query = @$"
+            USE {Config.databaseName};
             CREATE TABLE IF NOT EXISTS Contacts (
                 UserId INT,
                 ContactId INT,
@@ -55,8 +55,8 @@ public class CoreDB
 
     private static void CreateMutedContactsTable()
     {
-        string query = @"
-            USE TikTokMediaRelayBot;
+        string query = @$"
+            USE {Config.databaseName};
             CREATE TABLE IF NOT EXISTS MutedContacts (
                 MutedId INT PRIMARY KEY AUTO_INCREMENT,
                 MutedByUserId INT NOT NULL,
@@ -74,8 +74,8 @@ public class CoreDB
 
     public static bool CheckExistsUser(long telegramID)
     {
-        string query = @"
-            USE TikTokMediaRelayBot;
+        string query = @$"
+            USE {Config.databaseName};
             SELECT * FROM Users WHERE TelegramID = @telegramID";
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
@@ -105,8 +105,8 @@ public class CoreDB
             return;
         }
 
-        string query = @"
-            USE TikTokMediaRelayBot;
+        string query = @$"
+            USE {Config.databaseName};
             INSERT INTO Users (TelegramID, Name, Link) VALUES (@telegramID, @name, @link)";
 
         using (MySqlConnection connection = new MySqlConnection(connectionString))
@@ -129,8 +129,8 @@ public class CoreDB
 
     public static void AddContact(long telegramID, string link)
     {
-        string query = @"
-            USE TikTokMediaRelayBot;
+        string query = @$"
+            USE {Config.databaseName};
             INSERT INTO Contacts (UserId, ContactId, Status) VALUES (@userId, @contactId, @status)";
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
@@ -157,8 +157,8 @@ public class CoreDB
             muteDate = DateTime.Now;
         }
 
-        string query = @"
-            USE TikTokMediaRelayBot;
+        string query = @$"
+            USE {Config.databaseName};
             INSERT INTO MutedContacts (MutedByUserId, MutedContactId, MuteDate, ExpirationDate)
             VALUES (@mutedByUserId, @mutedContactId, @muteDate, @expirationDate)
             ON DUPLICATE KEY UPDATE
@@ -255,8 +255,8 @@ public class CoreDB
 
     public static void UnMuteByMuteId(int muteId)
     {
-        string query = @"
-            USE TikTokMediaRelayBot;
+        string query = @$"
+            USE {Config.databaseName};
             UPDATE MutedContacts SET IsActive = 0 WHERE MutedId = @muteId";
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {

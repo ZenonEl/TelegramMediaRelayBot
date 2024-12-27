@@ -1,6 +1,5 @@
 using MySql.Data.MySqlClient;
-using Serilog;
-using TikTokMediaRelayBot;
+using TelegramMediaRelayBot;
 
 namespace DataBase;
 
@@ -80,8 +79,8 @@ public class DBforInbounds
 
     public static void SetContactStatus(long SenderTelegramID, long AccepterTelegramID, string status)
     {
-        string query = @"
-            USE TikTokMediaRelayBot;
+        string query = @$"
+            USE {Config.databaseName};
             UPDATE Contacts SET Status = @Status WHERE UserId = @UserId AND ContactId = @ContactId";
         using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
         {
