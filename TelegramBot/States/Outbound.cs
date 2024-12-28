@@ -41,10 +41,11 @@ public class UserProcessOutboundState : IUserState
         switch (userState.currentState)
         {
             case UserOutboundState.ProcessAction:
-                if (update.CallbackQuery != null && update.CallbackQuery.Data!.Contains("revoke_outbound_invite:"))
+                if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("revoke_outbound_invite:"))
                 {
-                    await botClient.SendMessage(chatId, "Вы точно хотите отозвать приглашение? (в противном случае введите команду /start)", cancellationToken: cancellationToken,
-                                                replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.GetResourceString("YesButtonText")));
+                    string userId = update.CallbackQuery.Data.Split(':')[1];
+                    await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetOutBoundActionsKeyboardMarkup(userId, "user_show_outbound_invite:" + chatId),
+                                                cancellationToken, Config.GetResourceString("DeclineOutBound"));
                     userState.currentState = UserOutboundState.Finish;
                     return;
                 }
@@ -53,12 +54,19 @@ public class UserProcessOutboundState : IUserState
                 break;
 
             case UserOutboundState.Finish:
-                if (update.Message != null && update.Message.Text == Config.GetResourceString("YesButtonText"))
+                if (update.CallbackQuery != null)
                 {
-                    TelegramBot.userStates.Remove(chatId);
-                    await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
-                    await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-                    return;
+                    if (update.CallbackQuery.Data!.StartsWith("user_show_outbound_invite:"))
+                    {
+                        TelegramBot.userStates.Remove(chatId);
+                        await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId);
+                        return;
+                    }
+                    else if (update.CallbackQuery.Data!.StartsWith("user_accept_revoke_outbound_invite:"))
+                    {
+                        string userId = update.CallbackQuery.Data.Split(':')[1];
+                        CoreDB.SetContactStatus(chatId, long.Parse(userId), DataBase.Types.ContactsStatus.DECLINED);
+                    }
                 }
                 TelegramBot.userStates.Remove(chatId);
                 await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
