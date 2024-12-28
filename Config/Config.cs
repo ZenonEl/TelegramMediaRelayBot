@@ -1,6 +1,7 @@
 using System.Resources;
 using Serilog.Events;
 using Microsoft.Extensions.Configuration;
+using DataBase;
 
 namespace TelegramMediaRelayBot
 {
@@ -11,7 +12,7 @@ namespace TelegramMediaRelayBot
         public static string databaseName = "TelegramMediaRelayBot";
         public static string? language;
         public static string proxy = "";
-        public static int UserUnMuteCheckInterval = 20; // Seconds
+        public static int userUnMuteCheckInterval = 20; // Seconds
 
         public static int videoGetDelay = 1000;
         public static int contactSendDelay = 1000;
@@ -25,7 +26,14 @@ namespace TelegramMediaRelayBot
         public static string? torSocksHost;
         public static int torSocksPort = 9050;
         public static int torControlPort = 9051;
-        public static int TorChangingChainInterval = 5; // Minutes
+        public static int torChangingChainInterval = 5; // Minutes
+
+        public static bool isAccessPolicyEnabled = true;
+        public static bool isAccessNewUsersEnabled = true;
+        public static bool isAllowNewUsers = true;
+        public static bool isAllowAll = false;
+        public static List<long>? whitelistedReferrerIds = [];
+        public static List<long>? blacklistedReferrerIds = [];
 
         private static ResourceManager resourceManager = new ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
         public static void LoadConfig()
@@ -53,11 +61,32 @@ namespace TelegramMediaRelayBot
             torSocksHost = configuration["Tor:TorSocksHost"];
             torSocksPort = int.Parse(configuration["Tor:TorSocksPort"]!);
             torControlPort = int.Parse(configuration["Tor:TorControlPort"]!);
+
+            isAccessPolicyEnabled = bool.Parse(configuration["AccessPolicy:Enabled"]!);
+            isAccessNewUsersEnabled = bool.Parse(configuration["AccessPolicy:NewUsersPolicy:Enabled"]!);
+            isAllowNewUsers = bool.Parse(configuration["AccessPolicy:NewUsersPolicy:AllowNewUsers"]!);
+            isAllowAll = bool.Parse(configuration["AccessPolicy:NewUsersPolicy:AllowRules:AllowAll"]!);
+            whitelistedReferrerIds = configuration.GetSection("AccessPolicy:NewUsersPolicy:AllowRules:WhitelistedReferrerIds").Get<List<long>>();
+            blacklistedReferrerIds = configuration.GetSection("AccessPolicy:NewUsersPolicy:AllowRules:BlacklistedReferrerIds").Get<List<long>>();
         }
 
         public static string GetResourceString(string key)
         {
             return resourceManager.GetString(key)!;
+        }
+
+        public static bool CanUserStartUsingBot(string referrerLink)
+        {
+            if (!isAccessPolicyEnabled) return true;
+
+            long referrerUserId = DBforGetters.GetTelegramIdByLink(referrerLink);
+            if (referrerUserId == -1) return false;
+
+            bool isReferrerBlacklisted = blacklistedReferrerIds?.Contains(referrerUserId) ?? false;
+            bool isReferrerWhitelisted = whitelistedReferrerIds?.Contains(referrerUserId) ?? false;
+
+            return (isAllowAll && !isReferrerBlacklisted) ||
+                (isAccessNewUsersEnabled && isAllowNewUsers && isReferrerWhitelisted);
         }
     }
 }

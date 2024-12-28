@@ -24,4 +24,18 @@
         "ShowVideoDownloadProgress": false,
         "ShowVideoUploadProgress": false
     }
+    "AccessPolicy": {
+        "Enabled": true,
+
+        "NewUsersPolicy": {
+            "Enabled": true,
+
+            "AllowNewUsers": true,
+            "AllowRules": {
+                "AllowAll": false,
+                "WhitelistedReferrerIds": [],
+                "BlacklistedReferrerIds": []
+            }
+        }
+    }
 }
