@@ -25,7 +25,9 @@
         </value>    
     </data>
     <data name="WithText" xml:space="preserve">
-        <value>С текстом:</value>
+        <value>С текстом:
+
+</value>
     </data>
     <data name="WaitSendingVideo" xml:space="preserve">
         <value>Начало рассылки пользователям...</value>
@@ -104,6 +106,9 @@ ID: {0}
     </data>
     <data name="SelectAction" xml:space="preserve">
         <value>Выберите действие с запросом:</value>
+    </data>
+    <data name="DeclineOutBound">
+        <value>Вы точно хотите отменить свой запрос к этому человеку?</value>
     </data>
 
     <!-- Муты и размуты -->
@@ -186,7 +191,7 @@ ID: {0}
         <value>Обзор входящих запросов на добавления в мои контакты</value>
     </data>
     <data name="ViewOutboundInvitesButtonText" xml:space="preserve">
-        <value>Обзор моих заявок на добавления в контакты</value>
+        <value>Обзор исходящих заявок на добавления в контакты</value>
     </data>
     <data name="ViewAllContactsButtonText" xml:space="preserve">
         <value>Обзор всех моих контактов</value>

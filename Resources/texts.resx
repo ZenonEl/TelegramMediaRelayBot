@@ -25,7 +25,9 @@
         </value>
     </data>
     <data name="WithText" xml:space="preserve">
-        <value>With text:</value>
+        <value>With text:
+
+</value>
     </data>
     <data name="WaitSendingVideo" xml:space="preserve">
         <value>Starting video distribution to users...</value>
@@ -104,6 +106,9 @@ Link: &lt;code&gt;{2}&lt;/code&gt;</value>
     </data>
     <data name="SelectAction" xml:space="preserve">
         <value>Choose an action for the request:</value>
+    </data>
+    <data name="DeclineOutBound">
+        <value>Are you sure you want to cancel your request to this person?</value>
     </data>
 
     <!-- Mutes and unmutes -->
