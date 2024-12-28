@@ -43,6 +43,33 @@ public class DBforGetters
         return "";
     }
 
+    public static long GetTelegramIdByLink(string link)
+    {
+        string query = @$"
+            USE {Config.databaseName};
+            SELECT TelegramID FROM Users WHERE Link = @link";
+        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@link", link);
+                MySqlDataReader reader = command.ExecuteReader();
+                if (reader.Read())
+                {
+                    return reader.GetInt64(reader.GetOrdinal("TelegramID"));
+                }
+                return -1;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetTelegramIdByLink));
+                return -1;
+            }
+        }
+    }
+
     public static string GetUserNameByID(int UserID)
     {
         string query = @$"
