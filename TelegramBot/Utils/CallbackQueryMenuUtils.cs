@@ -38,13 +38,13 @@ public static class CallbackQueryMenuUtils
 
     public static Task AcceptInboundInvite(Update update)
     {
-        DBforInbounds.SetContactStatus(long.Parse(update.CallbackQuery!.Data!.Split(':')[1]), update.CallbackQuery.Message!.Chat.Id, "accepted");
+        CoreDB.SetContactStatus(long.Parse(update.CallbackQuery!.Data!.Split(':')[1]), update.CallbackQuery.Message!.Chat.Id, DataBase.Types.ContactsStatus.ACCEPTED);
         return Task.CompletedTask;
     }
 
     public static Task DeclineInboundInvite(Update update)
     {
-        DBforInbounds.SetContactStatus(long.Parse(update.CallbackQuery!.Data!.Split(':')[1]), update.CallbackQuery.Message!.Chat.Id, "declined");
+        CoreDB.SetContactStatus(long.Parse(update.CallbackQuery!.Data!.Split(':')[1]), update.CallbackQuery.Message!.Chat.Id, DataBase.Types.ContactsStatus.DECLINED);
         return Task.CompletedTask;
     }
 
