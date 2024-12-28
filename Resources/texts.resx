@@ -48,7 +48,10 @@
         <value>You are muted by some contacts ({0}).</value>
     </data>
     <data name="YourLink" xml:space="preserve">
-        <value>Your link: &lt;code&gt;{0}&lt;/code&gt;</value>
+        <value>Your link is for the person who is already using the bot:
+&lt;code&gt;{0}&lt;/code&gt;
+
+An invitation link so that a person can start using by bot:</value>
     </data>
 
     <!-- Contact management -->
