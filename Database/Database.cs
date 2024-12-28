@@ -89,7 +89,7 @@ public class CoreDB
             }
             catch (Exception ex)
             {
-                Log.Error("Error creating database: " + ex.Message);
+                Log.Error("Error getting data from database: " + ex.Message);
                 return false;
             }
         }
@@ -140,12 +140,12 @@ public class CoreDB
                 MySqlCommand command = new MySqlCommand(query, connection);
                 command.Parameters.AddWithValue("@userId", DBforGetters.GetContactByTelegramID(telegramID));
                 command.Parameters.AddWithValue("@contactId", DBforGetters.GetContactIDByLink(link));
-                command.Parameters.AddWithValue("@status", ContactsStatus.WaitingForAccept);
+                command.Parameters.AddWithValue("@status", Types.ContactsStatus.WAITING_FOR_ACCEPT);
                 command.ExecuteNonQuery();
             }
             catch (Exception ex)
             {
-                Log.Error("Error creating database: " + ex.Message);
+                Log.Error("Error editing database: " + ex.Message);
             }
         }
     }
@@ -182,7 +182,7 @@ public class CoreDB
             }
             catch (Exception ex)
             {
-                Log.Error("Error creating database: " + ex.Message);
+                Log.Error("Error editing database: " + ex.Message);
                 return false;
             }
         }
@@ -219,7 +219,7 @@ public class CoreDB
         string query = @$"
             SELECT UserId, ContactId
             FROM Contacts
-            WHERE ContactId = @UserId AND status = '{ContactsStatus.Accepted}' OR UserId = @UserId AND status = '{ContactsStatus.Accepted}'";
+            WHERE ContactId = @UserId AND status = '{Types.ContactsStatus.ACCEPTED}' OR UserId = @UserId AND status = '{Types.ContactsStatus.ACCEPTED}'";
 
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
@@ -270,6 +270,29 @@ public class CoreDB
             catch (Exception ex)
             {
                 Log.Error(ex, "An error occurred in the method{MethodName}", nameof(UnMuteByMuteId));
+            }
+        }
+    }
+
+    public static void SetContactStatus(long SenderTelegramID, long AccepterTelegramID, string status)
+    {
+        string query = @$"
+            USE {Config.databaseName};
+            UPDATE Contacts SET Status = @Status WHERE UserId = @UserId AND ContactId = @ContactId";
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@Status", status);
+                command.Parameters.AddWithValue("@UserId", DBforGetters.GetUserIDbyTelegramID(SenderTelegramID));
+                command.Parameters.AddWithValue("@ContactId", DBforGetters.GetContactByTelegramID(AccepterTelegramID));
+                command.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Error editing database: " + ex.Message);
             }
         }
     }

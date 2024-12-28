@@ -1,5 +1,5 @@
+using DataBase.Types;
 using MySql.Data.MySqlClient;
-using TelegramMediaRelayBot;
 
 namespace DataBase;
 
@@ -75,28 +75,5 @@ public class DBforInbounds
         }
 
         return null;
-    }
-
-    public static void SetContactStatus(long SenderTelegramID, long AccepterTelegramID, string status)
-    {
-        string query = @$"
-            USE {Config.databaseName};
-            UPDATE Contacts SET Status = @Status WHERE UserId = @UserId AND ContactId = @ContactId";
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
-        {
-            try
-            {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@Status", status);
-                command.Parameters.AddWithValue("@UserId", DBforGetters.GetUserIDbyTelegramID(SenderTelegramID));
-                command.Parameters.AddWithValue("@ContactId", DBforGetters.GetContactByTelegramID(AccepterTelegramID));
-                command.ExecuteNonQuery();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error creating database: " + ex.Message);
-            }
-        }
     }
 }

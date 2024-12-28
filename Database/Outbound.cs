@@ -1,5 +1,5 @@
+using DataBase.Types;
 using MySql.Data.MySqlClient;
-using Serilog;
 using TelegramMediaRelayBot;
 
 namespace DataBase;
@@ -10,7 +10,6 @@ public class DBforOutbound
     public static List<ButtonData> GetOutboundButtonData(int userId)
     {
         var buttonDataList = new List<ButtonData>();
-        Log.Information($"{userId}");
         var contactUserIds = GetContactUserIds(userId);
 
         foreach (var contactUserId in contactUserIds)
@@ -97,7 +96,7 @@ public class DBforOutbound
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error creating database: " + ex.Message);
+                Console.WriteLine("Error editing database: " + ex.Message);
             }
         }
     }

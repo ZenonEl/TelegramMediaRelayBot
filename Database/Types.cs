@@ -1,6 +1,6 @@
 
 
-namespace DataBase;
+namespace DataBase.Types;
 
 public class ButtonData
 {
@@ -10,6 +10,7 @@ public class ButtonData
 
 public class ContactsStatus
 {
-    public static string WaitingForAccept = "waiting_for_accept";
-    public static string Accepted = "accepted";
+    public const string WAITING_FOR_ACCEPT = "waiting_for_accept";
+    public const string ACCEPTED = "accepted";
+    public const string DECLINED = "declined";
 }
