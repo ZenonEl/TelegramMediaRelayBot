@@ -112,6 +112,27 @@ public static class Utils
         return Uri.TryCreate(input, UriKind.Absolute, out Uri? uriResult)
                             && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
     }
+
+    public static string ParseStartCommand(string message)
+    {
+        string[] parts = message.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        
+        if (parts.Length > 0 && parts[0] == "/start")
+        {
+            if (parts.Length > 1 && Guid.TryParse(parts[1], out Guid link))
+            {
+                return link.ToString();
+            }
+            else
+            {
+                return "";
+            }
+        }
+        else
+        {
+            return "";
+        }
+    }
 }
 
 public class ProgressReportingStream : Stream

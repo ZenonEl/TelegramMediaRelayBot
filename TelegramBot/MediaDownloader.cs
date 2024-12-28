@@ -70,8 +70,23 @@ partial class TelegramBot
 
             if (update.Message != null && update.Message.Text != null)
             {
-                CoreDB.AddUser(update.Message.Chat.FirstName!, update.Message.Chat.Id);
-                await PrivateUpdateHandler.ProcessMessage(botClient, update, cancellationToken, chatId);
+                bool hasAccess = CoreDB.CheckExistsUser(chatId);
+
+                if (!hasAccess)
+                {
+                    string startParameter = Utils.Utils.ParseStartCommand(update.Message.Text);
+                    if (!string.IsNullOrEmpty(startParameter) && Config.CanUserStartUsingBot(startParameter))
+                    {
+                        CoreDB.AddUser(update.Message.Chat.FirstName!, chatId);
+                        update.Message.Text = "/start";
+                        hasAccess = true;
+                    }
+                }
+
+                if (hasAccess)
+                {
+                    await PrivateUpdateHandler.ProcessMessage(botClient, update, cancellationToken, chatId);
+                }
             }
             else if (update.CallbackQuery != null)
             {
@@ -83,7 +98,6 @@ partial class TelegramBot
             if (update.Message != null && update.Message.Text != null && update.Message.Text.Contains('/'))
             {
                 await GroupUpdateHandler.HandleGroupUpdate(update, botClient, cancellationToken);
-                return;
             }
         }
     }
