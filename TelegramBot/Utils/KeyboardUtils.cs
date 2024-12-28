@@ -93,6 +93,22 @@ public static class KeyboardUtils
         return inlineKeyboard;
     }
 
+    public static InlineKeyboardMarkup GetOutBoundActionsKeyboardMarkup(string userId, string callbackData)
+    {
+        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+                    {
+                        new[]
+                        {
+                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("YesButtonText"), $"user_accept_revoke_outbound_invite:{userId}"),
+                        },
+                        new[]
+                        {
+                            GetReturnButton(callbackData)
+                        },
+                    });
+        return inlineKeyboard;
+    }
+
     public static InlineKeyboardMarkup GetConfirmForActionKeyboardMarkup(string acceptCallback, string denyCallback)
     {
         var inlineKeyboard = new InlineKeyboardMarkup(new[]
@@ -103,11 +119,7 @@ public static class KeyboardUtils
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("NoButtonText"), denyCallback),
-                        },
-                        new[]
-                        {
-                            GetReturnButton()
+                            GetReturnButton(denyCallback)
                         },
                     });
         return inlineKeyboard;
