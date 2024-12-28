@@ -10,10 +10,12 @@ public static class CallbackQueryMenuUtils
 {
     public static CancellationToken cancellationToken = TelegramBot.cancellationToken;
 
-    public static Task GetSelfLink(ITelegramBotClient botClient, Update update)
+    public static async Task GetSelfLink(ITelegramBotClient botClient, Update update)
     {
         string link = DBforGetters.GetSelfLink(update.CallbackQuery!.Message!.Chat.Id);
-        return Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(Config.GetResourceString("YourLink"), link));
+        User me = await botClient.GetMe();
+        string startLink = $"\nhttps://t.me/{me.Username}?start={link}";
+        await Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(Config.GetResourceString("YourLink") + startLink, link));
     }
 
     public static async Task ViewInboundInviteLinks(ITelegramBotClient botClient, Update update, long chatId)
