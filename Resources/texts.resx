@@ -251,4 +251,7 @@ PS: The square brackets are not needed :)</value>
 
 The idea for this bot came to me when, once again, my friends had to manually send me TikTok videos (which I don't use) by downloading them, sending them, and then deleting them from their phones... So, I thought it would be great to simplify all these monotonous actions for them and decided to create this bot. Now, thanks to it, I can run a simple bot on my PC, set up a list of contacts from whom I want to receive videos, and that's it—making life easier for both myself and my friends. Convenient! Enjoy using it!</value>
     </data>
+    <data name="AccessDeniedMessage" xml:space="preserve">
+        <value>At the moment, new users have limited access to the bot.</value>
+    </data>
 </root>

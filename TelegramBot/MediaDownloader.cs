@@ -81,6 +81,10 @@ partial class TelegramBot
                         update.Message.Text = "/start";
                         hasAccess = true;
                     }
+                    else if (Config.showAccessDeniedMessage)
+                    {
+                        await botClient.SendMessage(chatId, Config.GetResourceString("AccessDeniedMessage"), cancellationToken: cancellationToken);
+                    }
                 }
 
                 if (hasAccess)

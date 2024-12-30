@@ -28,12 +28,13 @@ namespace TelegramMediaRelayBot
         public static int torControlPort = 9051;
         public static int torChangingChainInterval = 5; // Minutes
 
-        public static bool isAccessPolicyEnabled = true;
-        public static bool isAccessNewUsersEnabled = true;
-        public static bool isAllowNewUsers = true;
-        public static bool isAllowAll = false;
-        public static List<long>? whitelistedReferrerIds = [];
-        public static List<long>? blacklistedReferrerIds = [];
+        private static bool isAccessPolicyEnabled = true;
+        private static bool isAccessNewUsersEnabled = true;
+        public static bool showAccessDeniedMessage = false;
+        private static bool isAllowNewUsers = true;
+        private static bool isAllowAll = false;
+        private static List<long>? whitelistedReferrerIds = [];
+        private static List<long>? blacklistedReferrerIds = [];
 
         private static ResourceManager resourceManager = new ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
         public static void LoadConfig()
@@ -64,6 +65,7 @@ namespace TelegramMediaRelayBot
 
             isAccessPolicyEnabled = bool.Parse(configuration["AccessPolicy:Enabled"]!);
             isAccessNewUsersEnabled = bool.Parse(configuration["AccessPolicy:NewUsersPolicy:Enabled"]!);
+            showAccessDeniedMessage = bool.Parse(configuration["AccessPolicy:NewUsersPolicy:ShowAccessDeniedMessage"]!);
             isAllowNewUsers = bool.Parse(configuration["AccessPolicy:NewUsersPolicy:AllowNewUsers"]!);
             isAllowAll = bool.Parse(configuration["AccessPolicy:NewUsersPolicy:AllowRules:AllowAll"]!);
             whitelistedReferrerIds = configuration.GetSection("AccessPolicy:NewUsersPolicy:AllowRules:WhitelistedReferrerIds").Get<List<long>>();
