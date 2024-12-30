@@ -104,7 +104,7 @@ The bot logs all actions to the console. In the future, logging to a file is pla
 
 
 ## License
-The project is distributed under the **GPL-3.0** license. Details can be found in the [LICENSE](LICENSE) file.
+The project is distributed under the **AGPL-3.0** license. Details can be found in the [LICENSE](LICENSE) file.
 
 
 
