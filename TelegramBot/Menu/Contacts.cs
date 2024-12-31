@@ -10,9 +10,10 @@ public class Contacts
 {
     public static CancellationToken cancellationToken = TelegramBot.cancellationToken;
 
-    public static Task AddContact(ITelegramBotClient botClient, Update update)
+    public static async Task AddContact(ITelegramBotClient botClient, Update update, long chatId)
     {
-        return Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, Config.GetResourceString("SpecifyContactLink"));
+        TelegramBot.userStates[chatId] = new ProcessContactState();
+        await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, Config.GetResourceString("SpecifyContactLink"));
     }
 
     public static async Task MuteUserContact(ITelegramBotClient botClient, Update update, long chatId)
