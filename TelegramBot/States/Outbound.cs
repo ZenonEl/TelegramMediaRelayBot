@@ -44,7 +44,7 @@ public class UserProcessOutboundState : IUserState
                 if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("revoke_outbound_invite:"))
                 {
                     string userId = update.CallbackQuery.Data.Split(':')[1];
-                    await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetOutBoundActionsKeyboardMarkup(userId, "user_show_outbound_invite:" + chatId),
+                    await Utils.Utils.SendMessage(botClient, update, OutBoundKB.GetOutBoundActionsKeyboardMarkup(userId, "user_show_outbound_invite:" + chatId),
                                                 cancellationToken, Config.GetResourceString("DeclineOutBound"));
                     userState.currentState = UserOutboundState.Finish;
                     return;

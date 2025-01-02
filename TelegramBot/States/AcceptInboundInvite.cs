@@ -43,7 +43,7 @@ public class UserProcessInboundState : IUserState
                 if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("user_show_inbounds_invite:"))
                 {
                     string userId = update.CallbackQuery.Data.Split(':')[1];
-                    await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
+                    await Utils.Utils.SendMessage(botClient, update, InBoundKB.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
                                                 cancellationToken, Config.GetResourceString("SelectAction"));
                     userState.currentState = UserInboundState.ProcessAction;
                     return;
@@ -91,7 +91,7 @@ public class UserProcessInboundState : IUserState
                 else if (update.CallbackQuery != null && !update.CallbackQuery.Data!.StartsWith("main_menu"))
                 {
                     string userId = update.CallbackQuery.Data.Split(':')[1];
-                    await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
+                    await Utils.Utils.SendMessage(botClient, update, InBoundKB.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
                                                 cancellationToken, Config.GetResourceString("SelectAction"));
                     userState.currentState = UserInboundState.ProcessAction;
                     return;
