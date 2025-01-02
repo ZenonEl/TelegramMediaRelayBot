@@ -58,11 +58,7 @@ public class PrivateUpdateHandler
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                 break;
             case "add_contact":
-                await Contacts.AddContact(botClient, update);
-                if (!TelegramBot.userStates.ContainsKey(chatId))
-                {
-                    TelegramBot.userStates[chatId] = new ProcessContactState();
-                }
+                await Contacts.AddContact(botClient, update, chatId);
                 break;
             case "get_self_link":
                 await CallbackQueryMenuUtils.GetSelfLink(botClient, update);
