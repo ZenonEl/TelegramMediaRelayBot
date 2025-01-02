@@ -27,89 +27,7 @@ public static class KeyboardUtils
         return inlineKeyboard;
     }
 
-    public static InlineKeyboardMarkup GetInboundsKeyboardMarkup(Update update)
-    {
-        var buttonDataList = DBforInbounds.GetInboundsButtonData(DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id));
-
-        var inlineKeyboardButtons = new List<InlineKeyboardButton[]>();
-
-        foreach (var buttonData in buttonDataList)
-        {
-            var button = InlineKeyboardButton.WithCallbackData(buttonData.ButtonText, buttonData.CallbackData);
-            inlineKeyboardButtons.Add(new[] { button });
-        }
-        inlineKeyboardButtons.Add(new[] { GetReturnButton("main_menu") });
-        return new InlineKeyboardMarkup(inlineKeyboardButtons);
-    }
-
-    public static InlineKeyboardMarkup GetOutboundKeyboardMarkup(long userId)
-    {
-        var buttonDataList = DBforOutbound.GetOutboundButtonData(DBforGetters.GetUserIDbyTelegramID(userId));
-
-        var inlineKeyboardButtons = new List<InlineKeyboardButton[]>();
-
-        foreach (var buttonData in buttonDataList)
-        {
-            var button = InlineKeyboardButton.WithCallbackData(buttonData.ButtonText, buttonData.CallbackData);
-            inlineKeyboardButtons.Add(new[] { button });
-        }
-        inlineKeyboardButtons.Add(new[] { GetReturnButton("main_menu") });
-        return new InlineKeyboardMarkup(inlineKeyboardButtons);
-    }
-
-    public static InlineKeyboardMarkup GetOutboundActionsKeyboardMarkup(string userId)
-    {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
-                    {
-                        new[]
-                        {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("DeclineButtonText"), $"revoke_outbound_invite:{userId}"),
-                        },
-                        new[]
-                        {
-                            GetReturnButton()
-                        },
-                    });
-        return inlineKeyboard;
-    }
-
-    public static InlineKeyboardMarkup GetInBoundActionsKeyboardMarkup(string userId, string callbackData)
-    {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
-                    {
-                        new[]
-                        {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("AcceptButtonText"), $"user_accept_inbounds_invite:{userId}"),
-                        },
-                        new[]
-                        {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("DeclineButtonText"), $"user_decline_inbounds_invite:{userId}"),
-                        },
-                        new[]
-                        {
-                            GetReturnButton(callbackData)
-                        },
-                    });
-        return inlineKeyboard;
-    }
-
-    public static InlineKeyboardMarkup GetOutBoundActionsKeyboardMarkup(string userId, string callbackData)
-    {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
-                    {
-                        new[]
-                        {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("YesButtonText"), $"user_accept_revoke_outbound_invite:{userId}"),
-                        },
-                        new[]
-                        {
-                            GetReturnButton(callbackData)
-                        },
-                    });
-        return inlineKeyboard;
-    }
-
-    public static InlineKeyboardMarkup GetConfirmForActionKeyboardMarkup(string acceptCallback, string denyCallback)
+    public static InlineKeyboardMarkup GetConfirmForActionKeyboardMarkup(string acceptCallback = "accept", string denyCallback = "main_menu")
     {
         var inlineKeyboard = new InlineKeyboardMarkup(new[]
                     {
@@ -142,7 +60,7 @@ public static class KeyboardUtils
         return inlineKeyboard;
     }
 
-    public static Task SendInlineKeyboardMenu(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    public static Task SendInlineKeyboardMenu(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, string? text = null)
     {
         var inlineKeyboard = new InlineKeyboardMarkup(new[]
                     {
@@ -165,9 +83,13 @@ public static class KeyboardUtils
                         },
                         new[]
                         {
+                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("UsersGroupButtonText"), "show_groups"),
+                        },
+                        new[]
+                        {
                             InlineKeyboardButton.WithCallbackData(Config.GetResourceString("BehindTheScenesButtonText"), "whos_the_genius")
                         }
                     });
-        return Utils.SendMessage(botClient, update, inlineKeyboard, cancellationToken);
+        return Utils.SendMessage(botClient, update, inlineKeyboard, cancellationToken, text);
     }
 }
