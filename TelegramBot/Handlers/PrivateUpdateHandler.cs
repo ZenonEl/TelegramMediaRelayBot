@@ -76,6 +76,9 @@ public class PrivateUpdateHandler
             case "view_contacts":
                 await Contacts.ViewContacts(botClient, update);
                 break;
+            case "show_groups":
+                await Groups.ViewGroups(botClient, update, cancellationToken);
+                break;
             case "mute_user":
                 await Contacts.MuteUserContact(botClient, update, chatId);
                 break;
