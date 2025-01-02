@@ -92,9 +92,10 @@ public static class Utils
         TelegramBot.userStates.Remove(chatId);
     }
 
-    public static async Task<bool> HandleStateBreakCommand(ITelegramBotClient botClient, Update update, long chatId, string command = "/start")
+    public static async Task<bool> HandleStateBreakCommand(ITelegramBotClient botClient, Update update, long chatId, string command = "/start", string callbackData = "main_menu")
     {
-        if (update.Message!.Text == command)
+        if (update.Message != null && update.Message.Text == command || 
+            update.CallbackQuery != null && update.CallbackQuery.Data == callbackData)
         {
             await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
             await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
