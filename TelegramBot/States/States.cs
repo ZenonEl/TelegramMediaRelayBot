@@ -48,3 +48,10 @@ public enum UserInboundState
     ProcessAction,
     Finish
 }
+
+public enum UsersGroupState
+{
+    ProcessAction,
+    ProcessData,
+    Finish
+}
