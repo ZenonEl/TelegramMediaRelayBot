@@ -139,6 +139,38 @@ public class DBforGroups
         return 0;
     }
 
+    public static bool GetIsDefaultGroup(int groupId)
+    {
+        string query = @$"
+            USE {Config.databaseName};
+            SELECT Status 
+            FROM UsersGroups 
+            WHERE ID = @groupId";
+
+        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@groupId", groupId);
+
+                using (MySqlDataReader reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return reader.GetBoolean("Status");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetIsDefaultGroup));
+            }
+        }
+        return false;
+    }
+
     public static bool AddGroup(int userId, string groupName, string description)
     {
         string query = @$"
@@ -161,6 +193,83 @@ public class DBforGroups
             catch (Exception ex)
             {
                 Log.Error(ex, "An error occurred in the method {MethodName}", nameof(AddGroup));
+                return false;
+            }
+        }
+    }
+
+    public static bool SetGroupName(int groupId, string groupName)
+    {
+        string query = @$"
+            USE {Config.databaseName};
+            UPDATE UsersGroups 
+            SET GroupName = @groupName 
+            WHERE ID = @groupId";
+
+        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@groupId", groupId);
+                command.Parameters.AddWithValue("@groupName", groupName);
+                return command.ExecuteNonQuery() > 0;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "An error occurred in the method {MethodName}", nameof(SetGroupName));
+                return false;
+            }
+        }
+    }
+
+    public static bool UpdateGroupDescription(int groupId, string description)
+    {
+        string query = @$"
+            USE {Config.databaseName};
+            UPDATE UsersGroups 
+            SET Description = @description 
+            WHERE ID = @groupId";
+
+        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@groupId", groupId);
+                command.Parameters.AddWithValue("@description", description);
+                return command.ExecuteNonQuery() > 0;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "An error occurred in the method {MethodName}", nameof(UpdateGroupDescription));
+                return false;
+            }
+        }
+    }
+
+    public static bool SetIsDefaultGroup(int groupId)
+    {
+        string query = @$"
+            USE {Config.databaseName};
+            UPDATE UsersGroups 
+            SET Status = NOT Status 
+            WHERE ID = @groupId";
+
+        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@groupId", groupId);
+                return command.ExecuteNonQuery() > 0;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "An error occurred in the method {MethodName}", nameof(SetIsDefaultGroup));
                 return false;
             }
         }
