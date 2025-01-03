@@ -8,7 +8,7 @@ namespace DataBase;
 
 public class DBforGroups
 {
-    public static List<int> GetGroupIdByUserId(int userId)
+    public static List<int> GetGroupIDsByUserId(int userId)
     {
         string query = @$"
             USE {Config.databaseName};
@@ -36,7 +36,7 @@ public class DBforGroups
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetGroupIdByUserId));
+                Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetGroupIDsByUserId));
             }
         }
 
