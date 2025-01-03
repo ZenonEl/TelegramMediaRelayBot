@@ -42,6 +42,40 @@ public class DBforGroups
 
         return groupIds;
     }
+
+    public static bool CheckGroupOwnership(int groupId, int userId)
+    {
+        string query = @$"
+            USE {Config.databaseName};
+            SELECT COUNT(*) 
+            FROM UsersGroups 
+            WHERE ID = @groupId AND UserId = @userId";
+
+        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@groupId", groupId);
+                command.Parameters.AddWithValue("@userId", userId);
+
+                using (MySqlDataReader reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return reader.GetInt32(0) > 0;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "An error occurred in the method {MethodName}", nameof(CheckGroupOwnership));
+            }
+        }
+        return false;
+    }
+
     public static string GetGroupNameById(int groupId)
     {
         string query = @$"
