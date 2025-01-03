@@ -47,6 +47,7 @@ public class ProcessUsersGroupState : IUserState
             case UsersGroupState.ProcessAction:
                 if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId)) return;
                 groupInfo = string.Format(Config.GetResourceString("GroupInfoText"), DBforGroups.GetGroupNameById(groupId),
+                                            groupId,
                                             DBforGroups.GetGroupDescriptionById(groupId), DBforGroups.GetGroupMemberCount(groupId), 
                                             DBforGroups.GetIsDefaultGroup(groupId));
                 bool? isCallbackSuccessful = await ProcessCallbackData(botClient, update, cancellationToken);
@@ -162,6 +163,7 @@ public class ProcessUsersGroupState : IUserState
                     groupId = int.Parse(action.Split(':')[1]);
                     isDBActionSuccessful = DBforGroups.SetIsDefaultGroup(groupId);
                     groupInfo = string.Format(Config.GetResourceString("GroupInfoText"), DBforGroups.GetGroupNameById(groupId),
+                                                groupId,
                                                 DBforGroups.GetGroupDescriptionById(groupId), DBforGroups.GetGroupMemberCount(groupId), 
                                                 DBforGroups.GetIsDefaultGroup(groupId));
                     await Utils.Utils.SendMessage(botClient, update, UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId), cancellationToken, groupInfo);

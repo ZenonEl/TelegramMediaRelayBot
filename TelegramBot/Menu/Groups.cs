@@ -26,14 +26,19 @@ public class Groups
 
             int memberCount = DBforGroups.GetGroupMemberCount(groupId);
             bool isDefault = DBforGroups.GetIsDefaultGroup(groupId);
-            groupInfo = string.Format(Config.GetResourceString("GroupInfoText"), DBforGroups.GetGroupNameById(groupId),
-                                        DBforGroups.GetGroupDescriptionById(groupId), DBforGroups.GetGroupMemberCount(groupId), 
-                                        DBforGroups.GetIsDefaultGroup(groupId));
+            groupInfo = string.Format(
+                Config.GetResourceString("GroupInfoText"), 
+                DBforGroups.GetGroupNameById(groupId),
+                groupId,
+                DBforGroups.GetGroupDescriptionById(groupId),
+                DBforGroups.GetGroupMemberCount(groupId),
+                DBforGroups.GetIsDefaultGroup(groupId)
+            );
             groupInfos.Add(groupInfo);
         }
 
         string messageText = groupInfos.Any() 
-            ? $"{Config.GetResourceString("YourGroupsText")}\n\n{string.Join("\n", groupInfos)}" 
+            ? $"{Config.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
             : Config.GetResourceString("AltYourGroupsText");
 
         await Utils.Utils.SendMessage(
