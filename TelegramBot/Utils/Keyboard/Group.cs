@@ -54,11 +54,11 @@ public static class UsersGroup
                 {
                     new[]
                     {
-                        InlineKeyboardButton.WithCallbackData("Поменять название", $"user_change_group_name:{groupId}"),
+                        InlineKeyboardButton.WithCallbackData(Config.GetResourceString("ChangeNameText"), $"user_change_group_name:{groupId}"),
                     },
                     new[]
                     {
-                        InlineKeyboardButton.WithCallbackData("Поменять описание", $"user_change_group_description:{groupId}"),
+                        InlineKeyboardButton.WithCallbackData(Config.GetResourceString("ChangeDescriptionText"), $"user_change_group_description:{groupId}"),
                     },
                     new[]
                     {
