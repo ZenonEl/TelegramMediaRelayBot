@@ -2,6 +2,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using DataBase;
 using MediaTelegramBot.Utils;
+using TelegramMediaRelayBot;
 
 
 namespace MediaTelegramBot;
@@ -45,12 +46,9 @@ public class ProcessUsersGroupState : IUserState
         {
             case UsersGroupState.ProcessAction:
                 if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId)) return;
-                groupInfo = $@"📌 <b>Название:</b> {DBforGroups.GetGroupNameById(groupId)}
-        🆔 <b>ID:</b> {groupId}
-        📝 <b>Описание:</b> {DBforGroups.GetGroupDescriptionById(groupId)}
-        👥 <b>Участников:</b> {DBforGroups.GetGroupMemberCount(groupId)}
-        🌟 <b>По умолчанию:</b> {DBforGroups.GetIsDefaultGroup(groupId)}
-        --------------------------";
+                groupInfo = string.Format(Config.GetResourceString("GroupInfoText"), DBforGroups.GetGroupNameById(groupId),
+                                            DBforGroups.GetGroupDescriptionById(groupId), DBforGroups.GetGroupMemberCount(groupId), 
+                                            DBforGroups.GetIsDefaultGroup(groupId));
                 bool? isCallbackSuccessful = await ProcessCallbackData(botClient, update, cancellationToken);
                 if (isCallbackSuccessful == true)
                 {
@@ -63,7 +61,7 @@ public class ProcessUsersGroupState : IUserState
                         update,
                         KeyboardUtils.GetReturnButtonMarkup(),
                         cancellationToken,
-                        "Произошла ошибка, убедитесь что вы ввели корректные данные");
+                        Config.GetResourceString("InputErrorMessage"));
                 }
 
                 break;
@@ -78,7 +76,7 @@ public class ProcessUsersGroupState : IUserState
                         update,
                         UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
                         cancellationToken,
-                        $"{groupInfo}\nВыбери действие (в противном случае нажмите /start)");
+                        $"{groupInfo}\n{Config.GetResourceString("ChooseOptionText")}");
                     return;
                 }
                 bool? isActionSuccessful = await ProcessAction(botClient, update, cancellationToken);
@@ -89,7 +87,8 @@ public class ProcessUsersGroupState : IUserState
                 }
                 else if (isActionSuccessful == null)
                 {
-                    await botClient.SendMessage(chatId, "Произошла ошибка, убедитесь что вы ввели корректные данные", cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, Config.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
+                    return;
                 }
                 userState.currentState = UsersGroupState.ProcessAction;
                 break;
@@ -104,11 +103,11 @@ public class ProcessUsersGroupState : IUserState
                         update,
                         UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
                         cancellationToken,
-                        $"{groupInfo}\nВыбери действие (в противном случае нажмите /start)");
+                        $"{groupInfo}\n{Config.GetResourceString("ChooseOptionText")}");
                     return;
                 }
                 ProcessFinish(chatId);
-                string text = isDBActionSuccessful ? "Действие было успешно выполнено" : "Действие не было выполнено";
+                string text = isDBActionSuccessful ? Config.GetResourceString("SuccessActionResult") : Config.GetResourceString("ErrorActionResult");
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, text);
                 TelegramBot.userStates.Remove(chatId);
                 break;
@@ -117,34 +116,54 @@ public class ProcessUsersGroupState : IUserState
 
     public async Task<bool?> ProcessCallbackData(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
+        if (update.CallbackQuery == null) return null;
         action = update.CallbackQuery!.Data!;
         switch (action)
         {
             case "user_create_group":
-                await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, "Придумайте название группы и отправьте его мне");
+                await Utils.Utils.SendMessage(botClient,
+                                                update,
+                                                KeyboardUtils.GetReturnButtonMarkup(),
+                                                cancellationToken,
+                                                Config.GetResourceString("NewGroupText"));
                 return true;
             case "user_edit_group":
                 backCallback = action;
-                await botClient.SendMessage(update.CallbackQuery.Message!.Chat.Id, "Напиши мне айди группы для редактирования:", cancellationToken: cancellationToken);
+                await botClient.SendMessage(update.CallbackQuery.Message!.Chat.Id,
+                                            Config.GetResourceString("EditInputText"),
+                                            cancellationToken: cancellationToken);
                 return true;
             case "user_delete_group":
-                await botClient.SendMessage(update.CallbackQuery.Message!.Chat.Id, "Напишите мне айди группы для удаления:", cancellationToken: cancellationToken);
+                await botClient.SendMessage(update.CallbackQuery.Message!.Chat.Id,
+                                            Config.GetResourceString("DeleteInputText"),
+                                            cancellationToken: cancellationToken);
                 return true;
             default:
                 if (action.StartsWith("user_change_group_name:"))
                 {
                     groupId = int.Parse(action.Split(':')[1]);
-                    await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(backCallback), cancellationToken, "Напиши мне новое название группы:");
+                    await Utils.Utils.SendMessage(botClient,
+                                                    update,
+                                                    KeyboardUtils.GetReturnButtonMarkup(backCallback),
+                                                    cancellationToken,
+                                                    Config.GetResourceString("NewGroupNameText"));
                 }
                 else if (action.StartsWith("user_change_group_description:"))
                 {
                     groupId = int.Parse(action.Split(':')[1]);
-                    await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(backCallback), cancellationToken, "Напиши мне новое описание группы:");
+                    await Utils.Utils.SendMessage(botClient,
+                                                    update,
+                                                    KeyboardUtils.GetReturnButtonMarkup(backCallback),
+                                                    cancellationToken,
+                                                    Config.GetResourceString("NewGroupDescriptionText"));
                 }
                 else if (action.StartsWith("user_change_is_default:"))
                 {
                     groupId = int.Parse(action.Split(':')[1]);
                     isDBActionSuccessful = DBforGroups.SetIsDefaultGroup(groupId);
+                    groupInfo = string.Format(Config.GetResourceString("GroupInfoText"), DBforGroups.GetGroupNameById(groupId),
+                                                DBforGroups.GetGroupDescriptionById(groupId), DBforGroups.GetGroupMemberCount(groupId), 
+                                                DBforGroups.GetIsDefaultGroup(groupId));
                     await Utils.Utils.SendMessage(botClient, update, UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId), cancellationToken, groupInfo);
                     return false;
                 }
@@ -155,6 +174,8 @@ public class ProcessUsersGroupState : IUserState
     public async Task<bool?> ProcessAction(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         Console.WriteLine(action);
+        long chatId = Utils.Utils.GetIDfromUpdate(update);
+        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
         switch (action)
         {
             case "user_create_group":
@@ -164,29 +185,29 @@ public class ProcessUsersGroupState : IUserState
                     update,
                     KeyboardUtils.GetConfirmForActionKeyboardMarkup(),
                     cancellationToken,
-                    "Название принято. Подтвердите своё решение (в противном случае нажмите /start)");
+                    Config.GetResourceString("ConfirmDecision"));
                 return true;
             case "user_edit_group":
-                if (int.TryParse(update.Message!.Text!, out groupId))
+                if (int.TryParse(update.Message!.Text!, out groupId) && DBforGroups.CheckGroupOwnership(groupId, userId))
                 {
                     await Utils.Utils.SendMessage(
                         botClient,
                         update,
                         UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
                         cancellationToken,
-                        $"{groupInfo}\nВыбери действие (в противном случае нажмите /start)");
+                        Config.GetResourceString("ChooseOptionText"));
                     return false;
                 }
                 return null;
             case "user_delete_group":
-                if (int.TryParse(update.Message!.Text!, out groupId))
+                if (int.TryParse(update.Message!.Text!, out groupId) && DBforGroups.CheckGroupOwnership(groupId, userId))
                 {
                     await Utils.Utils.SendMessage(
                         botClient,
                         update,
                         KeyboardUtils.GetConfirmForActionKeyboardMarkup(),
                         cancellationToken,
-                        $"{groupInfo}\nДля удаления подтвердите своё решение (в противном случае нажмите /start)");
+                        $"{groupInfo}\n{Config.GetResourceString("ConfirmDecision")}");
                     return true;
                 }
                 return null;
@@ -200,7 +221,7 @@ public class ProcessUsersGroupState : IUserState
                         update,
                         KeyboardUtils.GetConfirmForActionKeyboardMarkup(denyCallback: backCallback),
                         cancellationToken,
-                        "Название принято. Подтвердите своё решение (в противном случае нажмите /start)");
+                        Config.GetResourceString("ConfirmDecision"));
                     return true;
                 }
                 else if (action.StartsWith("user_change_group_description:"))
@@ -212,7 +233,7 @@ public class ProcessUsersGroupState : IUserState
                         update,
                         KeyboardUtils.GetConfirmForActionKeyboardMarkup(denyCallback: backCallback),
                         cancellationToken,
-                        "Описание принято. Подтвердите своё решение (в противном случае нажмите /start)");
+                        Config.GetResourceString("ConfirmDecision"));
                     return true;
                 }
                 return null;
