@@ -14,10 +14,10 @@ public class Groups
         int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
 
         TelegramBot.userStates[chatId] = new ProcessUsersGroupState();
-        List<int> groupIds = DBforGroups.GetGroupIdByUserId(userId);
+        List<int> groupIds = DBforGroups.GetGroupIDsByUserId(userId);
 
         var groupInfos = new List<string>();
-
+        string groupInfo;
         foreach (var groupId in groupIds)
         {
             string groupName = DBforGroups.GetGroupNameById(groupId);
@@ -26,23 +26,20 @@ public class Groups
 
             int memberCount = DBforGroups.GetGroupMemberCount(groupId);
             bool isDefault = DBforGroups.GetIsDefaultGroup(groupId);
-
-            groupInfos.Add($@"📌 <b>Название:</b> {groupName}
-    🆔 <b>ID:</b> {groupId}
-    📝 <b>Описание:</b> {groupDescription}
-    👥 <b>Участников:</b> {memberCount}
-    🌟 <b>По умолчанию:</b> {isDefault}
-    --------------------------");
+            groupInfo = string.Format(Config.GetResourceString("GroupInfoText"), DBforGroups.GetGroupNameById(groupId),
+                                        DBforGroups.GetGroupDescriptionById(groupId), DBforGroups.GetGroupMemberCount(groupId), 
+                                        DBforGroups.GetIsDefaultGroup(groupId));
+            groupInfos.Add(groupInfo);
         }
 
         string messageText = groupInfos.Any() 
-            ? $"{Config.GetResourceString("YourGroups")}\n\n{string.Join("\n", groupInfos)}" 
-            : "У вас пока нет групп.";
+            ? $"{Config.GetResourceString("YourGroupsText")}\n\n{string.Join("\n", groupInfos)}" 
+            : Config.GetResourceString("AltYourGroupsText");
 
         await Utils.Utils.SendMessage(
             botClient,
             update,
-            UsersGroup.GetUsersGroupActionsKeyboardMarkup(),
+            UsersGroup.GetUsersGroupActionsKeyboardMarkup(groupInfos.Count > 0),
             cancellationToken,
             messageText
         );
