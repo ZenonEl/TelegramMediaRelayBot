@@ -159,6 +159,7 @@ Are you sure you want to unmute them? If not, type /start</value>
     <data name="IndefinitelyButtonText" xml:space="preserve">
         <value>Indefinitely</value>
     </data>
+
     <!-- Buttons and interface texts -->
     <data name="NextButtonText" xml:space="preserve">
         <value>Next</value>
@@ -199,6 +200,9 @@ Are you sure you want to unmute them? If not, type /start</value>
     <data name="ViewAllContactsButtonText" xml:space="preserve">
         <value>View all my contacts</value>
     </data>
+    <data name="UsersGroupButtonText" xml:space="preserve">
+        <value>View all my groups</value>
+    </data>
     <data name="BehindTheScenesButtonText" xml:space="preserve">
         <value>Behind the scenes</value>
     </data>
@@ -210,6 +214,57 @@ Are you sure you want to unmute them? If not, type /start</value>
     </data>
     <data name="DeclineButtonText" xml:space="preserve">
         <value>Decline contact request</value>
+    </data>
+    <data name="YourGroupsText" xml:space="preserve">
+        <value>Your contact groups:</value>
+    </data>
+    <data name="AltYourGroupsText" xml:space="preserve">
+        <value>You have no groups yet.</value>
+    </data>
+
+    <!-- Text for Group Management Buttons -->
+    <data name="CreateGroupButtonText" xml:space="preserve">
+        <value>Create a new group</value>
+    </data>
+    <data name="EditGroupButtonText" xml:space="preserve">
+        <value>Edit group</value>
+    </data>
+    <data name="NewGroupText" xml:space="preserve">
+        <value>Come up with a group name and send it to me:</value>
+    </data>
+    <data name="EditInputText" xml:space="preserve">
+        <value>Send me the group ID for editing:</value>
+    </data>
+    <data name="DeleteInputText" xml:space="preserve">
+        <value>Send me the group ID for deletion:</value>
+    </data>
+    <data name="NewGroupNameText" xml:space="preserve">
+        <value>Send me the new group name:</value>
+    </data>
+    <data name="NewGroupDescriptionText" xml:space="preserve">
+        <value>Send me the new group description:</value>
+    </data>
+    <data name="ChangeNameText" xml:space="preserve">
+        <value>Change name</value>
+    </data>
+    <data name="ChangeDescriptionText" xml:space="preserve">
+        <value>Change description</value>
+    </data>
+    <data name="ChangeIsDefaultEnabledText" xml:space="preserve">
+        <value>Toggle default value</value>
+    </data>
+    <data name="DeleteGroupButtonText" xml:space="preserve">
+        <value>Delete group</value>
+    </data>
+    <data name="GroupInfoText" xml:space="preserve">
+        <value>
+    📌 &lt;b&gt;Name:&lt;/b&gt; {0}
+    🆔 &lt;b&gt;ID:&lt;/b&gt; {1}
+    📝 &lt;b&gt;Description:&lt;/b&gt; {2}
+    👥 &lt;b&gt;Members:&lt;/b&gt; {3}
+    🌟 &lt;b&gt;Default mailing:&lt;/b&gt; {4}
+    ----------------------------------------------------
+        </value>
     </data>
 
     <!-- Informational messages -->
@@ -253,5 +308,14 @@ The idea for this bot came to me when, once again, my friends had to manually se
     </data>
     <data name="AccessDeniedMessage" xml:space="preserve">
         <value>At the moment, new users have limited access to the bot.</value>
+    </data>
+    <data name="InputErrorMessage" xml:space="preserve">
+        <value>An error occurred, please make sure you entered valid data</value>
+    </data>
+    <data name="SuccessActionResult" xml:space="preserve">
+        <value>The action was successfully completed</value>
+    </data>
+    <data name="ErrorActionResult" xml:space="preserve">
+        <value>The action was not completed</value>
     </data>
 </root>

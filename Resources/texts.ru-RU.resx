@@ -159,6 +159,7 @@ ID: {0}
     <data name="IndefinitelyButtonText" xml:space="preserve">
         <value>Бессрочно</value>
     </data>
+
     <!-- Кнопки и тексты интерфейса -->
     <data name="NextButtonText" xml:space="preserve">
         <value>Дальше</value>
@@ -199,6 +200,9 @@ ID: {0}
     <data name="ViewAllContactsButtonText" xml:space="preserve">
         <value>Обзор всех моих контактов</value>
     </data>
+    <data name="UsersGroupButtonText" xml:space="preserve">
+        <value>Обзор всех моих групп</value>
+    </data>
     <data name="BehindTheScenesButtonText" xml:space="preserve">
         <value>Заглянуть за кулисы</value>
     </data>
@@ -210,6 +214,57 @@ ID: {0}
     </data>
     <data name="DeclineButtonText" xml:space="preserve">
         <value>Отменить заявку на добавление</value>
+    </data>
+    <data name="YourGroupsText" xml:space="preserve">
+        <value>Ваши группы контактов:</value>
+    </data>
+    <data name="AltYourGroupsText" xml:space="preserve">
+        <value>У вас пока нет групп.</value>
+    </data>
+
+    <!-- Текст кнопок управления Группами-->
+    <data name="CreateGroupButtonText" xml:space="preserve">
+        <value>Создать новую группу</value>
+    </data>
+    <data name="EditGroupButtonText" xml:space="preserve">
+        <value>Редактировать группу</value>
+    </data>
+    <data name="NewGroupText" xml:space="preserve">
+        <value>Придумайте название группы и отправьте его мне:</value>
+    </data>
+    <data name="EditInputText" xml:space="preserve">
+        <value>Напиши мне айди группы для редактирования:</value>
+    </data>
+    <data name="DeleteInputText" xml:space="preserve">
+        <value>Напишите мне айди группы для удаления:</value>
+    </data>
+    <data name="NewGroupNameText" xml:space="preserve">
+        <value>Напиши мне новое название группы:</value>
+    </data>
+    <data name="NewGroupDescriptionText" xml:space="preserve">
+        <value>Напиши мне новое описание группы:</value>
+    </data>
+    <data name="ChangeNameText" xml:space="preserve">
+        <value>Поменять название</value>
+    </data>
+    <data name="ChangeDescriptionText" xml:space="preserve">
+        <value>Поменять описание</value>
+    </data>
+    <data name="ChangeIsDefaultEnabledText" xml:space="preserve">
+        <value>Переключить значение по умолчанию</value>
+    </data>
+    <data name="DeleteGroupButtonText" xml:space="preserve">
+        <value>Удалить группу</value>
+    </data>
+    <data name="GroupInfoText" xml:space="preserve">
+        <value>
+📌 &lt;b&gt;Название:&lt;/b&gt; {0}
+        🆔 &lt;b&gt;ID:&lt;/b&gt; {1}
+        📝 &lt;b&gt;Описание:&lt;/b&gt; {2}
+        👥 &lt;b&gt;Участников:&lt;/b&gt; {3}
+        🌟 &lt;b&gt;Рассылка по умолчанию:&lt;/b&gt; {4}
+----------------------------------------------------
+        </value>
     </data>
 
     <!-- Информационные сообщения -->
@@ -253,5 +308,14 @@ PS: квадратные скобки не нужны :)</value>
     </data>
     <data name="AccessDeniedMessage" xml:space="preserve">
         <value>В данный момент, новым пользователям, доступ к боту ограничен.</value>
+    </data>
+    <data name="InputErrorMessage" xml:space="preserve">
+        <value>Произошла ошибка, убедитесь что вы ввели корректные данные</value>
+    </data>
+    <data name="SuccessActionResult" xml:space="preserve">
+        <value>Действие было успешно выполнено</value>
+    </data>
+    <data name="ErrorActionResult" xml:space="preserve">
+        <value>Действие не было выполнено</value>
     </data>
 </root>
