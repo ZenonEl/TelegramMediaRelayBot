@@ -9,28 +9,43 @@ namespace MediaTelegramBot.Utils;
 
 public static class UsersGroup
 {
-    public static InlineKeyboardMarkup GetUsersGroupActionsKeyboardMarkup()
+    public static InlineKeyboardMarkup GetUsersGroupActionsKeyboardMarkup(bool groupsMoreZero)
     {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
-                {
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData(Config.GetResourceString("CreateGroupButtonText"), $"user_create_group"),
-                    },
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData(Config.GetResourceString("EditGroupButtonText"), $"user_edit_group"),
-                    },
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData(Config.GetResourceString("DeleteGroupButtonText"), $"user_delete_group"),
-                    },
-                    new[]
+        var kb = new List<List<InlineKeyboardButton>>
+        {
+            new[]
+        {
+            InlineKeyboardButton.WithCallbackData(
+                Config.GetResourceString("CreateGroupButtonText"),
+                "user_create_group"
+            )
+        }.ToList()
+        };
+
+        if (groupsMoreZero)
+        {
+            kb.Add(new[] 
+            { 
+                InlineKeyboardButton.WithCallbackData(
+                    Config.GetResourceString("EditGroupButtonText"), 
+                    "user_edit_group"
+                ) 
+            }.ToList());
+
+            kb.Add(new[] 
+            { 
+                InlineKeyboardButton.WithCallbackData(
+                    Config.GetResourceString("DeleteGroupButtonText"), 
+                    "user_delete_group"
+                ) 
+            }.ToList());
+        }
+        kb.Add(                    new[]
                     {
                         KeyboardUtils.GetReturnButton()
-                    },
-                });
-        return inlineKeyboard;
+                    }.ToList());
+
+        return new InlineKeyboardMarkup(kb);
     }
 
     public static InlineKeyboardMarkup GetUsersGroupEditActionsKeyboardMarkup(int groupId)
@@ -47,7 +62,7 @@ public static class UsersGroup
                     },
                     new[]
                     {
-                        InlineKeyboardButton.WithCallbackData(Config.GetResourceString("ChangeIsDefaultEnabled"), $"user_change_is_default:{groupId}"),
+                        InlineKeyboardButton.WithCallbackData(Config.GetResourceString("ChangeIsDefaultEnabledText"), $"user_change_is_default:{groupId}"),
                     },
                     new[]
                     {
