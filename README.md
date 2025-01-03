@@ -93,7 +93,7 @@ G — Group chats
 - Creating and managing contact groups within the bot.
 - (Under consideration) Support for text formatting.
 - Ability to recreate the personal link within the bot (with the option to delete all contacts or keep them).
-- Ability to enable a filter for accessing the bot (for example, you can only start using the bot by using someone's referral link).
+- ~~Ability to enable a filter for accessing the bot (for example, you can only start using the bot by using someone's referral link).~~
 - (Under consideration) Administrative functions for managing the bot within itself.
 - ~~Creating a ready-to-use executable file.~~
 - And various other improvements and fixes ✨
