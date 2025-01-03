@@ -175,7 +175,6 @@ public class ProcessUsersGroupState : IUserState
 
     public async Task<bool?> ProcessAction(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        Console.WriteLine(action);
         long chatId = Utils.Utils.GetIDfromUpdate(update);
         int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
         switch (action)
@@ -204,6 +203,10 @@ public class ProcessUsersGroupState : IUserState
             case "user_delete_group":
                 if (int.TryParse(update.Message!.Text!, out groupId) && DBforGroups.CheckGroupOwnership(groupId, userId))
                 {
+                    groupInfo = string.Format(Config.GetResourceString("GroupInfoText"), DBforGroups.GetGroupNameById(groupId),
+                                                groupId,
+                                                DBforGroups.GetGroupDescriptionById(groupId), DBforGroups.GetGroupMemberCount(groupId), 
+                                                DBforGroups.GetIsDefaultGroup(groupId));
                     await Utils.Utils.SendMessage(
                         botClient,
                         update,
