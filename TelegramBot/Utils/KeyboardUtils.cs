@@ -54,6 +54,15 @@ public static class KeyboardUtils
                         },
                         new[]
                         {
+                            InlineKeyboardButton.WithCallbackData("Изменить имя контакта", "edit_contact_name"),
+                            InlineKeyboardButton.WithCallbackData("Изменить состав групп", "edit_contact_group"),
+                        },
+                        new[]
+                        {
+                            InlineKeyboardButton.WithCallbackData("Удалить контакт", "delete_contact"),
+                        },
+                        new[]
+                        {
                             GetReturnButton()
                         },
                     });
