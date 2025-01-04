@@ -44,4 +44,10 @@ public class Contacts
 
         await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), cancellationToken, $"{Config.GetResourceString("YourContacts")}\n{string.Join("\n", contactUsersInfo)}");
     }
+
+    public static async Task EditContactGroup(ITelegramBotClient botClient, Update update, long chatId)
+    {
+        TelegramBot.userStates[chatId] = new ProcessContactGroupState();
+        await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, "(Инфо по группе) укажите айди группы для работы:");
+    }
 }
