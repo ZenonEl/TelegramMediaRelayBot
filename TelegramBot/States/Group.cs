@@ -45,7 +45,7 @@ public class ProcessUsersGroupState : IUserState
         switch (userState.currentState)
         {
             case UsersGroupState.ProcessAction:
-                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId)) return;
+                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
                 groupInfo = string.Format(Config.GetResourceString("GroupInfoText"), DBforGroups.GetGroupNameById(groupId),
                                             groupId,
                                             DBforGroups.GetGroupDescriptionById(groupId), DBforGroups.GetGroupMemberCount(groupId), 
@@ -68,7 +68,7 @@ public class ProcessUsersGroupState : IUserState
                 break;
 
             case UsersGroupState.ProcessData:
-                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId)) return;
+                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
                 if (update.CallbackQuery != null && update.CallbackQuery.Data == backCallback)
                 {
                     userState.currentState = UsersGroupState.ProcessAction;
@@ -95,7 +95,7 @@ public class ProcessUsersGroupState : IUserState
                 break;
 
             case UsersGroupState.Finish:
-                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId)) return;
+                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
                 if (update.CallbackQuery != null && update.CallbackQuery.Data == backCallback)
                 {
                     userState.currentState = UsersGroupState.ProcessAction;
