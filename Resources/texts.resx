@@ -114,6 +114,32 @@ Link: &lt;code&gt;{2}&lt;/code&gt;</value>
         <value>Are you sure you want to cancel your request to this person?</value>
     </data>
 
+    <!-- Contact management -->
+    <data name="EditContactNameButtonText" xml:space="preserve">
+        <value>Change contact name</value>
+    </data>
+    <data name="EditContactGroupButtonText" xml:space="preserve">
+        <value>Change group composition</value>
+    </data>
+    <data name="DeleteContactButtonText" xml:space="preserve">
+        <value>Delete contact</value>
+    </data>
+    <data name="InputContactIDsText" xml:space="preserve">
+        <value>Send the contact ID(s)</value>
+    </data>
+    <data name="ConfirmAddContactsToGroupText" xml:space="preserve">
+        <value>Are you sure you want to add these contacts to the group?</value>
+    </data>
+    <data name="ConfirmDeleteContactsFromGroupText" xml:space="preserve">
+        <value>Are you sure you want to remove these contacts from the group?</value>
+    </data>
+    <data name="AddContactButtonText" xml:space="preserve">
+        <value>Add member(s)</value>
+    </data>
+    <data name="RemoveContactButtonText" xml:space="preserve">
+        <value>Remove member(s)</value>
+    </data>
+
     <!-- Mutes and unmutes -->
     <data name="MuteUserInstructions" xml:space="preserve">
         <value>To mute a person (you won't receive videos from them), you need to provide either their ID or their link.</value>
@@ -316,6 +342,6 @@ The idea for this bot came to me when, once again, my friends had to manually se
         <value>The action was successfully completed</value>
     </data>
     <data name="ErrorActionResult" xml:space="preserve">
-        <value>The action was not completed</value>
+        <value>The action was (fully/partially) not completed</value>
     </data>
 </root>

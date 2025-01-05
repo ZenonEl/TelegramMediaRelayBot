@@ -114,6 +114,32 @@ ID: {0}
         <value>Вы точно хотите отменить свой запрос к этому человеку?</value>
     </data>
 
+    <!-- Работа с менеджментом контактов -->
+    <data name="EditContactNameButtonText" xml:space="preserve">
+        <value>Изменить имя контакта</value>
+    </data>
+    <data name="EditContactGroupButtonText" xml:space="preserve">
+        <value>Изменить состав групп</value>
+    </data>
+    <data name="DeleteContactButtonText" xml:space="preserve">
+        <value>Удалить контакт</value>
+    </data>
+    <data name="InputContactIDsText" xml:space="preserve">
+        <value>Отправьте id контакта(ов)</value>
+    </data>
+    <data name="ConfirmAddContactsToGroupText" xml:space="preserve">
+        <value>Вы точно хотите добавить эти контакты в группу?</value>
+    </data>
+    <data name="ConfirmDeleteContactsFromGroupText" xml:space="preserve">
+        <value>Вы точно хотите удалить эти контакты из группы?</value>
+    </data>
+    <data name="AddContactButtonText" xml:space="preserve">
+        <value>Добавить участника(ов)</value>
+    </data>
+    <data name="RemoveContactButtonText" xml:space="preserve">
+        <value>Удалить участника(ов)</value>
+    </data>
+
     <!-- Муты и размуты -->
     <data name="MuteUserInstructions" xml:space="preserve">
         <value>Чтобы замутить человека (вы не будете получать от него видео) вам нужно указать либо его ID либо его ссылку</value>
@@ -316,6 +342,6 @@ PS: квадратные скобки не нужны :)</value>
         <value>Действие было успешно выполнено</value>
     </data>
     <data name="ErrorActionResult" xml:space="preserve">
-        <value>Действие не было выполнено</value>
+        <value>Действие (полностью/частично) не было выполнено</value>
     </data>
 </root>
