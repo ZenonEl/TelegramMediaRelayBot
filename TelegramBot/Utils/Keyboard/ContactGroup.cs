@@ -13,11 +13,11 @@ public static class ContactGroup
                 {
                     new[]
                     {
-                        InlineKeyboardButton.WithCallbackData("Добавить участника(ов)", $"user_add_contact_to_group:{groupId}"),
+                        InlineKeyboardButton.WithCallbackData(Config.GetResourceString("AddContactButtonText"), $"user_add_contact_to_group:{groupId}"),
                     },
                     new[]
                     {
-                        InlineKeyboardButton.WithCallbackData("Удалить участника(ов)", $"user_remove_contact_from_group:{groupId}"),
+                        InlineKeyboardButton.WithCallbackData(Config.GetResourceString("RemoveContactButtonText"), $"user_remove_contact_from_group:{groupId}"),
                     },
                     new[]
                     {

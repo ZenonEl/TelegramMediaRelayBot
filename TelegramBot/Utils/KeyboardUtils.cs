@@ -1,7 +1,6 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
-using DataBase;
 using TelegramMediaRelayBot;
 
 
@@ -54,12 +53,12 @@ public static class KeyboardUtils
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData("Изменить имя контакта", "edit_contact_name"),
-                            InlineKeyboardButton.WithCallbackData("Изменить состав групп", "edit_contact_group"),
+                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("EditContactNameButtonText"), "edit_contact_name"),
+                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("EditContactGroupButtonText"), "edit_contact_group"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData("Удалить контакт", "delete_contact"),
+                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("DeleteContactButtonText"), "delete_contact"),
                         },
                         new[]
                         {

@@ -156,7 +156,7 @@ public class ProcessContactGroupState : IUserState
                         update,
                         KeyboardUtils.GetConfirmForActionKeyboardMarkup(),
                         cancellationToken,
-                        "Отправьте id контакта(ов)");
+                        Config.GetResourceString("InputContactIDsText"));
                     return true;
                 }
                 else if (callbackAction.StartsWith("user_remove_contact_from_group:"))
@@ -167,7 +167,7 @@ public class ProcessContactGroupState : IUserState
                         update,
                         KeyboardUtils.GetConfirmForActionKeyboardMarkup(),
                         cancellationToken,
-                        "Отправьте id контакта(ов)");
+                        Config.GetResourceString("InputContactIDsText"));
                     return true;
                 }
                 return null;
@@ -197,7 +197,7 @@ public class ProcessContactGroupState : IUserState
                     update,
                     KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_add_contact_to_group"),
                     cancellationToken,
-                    $"Вы точно хотите добавить эти контакты в группу?");
+                    Config.GetResourceString("ConfirmAddContactsToGroupText"));
                 return true;
             }
             else if (callbackAction.StartsWith("user_remove_contact_from_group:"))
@@ -209,7 +209,7 @@ public class ProcessContactGroupState : IUserState
                     update,
                     KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_delete_contact_from_group"),
                     cancellationToken,
-                    "Вы точно хотите удалить эти контакты из группы?");
+                    Config.GetResourceString("ConfirmDeleteContactsFromGroupText"));
                 return true;
             }
             return null;
