@@ -14,28 +14,7 @@ public class Groups
         int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
 
         TelegramBot.userStates[chatId] = new ProcessUsersGroupState();
-        List<int> groupIds = DBforGroups.GetGroupIDsByUserId(userId);
-
-        var groupInfos = new List<string>();
-        string groupInfo;
-        foreach (var groupId in groupIds)
-        {
-            string groupName = DBforGroups.GetGroupNameById(groupId);
-
-            string groupDescription = DBforGroups.GetGroupDescriptionById(groupId);
-
-            int memberCount = DBforGroups.GetGroupMemberCount(groupId);
-            bool isDefault = DBforGroups.GetIsDefaultGroup(groupId);
-            groupInfo = string.Format(
-                Config.GetResourceString("GroupInfoText"), 
-                DBforGroups.GetGroupNameById(groupId),
-                groupId,
-                DBforGroups.GetGroupDescriptionById(groupId),
-                DBforGroups.GetGroupMemberCount(groupId),
-                DBforGroups.GetIsDefaultGroup(groupId)
-            );
-            groupInfos.Add(groupInfo);
-        }
+        List<string> groupInfos = UsersGroup.GetUserGroupInfoByUserId(userId);
 
         string messageText = groupInfos.Any() 
             ? $"{Config.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
