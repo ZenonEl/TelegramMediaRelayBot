@@ -48,6 +48,14 @@ public class Contacts
     public static async Task EditContactGroup(ITelegramBotClient botClient, Update update, long chatId)
     {
         TelegramBot.userStates[chatId] = new ProcessContactGroupState();
-        await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, "(Инфо по группе) укажите айди группы для работы:");
+
+        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
+        List<string> groupInfos = UsersGroup.GetUserGroupByUserId(userId);
+
+        string messageText = groupInfos.Any() 
+            ? $"{Config.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
+            : Config.GetResourceString("AltYourGroupsText");
+
+        await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(Config.GetResourceString("ContactGroupInfoText"), messageText));
     }
 }

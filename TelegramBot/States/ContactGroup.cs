@@ -138,12 +138,25 @@ public class ProcessContactGroupState : IUserState
                                                 groupId,
                                                 DBforGroups.GetGroupDescriptionById(groupId), DBforGroups.GetGroupMemberCount(groupId), 
                                                 DBforGroups.GetIsDefaultGroup(groupId));
+
+                    List<int> allContactsIds = DBforGroups.GetAllUsersIdsInGroup(groupId);
+                    List<string> allContactsNames = [];
+
+                    foreach (int contactId in allContactsIds)
+                    {
+                        allContactsNames.Add(DBforGetters.GetUserNameByID(contactId) + $" (ID: {contactId})");
+                    }
+
+                    string allContactsText;
+                    allContactsText = $"{Config.GetResourceString("AllContactsText")} {string.Join("\n", allContactsNames)}";
+                    
+                    string messageText = $"{groupInfo}\n{allContactsText}\n{Config.GetResourceString("ChooseOptionText")}";
                     await Utils.Utils.SendMessage(
                         botClient,
                         update,
                         ContactGroup.GetContactGroupEditActionsKeyboardMarkup(groupId),
                         cancellationToken,
-                        groupInfo + "\n (вывод всех участников)\n" + Config.GetResourceString("ChooseOptionText"));
+                        messageText);
                     return false;
                 }
                 return null;
@@ -154,7 +167,7 @@ public class ProcessContactGroupState : IUserState
                     await Utils.Utils.SendMessage(
                         botClient,
                         update,
-                        KeyboardUtils.GetConfirmForActionKeyboardMarkup(),
+                        KeyboardUtils.GetReturnButton(),
                         cancellationToken,
                         Config.GetResourceString("InputContactIDsText"));
                     return true;
@@ -162,12 +175,11 @@ public class ProcessContactGroupState : IUserState
                 else if (callbackAction.StartsWith("user_remove_contact_from_group:"))
                 {
                     groupId = int.Parse(callbackAction.Split(':')[1]);
-                    await Utils.Utils.SendMessage(
-                        botClient,
-                        update,
-                        KeyboardUtils.GetConfirmForActionKeyboardMarkup(),
-                        cancellationToken,
-                        Config.GetResourceString("InputContactIDsText"));
+                    await botClient.SendMessage(
+                        Utils.Utils.GetIDfromUpdate(update),
+                        Config.GetResourceString("InputContactIDsText"),
+                        replyMarkup: KeyboardUtils.GetReturnButtonMarkup(),
+                        cancellationToken: cancellationToken);
                     return true;
                 }
                 return null;
@@ -186,11 +198,13 @@ public class ProcessContactGroupState : IUserState
                 groupId = int.Parse(callbackAction.Split(':')[1]);
                 contactIDs = update.Message!.Text!.Split(" ").Select(x => int.Parse(x)).ToList();
                 List<int> allowedIds = [];
+
                 foreach (int contactId in contactIDs)
                 {
                     bool status = DBforContactGroups.CheckUserAndContactConnect(userId, contactId);
                     if (status) allowedIds.Add(contactId);
                 }
+
                 if (allowedIds.Count == 0) return null;
                 await Utils.Utils.SendMessage(
                     botClient,
@@ -198,6 +212,7 @@ public class ProcessContactGroupState : IUserState
                     KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_add_contact_to_group"),
                     cancellationToken,
                     Config.GetResourceString("ConfirmAddContactsToGroupText"));
+                contactIDs = allowedIds;
                 return true;
             }
             else if (callbackAction.StartsWith("user_remove_contact_from_group:"))
@@ -214,7 +229,7 @@ public class ProcessContactGroupState : IUserState
             }
             return null;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return null;
         }
