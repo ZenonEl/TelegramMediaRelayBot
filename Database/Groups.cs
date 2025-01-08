@@ -332,4 +332,37 @@ public class DBforGroups
             }
         }
     }
+
+    public static List<int> GetAllUsersIdsInGroup(int groupId)
+    {
+        string query = @$"
+            USE {Config.databaseName};
+            SELECT ContactId 
+            FROM GroupMembers 
+            WHERE GroupId = @groupId";
+        List<int> userIds = [];
+
+        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@groupId", groupId);
+                using (MySqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        userIds.Add(reader.GetInt32("ContactId"));
+                    }
+                    return userIds;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetAllUsersIdsInGroup));
+                return userIds;
+            }
+        }
+    }
 }
