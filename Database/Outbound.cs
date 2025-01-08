@@ -1,5 +1,6 @@
 using DataBase.Types;
 using MySql.Data.MySqlClient;
+using Serilog;
 using TelegramMediaRelayBot;
 
 namespace DataBase;
@@ -96,7 +97,7 @@ public class DBforOutbound
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error editing database: " + ex.Message);
+                Log.Error("Error editing database: " + ex.Message);
             }
         }
     }

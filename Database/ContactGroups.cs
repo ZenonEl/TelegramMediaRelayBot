@@ -1,4 +1,3 @@
-using System.Data;
 using MySql.Data.MySqlClient;
 using Serilog;
 using TelegramMediaRelayBot;
@@ -13,8 +12,8 @@ class DBforContactGroups
     public static bool AddContactToGroup(int userId, int contactId, int groupId)
     {
         string query = @"
-            INSERT INTO GroupMembers (UserId, ContactId, GroupId)
-            VALUES (@userId, @contactId, @groupId)";
+            INSERT IGNORE INTO GroupMembers (UserId, ContactId, GroupId)
+            VALUES (@userId, @contactId, @groupId);";
 
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
@@ -64,9 +63,9 @@ class DBforContactGroups
 
     public static bool CheckUserAndContactConnect(int userId, int contactId)
     {
-        string query = @"
-            SELECT COUNT(*) FROM GroupMembers
-            WHERE UserId = @userId AND ContactId = @contactId";
+        string query = @$"
+            SELECT COUNT(*) FROM Contacts
+            WHERE ((UserId = @userId AND ContactId = @contactId) OR (UserId = @contactId AND ContactId = @userId)) AND Status = '{Types.ContactsStatus.ACCEPTED}'";
 
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
