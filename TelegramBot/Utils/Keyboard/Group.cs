@@ -1,3 +1,4 @@
+using DataBase;
 using Telegram.Bot.Types.ReplyMarkups;
 using TelegramMediaRelayBot;
 
@@ -67,5 +68,32 @@ public static class UsersGroup
                     },
                 });
         return inlineKeyboard;
+    }
+
+    public static List<string> GetUserGroupInfoByUserId(int userId)
+    {
+        List<int> groupIds = DBforGroups.GetGroupIDsByUserId(userId);
+
+        var groupInfos = new List<string>();
+        string groupInfo;
+        foreach (var groupId in groupIds)
+        {
+            string groupName = DBforGroups.GetGroupNameById(groupId);
+
+            string groupDescription = DBforGroups.GetGroupDescriptionById(groupId);
+
+            int memberCount = DBforGroups.GetGroupMemberCount(groupId);
+            bool isDefault = DBforGroups.GetIsDefaultGroup(groupId);
+            groupInfo = string.Format(
+                Config.GetResourceString("GroupInfoText"), 
+                DBforGroups.GetGroupNameById(groupId),
+                groupId,
+                DBforGroups.GetGroupDescriptionById(groupId),
+                DBforGroups.GetGroupMemberCount(groupId),
+                DBforGroups.GetIsDefaultGroup(groupId)
+            );
+            groupInfos.Add(groupInfo);
+        }
+        return groupInfos;
     }
 }
