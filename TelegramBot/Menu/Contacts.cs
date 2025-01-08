@@ -50,7 +50,7 @@ public class Contacts
         TelegramBot.userStates[chatId] = new ProcessContactGroupState();
 
         int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
-        List<string> groupInfos = UsersGroup.GetUserGroupByUserId(userId);
+        List<string> groupInfos = UsersGroup.GetUserGroupInfoByUserId(userId);
 
         string messageText = groupInfos.Any() 
             ? $"{Config.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
