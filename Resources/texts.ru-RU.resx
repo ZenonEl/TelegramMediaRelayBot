@@ -115,6 +115,14 @@ ID: {0}
     </data>
 
     <!-- Работа с менеджментом контактов -->
+    <data name="ContactGroupInfoText" xml:space="preserve">
+        <value>{0} 
+
+Укажите айди группы для работы:</value>
+    </data>
+    <data name="AllContactsText" xml:space="preserve">
+        <value>Список участников:</value>
+    </data>
     <data name="EditContactNameButtonText" xml:space="preserve">
         <value>Изменить имя контакта</value>
     </data>
@@ -133,10 +141,10 @@ ID: {0}
     <data name="ConfirmDeleteContactsFromGroupText" xml:space="preserve">
         <value>Вы точно хотите удалить эти контакты из группы?</value>
     </data>
-    <data name="AddContactButtonText" xml:space="preserve">
+    <data name="AddContactsButtonText" xml:space="preserve">
         <value>Добавить участника(ов)</value>
     </data>
-    <data name="RemoveContactButtonText" xml:space="preserve">
+    <data name="RemoveContactsButtonText" xml:space="preserve">
         <value>Удалить участника(ов)</value>
     </data>
 

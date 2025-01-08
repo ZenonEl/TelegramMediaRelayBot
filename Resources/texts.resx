@@ -115,6 +115,14 @@ Link: &lt;code&gt;{2}&lt;/code&gt;</value>
     </data>
 
     <!-- Contact management -->
+    <data name="ContactGroupInfoText" xml:space="preserve">
+        <value>{0} 
+
+Please specify the group ID for work:</value>
+    </data>
+    <data name="AllContactsText" xml:space="preserve">
+        <value>List of participants:</value>
+    </data>
     <data name="EditContactNameButtonText" xml:space="preserve">
         <value>Change contact name</value>
     </data>
@@ -133,10 +141,10 @@ Link: &lt;code&gt;{2}&lt;/code&gt;</value>
     <data name="ConfirmDeleteContactsFromGroupText" xml:space="preserve">
         <value>Are you sure you want to remove these contacts from the group?</value>
     </data>
-    <data name="AddContactButtonText" xml:space="preserve">
+    <data name="AddContactsButtonText" xml:space="preserve">
         <value>Add member(s)</value>
     </data>
-    <data name="RemoveContactButtonText" xml:space="preserve">
+    <data name="RemoveContactsButtonText" xml:space="preserve">
         <value>Remove member(s)</value>
     </data>
 
