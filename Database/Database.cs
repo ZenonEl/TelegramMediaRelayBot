@@ -159,7 +159,7 @@ public class CoreDB
         }
     }
 
-    public static async Task<List<long>> GetContactUserTGIds(int userId)
+    public static async Task<List<long>> GetAllContactUserTGIds(int userId)
     {
         var contactUserIds = new List<long>();
         var TelegramIDs = new List<long>();
