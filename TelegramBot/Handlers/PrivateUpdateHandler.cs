@@ -30,8 +30,11 @@ public class PrivateUpdateHandler
 
         if (Utils.Utils.IsLink(link))
         {
-            Message statusMessage = await botClient.SendMessage(chatId, Config.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
-            _ = TelegramBot.HandleVideoRequest(botClient, link, chatId, statusMessage, caption: text);
+            int replyToMessageId = update.Message.MessageId;
+            Message statusMessage = await botClient.SendMessage(chatId, Config.GetResourceString("WaitDownloadingVideo"),
+                                                    replyParameters: new ReplyParameters { MessageId = replyToMessageId }, cancellationToken: cancellationToken);
+            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("VideoDistributionQuestion"), replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), cancellationToken: cancellationToken);
+            TelegramBot.userStates[chatId] = new ProcessVideoDC(link, statusMessage, text);
         }
         else if (update.Message.Text == "/start")
         {

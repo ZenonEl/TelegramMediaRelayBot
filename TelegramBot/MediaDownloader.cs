@@ -106,13 +106,14 @@ partial class TelegramBot
         }
     }
 
-    public static async Task HandleVideoRequest(ITelegramBotClient botClient, string videoUrl, long chatId, Message statusMessage, bool groupChat = false, string caption = "")
+    public static async Task HandleVideoRequest(ITelegramBotClient botClient, string videoUrl, long chatId,
+                                                Message statusMessage, List<long>? targetUserIds = null, bool groupChat = false, string caption = "")
     {
         byte[]? videoBytes = await VideoGet.DownloadVideoAsync(botClient, videoUrl, statusMessage, cancellationToken);
         if (videoBytes != null)
         {
             Log.Debug("Video successfully downloaded.");
-            await SendVideoToTelegram(videoBytes, chatId, botClient, statusMessage, groupChat, caption);
+            await SendVideoToTelegram(videoBytes, chatId, botClient, statusMessage, targetUserIds, groupChat, caption);
             Log.Debug("Video successfully received.");
             return;
         }
@@ -121,7 +122,7 @@ partial class TelegramBot
     }
 
     public static async Task SendVideoToTelegram(byte[] videoBytes, long chatId, ITelegramBotClient botClient,
-                                                Message statusMessage, bool groupChat = false, string caption = "")
+                                                Message statusMessage, List<long>? targetUserIds, bool groupChat = false, string caption = "")
     {
         using (var memoryStream = new MemoryStream(videoBytes))
         using (var progressStream = new Utils.ProgressReportingStream(memoryStream))
@@ -176,7 +177,7 @@ partial class TelegramBot
             else
                 FileId = message.Document!.FileId;
 
-            if (!groupChat)
+            if (!groupChat && targetUserIds != null && targetUserIds.Count > 0)
             {
                 try
                 {
@@ -189,7 +190,7 @@ partial class TelegramBot
                     Log.Debug(ex, "Error editing message.");
                 }
                 Log.Debug("Starting video distribution to contacts.");
-                await SendVideoToContacts(FileId, chatId, botClient, statusMessage, caption);
+                await SendVideoToContacts(FileId, chatId, botClient, statusMessage, targetUserIds, caption);
                 try
                 {
                     await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId,
@@ -204,12 +205,11 @@ partial class TelegramBot
         }
     }
 
-    private static async Task SendVideoToContacts(string fileId, long telegramId, ITelegramBotClient botClient, Message statusMessage, string caption = "")
+    private static async Task SendVideoToContacts(string fileId, long telegramId, ITelegramBotClient botClient, Message statusMessage, List<long> targetUserIds, string caption = "")
     {
         int userId = DBforGetters.GetUserIDbyTelegramID(telegramId);
-        var contactUserTGIds = await CoreDB.GetContactUserTGIds(userId);
-        var mutedByUserIds = DBforGetters.GetUsersIdForMuteContactId(userId);
-        var filteredContactUserTGIds = contactUserTGIds.Except(mutedByUserIds).ToList();
+        List<long> mutedByUserIds = DBforGetters.GetUsersIdForMuteContactId(userId);
+        List<long> filteredContactUserTGIds = targetUserIds.Except(mutedByUserIds).ToList();
 
         Log.Information($"Sending video to ({filteredContactUserTGIds.Count}) users.");
         Log.Information($"User {userId} is muted by: {mutedByUserIds.Count}");
