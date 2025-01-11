@@ -54,6 +54,26 @@
 Пригласительная ссылка чтобы человек мог начать пользоваться ботом:</value>
     </data>
 
+    <!-- Работа с выбором контактов для рассылки-->
+    <data name="videoDistributionQuestion" xml:space="preserve">
+        <value>Кому будем рассылать видео?</value>
+    </data>
+    <data name="SendToAllContactsButtonText" xml:space="preserve">
+        <value>Всем контактам</value>
+    </data>
+    <data name="SendToDefaultGroupsButtonText" xml:space="preserve">
+        <value>Группам по умолчанию</value>
+    </data>
+    <data name="SendToSpecifiedGroupsButtonText" xml:space="preserve">
+        <value>Только выбранным группам</value>
+    </data>
+    <data name="SendToSpecifiedUsersButtonText" xml:space="preserve">
+        <value>Только выбранным пользователям</value>
+    </data>
+    <data name="SendOnlyToMeButtonText" xml:space="preserve">
+        <value>Только мне</value>
+    </data>
+
     <!-- Работа с контактами -->
     <data name="SpecifyContactLink" xml:space="preserve">
         <value>Укажите ссылку человека:</value>

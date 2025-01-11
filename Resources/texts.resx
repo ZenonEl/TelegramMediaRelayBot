@@ -54,6 +54,26 @@
 An invitation link so that a person can start using by bot:</value>
     </data>
 
+    <!-- Working with contact selection for distribution -->
+    <data name="videoDistributionQuestion" xml:space="preserve">
+        <value>Who should we send the video to?</value>
+    </data>
+    <data name="SendToAllContactsButtonText" xml:space="preserve">
+        <value>To all contacts</value>
+    </data>
+    <data name="SendToDefaultGroupsButtonText" xml:space="preserve">
+        <value>To default groups</value>
+    </data>
+    <data name="SendToSpecifiedGroupsButtonText" xml:space="preserve">
+        <value>To selected groups only</value>
+    </data>
+    <data name="SendToSpecifiedUsersButtonText" xml:space="preserve">
+        <value>To selected users only</value>
+    </data>
+    <data name="SendOnlyToMeButtonText" xml:space="preserve">
+        <value>Only to me</value>
+    </data>
+
     <!-- Contact management -->
     <data name="SpecifyContactLink" xml:space="preserve">
         <value>Please provide the person's link:</value>
