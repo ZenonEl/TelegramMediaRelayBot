@@ -49,6 +49,7 @@ public class ProcessVideoDC : IUserState
                         case "send_to_default_groups":
                             action = "send_to_default_groups";
                             await PrepareTargetUserIds(chatId);
+                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
                             break;
                         case "send_to_specified_groups":
                             action = "send_to_specified_groups";
@@ -122,15 +123,22 @@ public class ProcessVideoDC : IUserState
     private async Task PrepareTargetUserIds(long chatId)
     {
         int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
+        List<long> mutedByUserIds = DBforGetters.GetUsersIdForMuteContactId(userId);
+
         switch (action)
         {
             case "send_to_all_contacts":
                 List<long> contactUserTGIds = await CoreDB.GetAllContactUserTGIds(userId);
-                List<long> mutedByUserIds = DBforGetters.GetUsersIdForMuteContactId(userId);
                 targetUserIds = contactUserTGIds.Except(mutedByUserIds).ToList();
                 break;
+
             case "send_to_default_groups":
-                targetUserIds = new List<long>();
+                List<int> defaultGroupContactIDs = DBforGroups.GetAllUsersInDefaultEnabledGroups(userId);
+
+                targetUserIds = defaultGroupContactIDs
+                    .Where(contactId => !mutedByUserIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
+                    .Select(DBforGetters.GetTelegramIDbyUserID)
+                    .ToList();
                 break;
             case "send_to_specified_groups":
             case "send_to_specified_users":
