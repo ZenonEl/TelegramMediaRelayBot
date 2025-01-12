@@ -55,7 +55,7 @@ An invitation link so that a person can start using by bot:</value>
     </data>
 
     <!-- Working with contact selection for distribution -->
-    <data name="videoDistributionQuestion" xml:space="preserve">
+    <data name="VideoDistributionQuestion" xml:space="preserve">
         <value>Who should we send the video to?</value>
     </data>
     <data name="SendToAllContactsButtonText" xml:space="preserve">

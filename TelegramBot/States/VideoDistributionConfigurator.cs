@@ -32,12 +32,8 @@ public class ProcessVideoDC : IUserState
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         long chatId = Utils.Utils.GetIDfromUpdate(update);
-        if (!TelegramBot.userStates.TryGetValue(chatId, out IUserState? value))
-            return;
 
-        var userState = (ProcessVideoDC)value;
-
-        switch (userState.currentState)
+        switch (currentState)
         {
             case UsersGroupState.ProcessAction:
                 if (update.CallbackQuery != null)
@@ -46,28 +42,28 @@ public class ProcessVideoDC : IUserState
                     switch (callbackData)
                     {
                         case "send_to_all_contacts":
-                            userState.action = "send_to_all_contacts";
-                            await PrepareTargetUserIds(chatId, userState);
+                            action = "send_to_all_contacts";
+                            await PrepareTargetUserIds(chatId);
                             await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
                             break;
                         case "send_to_default_groups":
-                            userState.action = "send_to_default_groups";
-                            await PrepareTargetUserIds(chatId, userState);
+                            action = "send_to_default_groups";
+                            await PrepareTargetUserIds(chatId);
                             break;
                         case "send_to_specified_groups":
-                            userState.action = "send_to_specified_groups";
+                            action = "send_to_specified_groups";
                             await botClient.SendMessage(chatId, "Please enter group IDs separated by spaces:", cancellationToken: cancellationToken);
-                            userState.currentState = UsersGroupState.ProcessData;
+                            currentState = UsersGroupState.ProcessData;
                             break;
                         case "send_to_specified_users":
-                            userState.action = "send_to_specified_users";
+                            action = "send_to_specified_users";
                             await botClient.SendMessage(chatId, "Please enter user IDs separated by spaces:", cancellationToken: cancellationToken);
-                            userState.currentState = UsersGroupState.ProcessData;
+                            currentState = UsersGroupState.ProcessData;
                             break;
                         case "send_only_to_me":
-                            userState.action = "send_only_to_me";
+                            action = "send_only_to_me";
                             await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
-                            userState.currentState = UsersGroupState.Finish;
+                            currentState = UsersGroupState.Finish;
                             break;
                         case "main_menu":
                             await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false);
@@ -86,7 +82,7 @@ public class ProcessVideoDC : IUserState
                         if (ids.All(id => long.TryParse(id, out _)))
                         {
                             targetUserIds = ids.Select(long.Parse).ToList();
-                            await PrepareTargetUserIds(chatId, userState);
+                            await PrepareTargetUserIds(chatId);
                         }
                         else
                         {
@@ -98,7 +94,7 @@ public class ProcessVideoDC : IUserState
                         if (long.TryParse(input, out long id))
                         {
                             targetUserIds.Add(id);
-                            await PrepareTargetUserIds(chatId, userState);
+                            await PrepareTargetUserIds(chatId);
                         }
                         else
                         {
@@ -113,7 +109,7 @@ public class ProcessVideoDC : IUserState
                     update.Message != null)
                 {
                     await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("VideoDistributionQuestion"), replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), cancellationToken: cancellationToken);
-                    userState.currentState = UsersGroupState.ProcessAction;
+                    currentState = UsersGroupState.ProcessAction;
                     return;
                 }
                 await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
@@ -123,10 +119,10 @@ public class ProcessVideoDC : IUserState
         }
     }
 
-    private async Task PrepareTargetUserIds(long chatId, ProcessVideoDC userState)
+    private async Task PrepareTargetUserIds(long chatId)
     {
         int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
-        switch (userState.action)
+        switch (action)
         {
             case "send_to_all_contacts":
                 List<long> contactUserTGIds = await CoreDB.GetAllContactUserTGIds(userId);
@@ -141,6 +137,6 @@ public class ProcessVideoDC : IUserState
                 break;
         }
 
-        userState.currentState = UsersGroupState.Finish;
+        currentState = UsersGroupState.Finish;
     }
 }

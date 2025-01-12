@@ -166,6 +166,7 @@ partial class TelegramBot
                 chatId,
                 InputFile.FromStream(progressStream, "video.mp4"),
                 caption: Config.GetResourceString("HereIsYourVideo") + text,
+                replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
                 parseMode: ParseMode.Html
             );
 
@@ -251,14 +252,17 @@ partial class TelegramBot
         {
             await botClient.SendMessage(telegramId, 
                                             string.Format(Config.GetResourceString("VideoSentToContacts"), 
-                                            filteredContactUserTGIds.Count, now.ToString("yyyy_MM_dd_HH_mm_ss"), 
-                                            MyRegex().Replace(name, "_")), parseMode: ParseMode.Html);
+                                            filteredContactUserTGIds.Count, now.ToString("yyyy_MM_dd_HH_mm_ss"),
+                                            MyRegex().Replace(name, "_")),
+                                            replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
+                                            parseMode: ParseMode.Html);
         }
 
         if (mutedByUserIds.Count > 0)
         {
             await botClient.SendMessage(telegramId, 
-                                            string.Format(Config.GetResourceString("MutedByContacts"), mutedByUserIds.Count));
+                                            string.Format(Config.GetResourceString("MutedByContacts"), mutedByUserIds.Count),
+                                            replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId });
         }
     }
 

@@ -55,7 +55,7 @@
     </data>
 
     <!-- Работа с выбором контактов для рассылки-->
-    <data name="videoDistributionQuestion" xml:space="preserve">
+    <data name="VideoDistributionQuestion" xml:space="preserve">
         <value>Кому будем рассылать видео?</value>
     </data>
     <data name="SendToAllContactsButtonText" xml:space="preserve">
