@@ -365,4 +365,85 @@ public class DBforGroups
             }
         }
     }
+
+    public static List<int> GetDefaultEnabledGroupIds(int userId)
+    {
+        string query = @$"
+            USE {Config.databaseName};
+            SELECT ID
+            FROM UsersGroups
+            WHERE UserId = @userId AND IsDefaultEnabled = 1";
+
+        List<int> groupIds = [];
+
+        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@userId", userId);
+                using (MySqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        groupIds.Add(reader.GetInt32("ID"));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "An error occurred while fetching group IDs");
+            }
+        }
+
+        return groupIds;
+    }
+
+    public static List<int> GetAllUsersInGroup(int groupId)
+    {
+        string query = @$"
+            USE {Config.databaseName};
+            SELECT ContactId
+            FROM GroupMembers
+            WHERE GroupId = @groupId";
+
+        List<int> userIds = new List<int>();
+
+        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@groupId", groupId);
+                using (MySqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        userIds.Add(reader.GetInt32("ContactId"));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "An error occurred while fetching user IDs");
+            }
+        }
+
+        return userIds;
+    }
+
+    public static List<int> GetAllUsersInDefaultEnabledGroups(int userId)
+    {
+        List<int> groupIds = GetDefaultEnabledGroupIds(userId);
+        List<int> userIds = [];
+
+        foreach (int groupId in groupIds)
+        {
+            userIds.AddRange(GetAllUsersInGroup(groupId));
+        }
+
+        return userIds;
+    }
 }
