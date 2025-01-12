@@ -108,9 +108,11 @@ Name: {1} ?</value>
         <value>Your contacts:</value>
     </data>
     <data name="ContactInfo" xml:space="preserve">
-        <value>Contact with ID: {0} 
+        <value>
+Contact with ID: {0} 
 Name: {1} 
-Link: &lt;code&gt;{2}&lt;/code&gt;</value>
+Link: &lt;code&gt;{2}&lt;/code&gt;
+</value>
     </data>
     <data name="YourInboundInvitations" xml:space="preserve">
         <value>Your incoming invitations:</value>

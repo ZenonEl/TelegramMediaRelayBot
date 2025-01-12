@@ -108,7 +108,8 @@ ID: {0}
         <value>Ваши контакты:</value>
     </data>
     <data name="ContactInfo" xml:space="preserve">
-        <value>Контакт с ID: {0} 
+        <value>
+Контакт с ID: {0} 
 Именем: {1} 
 Ссылкой: &lt;code&gt;{2}&lt;/code&gt;</value>
     </data>
