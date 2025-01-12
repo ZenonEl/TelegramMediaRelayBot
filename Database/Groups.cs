@@ -177,7 +177,7 @@ public class DBforGroups
     {
         string query = @$"
             USE {Config.databaseName};
-            SELECT Status 
+            SELECT IsDefaultEnabled 
             FROM UsersGroups 
             WHERE ID = @groupId";
 
@@ -193,7 +193,7 @@ public class DBforGroups
                 {
                     if (reader.Read())
                     {
-                        return reader.GetBoolean("Status");
+                        return reader.GetBoolean("IsDefaultEnabled");
                     }
                 }
             }
@@ -289,7 +289,7 @@ public class DBforGroups
         string query = @$"
             USE {Config.databaseName};
             UPDATE UsersGroups 
-            SET Status = NOT Status 
+            SET IsDefaultEnabled = NOT IsDefaultEnabled 
             WHERE ID = @groupId";
 
         using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))

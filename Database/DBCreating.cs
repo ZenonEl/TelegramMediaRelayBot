@@ -71,7 +71,7 @@ public class AllCreatingFunc
                 UserId INT NOT NULL,
                 GroupName VARCHAR(255) NOT NULL,
                 Description TEXT NULL,
-                Status BOOLEAN NOT NULL DEFAULT TRUE,
+                IsDefaultEnabled BOOLEAN NOT NULL DEFAULT TRUE,
                 UNIQUE (UserId, GroupName),
                 FOREIGN KEY (UserId) REFERENCES Users(ID)
             )";
