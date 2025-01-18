@@ -400,13 +400,13 @@ public class DBforGroups
         return groupIds;
     }
 
-    public static List<int> GetAllUsersInGroup(int groupId)
+    public static List<int> GetAllUsersInGroup(int groupId, int userId)
     {
         string query = @$"
             USE {Config.databaseName};
             SELECT ContactId
             FROM GroupMembers
-            WHERE GroupId = @groupId";
+            WHERE GroupId = @groupId AND UserId = @userId";
 
         List<int> userIds = new List<int>();
 
@@ -417,6 +417,7 @@ public class DBforGroups
                 connection.Open();
                 MySqlCommand command = new MySqlCommand(query, connection);
                 command.Parameters.AddWithValue("@groupId", groupId);
+                command.Parameters.AddWithValue("@userId", userId);
                 using (MySqlDataReader reader = command.ExecuteReader())
                 {
                     while (reader.Read())
@@ -441,7 +442,7 @@ public class DBforGroups
 
         foreach (int groupId in groupIds)
         {
-            userIds.AddRange(GetAllUsersInGroup(groupId));
+            userIds.AddRange(GetAllUsersInGroup(groupId, userId));
         }
 
         return userIds;
