@@ -216,6 +216,23 @@ Are you sure you want to unmute them? If not, type /start</value>
         <value>Indefinitely</value>
     </data>
 
+    <!-- Deleting contacts -->
+    <data name="PleaseEnterContactIDs" xml:space="preserve">
+        <value>Please enter one or more contact IDs separated by spaces.</value>
+    </data>
+    <data name="InvalidInputNumbers" xml:space="preserve">
+        <value>Invalid input. Please enter numbers separated by spaces.</value>
+    </data>
+    <data name="ConfirmRemovalMessage" xml:space="preserve">
+        <value>Are you sure you want to remove the following users from your contacts?</value>
+    </data>
+    <data name="NoUsersFound" xml:space="preserve">
+        <value>No users found with the provided IDs.</value>
+    </data>
+    <data name="RemovalProcessCompleted" xml:space="preserve">
+        <value>Removal process completed.</value>
+    </data>
+
     <!-- Buttons and interface texts -->
     <data name="NextButtonText" xml:space="preserve">
         <value>Next</value>
