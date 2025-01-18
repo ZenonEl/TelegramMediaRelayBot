@@ -30,8 +30,8 @@ public class Contacts
 
     public static async Task ViewContacts(ITelegramBotClient botClient, Update update)
     {
-        var contactUserTGIds = await CoreDB.GetAllContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id));
-        var contactUsersInfo = new List<string>();
+        List<long> contactUserTGIds = await CoreDB.GetAllContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id));
+        List<string> contactUsersInfo = new List<string>();
 
         foreach (var contactUserId in contactUserTGIds)
         {
