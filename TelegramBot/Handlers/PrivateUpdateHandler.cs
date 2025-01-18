@@ -87,6 +87,9 @@ public class PrivateUpdateHandler
             case "edit_contact_group":
                 await Contacts.EditContactGroup(botClient, update, chatId);
                 break;
+            case "delete_contact":
+                await Contacts.DeleteContact(botClient, update, chatId);
+                break;
             case "whos_the_genius":
                 await CallbackQueryMenuUtils.WhosTheGenius(botClient, update);
                 break;
