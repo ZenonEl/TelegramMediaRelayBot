@@ -96,4 +96,12 @@ public static class UsersGroup
         }
         return groupInfos;
     }
+
+    public static string GetUserGroupInfoByGroupId(int groupId)
+    {
+        return string.Format(Config.GetResourceString("GroupInfoText"), DBforGroups.GetGroupNameById(groupId),
+                                                groupId,
+                                                DBforGroups.GetGroupDescriptionById(groupId), DBforGroups.GetGroupMemberCount(groupId), 
+                                                DBforGroups.GetIsDefaultGroup(groupId));
+    }
 }
