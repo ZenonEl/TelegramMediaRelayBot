@@ -16,6 +16,12 @@ public class Contacts
         await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, Config.GetResourceString("SpecifyContactLink"));
     }
 
+    public static async Task DeleteContact(ITelegramBotClient botClient, Update update, long chatId)
+    {
+        Message statusMessage = await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, "Укажите айди контактов для удаления:", cancellationToken: cancellationToken);
+        TelegramBot.userStates[chatId] = new ProcessRemoveUser(statusMessage);
+    }
+
     public static async Task MuteUserContact(ITelegramBotClient botClient, Update update, long chatId)
     {
         await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Config.GetResourceString("MuteUserInstructions"), cancellationToken: cancellationToken);
