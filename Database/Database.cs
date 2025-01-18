@@ -97,6 +97,59 @@ public class CoreDB
         }
     }
 
+    public static bool RemoveUserFromContacts(int userId, int contactId)
+    {
+        string deleteContactsQuery = @$"
+            USE {Config.databaseName};
+            DELETE FROM Contacts
+            WHERE (UserId = @userId AND ContactId = @contactId) 
+            OR (UserId = @contactId AND ContactId = @userId);";
+
+        string deleteGroupMembersQuery = @$"
+            USE {Config.databaseName};
+            DELETE FROM GroupMembers
+            WHERE (UserId = @userId AND ContactId = @contactId)
+            OR (UserId = @contactId AND ContactId = @userId);";
+
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            try
+            {
+                connection.Open();
+
+                using (MySqlTransaction transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        MySqlCommand deleteContactsCommand = new MySqlCommand(deleteContactsQuery, connection, transaction);
+                        deleteContactsCommand.Parameters.AddWithValue("@userId", userId);
+                        deleteContactsCommand.Parameters.AddWithValue("@contactId", contactId);
+                        deleteContactsCommand.ExecuteNonQuery();
+
+                        MySqlCommand deleteGroupMembersCommand = new MySqlCommand(deleteGroupMembersQuery, connection, transaction);
+                        deleteGroupMembersCommand.Parameters.AddWithValue("@userId", userId);
+                        deleteGroupMembersCommand.Parameters.AddWithValue("@contactId", contactId);
+                        deleteGroupMembersCommand.ExecuteNonQuery();
+
+                        transaction.Commit();
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        Log.Error("Error deleting from database: " + ex.Message);
+                        return false;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Error connecting to database: " + ex.Message);
+                return false;
+            }
+        }
+    }
+
     public static bool AddMutedContact(int mutedByUserId, int mutedContactId, DateTime? expirationDate = null, DateTime muteDate = default)
     {
         if (muteDate == default)
