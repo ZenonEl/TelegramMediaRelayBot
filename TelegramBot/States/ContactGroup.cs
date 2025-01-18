@@ -9,7 +9,7 @@ namespace MediaTelegramBot;
 
 public class ProcessContactGroupState : IUserState
 {
-    public UsersGroupState currentState;
+    public UsersStandartState currentState;
 
     public string groupInfo = "";
 
@@ -21,7 +21,7 @@ public class ProcessContactGroupState : IUserState
 
     public ProcessContactGroupState()
     {
-        currentState = UsersGroupState.ProcessAction;
+        currentState = UsersStandartState.ProcessAction;
     }
 
     public string GetCurrentState()
@@ -43,13 +43,13 @@ public class ProcessContactGroupState : IUserState
 
         switch (userState.currentState)
         {
-            case UsersGroupState.ProcessAction:
+            case UsersStandartState.ProcessAction:
                 if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
 
                 bool? isUpdateSuccessful = await ProcessUpdate(botClient, update, cancellationToken);
                 if (isUpdateSuccessful == true)
                 {
-                    userState.currentState = UsersGroupState.ProcessData;
+                    userState.currentState = UsersStandartState.ProcessData;
                 }
                 else if (isUpdateSuccessful == null)
                 {
@@ -63,11 +63,11 @@ public class ProcessContactGroupState : IUserState
 
                 break;
 
-            case UsersGroupState.ProcessData:
+            case UsersStandartState.ProcessData:
                 if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
                 if (update.CallbackQuery != null && update.CallbackQuery.Data == backCallback)
                 {
-                    userState.currentState = UsersGroupState.ProcessAction;
+                    userState.currentState = UsersStandartState.ProcessAction;
                     await Utils.Utils.SendMessage(
                         botClient,
                         update,
@@ -81,7 +81,7 @@ public class ProcessContactGroupState : IUserState
 
                 if (isActionSuccessful == true) 
                 {
-                    userState.currentState = UsersGroupState.Finish;
+                    userState.currentState = UsersStandartState.Finish;
                     return;
                 }
                 else if (isActionSuccessful == null)
@@ -91,11 +91,11 @@ public class ProcessContactGroupState : IUserState
                 }
                 break;
 
-            case UsersGroupState.Finish:
+            case UsersStandartState.Finish:
                 if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
                 if (update.CallbackQuery != null && update.CallbackQuery.Data == backCallback)
                 {
-                    userState.currentState = UsersGroupState.ProcessAction;
+                    userState.currentState = UsersStandartState.ProcessAction;
                     await Utils.Utils.SendMessage(
                         botClient,
                         update,
@@ -134,10 +134,7 @@ public class ProcessContactGroupState : IUserState
             case "edit_contact_group":
                 if (int.TryParse(update.Message!.Text!, out groupId) && DBforGroups.CheckGroupOwnership(groupId, userId))
                 {
-                    groupInfo = string.Format(Config.GetResourceString("GroupInfoText"), DBforGroups.GetGroupNameById(groupId),
-                                                groupId,
-                                                DBforGroups.GetGroupDescriptionById(groupId), DBforGroups.GetGroupMemberCount(groupId), 
-                                                DBforGroups.GetIsDefaultGroup(groupId));
+                    groupInfo = UsersGroup.GetUserGroupInfoByGroupId(groupId);
 
                     List<int> allContactsIds = DBforGroups.GetAllUsersIdsInGroup(groupId);
                     List<string> allContactsNames = [];

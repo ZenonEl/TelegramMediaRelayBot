@@ -9,7 +9,7 @@ namespace MediaTelegramBot;
 
 public class ProcessVideoDC : IUserState
 {
-    public UsersGroupState currentState;
+    public UsersStandartState currentState;
     public string link { get; set; }
     public Message statusMessage { get; set; }
     public string text { get; set; }
@@ -21,7 +21,7 @@ public class ProcessVideoDC : IUserState
         link = Link;
         statusMessage = StatusMessage;
         text = Text;
-        currentState = UsersGroupState.ProcessAction;
+        currentState = UsersStandartState.ProcessAction;
     }
 
     public string GetCurrentState()
@@ -35,7 +35,7 @@ public class ProcessVideoDC : IUserState
 
         switch (currentState)
         {
-            case UsersGroupState.ProcessAction:
+            case UsersStandartState.ProcessAction:
                 if (update.CallbackQuery != null)
                 {
                     string callbackData = update.CallbackQuery.Data!;
@@ -64,7 +64,7 @@ public class ProcessVideoDC : IUserState
                         case "send_only_to_me":
                             action = "send_only_to_me";
                             await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
-                            currentState = UsersGroupState.Finish;
+                            currentState = UsersStandartState.Finish;
                             break;
                         case "main_menu":
                             await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false);
@@ -105,12 +105,12 @@ public class ProcessVideoDC : IUserState
                 }
                 break;
 
-            case UsersGroupState.Finish:
+            case UsersStandartState.Finish:
                 if (update.CallbackQuery != null && update.CallbackQuery.Data == "main_menu" ||
                     update.Message != null)
                 {
                     await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("VideoDistributionQuestion"), replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), cancellationToken: cancellationToken);
-                    currentState = UsersGroupState.ProcessAction;
+                    currentState = UsersStandartState.ProcessAction;
                     return;
                 }
                 await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
@@ -145,6 +145,6 @@ public class ProcessVideoDC : IUserState
                 break;
         }
 
-        currentState = UsersGroupState.Finish;
+        currentState = UsersStandartState.Finish;
     }
 }
