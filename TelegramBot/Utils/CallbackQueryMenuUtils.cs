@@ -46,7 +46,10 @@ public static class CallbackQueryMenuUtils
 
     public static Task DeclineInboundInvite(Update update)
     {
-        CoreDB.SetContactStatus(long.Parse(update.CallbackQuery!.Data!.Split(':')[1]), update.CallbackQuery.Message!.Chat.Id, DataBase.Types.ContactsStatus.DECLINED);
+        string userId = update.CallbackQuery!.Data!.Split(':')[1];
+        int senderTelegramID = DBforGetters.GetUserIDbyTelegramID(long.Parse(userId));
+        int accepterTelegramID = DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery.Message!.Chat.Id);
+        CoreDB.RemoveContact(senderTelegramID, accepterTelegramID);
         return Task.CompletedTask;
     }
 

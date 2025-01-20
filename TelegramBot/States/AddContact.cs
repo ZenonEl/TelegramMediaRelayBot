@@ -73,7 +73,8 @@ public class ProcessContactState : IUserState
 
                 await SendNotification(botClient, chatId, cancellationToken);
                 await botClient.SendMessage(chatId, Config.GetResourceString("WaitForContactConfirmation"),
-                                            cancellationToken: cancellationToken, replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.GetResourceString("WaitForButtonText")));
+                                            cancellationToken: cancellationToken,
+                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.GetResourceString("NextButtonText")));
 
                 currentState = ContactState.FinishAddContact;
 

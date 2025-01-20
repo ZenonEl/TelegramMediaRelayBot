@@ -65,7 +65,8 @@ public class UserProcessOutboundState : IUserState
                     else if (update.CallbackQuery.Data!.StartsWith("user_accept_revoke_outbound_invite:"))
                     {
                         string userId = update.CallbackQuery.Data.Split(':')[1];
-                        CoreDB.SetContactStatus(chatId, long.Parse(userId), DataBase.Types.ContactsStatus.DECLINED);
+                        int accepterTelegramID = DBforGetters.GetUserIDbyTelegramID(long.Parse(userId));
+                        CoreDB.RemoveContact(DBforGetters.GetUserIDbyTelegramID(chatId), accepterTelegramID);
                     }
                 }
                 TelegramBot.userStates.Remove(chatId);
