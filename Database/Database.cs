@@ -103,7 +103,8 @@ public class CoreDB
             USE {Config.databaseName};
             DELETE FROM Contacts
             WHERE (UserId = @senderTelegramID AND ContactId = @accepterTelegramID AND Status = @status)
-            OR (UserId = @accepterTelegramID AND ContactId = @senderTelegramID) AND Status = @status";
+            OR (UserId = @accepterTelegramID AND ContactId = @senderTelegramID AND Status = @status)";
+
         using (MySqlConnection connection = new MySqlConnection(connectionString))
         {
             try
