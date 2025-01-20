@@ -1,0 +1,14 @@
+{
+    "types": [
+        { "type": "feat", "section": "Features", "bump": "minor" },
+        { "type": "feat!", "section": "Breaking Changes", "bump": "major" },
+        { "type": "fix", "section": "Bug Fixes", "bump": "patch" },
+        { "type": "fix!", "section": "Breaking Changes", "bump": "major" },
+        { "type": "refactor", "section": "Refactoring", "bump": "patch" },
+        { "type": "refactor!", "section": "Breaking Changes", "bump": "major" },
+        { "type": "docs", "section": "Documentation", "bump": null },
+        { "type": "chore", "hidden": true, "bump": null },
+        { "type": "style", "hidden": true, "bump": null },
+        { "type": "test", "hidden": true, "bump": null }
+    ]
+  }
