@@ -1,0 +1,24 @@
+{
+  "name": "telegrammediarelaybot",
+  "version": "0.2.0-beta",
+  "description": "<p align=\"center\">  <img src=\"Logo.jpg\" width=\"512\" height=\"384\" alt=\"Logo\"> </p>",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "release": "standard-version"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZenonEl/TelegramMediaRelayBot.git"
+  },
+  "keywords": [],
+  "author": "ZenonEl (https://github.com/ZenonEl)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ZenonEl/TelegramMediaRelayBot/issues"
+  },
+  "homepage": "https://github.com/ZenonEl/TelegramMediaRelayBot#readme"
+}
