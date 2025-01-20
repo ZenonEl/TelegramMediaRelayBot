@@ -97,6 +97,33 @@ public class CoreDB
         }
     }
 
+    public static bool RemoveContact(int senderTelegramID, int accepterTelegramID, string status = Types.ContactsStatus.WAITING_FOR_ACCEPT)
+    {
+        string query = @$"
+            USE {Config.databaseName};
+            DELETE FROM Contacts
+            WHERE (UserId = @senderTelegramID AND ContactId = @accepterTelegramID AND Status = @status)
+            OR (UserId = @accepterTelegramID AND ContactId = @senderTelegramID) AND Status = @status";
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@senderTelegramID", senderTelegramID);
+                command.Parameters.AddWithValue("@accepterTelegramID", accepterTelegramID);
+                command.Parameters.AddWithValue("@status", status);
+                command.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Error editing database: " + ex.Message);
+                return false;
+            }
+            return true;
+        }
+    }
+
     public static bool RemoveUserFromContacts(int userId, int contactId)
     {
         string deleteContactsQuery = @$"
