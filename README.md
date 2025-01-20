@@ -85,7 +85,9 @@ G — Group chats
 2. The bot will download the video and send it to you.
 3. If you have added contacts, the video will be automatically forwarded to them (in the future, it will be possible to configure who to forward to).
 
+## Changelog
 
+The full history of changes can be found in [CHANGELOG.md ](CHANGELOG.md ).
 
 ## Future Plans
 - (Under consideration) Adding support for **gallery-dl** to download media from even more platforms.
