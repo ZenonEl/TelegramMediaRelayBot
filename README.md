@@ -89,8 +89,8 @@ G — Group chats
 
 ## Future Plans
 - (Under consideration) Adding support for **gallery-dl** to download media from even more platforms.
-- More detailed contact management (deletion, editing, etc.).
-- Creating and managing contact groups within the bot.
+- More detailed contact management (~~deletion~~, editing, etc.).
+- ~~Creating and managing contact groups within the bot~~.
 - (Under consideration) Support for text formatting.
 - Ability to recreate the personal link within the bot (with the option to delete all contacts or keep them).
 - ~~Ability to enable a filter for accessing the bot (for example, you can only start using the bot by using someone's referral link).~~
