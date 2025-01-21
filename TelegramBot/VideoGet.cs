@@ -8,7 +8,7 @@ namespace TelegramMediaRelayBot
 {
     public class VideoGet
     {
-        private static readonly string YtDlpPath = Path.Combine(Directory.GetCurrentDirectory(), "yt-dlp");
+        private static readonly string YtDlpPath = Path.Combine(AppContext.BaseDirectory, "yt-dlp");
         private static readonly string Proxy = Config.proxy;
         private static readonly string[] ColonSpaceSeparator = [": "];
 
@@ -25,7 +25,7 @@ namespace TelegramMediaRelayBot
                 using (var httpClient = new HttpClient(new SocksPortHandler(Config.torSocksHost, socksPort: Config.torSocksPort)))
                 {
                     var result = await httpClient.GetStringAsync("https://check.torproject.org/api/ip");
-                    Log.Debug("New Tor IP: " + result);
+                    Log.Debug("Tor IP: " + result);
                 }
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
