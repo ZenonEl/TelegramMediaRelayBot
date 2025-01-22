@@ -10,7 +10,7 @@
 
 <div align="center"> 
  
-![License](https://img.shields.io/badge/License-GPL--3.0-blue)
+![License](https://img.shields.io/badge/License-AGPL--3.0-blue)
 ![.NET Version](https://img.shields.io/badge/.NET-8.0-purple)
 ![Telegram Bot API](https://img.shields.io/badge/Telegram%20Bot%20API-22.1.3-green)
  
