@@ -1,4 +1,15 @@
-﻿using System.Globalization;
+﻿// Copyright (C) 2024-2025 ZenonEl
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Эта программа является свободным программным обеспечением: вы можете распространять и/или изменять
+// её на условиях Стандартной общественной лицензии GNU Affero, опубликованной
+// Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
+// (по вашему выбору) любой более поздней версии.
+
+using System.Globalization;
 using DataBase;
 using Serilog;
 
@@ -8,6 +19,16 @@ namespace TelegramMediaRelayBot
     {
         static async Task Main(string[] args)
         {
+            Console.WriteLine("============================================");
+            Console.WriteLine("TelegramMediaRelayBot");
+            Console.WriteLine("Copyright (C) 2024-2025 ZenonEl");
+            Console.WriteLine("This program is free software: you can redistribute it and/or modify");
+            Console.WriteLine("it under the terms of the GNU Affero General Public License as published");
+            Console.WriteLine("by the Free Software Foundation, either version 3 of the License, or");
+            Console.WriteLine("(at your option) any later version.");
+            Console.WriteLine("Source code: https://github.com/ZenonEl/TelegramMediaRelayBot");
+            Console.WriteLine("============================================\n");
+
             Config.LoadConfig();
 
             CultureInfo currentCulture = CultureInfo.CurrentUICulture;
