@@ -23,7 +23,7 @@
         "LogLevel": "Information",
         "ShowVideoDownloadProgress": false,
         "ShowVideoUploadProgress": false
-    }
+    },
     "AccessPolicy": {
         "Enabled": true,
 
