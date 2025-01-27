@@ -264,10 +264,10 @@ ID: {0}
         <value>Моя ссылка</value>
     </data>
     <data name="ViewInboundInvitesButtonText" xml:space="preserve">
-        <value>Обзор входящих запросов на добавления в мои контакты</value>
+        <value>Обзор входящих заявок</value>
     </data>
     <data name="ViewOutboundInvitesButtonText" xml:space="preserve">
-        <value>Обзор исходящих заявок на добавления в контакты</value>
+        <value>Обзор исходящих заявок</value>
     </data>
     <data name="ViewAllContactsButtonText" xml:space="preserve">
         <value>Обзор всех моих контактов</value>
