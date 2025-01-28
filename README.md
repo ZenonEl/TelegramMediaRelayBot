@@ -19,71 +19,27 @@
 **TelegramMediaRelayBot** is a self-hosted Telegram bot that allows you to automatically download and forward videos from multiple [platforms](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md) (thanks to [yt-dlp](https://github.com/yt-dlp/yt-dlp/tree/master)) to you and your contacts. The bot simplifies the process of sharing media files, eliminating the need to manually download and send videos to those who do not use a particular platform.
 
 
+#### Mini-Story of the Project Idea
+The idea for this project originated from my girlfriend's complaints about having to manually download videos from TikTok for my convenience, as I do not use the platform myself. This led me to the idea of creating a bot that would automatically download videos and send them. However, over time, I became so engrossed in the project that I decided to scale it up.
+
+Now, it does not just download videos and send them to a single user; it has evolved into something much greater—a constantly developing and growing mini-ecosystem that every user can recreate and invite the people they need into. This simplifies content sharing between users in various situations.
+
+Thus, the project has transformed into a multifunctional tool for content exchange that can adapt to the needs of each user.
+
+---
+
 
 ## Key Features
 
 - **Video Downloading**: Support for multiple platforms via **yt-dlp** (possibly adding **gallery-dl** in the future).
 - **Contact Forwarding**: Ability to add contacts within the bot to whom downloaded videos will be automatically forwarded.
 - **Proxy**: Support for proxies (including Tor) for downloading videos.
-- **Logging**: Logging all actions to the console (and to a file in the future).
-- **Flexibility**: In the future, a system for selecting contacts for forwarding and more detailed management of them will be implemented, along with improved bot performance in groups and other parameters.
 
+## Project Details
 
+For a more detailed understanding of the functionality and capabilities of our project, you can refer to the comprehensive documentation. It is available on our website at [this link](https://zenonel.github.io/TelegramMediaRelayBot-Site) or in the [docs](docs/documentation/en) folder located in the root directory of the project. In the documentation, you will find information not only about the features but also about the setup process, installation, and usage of our solution. We recommend reviewing it to make the most of all the functions our project offers.
 
-## Installation and Setup
-
-### Requirements
-- **.NET 8.0**
-- **Telegram Bot Token** (can be obtained from [BotFather](https://core.telegram.org/bots#botfather))
-- **mysql-server**  
-
-### Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/ZenonEl/TelegramMediaRelayBot.git
-   cd TelegramMediaRelayBot
-   ```
-2. Install dependencies:
-   ```bash
-   dotnet restore
-   ```
-3. Configure the settings:
-   - Create an `appsettings.json` file in the root of the project from the appsettings.json.example file. The following parameters must be set:
-     ```json
-     {
-        "TelegramBotToken": "1234:abcd",
-        "SqlConnectionString": "Server=IPAddress;Database=DatabaseName;User ID=UserName;Password=UserPassword;",
-     }
-     ```
-   - Obtain the TelegramBotToken from the Telegram bot BotFather.
-   - IPAddress is the IP address where your database is accessible. For example: 127.0.0.1 if it is running on the same device where the bot will be launched.
-   - DatabaseName is the name of your database that you specified in MySQL when creating the database.
-   - UserName is the name of the user that exists in MySQL and has access to the previously mentioned database.
-   - UserPassword is the password for the database user.
-4. Run the bot:
-   ```bash
-   dotnet run
-   ```
-
-## Usage
-
-### Supported Commands
-P — Private chats  
-G — Group chats  
-- **/start** — Start the bot and display the main menu. (P)  
-- **/help** — Get help on how to use the bot. (P/G)  
-- **/link** — Get video by link in a group chat. (G)  
-
-### Adding Contacts
-1. Get your unique link in the main menu (button **My Link**) and share it.
-   - Or ask your acquaintance to share their link so you can add them.
-2. Use the **Add Contact** button in the main menu and the link received from another person to add them to your contacts.
-3. Then, wait for your contact to receive a notification and confirm the addition request. After that, you will be able to send videos to each other.
-
-### Downloading and Forwarding Videos
-1. Send the bot a link to the video.
-2. The bot will download the video and send it to you.
-3. If you have added contacts, the video will be automatically forwarded to them (in the future, it will be possible to configure who to forward to).
+---
 
 ## Changelog
 
