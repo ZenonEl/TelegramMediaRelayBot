@@ -14,6 +14,8 @@ using Telegram.Bot.Types;
 using MediaTelegramBot.Menu;
 using MediaTelegramBot.Utils;
 using TelegramMediaRelayBot;
+using DataBase;
+using DataBase.Types;
 
 
 namespace MediaTelegramBot;
@@ -57,34 +59,65 @@ public class PrivateUpdateHandler
                 cancellationToken: cancellationToken
             );
 
+            int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
+            string defaultActionData = DBforGetters.GetDefaultActionByUserIDAndType(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+
             CancellationTokenSource timeoutCTS = new CancellationTokenSource();
-            
             TelegramBot.userStates[chatId] = new ProcessVideoDC(link, statusMessage, text, timeoutCTS);
+
+            if (defaultActionData == UsersAction.NO_VALUE) return;
+
+            string defaultAction = defaultActionData.Split(';')[0];
+            int defaultCondition = int.Parse(defaultActionData.Split(';')[1]);
+
+            List<string> excludedActions = new List<string>
+                                            {
+                                                UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS,
+                                                UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS
+                                            };
+
+            if (excludedActions.Contains(defaultAction)) return;
 
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(30), timeoutCTS.Token);
-                    
+                    await Task.Delay(TimeSpan.FromSeconds(defaultCondition), timeoutCTS.Token);
+
+                    List<long> targetUserIds = new List<long>();
+                    List<long> mutedByUserIds = new List<long>();
+
+                    if (defaultAction == UsersAction.SEND_MEDIA_TO_ALL_CONTACTS)
+                    {
+                        mutedByUserIds = DBforGetters.GetUsersIdForMuteContactId(userId);
+                        List<long> contactUserTGIds = await CoreDB.GetAllContactUserTGIds(userId);
+                        targetUserIds = contactUserTGIds.Except(mutedByUserIds).ToList();
+                    }
+                    else if (defaultAction == UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS)
+                    {
+                        List<int> defaultGroupContactIDs = DBforGroups.GetAllUsersInDefaultEnabledGroups(userId);
+
+                        targetUserIds = defaultGroupContactIDs
+                            .Where(contactId => !mutedByUserIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
+                            .Select(DBforGetters.GetTelegramIDbyUserID)
+                            .ToList();
+                    }
+
                     if (TelegramBot.userStates.TryGetValue(chatId, out var state) && state is ProcessVideoDC)
                     {
                         await botClient.EditMessageText(
                             statusMessage.Chat.Id,
                             statusMessage.MessageId,
-                            "⏳ Время вышло, видео будет автоматически распределено",
+                            "⏳ Время вышло, будет выполнено действие по умолчанию...",
                             cancellationToken: cancellationToken
                         );
 
-                        _ = TelegramBot.HandleVideoRequest(botClient, link, chatId, statusMessage, [], caption: text);
+                        _ = TelegramBot.HandleVideoRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
                         
                         TelegramBot.userStates.Remove(chatId, out _);
                     }
                 }
-                catch (TaskCanceledException)
-                {
-                    // Токен отменен
-                }
+                catch (TaskCanceledException) {}
             }, cancellationToken);
         }
         else if (update.Message.Text == "/start")
