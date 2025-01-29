@@ -24,3 +24,18 @@ public class ContactsStatus
     public const string ACCEPTED = "accepted";
     public const string DECLINED = "declined";
 }
+
+public class UsersActionTypes
+{
+    public const string DEFAULT_MEDIA_DISTRIBUTION = "default_media_distribution";
+}
+
+public class UsersAction
+{
+    public const string NO_VALUE = "";
+    public const string SEND_MEDIA_TO_ALL_CONTACTS = "send_to_all_contacts";
+    public const string SEND_MEDIA_TO_DEFAULT_GROUPS = "send_to_default_groups";
+    public const string SEND_MEDIA_TO_SPECIFIED_GROUPS = "send_to_specified_groups";
+    public const string SEND_MEDIA_TO_SPECIFIED_USERS = "send_to_specified_users";
+    public const string SEND_MEDIA_ONLY_TO_ME = "send_only_to_me";
+}
