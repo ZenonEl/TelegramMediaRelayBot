@@ -25,16 +25,18 @@ public class ProcessVideoDC : IUserState
     public string link { get; set; }
     public Message statusMessage { get; set; }
     public string text { get; set; }
+    public CancellationTokenSource timeoutCTS { get; }
     private string action = "";
     private List<long> targetUserIds = new List<long>();
     private List<long> preparedTargetUserIds = new List<long>();
 
-    public ProcessVideoDC(string Link, Message StatusMessage, string Text)
+    public ProcessVideoDC(string Link, Message StatusMessage, string Text, CancellationTokenSource cts)
     {
         link = Link;
         statusMessage = StatusMessage;
         text = Text;
         currentState = UsersStandartState.ProcessAction;
+        timeoutCTS = cts;
     }
 
     public string GetCurrentState()
@@ -51,6 +53,10 @@ public class ProcessVideoDC : IUserState
             case UsersStandartState.ProcessAction:
                 if (update.CallbackQuery != null)
                 {
+                    if (TelegramBot.userStates.TryGetValue(chatId, out var state) && state is ProcessVideoDC videoState)
+                    {
+                        videoState.timeoutCTS.Cancel();
+                    }
                     string callbackData = update.CallbackQuery.Data!;
                     switch (callbackData)
                     {

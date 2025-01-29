@@ -42,10 +42,50 @@ public class PrivateUpdateHandler
         if (Utils.Utils.IsLink(link))
         {
             int replyToMessageId = update.Message.MessageId;
-            Message statusMessage = await botClient.SendMessage(chatId, Config.GetResourceString("WaitDownloadingVideo"),
-                                                    replyParameters: new ReplyParameters { MessageId = replyToMessageId }, cancellationToken: cancellationToken);
-            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("VideoDistributionQuestion"), replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), cancellationToken: cancellationToken);
-            TelegramBot.userStates[chatId] = new ProcessVideoDC(link, statusMessage, text);
+            Message statusMessage = await botClient.SendMessage(
+                chatId, 
+                Config.GetResourceString("WaitDownloadingVideo"),
+                replyParameters: new ReplyParameters { MessageId = replyToMessageId }, 
+                cancellationToken: cancellationToken
+            );
+
+            await botClient.EditMessageText(
+                statusMessage.Chat.Id, 
+                statusMessage.MessageId, 
+                Config.GetResourceString("VideoDistributionQuestion"), 
+                replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), 
+                cancellationToken: cancellationToken
+            );
+
+            CancellationTokenSource timeoutCTS = new CancellationTokenSource();
+            
+            TelegramBot.userStates[chatId] = new ProcessVideoDC(link, statusMessage, text, timeoutCTS);
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(30), timeoutCTS.Token);
+                    
+                    if (TelegramBot.userStates.TryGetValue(chatId, out var state) && state is ProcessVideoDC)
+                    {
+                        await botClient.EditMessageText(
+                            statusMessage.Chat.Id,
+                            statusMessage.MessageId,
+                            "⏳ Время вышло, видео будет автоматически распределено",
+                            cancellationToken: cancellationToken
+                        );
+
+                        _ = TelegramBot.HandleVideoRequest(botClient, link, chatId, statusMessage, [], caption: text);
+                        
+                        TelegramBot.userStates.Remove(chatId, out _);
+                    }
+                }
+                catch (TaskCanceledException)
+                {
+                    // Токен отменен
+                }
+            }, cancellationToken);
         }
         else if (update.Message.Text == "/start")
         {
