@@ -9,6 +9,7 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
+using DataBase.Types;
 using MySql.Data.MySqlClient;
 using Serilog;
 using TelegramMediaRelayBot;
@@ -327,6 +328,43 @@ public class DBforGetters
             catch (Exception ex)
             {
                 Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetActiveMuteTimeByContactID));
+                return "";
+            }
+        }
+    }
+
+    public static string GetDefaultActionByUserIDAndType(int userID, string type)
+    {
+        string query = @$"
+            USE {Config.databaseName};
+            SELECT Action, ActionCondition
+            FROM DefaultUsersActions
+            WHERE UserID = @userID
+            AND Type = @type
+            AND IsActive = 1";
+
+        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@userID", userID);
+                command.Parameters.AddWithValue("@type", type);
+                MySqlDataReader reader = command.ExecuteReader();
+
+                if (reader.Read())
+                {
+                    string action = reader.GetString("Action");
+                    string condition = reader.GetString("ActionCondition");
+                    return $"{action};{condition}";
+                }
+
+                return UsersAction.NO_VALUE;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetDefaultActionByUserIDAndType));
                 return "";
             }
         }
