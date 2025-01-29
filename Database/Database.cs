@@ -17,6 +17,7 @@ public class CoreDB
         AllCreatingFunc.CreateMutedContactsTable();
         AllCreatingFunc.CreateGroupsTable();
         AllCreatingFunc.CreateGroupMembersTable();
+        AllCreatingFunc.CreateDefaultUsersActions();
     }
 
     public static bool CheckExistsUser(long telegramID)

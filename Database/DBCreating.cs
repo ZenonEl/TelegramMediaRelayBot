@@ -108,4 +108,22 @@ public class AllCreatingFunc
 
         Utils.executeVoidQuery(query);
     }
+
+    public static void CreateDefaultUsersActions()
+    {
+        string query = @$"
+        USE {Config.databaseName};
+        CREATE TABLE IF NOT EXISTS DefaultUsersActions (
+            ID INT PRIMARY KEY AUTO_INCREMENT,
+            UserID INT NOT NULL,
+            Type VARCHAR(255) NOT NULL,
+            Action VARCHAR(255) NOT NULL,
+            Description TEXT,
+            IsActive BOOLEAN NOT NULL DEFAULT TRUE,
+            ActionCondition VARCHAR(255),
+            FOREIGN KEY (UserID) REFERENCES Users(ID)
+        )";
+
+        Utils.executeVoidQuery(query);
+    }
 }
