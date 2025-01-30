@@ -37,13 +37,13 @@ Thus, the project has transformed into a multifunctional tool for content exchan
 
 ## Project Details
 
-For a more detailed understanding of the functionality and capabilities of our project, you can refer to the comprehensive documentation. It is available on our website at [this link](https://zenonel.github.io/TelegramMediaRelayBot-Site) or in the [docs](docs/documentation/en) folder located in the root directory of the project. In the documentation, you will find information not only about the features but also about the setup process, installation, and usage of our solution. We recommend reviewing it to make the most of all the functions our project offers.
+For a more detailed understanding of the functionality and capabilities of our project, you can refer to the comprehensive documentation. It is available on our website at [this link](https://zenonel.github.io/TelegramMediaRelayBot-Site) or in the [docs](docs/documentation/en/index.md) folder located in the root directory of the project. In the documentation, you will find information not only about the features but also about the setup process, installation, and usage of our solution. We recommend reviewing it to make the most of all the functions our project offers.
 
 ---
 
 ## Changelog
 
-The full history of changes can be found in [CHANGELOG.md ](CHANGELOG.md ).
+The full history of changes can be found in [CHANGELOG.md](CHANGELOG.md).
 
 ## Future Plans
 - (Under consideration) Adding support for **gallery-dl** to download media from even more platforms.
