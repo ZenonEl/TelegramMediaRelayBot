@@ -106,6 +106,10 @@ public static class KeyboardUtils
                         },
                         new[]
                         {
+                            InlineKeyboardButton.WithCallbackData("Настройки", "show_settings"),
+                        },
+                        new[]
+                        {
                             InlineKeyboardButton.WithCallbackData(Config.GetResourceString("BehindTheScenesButtonText"), "whos_the_genius")
                         }
                     });

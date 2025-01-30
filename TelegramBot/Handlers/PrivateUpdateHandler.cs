@@ -72,8 +72,9 @@ public class PrivateUpdateHandler
 
             List<string> excludedActions = new List<string>
                                             {
+                                                UsersAction.OFF,
+                                                UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS,
                                                 UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS,
-                                                UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS
                                             };
 
             if (excludedActions.Contains(defaultAction)) return;
@@ -174,13 +175,79 @@ public class PrivateUpdateHandler
             case "delete_contact":
                 await Contacts.DeleteContact(botClient, update, chatId);
                 break;
+
+            case "show_settings":
+                await Users.ViewSettings(botClient, update);
+                break;
+            case "default_actions_menu":
+                await Users.ViewDefaultActionsMenu(botClient, update);
+                break;
+            case "user_set_auto_send_video_time":
+                await Users.ViewAutoSendVideoTimeMenu(botClient, update);
+                break;
+            case "video_default_actions_menu":
+                await Users.ViewVideoDefaultActionsMenu(botClient, update);
+                break;
+            case "user_set_video_send_users":
+                await Users.ViewUsersVideoSentUsersActionsMenu(botClient, update);
+                break;
+
             case "whos_the_genius":
                 await CallbackQueryMenuUtils.WhosTheGenius(botClient, update);
                 break;
+
             default:
                 if (callbackQuery.Data!.StartsWith("user_show_outbound_invite:"))
                 {
                     await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId);
+                }
+                else if (callbackQuery.Data!.StartsWith("user_set_auto_send_video_time_to:"))
+                {
+                    string time = callbackQuery.Data.Split(':')[1];
+                    bool result = Users.SetAutoSendVideoTimeToUser(chatId, time);
+
+                    if (result)
+                    {
+                        await Utils.Utils.SendMessage(
+                            botClient,
+                            update,
+                            KeyboardUtils.GetReturnButtonMarkup("user_set_auto_send_video_time"),
+                            cancellationToken,
+                            "Время отправки видео изменено на " + time
+                        );
+                        return;
+                    }
+                    await Utils.Utils.SendMessage(
+                        botClient,
+                        update,
+                        KeyboardUtils.GetReturnButtonMarkup("user_set_auto_send_video_time"),
+                        cancellationToken,
+                        "Время отправки видео не изменено."
+                    );
+                }
+                else if (callbackQuery.Data!.StartsWith("user_set_video_send_users:"))
+                {
+                    string action = callbackQuery.Data.Split(':')[1];
+                    bool result = Users.SetDefaultActionToUser(chatId, action);
+
+                    if (result)
+                    {
+                        await Utils.Utils.SendMessage(
+                            botClient,
+                            update,
+                            KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
+                            cancellationToken,
+                            "Действие по умолчанию успешно изменено."
+                        );
+                        return;
+                    }
+                    await Utils.Utils.SendMessage(
+                        botClient,
+                        update,
+                        KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
+                        cancellationToken,
+                        "Действие по умолчанию не изменено."
+                    );
                 }
                 break;
         }
