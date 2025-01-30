@@ -115,12 +115,12 @@ public class AllCreatingFunc
         USE {Config.databaseName};
         CREATE TABLE IF NOT EXISTS DefaultUsersActions (
             ID INT PRIMARY KEY AUTO_INCREMENT,
-            UserID INT NOT NULL,
+            UserId INT NOT NULL,
             Type VARCHAR(255) NOT NULL,
-            Action VARCHAR(255) NOT NULL,
-            Description TEXT,
+            Action VARCHAR(255),
             IsActive BOOLEAN NOT NULL DEFAULT TRUE,
             ActionCondition VARCHAR(255),
+            UNIQUE (UserID, Type),
             FOREIGN KEY (UserID) REFERENCES Users(ID)
         )";
 
