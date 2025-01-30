@@ -15,6 +15,7 @@ using DataBase;
 using MediaTelegramBot.Utils;
 using TelegramMediaRelayBot;
 using Telegram.Bot.Types.Enums;
+using DataBase.Types;
 
 
 namespace MediaTelegramBot;
@@ -60,20 +61,20 @@ public class ProcessVideoDC : IUserState
                     string callbackData = update.CallbackQuery.Data!;
                     switch (callbackData)
                     {
-                        case "send_to_all_contacts":
-                            action = "send_to_all_contacts";
+                        case UsersAction.SEND_MEDIA_TO_ALL_CONTACTS:
+                            action = UsersAction.SEND_MEDIA_TO_ALL_CONTACTS;
                             await PrepareTargetUserIds(chatId);
                             await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
                             break;
 
-                        case "send_to_default_groups":
-                            action = "send_to_default_groups";
+                        case UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS:
+                            action = UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS;
                             await PrepareTargetUserIds(chatId);
                             await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
                             break;
 
-                        case "send_to_specified_groups":
-                            action = "send_to_specified_groups";
+                        case UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS:
+                            action = UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS;
                             List<string> groupInfos = UsersGroup.GetUserGroupInfoByUserId(DBforGetters.GetUserIDbyTelegramID(chatId));
 
                             string messageText = groupInfos.Any() 
@@ -85,14 +86,14 @@ public class ProcessVideoDC : IUserState
                             currentState = UsersStandartState.ProcessData;
                             break;
 
-                        case "send_to_specified_users":
-                            action = "send_to_specified_users";
+                        case UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS:
+                            action = UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS;
                             await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
                             currentState = UsersStandartState.ProcessData;
                             break;
 
-                        case "send_only_to_me":
-                            action = "send_only_to_me";
+                        case UsersAction.SEND_MEDIA_ONLY_TO_ME:
+                            action = UsersAction.SEND_MEDIA_ONLY_TO_ME;
                             await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
                             currentState = UsersStandartState.Finish;
                             break;
@@ -168,12 +169,12 @@ public class ProcessVideoDC : IUserState
 
         switch (action)
         {
-            case "send_to_all_contacts":
+            case UsersAction.SEND_MEDIA_TO_ALL_CONTACTS:
                 contactUserTGIds = await CoreDB.GetAllContactUserTGIds(userId);
                 targetUserIds = contactUserTGIds.Except(mutedByUserIds).ToList();
                 break;
 
-            case "send_to_default_groups":
+            case UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS:
                 List<int> defaultGroupContactIDs = DBforGroups.GetAllUsersInDefaultEnabledGroups(userId);
 
                 targetUserIds = defaultGroupContactIDs
@@ -182,7 +183,7 @@ public class ProcessVideoDC : IUserState
                     .ToList();
                 break;
 
-            case "send_to_specified_groups":
+            case UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS:
                 List<int> contactUserIds = new List<int>();
                 foreach (int groupId in preparedTargetUserIds)
                 {
@@ -195,7 +196,7 @@ public class ProcessVideoDC : IUserState
                     .ToList();
                     break;
 
-            case "send_to_specified_users":
+            case UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS:
                 foreach (int contactId in preparedTargetUserIds)
                 {
                     contactUserTGIds.Add(DBforGetters.GetTelegramIDbyUserID(contactId));
