@@ -56,6 +56,10 @@ The full history of changes can be found in [CHANGELOG.md ](CHANGELOG.md ).
 - ~~Creating a ready-to-use executable file.~~
 - And various other improvements and fixes ✨
 
+## Roadmap
+
+Development plans and current goals for the new version are available on the latest release page. You can follow the progress of the tasks right there.
+
 ## Logging
 The bot logs all actions to the console. In the future, logging to a file is planned. Logs can be configured in the settings file.
 
@@ -68,6 +72,7 @@ The project is distributed under the **AGPL-3.0** license. Details can be found 
 
 ## Feedback
 If you have questions, suggestions, or find a bug, please create an [issue](hhttps://github.com/ZenonEl/TelegramMediaRelayBot/issues) in the repository.
+Or you can contact me at [Mastodon](https://mastodon.ml/@ZenonEl)
 
 
 
