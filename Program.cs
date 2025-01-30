@@ -49,7 +49,7 @@ namespace TelegramMediaRelayBot
             try 
             {
                 Log.Information($"Log level: {Config.logLevel}");
-                CoreDB.initDB();
+                CoreDB.InitDB();
                 Scheduler.Scheduler.Init();
                 await MediaTelegramBot.TelegramBot.Start();
             }
