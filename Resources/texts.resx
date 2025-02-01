@@ -342,31 +342,67 @@ Are you sure you want to unmute them? If not, type /start</value>
 
     <!-- Informational messages -->
     <data name="HelpText" xml:space="preserve">
-        <value>&lt;b&gt;Working with video links:&lt;/b&gt; 
-Just send me a link. Here's an example of what your message might look like: 
+        <value>
+🌐 &lt;b&gt;Adding contacts — creating our own mini digital network&lt;/b&gt;
+As connect members of your media circle:
 
-video_link Some cool text that will be sent along with the video to all your contacts, if you've added them beforehand :D 
+1. 🔄 &lt;b&gt;Initiate communication&lt;/b&gt;
+Send the `/start` command and click the "Add contact" button in the menu. 
+→ The bot will request a unique link from a user like:
+`1234ab56-cde-78fg-01hi-2j34k56790` 
 
-By the way, I recommend using hashtags for video navigation. It will be convenient for both the sender and the receiver :) 
+2. &lt;b&gt;🔗 Exchange of identifiers&lt;/b&gt;
+- Your link can be found in the "My link" section. 
+- Pass it on to future contacts, for example, via a QR code or a private message. 
 
-&lt;b&gt;Adding contacts:&lt;/b&gt; 
-1) You need someone who is willing to connect with you and possibly be subjected to video spam attacks. 
-2) You give them your (or take their) link in the format: 1234ab56-cde-78fg-01hi-2j34k56790 (You can find the link in the main menu under the "My Link" button). 
-3) Then click the "Add Contact" button in the main menu. After clicking, you will be asked to provide the link of the person you want to add, in the format: 1234ab56-cde-78fg-01hi-2j34k56790 Just the link, no need to write anything else. If the link is invalid and no one is found, you will be notified and returned to the main menu. 
-Also, &lt;s&gt;if you decide not to bother the person with videos,&lt;/s&gt; you can click the "Back" button, and the process will be stopped. You will be returned to the main menu. 
-4) If someone is found, you will be notified, and all that's left is to click a couple of buttons. 
-5) Information about the person will be shown, and you will be asked to confirm sending the request to them. &lt;s&gt;This will be your last chance to reconsider and refuse to add the person to your contacts, so be careful.&lt;/s&gt; 
-6) The person will receive a notification about the request, and all you have to do is wait for them to accept it. After that, your videos will be sent to your contacts (including the new person you just added). 
+3. &lt;b&gt;🤝 Contact confirmation&lt;/b&gt; 
+- Paste the received link into the input field and send it to the bot. 
+- If everything is correct, you will see a short user profile. 
 
-&lt;b&gt;How to accept a contact request:&lt;/b&gt; 
-1) Click the "View Incoming Contact Requests" button. 
-2) Find the button with the name of the person you know and want to add to your contacts. 
-3) Click on that button, and that's it. You will be presented with a decision menu. 
+4. &lt;b&gt; ⏳ Waiting for a response&lt;/b&gt; 
+- Your request will be sent to the recipient, he will receive a notification. 
+- When he accepts the invitation (through the "Review incoming applications" section), you can start sharing content with each other. 
+&lt;b&gt;And don't be afraid to use groups: Contacts can and should be grouped into different groups: `Colleagues', `Friends', `Society of Lovers birds 🐦️' — for point distribution to multiple contacts at once.&lt;/b&gt;
 
-&lt;b&gt;Enjoy using the bot! The project is still very young, constantly improving and changing, so keep an eye on updates! Either manually or through the person who gave you the link to this wonderful bot :D&lt;/b&gt; 
+---
 
-Links that should be supported can be found &lt;a href='https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md'&gt;here&lt;/a&gt;
-</value>
+&lt;b&gt;🚀 Downloading and forwarding content is a three—step magic steps&lt;/b&gt; 
+📥 Working with links 
+
+Just send the bot &lt;b&gt;a link + description (if necessary and necessarily from a new line)&lt;/b&gt; in format: 
+&lt;pre&gt;https://youtu.be/ваше_супер_видео 
+Take a look at this cosmic dance of the northern lights! 
+🌌 #nature #wow 
+&lt;/pre&gt; 
+&lt;b&gt;If you use the description, then you must start from a new line!&lt;/b&gt;
+
+→ The bot will do the rest:
+1. It will determine the platform, whether it's YouTube, TikTok, Instagram, or any other service.
+2. Downloads the content in optimal quality (with the ability to adjust to your preferences in the configuration). 
+3. It will forward the video exactly there and to those who need it. ✨
+
+🔄 Automatic mailing list 
+- Your file will be instantly sent to all specified contacts from your list.
+    Conditions:
+        Contacts must be with you are on the list.
+        You should not be in the mud at these contacts.
+        The mailing list parameters must be configured correctly.
+
+&lt;b&gt;Advice: Use hashtags in the description!&lt;/b&gt;
+    This will allow you to easily find content in your chat history. For example, search by tags #cats or #work_folk.
+        The built—in hashtags also work, but their own ones are more convenient and personalized.
+
+---
+
+✨ &lt;b&gt;The project is constantly evolving:&lt;/b&gt; New features are popping up like mushrooms after the rain! 🍄 
+To keep up to date with all updates and not Skip anything important:
+- &lt;b&gt;Subscribe to my account&lt;/b&gt; in &lt;a href="https://mastodon.ml/@ZenonEl "&gt;Mastodon&lt;/a&gt;. 
+- Or just ask for news from the one who invited you to this fascinating digital media cycle! 😉 
+
+🔗 Supported platforms can be found here 
+The bot works with 1000+ sources thanks to the integration of &lt;b&gt;yt-dlp&lt;/b&gt; — full list &lt;a href="https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md"&gt;here&lt;/a&gt;. 
+&lt;b&gt;Maybe in the future:&lt;/b&gt; Integration with &lt;b&gt;Gallery-dl&lt;/b&gt; for downloading entire galleries and archives!
+        </value>
     </data>
     <data name="GroupHelpText" xml:space="preserve">
         <value>Just send me the command: 
