@@ -294,6 +294,92 @@ Are you sure you want to unmute them? If not, type /start</value>
     <data name="AltYourGroupsText" xml:space="preserve">
         <value>You have no groups yet.</value>
     </data>
+    <data name="SettingsButtonText" xml:space="preserve">
+        <value>Settings</value>
+    </data>
+    <data name="AutoSendTimeChangedMessage" xml:space="preserve">
+        <value>Video send time changed to </value>
+    </data>
+    <data name="AutoSendTimeNotChangedMessage" xml:space="preserve">
+        <value>Video send time not changed.</value>
+    </data>
+    <data name="DefaultActionChangedMessage" xml:space="preserve">
+        <value>Default action successfully changed.</value>
+    </data>
+    <data name="DefaultActionNotChangedMessage" xml:space="preserve">
+        <value>Default action not changed.</value>
+    </data>
+    <data name="DefaultActionTimeoutMessage" xml:space="preserve">
+        <value>⏳ Time is up, the default action will be performed...</value>
+    </data>
+
+    <!-- The text of the settings control buttons -->
+    <data name="SettingsMenuText" xml:space="preserve">
+        <value>Available settings:</value>
+    </data>
+    <data name="DefaultActionsMenuText" xml:space="preserve">
+        <value>Available default actions:</value>
+    </data>
+    <data name="VideoDefaultActionsMenuText" xml:space="preserve">
+        <value>Available actions for configuring default actions when processing links:</value>
+    </data>
+    <data name="UsersVideoSentUsersMenuText" xml:space="preserve">
+        <value>Available actions for configuring default distribution:</value>
+    </data>
+    <data name="AutoSendVideoTimeMenuText" xml:space="preserve">
+        <value>Available actions for configuring default distribution:</value>
+    </data>
+    <data name="DefaultActionsButtonText" xml:space="preserve">
+        <value>Default Actions</value>
+    </data>
+    <data name="PrivacyButtonText" xml:space="preserve">
+        <value>Privacy</value>
+    </data>
+    <data name="DefaultVideoActionsButtonText" xml:space="preserve">
+        <value>Default Actions for Video Distribution</value>
+    </data>
+    <data name="VideoRecipientsButtonText" xml:space="preserve">
+        <value>Video Recipients</value>
+    </data>
+    <data name="AutoSendTimeButtonText" xml:space="preserve">
+        <value>Auto-Send Time</value>
+    </data>
+    <data name="AllContactsButtonText" xml:space="preserve">
+        <value>All Contacts</value>
+    </data>
+    <data name="DefaultGroupsButtonText" xml:space="preserve">
+        <value>Default Groups</value>
+    </data>
+    <data name="SpecifiedContactsButtonText" xml:space="preserve">
+        <value>Specified Contacts</value>
+    </data>
+    <data name="SpecifiedGroupsButtonText" xml:space="preserve">
+        <value>Specified Groups</value>
+    </data>
+    <data name="OnlyMeButtonText" xml:space="preserve">
+        <value>Only Me</value>
+    </data>
+    <data name="DisableAutoSendButtonText" xml:space="preserve">
+        <value>Disable Auto-Send</value>
+    </data>
+    <data name="FiveSecondsButtonText" xml:space="preserve">
+        <value>5 Seconds</value>
+    </data>
+    <data name="TenSecondsButtonText" xml:space="preserve">
+        <value>10 Seconds</value>
+    </data>
+    <data name="ThirtySecondsButtonText" xml:space="preserve">
+        <value>30 Seconds</value>
+    </data>
+    <data name="OneMinuteButtonText" xml:space="preserve">
+        <value>1 Minute</value>
+    </data>
+    <data name="TenMinutesButtonText" xml:space="preserve">
+        <value>10 Minutes</value>
+    </data>
+    <data name="SixtyMinutesButtonText" xml:space="preserve">
+        <value>60 Minutes</value>
+    </data>
 
     <!-- Text for Group Management Buttons -->
     <data name="CreateGroupButtonText" xml:space="preserve">

@@ -293,6 +293,92 @@ ID: {0}
     <data name="AltYourGroupsText" xml:space="preserve">
         <value>У вас пока нет групп.</value>
     </data>
+    <data name="SettingsButtonText" xml:space="preserve">
+        <value>Настройки</value>
+    </data>
+    <data name="AutoSendTimeChangedMessage" xml:space="preserve">
+        <value>Время отправки видео изменено на </value>
+    </data>
+    <data name="AutoSendTimeNotChangedMessage" xml:space="preserve">
+        <value>Время отправки видео не изменено.</value>
+    </data>
+    <data name="DefaultActionChangedMessage" xml:space="preserve">
+        <value>Действие по умолчанию успешно изменено.</value>
+    </data>
+    <data name="DefaultActionNotChangedMessage" xml:space="preserve">
+        <value>Действие по умолчанию не изменено.</value>
+    </data>
+    <data name="DefaultActionTimeoutMessage" xml:space="preserve">
+        <value>⏳ Время вышло, будет выполнено действие по умолчанию...</value>
+    </data>
+
+    <!-- Текст кнопок управления настройками-->
+    <data name="SettingsMenuText" xml:space="preserve">
+        <value>Доступные настройки:</value>
+    </data>
+    <data name="DefaultActionsMenuText" xml:space="preserve">
+        <value>Доступные действия по умолчанию:</value>
+    </data>
+    <data name="VideoDefaultActionsMenuText" xml:space="preserve">
+        <value>Доступные действия для настройки действий по умолчанию при обработке ссылок:</value>
+    </data>
+    <data name="UsersVideoSentUsersMenuText" xml:space="preserve">
+        <value>Доступные действия для настройки рассылки по умолчанию:</value>
+    </data>
+    <data name="AutoSendVideoTimeMenuText" xml:space="preserve">
+        <value>Доступные настройки для ожидания, перед рассылкой по умолчанию:</value>
+    </data>
+    <data name="DefaultActionsButtonText" xml:space="preserve">
+        <value>Действия по умолчанию</value>
+    </data>
+    <data name="PrivacyButtonText" xml:space="preserve">
+        <value>Приватность</value>
+    </data>
+    <data name="DefaultVideoActionsButtonText" xml:space="preserve">
+        <value>Действия по умолчанию для рассылки видео</value>
+    </data>
+    <data name="VideoRecipientsButtonText" xml:space="preserve">
+        <value>Кому рассылать видео</value>
+    </data>
+    <data name="AutoSendTimeButtonText" xml:space="preserve">
+        <value>Время авто-отправки видео</value>
+    </data>
+    <data name="AllContactsButtonText" xml:space="preserve">
+        <value>Всем контактам</value>
+    </data>
+    <data name="DefaultGroupsButtonText" xml:space="preserve">
+        <value>Группам по умолчанию</value>
+    </data>
+    <data name="SpecifiedContactsButtonText" xml:space="preserve">
+        <value>Выбранным контактам</value>
+    </data>
+    <data name="SpecifiedGroupsButtonText" xml:space="preserve">
+        <value>Выбранным группам</value>
+    </data>
+    <data name="OnlyMeButtonText" xml:space="preserve">
+        <value>Только мне</value>
+    </data>
+    <data name="DisableAutoSendButtonText" xml:space="preserve">
+        <value>Выключить авто-рассылку</value>
+    </data>
+    <data name="FiveSecondsButtonText" xml:space="preserve">
+        <value>5 секунд</value>
+    </data>
+    <data name="TenSecondsButtonText" xml:space="preserve">
+        <value>10 секунд</value>
+    </data>
+    <data name="ThirtySecondsButtonText" xml:space="preserve">
+        <value>30 секунд</value>
+    </data>
+    <data name="OneMinuteButtonText" xml:space="preserve">
+        <value>1 минута</value>
+    </data>
+    <data name="TenMinutesButtonText" xml:space="preserve">
+        <value>10 минут</value>
+    </data>
+    <data name="SixtyMinutesButtonText" xml:space="preserve">
+        <value>60 минут</value>
+    </data>
 
     <!-- Текст кнопок управления Группами-->
     <data name="CreateGroupButtonText" xml:space="preserve">
