@@ -106,7 +106,7 @@ public static class KeyboardUtils
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData("Настройки", "show_settings"),
+                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SettingsButtonText"), "show_settings"),
                         },
                         new[]
                         {

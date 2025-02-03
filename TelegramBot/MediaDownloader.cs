@@ -249,7 +249,7 @@ partial class TelegramBot
                 {
                     Log.Debug(ex, "Error editing message.");
                 }
-                Log.Information($"Sent video to user {contactUserId}. Total sent: {filteredContactUserTGIds.Count}/{sentCount}");
+                Log.Information($"Sent video to user {contactUserId}. Total sent: {sentCount}/{filteredContactUserTGIds.Count}");
                 await Task.Delay(Config.contactSendDelay, cancellationToken);
             }
             catch (Exception ex)
@@ -263,7 +263,7 @@ partial class TelegramBot
         {
             await botClient.SendMessage(telegramId, 
                                             string.Format(Config.GetResourceString("VideoSentToContacts"), 
-                                            filteredContactUserTGIds.Count, now.ToString("yyyy_MM_dd_HH_mm_ss"),
+                                            $"{sentCount}/{filteredContactUserTGIds.Count}", now.ToString("yyyy_MM_dd_HH_mm_ss"),
                                             MyRegex().Replace(name, "_")),
                                             replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
                                             parseMode: ParseMode.Html);

@@ -109,7 +109,7 @@ public class PrivateUpdateHandler
                         await botClient.EditMessageText(
                             statusMessage.Chat.Id,
                             statusMessage.MessageId,
-                            "⏳ Время вышло, будет выполнено действие по умолчанию...",
+                            Config.GetResourceString("DefaultActionTimeoutMessage"),
                             cancellationToken: cancellationToken
                         );
 
@@ -213,7 +213,7 @@ public class PrivateUpdateHandler
                             update,
                             KeyboardUtils.GetReturnButtonMarkup("user_set_auto_send_video_time"),
                             cancellationToken,
-                            "Время отправки видео изменено на " + time
+                            Config.GetResourceString("AutoSendTimeChangedMessage") + time
                         );
                         return;
                     }
@@ -222,7 +222,7 @@ public class PrivateUpdateHandler
                         update,
                         KeyboardUtils.GetReturnButtonMarkup("user_set_auto_send_video_time"),
                         cancellationToken,
-                        "Время отправки видео не изменено."
+                        Config.GetResourceString("AutoSendTimeNotChangedMessage")
                     );
                 }
                 else if (callbackQuery.Data!.StartsWith("user_set_video_send_users:"))
@@ -237,7 +237,7 @@ public class PrivateUpdateHandler
                             update,
                             KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
                             cancellationToken,
-                            "Действие по умолчанию успешно изменено."
+                            Config.GetResourceString("DefaultActionChangedMessage")
                         );
                         return;
                     }
@@ -246,7 +246,7 @@ public class PrivateUpdateHandler
                         update,
                         KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
                         cancellationToken,
-                        "Действие по умолчанию не изменено."
+                        Config.GetResourceString("DefaultActionNotChangedMessage")
                     );
                 }
                 break;

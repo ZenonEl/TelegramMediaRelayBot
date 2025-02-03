@@ -13,8 +13,8 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using MediaTelegramBot.Utils;
 using DataBase;
-using TelegramMediaRelayBot;
 using DataBase.Types;
+using TelegramMediaRelayBot;
 
 namespace MediaTelegramBot.Menu;
 
@@ -32,7 +32,7 @@ public class Users
             update,
             UsersKB.GetSettingsKeyboardMarkup(),
             cancellationToken,
-            "Доступные настройки:"
+            Config.GetResourceString("SettingsMenuText")
         );
     }
 
@@ -43,7 +43,7 @@ public class Users
             update,
             UsersKB.GetDefaultActionsMenuKeyboardMarkup(),
             cancellationToken,
-            "Доступные действия по умолчанию:"
+            Config.GetResourceString("DefaultActionsMenuText")
         );
     }
 
@@ -54,7 +54,7 @@ public class Users
             update,
             UsersKB.GetDefaultVideoDistributionKeyboardMarkup(),
             cancellationToken,
-            "Доступные действия для настройки действий по умолчанию при обработке ссылок:"
+            Config.GetResourceString("VideoDefaultActionsMenuText")
         );
     }
 
@@ -65,7 +65,7 @@ public class Users
             update,
             UsersKB.GetUsersVideoSentUsersKeyboardMarkup(),
             cancellationToken,
-            "Доступные действия для настройки рассылки по умолчанию:"
+            Config.GetResourceString("UsersVideoSentUsersMenuText")
         );
     }
 
@@ -76,7 +76,7 @@ public class Users
             update,
             UsersKB.GetUsersAutoSendVideoTimeKeyboardMarkup(),
             cancellationToken,
-            "Доступные действия для настройки рассылки по умолчанию:"
+            Config.GetResourceString("AutoSendVideoTimeMenuText")
         );
     }
 

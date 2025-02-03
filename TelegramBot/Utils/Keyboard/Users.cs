@@ -22,113 +22,113 @@ public static class UsersKB
     public static InlineKeyboardMarkup GetSettingsKeyboardMarkup()
     {
         var inlineKeyboard = new InlineKeyboardMarkup(new[]
-                {
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData("Действия по умолчанию", $"default_actions_menu"),
-                    },
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData("Приватность", $"user_remove_contact_from_group:"),
-                    },
-                    new[]
-                    {
-                        KeyboardUtils.GetReturnButton()
-                    },
-                });
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("DefaultActionsButtonText"), $"default_actions_menu"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("PrivacyButtonText"), $"user_remove_contact_from_group:"),
+            },
+            new[]
+            {
+                KeyboardUtils.GetReturnButton()
+            },
+        });
         return inlineKeyboard;
     }
 
     public static InlineKeyboardMarkup GetDefaultActionsMenuKeyboardMarkup()
     {
         var inlineKeyboard = new InlineKeyboardMarkup(new[]
-                {
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData("Действия по умолчанию для рассылки видео", $"video_default_actions_menu"),
-                    },
-                    new[]
-                    {
-                        KeyboardUtils.GetReturnButton("show_settings")
-                    },
-                });
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("DefaultVideoActionsButtonText"), $"video_default_actions_menu"),
+            },
+            new[]
+            {
+                KeyboardUtils.GetReturnButton("show_settings")
+            },
+        });
         return inlineKeyboard;
     }
 
     public static InlineKeyboardMarkup GetDefaultVideoDistributionKeyboardMarkup()
     {
         var inlineKeyboard = new InlineKeyboardMarkup(new[]
-                {
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData("Кому рассылать видео", $"user_set_video_send_users"),
-                    },
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData("Время авто-отправки видео", $"user_set_auto_send_video_time"),
-                    },
-                    new[]
-                    {
-                        KeyboardUtils.GetReturnButton("default_actions_menu")
-                    },
-                });
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("VideoRecipientsButtonText"), $"user_set_video_send_users"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("AutoSendTimeButtonText"), $"user_set_auto_send_video_time"),
+            },
+            new[]
+            {
+                KeyboardUtils.GetReturnButton("default_actions_menu")
+            },
+        });
         return inlineKeyboard;
     }
 
     public static InlineKeyboardMarkup GetUsersVideoSentUsersKeyboardMarkup()
     {
         var inlineKeyboard = new InlineKeyboardMarkup(new[]
-                {
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData("Всем контактам", $"user_set_video_send_users:{UsersAction.SEND_MEDIA_TO_ALL_CONTACTS}"),
-                        InlineKeyboardButton.WithCallbackData("Группам по умолчанию", $"user_set_video_send_users:{UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS}"),
-                    },
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData("Выбранным контактам", $"user_set_video_send_users:{UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS}"),
-                        InlineKeyboardButton.WithCallbackData("Выбранным группам", $"user_set_video_send_users:{UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS}"),
-                    },
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData("Только мне", $"user_set_video_send_users:{UsersAction.SEND_MEDIA_ONLY_TO_ME}"),
-                    },
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData("Выключить авто-рассылку", $"user_set_video_send_users:{UsersAction.OFF}"),
-                    },
-                    new[]
-                    {
-                        KeyboardUtils.GetReturnButton("video_default_actions_menu")
-                    },
-                });
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("AllContactsButtonText"), $"user_set_video_send_users:{UsersAction.SEND_MEDIA_TO_ALL_CONTACTS}"),
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("DefaultGroupsButtonText"), $"user_set_video_send_users:{UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS}"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SpecifiedContactsButtonText"), $"user_set_video_send_users:{UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS}"),
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SpecifiedGroupsButtonText"), $"user_set_video_send_users:{UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS}"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("OnlyMeButtonText"), $"user_set_video_send_users:{UsersAction.SEND_MEDIA_ONLY_TO_ME}"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("DisableAutoSendButtonText"), $"user_set_video_send_users:{UsersAction.OFF}"),
+            },
+            new[]
+            {
+                KeyboardUtils.GetReturnButton("video_default_actions_menu")
+            },
+        });
         return inlineKeyboard;
     }
 
     public static InlineKeyboardMarkup GetUsersAutoSendVideoTimeKeyboardMarkup()
     {
         var inlineKeyboard = new InlineKeyboardMarkup(new[]
-                {
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData("5 секунд", $"user_set_auto_send_video_time_to:5"),
-                        InlineKeyboardButton.WithCallbackData("10 секунд", $"user_set_auto_send_video_time_to:10"),
-                    },
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData("30 секунд", $"user_set_auto_send_video_time_to:30"),
-                        InlineKeyboardButton.WithCallbackData("1 минута", $"user_set_auto_send_video_time_to:60"),
-                    },
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData("10 минут", $"user_set_auto_send_video_time_to:600"),
-                        InlineKeyboardButton.WithCallbackData("60 минут", $"user_set_auto_send_video_time_to:3600"),
-                    },
-                    new[]
-                    {
-                        KeyboardUtils.GetReturnButton("video_default_actions_menu")
-                    },
-                });
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("FiveSecondsButtonText"), $"user_set_auto_send_video_time_to:5"),
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("TenSecondsButtonText"), $"user_set_auto_send_video_time_to:10"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("ThirtySecondsButtonText"), $"user_set_auto_send_video_time_to:30"),
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("OneMinuteButtonText"), $"user_set_auto_send_video_time_to:60"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("TenMinutesButtonText"), $"user_set_auto_send_video_time_to:600"),
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SixtyMinutesButtonText"), $"user_set_auto_send_video_time_to:3600"),
+            },
+            new[]
+            {
+                KeyboardUtils.GetReturnButton("video_default_actions_menu")
+            },
+        });
         return inlineKeyboard;
     }
 }
