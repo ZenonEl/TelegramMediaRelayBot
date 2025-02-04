@@ -228,6 +228,32 @@ public class PrivateUpdateHandler
                 else if (callbackQuery.Data!.StartsWith("user_set_video_send_users:"))
                 {
                     string action = callbackQuery.Data.Split(':')[1];
+
+                    List<string> extendActions = new List<string>
+                                                    {
+                                                        UsersAction.OFF,
+                                                        UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS,
+                                                        UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS,
+                                                    };
+
+                    if (extendActions.Contains(action))
+                    {
+                        await Utils.Utils.SendMessage(
+                            botClient,
+                            update,
+                            KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
+                            cancellationToken,
+                            "Укажи айди пользователей или группы через пробел"
+                        );
+
+                        bool isGroup = false;
+                        if (action == UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS) isGroup = true;
+
+                        TelegramBot.userStates[chatId] = new ProcessUserSetDCSendState(isGroup);
+                        return;
+                    }
+
+
                     bool result = Users.SetDefaultActionToUser(chatId, action);
 
                     if (result)
