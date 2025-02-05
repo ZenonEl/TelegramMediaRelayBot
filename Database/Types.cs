@@ -40,3 +40,9 @@ public class UsersAction
     public const string SEND_MEDIA_TO_SPECIFIED_USERS = "send_to_specified_users";
     public const string SEND_MEDIA_ONLY_TO_ME = "send_only_to_me";
 }
+
+public class TargetTypes
+{
+    public const string GROUP = "group";
+    public const string USER = "user";
+}
