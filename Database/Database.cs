@@ -18,6 +18,7 @@ public class CoreDB
         AllCreatingFunc.CreateGroupsTable();
         AllCreatingFunc.CreateGroupMembersTable();
         AllCreatingFunc.CreateDefaultUsersActions();
+        AllCreatingFunc.CreateDefaultUsersActionTargets();
     }
 
     public static bool CheckExistsUser(long telegramID)
@@ -322,62 +323,6 @@ public class CoreDB
             catch (Exception ex)
             {
                 Log.Error("Error editing database: " + ex.Message);
-            }
-        }
-    }
-
-    public static bool SetAutoSendVideoConditionToUser(int userId, string actionCondition, string type)
-    {
-        string query = @$"
-            USE {Config.databaseName};
-            INSERT INTO DefaultUsersActions (UserId, Type, ActionCondition) VALUES (@userId, @type, @actionCondition)
-            ON DUPLICATE KEY UPDATE
-                ActionCondition = @actionCondition";
-
-        using (MySqlConnection connection = new MySqlConnection(connectionString))
-        {
-            try
-            {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@userId", userId);
-                command.Parameters.AddWithValue("@type", type);
-                command.Parameters.AddWithValue("@actionCondition", actionCondition);
-                command.ExecuteNonQuery();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Error editing database: " + ex.Message);
-                return false;
-            }
-        }
-    }
-
-    public static bool SetAutoSendVideoActionToUser(int userId, string action, string type)
-    {
-        string query = @$"
-            USE {Config.databaseName};
-            INSERT INTO DefaultUsersActions (UserId, Type, Action) VALUES (@userId, @type, @action)
-            ON DUPLICATE KEY UPDATE
-                Action = @action";
-
-        using (MySqlConnection connection = new MySqlConnection(connectionString))
-        {
-            try
-            {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@userId", userId);
-                command.Parameters.AddWithValue("@type", type);
-                command.Parameters.AddWithValue("@action", action);
-                command.ExecuteNonQuery();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Error editing database: " + ex.Message);
-                return false;
             }
         }
     }

@@ -83,12 +83,12 @@ public class Users
     public static bool SetAutoSendVideoTimeToUser(long chatId, string time)
     {
         int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
-        return CoreDB.SetAutoSendVideoConditionToUser(userId, time, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+        return DBforDefaultActions.SetAutoSendVideoConditionToUser(userId, time, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
     }
 
     public static bool SetDefaultActionToUser(long chatId, string action)
     {
         int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
-        return CoreDB.SetAutoSendVideoActionToUser(userId, action, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+        return DBforDefaultActions.SetAutoSendVideoActionToUser(userId, action, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
     }
 }
