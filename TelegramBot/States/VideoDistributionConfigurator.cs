@@ -22,7 +22,7 @@ namespace MediaTelegramBot;
 
 public class ProcessVideoDC : IUserState
 {
-    public UsersStandartState currentState;
+    public UsersStandardState currentState;
     public string link { get; set; }
     public Message statusMessage { get; set; }
     public string text { get; set; }
@@ -36,7 +36,7 @@ public class ProcessVideoDC : IUserState
         link = Link;
         statusMessage = StatusMessage;
         text = Text;
-        currentState = UsersStandartState.ProcessAction;
+        currentState = UsersStandardState.ProcessAction;
         timeoutCTS = cts;
     }
 
@@ -51,7 +51,7 @@ public class ProcessVideoDC : IUserState
 
         switch (currentState)
         {
-            case UsersStandartState.ProcessAction:
+            case UsersStandardState.ProcessAction:
                 if (update.CallbackQuery != null)
                 {
                     if (TelegramBot.userStates.TryGetValue(chatId, out var state) && state is ProcessVideoDC videoState)
@@ -83,19 +83,19 @@ public class ProcessVideoDC : IUserState
                             string text = $"{messageText}\n{Config.GetResourceString("PleaseEnterContactIDs")}";
 
                             await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, text, replyMarkup: KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken, parseMode: ParseMode.Html);
-                            currentState = UsersStandartState.ProcessData;
+                            currentState = UsersStandardState.ProcessData;
                             break;
 
                         case UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS:
                             action = UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS;
                             await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
-                            currentState = UsersStandartState.ProcessData;
+                            currentState = UsersStandardState.ProcessData;
                             break;
 
                         case UsersAction.SEND_MEDIA_ONLY_TO_ME:
                             action = UsersAction.SEND_MEDIA_ONLY_TO_ME;
                             await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
-                            currentState = UsersStandartState.Finish;
+                            currentState = UsersStandardState.Finish;
                             break;
 
                         case "main_menu":
@@ -105,11 +105,11 @@ public class ProcessVideoDC : IUserState
                 }
                 break;
 
-            case UsersStandartState.ProcessData:
+            case UsersStandardState.ProcessData:
                 if (update.CallbackQuery != null && update.CallbackQuery.Data == "main_menu")
                 {
                     await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("VideoDistributionQuestion"), replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), cancellationToken: cancellationToken);
-                    currentState = UsersStandartState.ProcessAction;
+                    currentState = UsersStandardState.ProcessAction;
                     return;
                 }
                 else if (update.Message != null)
@@ -145,12 +145,12 @@ public class ProcessVideoDC : IUserState
                 }
                 break;
 
-            case UsersStandartState.Finish:
+            case UsersStandardState.Finish:
                 if (update.CallbackQuery != null && update.CallbackQuery.Data == "main_menu" ||
                     update.Message != null)
                 {
                     await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("VideoDistributionQuestion"), replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), cancellationToken: cancellationToken);
-                    currentState = UsersStandartState.ProcessAction;
+                    currentState = UsersStandardState.ProcessAction;
                     return;
                 }
 
@@ -207,6 +207,6 @@ public class ProcessVideoDC : IUserState
                 break;
         }
 
-        currentState = UsersStandartState.Finish;
+        currentState = UsersStandardState.Finish;
     }
 }

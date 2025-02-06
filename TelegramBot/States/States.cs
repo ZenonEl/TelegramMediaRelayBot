@@ -59,7 +59,7 @@ public enum UserInboundState
     Finish
 }
 
-public enum UsersStandartState
+public enum UsersStandardState
 {
     ProcessAction,
     ProcessData,

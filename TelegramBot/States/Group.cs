@@ -20,7 +20,7 @@ namespace MediaTelegramBot;
 
 public class ProcessUsersGroupState : IUserState
 {
-    public UsersStandartState currentState;
+    public UsersStandardState currentState;
 
     public string groupInfo = "";
 
@@ -33,7 +33,7 @@ public class ProcessUsersGroupState : IUserState
 
     public ProcessUsersGroupState()
     {
-        currentState = UsersStandartState.ProcessAction;
+        currentState = UsersStandardState.ProcessAction;
     }
 
     public string GetCurrentState()
@@ -55,14 +55,14 @@ public class ProcessUsersGroupState : IUserState
 
         switch (userState.currentState)
         {
-            case UsersStandartState.ProcessAction:
+            case UsersStandardState.ProcessAction:
                 if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
                 groupInfo = UsersGroup.GetUserGroupInfoByGroupId(groupId);
 
                 bool? isCallbackSuccessful = await ProcessCallbackData(botClient, update, cancellationToken);
                 if (isCallbackSuccessful == true)
                 {
-                    userState.currentState = UsersStandartState.ProcessData;
+                    userState.currentState = UsersStandardState.ProcessData;
                 }
                 else if (isCallbackSuccessful == null)
                 {
@@ -76,11 +76,11 @@ public class ProcessUsersGroupState : IUserState
 
                 break;
 
-            case UsersStandartState.ProcessData:
+            case UsersStandardState.ProcessData:
                 if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
                 if (update.CallbackQuery != null && update.CallbackQuery.Data == backCallback)
                 {
-                    userState.currentState = UsersStandartState.ProcessAction;
+                    userState.currentState = UsersStandardState.ProcessAction;
                     await Utils.Utils.SendMessage(
                         botClient,
                         update,
@@ -92,7 +92,7 @@ public class ProcessUsersGroupState : IUserState
                 bool? isActionSuccessful = await ProcessAction(botClient, update, cancellationToken);
                 if (isActionSuccessful == true) 
                 {
-                    userState.currentState = UsersStandartState.Finish;
+                    userState.currentState = UsersStandardState.Finish;
                     return;
                 }
                 else if (isActionSuccessful == null)
@@ -100,14 +100,14 @@ public class ProcessUsersGroupState : IUserState
                     await botClient.SendMessage(chatId, Config.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
                     return;
                 }
-                userState.currentState = UsersStandartState.ProcessAction;
+                userState.currentState = UsersStandardState.ProcessAction;
                 break;
 
-            case UsersStandartState.Finish:
+            case UsersStandardState.Finish:
                 if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
                 if (update.CallbackQuery != null && update.CallbackQuery.Data == backCallback)
                 {
-                    userState.currentState = UsersStandartState.ProcessAction;
+                    userState.currentState = UsersStandardState.ProcessAction;
                     await Utils.Utils.SendMessage(
                         botClient,
                         update,

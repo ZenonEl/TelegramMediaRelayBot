@@ -22,7 +22,7 @@ namespace MediaTelegramBot;
 
 public class ProcessRemoveUser : IUserState
 {
-    public UsersStandartState currentState;
+    public UsersStandardState currentState;
     private List<int> preparedTargetUserIds = new List<int>();
     private Message statusMessage;
     bool isDeleteSuccessful = false;
@@ -30,7 +30,7 @@ public class ProcessRemoveUser : IUserState
     public ProcessRemoveUser(Message statusMessage)
     {
         this.statusMessage = statusMessage;
-        currentState = UsersStandartState.ProcessAction;
+        currentState = UsersStandardState.ProcessAction;
     }
 
     public string GetCurrentState()
@@ -44,7 +44,7 @@ public class ProcessRemoveUser : IUserState
 
         switch (currentState)
         {
-            case UsersStandartState.ProcessAction:
+            case UsersStandardState.ProcessAction:
                 if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
                 if (update.Message != null)
                 {
@@ -60,7 +60,7 @@ public class ProcessRemoveUser : IUserState
                     {
                         preparedTargetUserIds = ids.Select(int.Parse).ToList();
                         bool isSuccessful = await RetrieveAndDisplayUserInfo(botClient, update, chatId, cancellationToken);
-                        if (isSuccessful) currentState = UsersStandartState.ProcessData;
+                        if (isSuccessful) currentState = UsersStandardState.ProcessData;
                     }
                     else
                     {
@@ -69,7 +69,7 @@ public class ProcessRemoveUser : IUserState
                 }
                 break;
 
-            case UsersStandartState.ProcessData:
+            case UsersStandardState.ProcessData:
                 if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
                 
                 if (update.CallbackQuery != null)
@@ -88,7 +88,7 @@ public class ProcessRemoveUser : IUserState
                     else if (callbackData == "cancel_removal")
                     {
                         await botClient.EditMessageText(chatId, statusMessage.MessageId, Config.GetResourceString("PleaseEnterContactIDs"), replyMarkup: KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken);
-                        currentState = UsersStandartState.ProcessAction;
+                        currentState = UsersStandardState.ProcessAction;
                     }
                 }
                 break;

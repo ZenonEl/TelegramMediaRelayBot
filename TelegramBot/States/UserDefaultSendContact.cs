@@ -20,14 +20,14 @@ namespace MediaTelegramBot
     public class ProcessUserSetDCSendState : IUserState
     {
 
-        public UsersStandartState currentState;
+        public UsersStandardState currentState;
         private List<int> targetIds = new();
         private bool isGroupIds;
         private int actingUserId;
 
         public ProcessUserSetDCSendState(bool isGroup)
         {
-            currentState = UsersStandartState.ProcessAction;
+            currentState = UsersStandardState.ProcessAction;
             isGroupIds = isGroup;
         }
 
@@ -43,15 +43,15 @@ namespace MediaTelegramBot
 
             switch (userState.currentState)
             {
-                case UsersStandartState.ProcessAction:
+                case UsersStandardState.ProcessAction:
                     await HandleProcessAction(botClient, update, chatId, userState, cancellationToken);
                     break;
 
-                case UsersStandartState.ProcessData:
+                case UsersStandardState.ProcessData:
                     await HandleConfirmation(botClient, update, chatId, userState, cancellationToken);
                     break;
 
-                case UsersStandartState.Finish:
+                case UsersStandardState.Finish:
                     await HandleFinish(botClient, update, chatId, userState, cancellationToken);
                     break;
             }
@@ -111,7 +111,7 @@ namespace MediaTelegramBot
                 replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(),
                 cancellationToken: cancellationToken);
 
-            userState.currentState = UsersStandartState.ProcessData;
+            userState.currentState = UsersStandardState.ProcessData;
         }
 
         private async Task HandleConfirmation(ITelegramBotClient botClient, Update update, long chatId,
@@ -124,7 +124,7 @@ namespace MediaTelegramBot
 
             if (callbackData == "accept")
             {
-                userState.currentState = UsersStandartState.Finish;
+                userState.currentState = UsersStandardState.Finish;
                 await ProcessState(botClient, update, cancellationToken);
             }
             else
