@@ -14,6 +14,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using MediaTelegramBot.Utils;
 using TelegramMediaRelayBot;
+using DataBase.Types;
 
 namespace MediaTelegramBot
 {
@@ -75,7 +76,7 @@ namespace MediaTelegramBot
             var messageText = update.Message?.Text;
             if (string.IsNullOrEmpty(messageText))
             {
-                await botClient.SendMessage(chatId, "Invalid input");
+                await botClient.SendMessage(chatId, "Invalid input", cancellationToken: cancellationToken);
                 return;
             }
 
@@ -84,9 +85,9 @@ namespace MediaTelegramBot
                 .Select(int.Parse)
                 .ToList();
 
-            if (!inputIds.Any())
+            if (inputIds.Count == 0)
             {
-                await botClient.SendMessage(chatId, "No valid IDs found");
+                await botClient.SendMessage(chatId, "No valid IDs found", cancellationToken: cancellationToken);
                 return;
             }
 
@@ -96,9 +97,9 @@ namespace MediaTelegramBot
                 ? ValidateGroupIds(userState.actingUserId, inputIds)
                 : await ValidateUserIds(userState.actingUserId, inputIds);
 
-            if (!userState.targetIds.Any())
+            if (userState.targetIds.Count == 0)
             {
-                await botClient.SendMessage(chatId, "No valid IDs found for your account");
+                await botClient.SendMessage(chatId, "No valid IDs found for your account", cancellationToken: cancellationToken);
                 return;
             }
 
@@ -143,15 +144,27 @@ namespace MediaTelegramBot
         private async Task HandleFinish(ITelegramBotClient botClient, Update update, long chatId,
             ProcessUserSetDCSendState userState, CancellationToken cancellationToken)
         {
+            int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
+            int actionId = DBforDefaultActions.GetDefaultActionId(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+
+            if (isGroupIds)
+            {
+                DBforDefaultActions.RemoveAllDefaultUsersActionTargets(userId, TargetTypes.GROUP, actionId);
+            }
+            else
+            {
+                DBforDefaultActions.RemoveAllDefaultUsersActionTargets(userId, TargetTypes.USER, actionId);
+            }
+
             foreach (var id in userState.targetIds)
             {
                 if (isGroupIds)
                 {
-                    // Логика для групп
+                    DBforDefaultActions.AddDefaultUsersActionTargets(userId, actionId, TargetTypes.GROUP, id);
                 }
                 else
                 {
-                    // Логика для пользователей
+                    DBforDefaultActions.AddDefaultUsersActionTargets(userId, actionId, TargetTypes.USER, id);
                 }
             }
 
@@ -165,7 +178,7 @@ namespace MediaTelegramBot
             );
         }
 
-        private async Task<List<int>> ValidateUserIds(int actingUserId, List<int> inputIds)
+        static private async Task<List<int>> ValidateUserIds(int actingUserId, List<int> inputIds)
         {
             var allowedIds = await CoreDB.GetAllContactUserTGIds(actingUserId);
             return inputIds
@@ -173,7 +186,7 @@ namespace MediaTelegramBot
                 .ToList();
         }
 
-        private List<int> ValidateGroupIds(int actingUserId, List<int> inputIds)
+        static private List<int> ValidateGroupIds(int actingUserId, List<int> inputIds)
         {
             var userGroups = DBforGroups.GetGroupIDsByUserId(actingUserId);
             return inputIds

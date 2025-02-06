@@ -70,14 +70,7 @@ public class PrivateUpdateHandler
             string defaultAction = defaultActionData.Split(';')[0];
             int defaultCondition = int.Parse(defaultActionData.Split(';')[1]);
 
-            List<string> excludedActions = new List<string>
-                                            {
-                                                UsersAction.OFF,
-                                                UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS,
-                                                UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS,
-                                            };
-
-            if (excludedActions.Contains(defaultAction)) return;
+            if (defaultAction == UsersAction.OFF) return;
 
             _ = Task.Run(async () =>
             {
@@ -87,21 +80,50 @@ public class PrivateUpdateHandler
 
                     List<long> targetUserIds = new List<long>();
                     List<long> mutedByUserIds = new List<long>();
+                    List<int> userIds = new List<int>();
 
-                    if (defaultAction == UsersAction.SEND_MEDIA_TO_ALL_CONTACTS)
-                    {
-                        mutedByUserIds = DBforGetters.GetUsersIdForMuteContactId(userId);
-                        List<long> contactUserTGIds = await CoreDB.GetAllContactUserTGIds(userId);
-                        targetUserIds = contactUserTGIds.Except(mutedByUserIds).ToList();
-                    }
-                    else if (defaultAction == UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS)
-                    {
-                        List<int> defaultGroupContactIDs = DBforGroups.GetAllUsersInDefaultEnabledGroups(userId);
+                    int actionId = DBforDefaultActions.GetDefaultActionId(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION); 
+                    mutedByUserIds = DBforGetters.GetUsersIdForMuteContactId(userId);
 
-                        targetUserIds = defaultGroupContactIDs
-                            .Where(contactId => !mutedByUserIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
-                            .Select(DBforGetters.GetTelegramIDbyUserID)
-                            .ToList();
+                    switch (defaultAction)
+                    {
+                        case UsersAction.SEND_MEDIA_TO_ALL_CONTACTS:
+                            List<long> contactUserTGIds = await CoreDB.GetAllContactUserTGIds(userId);
+                            targetUserIds = contactUserTGIds.Except(mutedByUserIds).ToList();
+                            break;
+
+                        case UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS:
+                            userIds = DBforGroups.GetAllUsersInDefaultEnabledGroups(userId);
+
+                            targetUserIds = userIds
+                                .Where(contactId => !mutedByUserIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
+                                .Select(DBforGetters.GetTelegramIDbyUserID)
+                                .ToList();
+                            break;
+                        
+                        case UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS:
+                            List<int> groupIds = DBforDefaultActions.GetAllDefaultUsersActionTargets(userId, TargetTypes.GROUP, actionId);
+                            
+                            foreach (int groupId in groupIds)
+                            {
+                                userIds.AddRange(DBforGroups.GetAllUsersIdsInGroup(groupId));
+                            }
+
+                            targetUserIds = userIds
+                                .Where(contactId => !mutedByUserIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
+                                .Select(DBforGetters.GetTelegramIDbyUserID)
+                                .ToList();
+                            break;
+                        
+                        case UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS:
+                            userIds = DBforDefaultActions.GetAllDefaultUsersActionTargets(userId, TargetTypes.USER, actionId);
+
+                            targetUserIds = userIds
+                                .Where(contactId => !mutedByUserIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
+                                .Select(DBforGetters.GetTelegramIDbyUserID)
+                                .ToList();
+
+                            break;
                     }
 
                     if (TelegramBot.userStates.TryGetValue(chatId, out var state) && state is ProcessVideoDC)
@@ -231,7 +253,6 @@ public class PrivateUpdateHandler
 
                     List<string> extendActions = new List<string>
                                                     {
-                                                        UsersAction.OFF,
                                                         UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS,
                                                         UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS,
                                                     };
@@ -249,6 +270,7 @@ public class PrivateUpdateHandler
                         bool isGroup = false;
                         if (action == UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS) isGroup = true;
 
+                        Users.SetDefaultActionToUser(chatId, action);
                         TelegramBot.userStates[chatId] = new ProcessUserSetDCSendState(isGroup);
                         return;
                     }
