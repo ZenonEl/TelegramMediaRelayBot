@@ -126,4 +126,22 @@ public class AllCreatingFunc
 
         Utils.executeVoidQuery(query);
     }
+
+    public static void CreateDefaultUsersActionTargets()
+    {
+        string query = @$"
+        USE {Config.databaseName};
+        CREATE TABLE IF NOT EXISTS DefaultUsersActionTargets (
+            ID INT PRIMARY KEY AUTO_INCREMENT,
+            UserId INT NOT NULL,
+            ActionID INT NOT NULL,
+            TargetType VARCHAR(255) NOT NULL,
+            TargetID VARCHAR(255) NOT NULL,
+            FOREIGN KEY (UserId) REFERENCES Users(ID) ON DELETE CASCADE,
+            FOREIGN KEY (ActionID) REFERENCES DefaultUsersActions(ID) ON DELETE CASCADE,
+            UNIQUE (UserId, ActionID, TargetID)
+        );";
+
+        Utils.executeVoidQuery(query);
+    }
 }
