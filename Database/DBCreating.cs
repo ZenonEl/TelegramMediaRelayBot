@@ -120,8 +120,8 @@ public class AllCreatingFunc
             Action VARCHAR(255),
             IsActive BOOLEAN NOT NULL DEFAULT TRUE,
             ActionCondition VARCHAR(255),
-            UNIQUE (UserID, Type),
-            FOREIGN KEY (UserID) REFERENCES Users(ID)
+            UNIQUE (UserId, Type),
+            FOREIGN KEY (UserId) REFERENCES Users(ID)
         )";
 
         Utils.executeVoidQuery(query);
