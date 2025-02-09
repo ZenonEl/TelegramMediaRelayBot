@@ -10,7 +10,7 @@
 // (по вашему выбору) любой более поздней версии.
 
 using Telegram.Bot;
-using MediaTelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils ;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot.Types.Enums;
@@ -40,12 +40,12 @@ public class ProcessRemoveUser : IUserState
 
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        long chatId = Utils.Utils.GetIDfromUpdate(update);
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
 
         switch (currentState)
         {
             case UsersStandardState.ProcessAction:
-                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
+                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
                 if (update.Message != null)
                 {
                     string input = update.Message.Text;
@@ -70,7 +70,7 @@ public class ProcessRemoveUser : IUserState
                 break;
 
             case UsersStandardState.ProcessData:
-                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
+                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
                 
                 if (update.CallbackQuery != null)
                 {
@@ -115,7 +115,7 @@ public class ProcessRemoveUser : IUserState
         if (contactUsersInfo.Any())
         {
             string messageText = $"{Config.GetResourceString("ConfirmRemovalMessage")}\n\n{string.Join("\n", contactUsersInfo)}";
-            InlineKeyboardMarkup keyboard = Utils.KeyboardUtils.GetConfirmForActionKeyboardMarkup("confirm_removal", "cancel_removal");
+            InlineKeyboardMarkup keyboard = KeyboardUtils.GetConfirmForActionKeyboardMarkup("confirm_removal", "cancel_removal");
 
             await botClient.EditMessageText(chatId, statusMessage.MessageId, messageText, replyMarkup: keyboard, cancellationToken: cancellationToken, parseMode: ParseMode.Html);
             return true;

@@ -11,7 +11,7 @@
 
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using MediaTelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils ;
 using DataBase;
 using TelegramMediaRelayBot;
 
@@ -24,7 +24,7 @@ public class Contacts
     public static async Task AddContact(ITelegramBotClient botClient, Update update, long chatId)
     {
         TelegramBot.userStates[chatId] = new ProcessContactState();
-        await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, Config.GetResourceString("SpecifyContactLink"));
+        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, Config.GetResourceString("SpecifyContactLink"));
     }
 
     public static async Task DeleteContact(ITelegramBotClient botClient, Update update, long chatId)
@@ -59,7 +59,7 @@ public class Contacts
             contactUsersInfo.Add(string.Format(Config.GetResourceString("ContactInfo"), id, username, link));
         }
 
-        await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), cancellationToken, $"{Config.GetResourceString("YourContacts")}\n{string.Join("\n", contactUsersInfo)}");
+        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), cancellationToken, $"{Config.GetResourceString("YourContacts")}\n{string.Join("\n", contactUsersInfo)}");
     }
 
     public static async Task EditContactGroup(ITelegramBotClient botClient, Update update, long chatId)
@@ -73,6 +73,6 @@ public class Contacts
             ? $"{Config.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
             : Config.GetResourceString("AltYourGroupsText");
 
-        await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(Config.GetResourceString("ContactGroupInfoText"), messageText));
+        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(Config.GetResourceString("ContactGroupInfoText"), messageText));
     }
 }

@@ -12,7 +12,7 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using DataBase;
-using MediaTelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils ;
 using TelegramMediaRelayBot;
 using Telegram.Bot.Types.Enums;
 using DataBase.Types;
@@ -47,7 +47,7 @@ public class ProcessVideoDC : IUserState
 
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        long chatId = Utils.Utils.GetIDfromUpdate(update);
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
 
         switch (currentState)
         {
@@ -99,7 +99,7 @@ public class ProcessVideoDC : IUserState
                             break;
 
                         case "main_menu":
-                            await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false);
+                            await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false);
                             break;
                     }
                 }

@@ -12,8 +12,8 @@
 using DataBase;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using MediaTelegramBot.Utils;
 using TelegramMediaRelayBot;
+using TelegramMediaRelayBot.TelegramBot.Utils;
 
 
 namespace MediaTelegramBot;
@@ -42,8 +42,8 @@ public class ProcessUserUnMuteState : IUserState
 
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        long chatId = Utils.Utils.GetIDfromUpdate(update);
-        if (Utils.Utils.CheckNonZeroID(chatId)) return;
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
+        if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
         if (!TelegramBot.userStates.TryGetValue(chatId, out IUserState? value))
         {
@@ -63,7 +63,7 @@ public class ProcessUserUnMuteState : IUserState
 
                     if (name == "" || !allowedIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
                     {
-                        await Utils.Utils.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByID"));
+                        await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByID"));
                         return;
                     }
                     await botClient.SendMessage(chatId, string.Format(Config.GetResourceString("WillWorkWithContact"), contactId, name), cancellationToken: cancellationToken,
@@ -77,7 +77,7 @@ public class ProcessUserUnMuteState : IUserState
 
                     if (contactId == -1 || !allowedIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
                     {
-                        await Utils.Utils.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByLink"));
+                        await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByLink"));
                         return;
                     }
                     string name = DBforGetters.GetUserNameByID(contactId);
@@ -91,7 +91,7 @@ public class ProcessUserUnMuteState : IUserState
                 break;
 
             case UserUnMuteState.WaitingForUnMute:
-                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId)) return;
+                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId)) return;
 
                 string activeMuteTime = DBforGetters.GetActiveMuteTimeByContactID(mutedContactId);
                 string text = string.Format(Config.GetResourceString("UserInMute"), activeMuteTime);
@@ -101,11 +101,11 @@ public class ProcessUserUnMuteState : IUserState
                 break;
 
             case UserUnMuteState.Finish:
-                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId)) return;
+                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId)) return;
                 await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
 
                 CoreDB.UnMutedContact(mutedByUserId, mutedContactId);
-                await Utils.Utils.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("UserUnmuted"));
+                await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("UserUnmuted"));
                 TelegramBot.userStates.Remove(chatId);
                 break;
         }

@@ -13,6 +13,7 @@ using Serilog;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using TelegramMediaRelayBot;
+using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace MediaTelegramBot;
 
@@ -41,7 +42,7 @@ public class GroupUpdateHandler
                 link = trimmedMessage.Trim();
             }
 
-            if (Utils.Utils.IsLink(link))
+            if (CommonUtilities.IsLink(link))
             {
                 Message statusMessage = await botClient.SendMessage(update.Message.Chat.Id, Config.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
                 _ = TelegramBot.HandleVideoRequest(botClient, link, update.Message.Chat.Id, statusMessage: statusMessage, groupChat: true, caption: text);

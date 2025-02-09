@@ -17,6 +17,7 @@ using System.Text.RegularExpressions;
 using DataBase;
 using Serilog;
 using Telegram.Bot.Types.Enums;
+using TelegramMediaRelayBot.TelegramBot.Utils;
 
 
 namespace MediaTelegramBot;
@@ -47,7 +48,7 @@ partial class TelegramBot
         };
         cancellationToken = cts.Token;
 
-        botClient.StartReceiving(UpdateHandler, Utils.Utils.ErrorHandler, receiverOptions, cancellationToken: cancellationToken);
+        botClient.StartReceiving(UpdateHandler, CommonUtilities.ErrorHandler, receiverOptions, cancellationToken: cancellationToken);
         Log.Information("Press any key to exit");
         Console.ReadKey();
         cts.Cancel();
@@ -55,8 +56,8 @@ partial class TelegramBot
 
     public static async Task ProcessState(ITelegramBotClient botClient, Update update)
     {
-        long chatId = Utils.Utils.GetIDfromUpdate(update);
-        if (Utils.Utils.CheckNonZeroID(chatId)) return;
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
+        if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
         if (userStates[chatId] is IUserState userState)
         {
@@ -66,12 +67,12 @@ partial class TelegramBot
 
     private static async Task UpdateHandler(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        long chatId = Utils.Utils.GetIDfromUpdate(update);
-        if (Utils.Utils.CheckNonZeroID(chatId)) return;
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
+        if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
         LogEvent(update, chatId);
 
-        if (Utils.Utils.CheckPrivateChatType(update))
+        if (CommonUtilities.CheckPrivateChatType(update))
         {
             if (userStates.ContainsKey(chatId))
             {
@@ -85,7 +86,7 @@ partial class TelegramBot
 
                 if (!hasAccess)
                 {
-                    string startParameter = Utils.Utils.ParseStartCommand(update.Message.Text);
+                    string startParameter = CommonUtilities.ParseStartCommand(update.Message.Text);
                     if (!string.IsNullOrEmpty(startParameter) && Config.CanUserStartUsingBot(startParameter))
                     {
                         CoreDB.AddUser(update.Message.Chat.FirstName!, chatId);
@@ -136,7 +137,7 @@ partial class TelegramBot
                                                 Message statusMessage, List<long>? targetUserIds, bool groupChat = false, string caption = "")
     {
         using (var memoryStream = new MemoryStream(videoBytes))
-        using (var progressStream = new Utils.ProgressReportingStream(memoryStream))
+        using (var progressStream = new ProgressReportingStream(memoryStream))
         {
             long totalBytes = progressStream.Length;
             DateTimeOffset startTime = DateTimeOffset.Now;
@@ -295,7 +296,7 @@ partial class TelegramBot
             logMessage = "Message";
             callbackData = update.Message.Text;
             userId = update.Message.From!.Id;
-            if (!Utils.Utils.CheckPrivateChatType(update))
+            if (!CommonUtilities.CheckPrivateChatType(update))
             {
                 if (!update.Message.Text.Contains("/link") || !update.Message.Text.Contains("/help")) return;
             }

@@ -14,14 +14,14 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
-using TelegramMediaRelayBot;
 
 
-namespace MediaTelegramBot.Utils;
+namespace TelegramMediaRelayBot.TelegramBot.Utils ;
 
-public static class Utils
+public static class CommonUtilities
 {
-    public static CancellationToken cancellationToken = TelegramBot.cancellationToken;
+
+    public static CancellationToken cancellationToken = MediaTelegramBot.TelegramBot.cancellationToken;
     public static Task ErrorHandler(ITelegramBotClient _, Exception exception, CancellationToken __)
     {
         Log.Error($"Error occurred: {exception.Message}");
@@ -100,7 +100,7 @@ public static class Utils
     {
         await botClient.SendMessage(chatId, text, cancellationToken: cancellationToken);
         await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-        TelegramBot.userStates.Remove(chatId);
+        MediaTelegramBot.TelegramBot.userStates.Remove(chatId);
     }
 
     public static async Task<bool> HandleStateBreakCommand(ITelegramBotClient botClient,
@@ -115,7 +115,7 @@ public static class Utils
         {
             if (removeReplyMarkup) await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
             await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-            TelegramBot.userStates.Remove(chatId);
+            MediaTelegramBot.TelegramBot.userStates.Remove(chatId);
             return true;
         }
         return false;

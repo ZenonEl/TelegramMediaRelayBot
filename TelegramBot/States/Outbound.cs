@@ -12,8 +12,9 @@
 using DataBase;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using MediaTelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils ;
 using TelegramMediaRelayBot;
+using TelegramMediaRelayBot.TelegramBot.Utils;
 
 
 namespace MediaTelegramBot;
@@ -39,8 +40,8 @@ public class UserProcessOutboundState : IUserState
 
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        long chatId = Utils.Utils.GetIDfromUpdate(update);
-        if (Utils.Utils.CheckNonZeroID(chatId)) return;
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
+        if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
         if (!TelegramBot.userStates.TryGetValue(chatId, out IUserState? value))
         {
@@ -55,7 +56,7 @@ public class UserProcessOutboundState : IUserState
                 if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("revoke_outbound_invite:"))
                 {
                     string userId = update.CallbackQuery.Data.Split(':')[1];
-                    await Utils.Utils.SendMessage(botClient, update, OutBoundKB.GetOutBoundActionsKeyboardMarkup(userId, "user_show_outbound_invite:" + chatId),
+                    await CommonUtilities.SendMessage(botClient, update, OutBoundKB.GetOutBoundActionsKeyboardMarkup(userId, "user_show_outbound_invite:" + chatId),
                                                 cancellationToken, Config.GetResourceString("DeclineOutBound"));
                     userState.currentState = UserOutboundState.Finish;
                     return;

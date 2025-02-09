@@ -11,7 +11,7 @@
 
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using MediaTelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils ;
 using DataBase;
 using TelegramMediaRelayBot;
 
@@ -31,7 +31,7 @@ public class Groups
             ? $"{Config.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
             : Config.GetResourceString("AltYourGroupsText");
 
-        await Utils.Utils.SendMessage(
+        await CommonUtilities.SendMessage(
             botClient,
             update,
             UsersGroup.GetUsersGroupActionsKeyboardMarkup(groupInfos.Count > 0),

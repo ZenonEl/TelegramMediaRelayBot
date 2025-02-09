@@ -11,7 +11,7 @@
 
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using MediaTelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils ;
 using DataBase;
 using DataBase.Types;
 using TelegramMediaRelayBot;
@@ -27,7 +27,7 @@ public class Users
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
         int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
 
-        await Utils.Utils.SendMessage(
+        await CommonUtilities.SendMessage(
             botClient,
             update,
             UsersKB.GetSettingsKeyboardMarkup(),
@@ -38,7 +38,7 @@ public class Users
 
     public static async Task ViewDefaultActionsMenu(ITelegramBotClient botClient, Update update)
     {
-        await Utils.Utils.SendMessage(
+        await CommonUtilities.SendMessage(
             botClient,
             update,
             UsersKB.GetDefaultActionsMenuKeyboardMarkup(),
@@ -49,7 +49,7 @@ public class Users
 
     public static async Task ViewVideoDefaultActionsMenu(ITelegramBotClient botClient, Update update)
     {
-        await Utils.Utils.SendMessage(
+        await CommonUtilities.SendMessage(
             botClient,
             update,
             UsersKB.GetDefaultVideoDistributionKeyboardMarkup(),
@@ -60,7 +60,7 @@ public class Users
 
     public static async Task ViewUsersVideoSentUsersActionsMenu(ITelegramBotClient botClient, Update update)
     {
-        await Utils.Utils.SendMessage(
+        await CommonUtilities.SendMessage(
             botClient,
             update,
             UsersKB.GetUsersVideoSentUsersKeyboardMarkup(),
@@ -71,7 +71,7 @@ public class Users
 
     public static async Task ViewAutoSendVideoTimeMenu(ITelegramBotClient botClient, Update update)
     {
-        await Utils.Utils.SendMessage(
+        await CommonUtilities.SendMessage(
             botClient,
             update,
             UsersKB.GetUsersAutoSendVideoTimeKeyboardMarkup(),

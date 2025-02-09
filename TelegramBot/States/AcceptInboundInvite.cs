@@ -11,7 +11,7 @@
 
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using MediaTelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils ;
 using TelegramMediaRelayBot;
 
 
@@ -38,8 +38,8 @@ public class UserProcessInboundState : IUserState
 
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        long chatId = Utils.Utils.GetIDfromUpdate(update);
-        if (Utils.Utils.CheckNonZeroID(chatId)) return;
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
+        if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
         if (!TelegramBot.userStates.TryGetValue(chatId, out IUserState? value))
         {
@@ -54,7 +54,7 @@ public class UserProcessInboundState : IUserState
                 if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("user_show_inbounds_invite:"))
                 {
                     string userId = update.CallbackQuery.Data.Split(':')[1];
-                    await Utils.Utils.SendMessage(botClient, update, InBoundKB.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
+                    await CommonUtilities.SendMessage(botClient, update, InBoundKB.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
                                                 cancellationToken, Config.GetResourceString("SelectAction"));
                     userState.currentState = UserInboundState.ProcessAction;
                     return;
@@ -78,12 +78,12 @@ public class UserProcessInboundState : IUserState
                 string userID = update.CallbackQuery!.Data!.Split(':')[1];
                 if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("user_accept_inbounds_invite:"))
                 {
-                    await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_accept_invite:{userID}", $"decline_accept_invite:{userID}"),
+                    await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_accept_invite:{userID}", $"decline_accept_invite:{userID}"),
                     cancellationToken, Config.GetResourceString("WaitAcceptInboundInvite"));
                 }
                 else if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("user_decline_inbounds_invite:"))
                 {
-                    await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_decline_invite:{userID}", $"decline_decline_invite:{userID}"), 
+                    await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_decline_invite:{userID}", $"decline_decline_invite:{userID}"), 
                     cancellationToken, Config.GetResourceString("WaitDeclineInboundInvite"));
                 }
 
@@ -102,7 +102,7 @@ public class UserProcessInboundState : IUserState
                 else if (update.CallbackQuery != null && !update.CallbackQuery.Data!.StartsWith("main_menu"))
                 {
                     string userId = update.CallbackQuery.Data.Split(':')[1];
-                    await Utils.Utils.SendMessage(botClient, update, InBoundKB.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
+                    await CommonUtilities.SendMessage(botClient, update, InBoundKB.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
                                                 cancellationToken, Config.GetResourceString("SelectAction"));
                     userState.currentState = UserInboundState.ProcessAction;
                     return;

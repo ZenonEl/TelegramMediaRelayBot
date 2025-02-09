@@ -12,7 +12,7 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using MediaTelegramBot.Menu;
-using MediaTelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils ;
 using TelegramMediaRelayBot;
 using DataBase;
 using DataBase.Types;
@@ -41,7 +41,7 @@ public class PrivateUpdateHandler
             link = messageText.Trim();
         }
 
-        if (Utils.Utils.IsLink(link))
+        if (CommonUtilities.IsLink(link))
         {
             int replyToMessageId = update.Message.MessageId;
             Message statusMessage = await botClient.SendMessage(
@@ -150,7 +150,7 @@ public class PrivateUpdateHandler
         else if (update.Message.Text == "/help")
         {
             string helpText = Config.GetResourceString("HelpText");
-            await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken, helpText);
+            await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken, helpText);
         }
         else
         {
@@ -230,7 +230,7 @@ public class PrivateUpdateHandler
 
                     if (result)
                     {
-                        await Utils.Utils.SendMessage(
+                        await CommonUtilities.SendMessage(
                             botClient,
                             update,
                             KeyboardUtils.GetReturnButtonMarkup("user_set_auto_send_video_time"),
@@ -239,7 +239,7 @@ public class PrivateUpdateHandler
                         );
                         return;
                     }
-                    await Utils.Utils.SendMessage(
+                    await CommonUtilities.SendMessage(
                         botClient,
                         update,
                         KeyboardUtils.GetReturnButtonMarkup("user_set_auto_send_video_time"),
@@ -259,7 +259,7 @@ public class PrivateUpdateHandler
 
                     if (extendActions.Contains(action))
                     {
-                        await Utils.Utils.SendMessage(
+                        await CommonUtilities.SendMessage(
                             botClient,
                             update,
                             KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
@@ -280,7 +280,7 @@ public class PrivateUpdateHandler
 
                     if (result)
                     {
-                        await Utils.Utils.SendMessage(
+                        await CommonUtilities.SendMessage(
                             botClient,
                             update,
                             KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
@@ -289,7 +289,7 @@ public class PrivateUpdateHandler
                         );
                         return;
                     }
-                    await Utils.Utils.SendMessage(
+                    await CommonUtilities.SendMessage(
                         botClient,
                         update,
                         KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),

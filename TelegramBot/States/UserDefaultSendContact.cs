@@ -12,7 +12,7 @@
 using DataBase;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using MediaTelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils ;
 using TelegramMediaRelayBot;
 using DataBase.Types;
 
@@ -36,8 +36,8 @@ namespace MediaTelegramBot
 
         public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
-            long chatId = Utils.Utils.GetIDfromUpdate(update);
-            if (Utils.Utils.CheckNonZeroID(chatId)) return;
+            long chatId = CommonUtilities.GetIDfromUpdate(update);
+            if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
             if (!TelegramBot.userStates.TryGetValue(chatId, out IUserState? value) || value is not ProcessUserSetDCSendState userState)
                 return;
@@ -64,7 +64,7 @@ namespace MediaTelegramBot
             if (update.CallbackQuery != null)
             {
                 TelegramBot.userStates.Remove(chatId);
-                await Utils.Utils.SendMessage(
+                await CommonUtilities.SendMessage(
                     botClient,
                     update,
                     UsersKB.GetUsersVideoSentUsersKeyboardMarkup(),
@@ -131,7 +131,7 @@ namespace MediaTelegramBot
             else
             {
                 TelegramBot.userStates.Remove(chatId);
-                await Utils.Utils.SendMessage(
+                await CommonUtilities.SendMessage(
                     botClient,
                     update,
                     UsersKB.GetUsersVideoSentUsersKeyboardMarkup(),
@@ -169,7 +169,7 @@ namespace MediaTelegramBot
             }
 
             TelegramBot.userStates.Remove(chatId);
-            await Utils.Utils.SendMessage(
+            await CommonUtilities.SendMessage(
                 botClient,
                 update,
                 UsersKB.GetUsersVideoSentUsersKeyboardMarkup(),

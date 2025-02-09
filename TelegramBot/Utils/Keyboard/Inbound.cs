@@ -15,7 +15,7 @@ using DataBase;
 using TelegramMediaRelayBot;
 
 
-namespace MediaTelegramBot.Utils;
+namespace TelegramMediaRelayBot.TelegramBot.Utils ;
 
 public static class InBoundKB
 {
