@@ -67,7 +67,7 @@ namespace MediaTelegramBot
                 await CommonUtilities.SendMessage(
                     botClient,
                     update,
-                    UsersKB.GetUsersVideoSentUsersKeyboardMarkup(),
+                    UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
                     cancellationToken,
                     Config.GetResourceString("UsersVideoSentUsersMenuText")
                 );
@@ -134,7 +134,7 @@ namespace MediaTelegramBot
                 await CommonUtilities.SendMessage(
                     botClient,
                     update,
-                    UsersKB.GetUsersVideoSentUsersKeyboardMarkup(),
+                    UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
                     cancellationToken,
                     Config.GetResourceString("UsersVideoSentUsersMenuText")
                 );
@@ -172,7 +172,7 @@ namespace MediaTelegramBot
             await CommonUtilities.SendMessage(
                 botClient,
                 update,
-                UsersKB.GetUsersVideoSentUsersKeyboardMarkup(),
+                UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
                 cancellationToken,
                 $"Successfully processed {userState.targetIds.Count} {(isGroupIds ? "groups" : "users")}"
             );

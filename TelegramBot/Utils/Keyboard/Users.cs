@@ -29,7 +29,7 @@ public static class UsersKB
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("PrivacyButtonText"), $"user_remove_contact_from_group:"),
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("PrivacyButtonText"), $"privacy_menu"),
             },
             new[]
             {
@@ -38,7 +38,53 @@ public static class UsersKB
         });
         return inlineKeyboard;
     }
+}
 
+public static class UsersPrivacyMenuKB
+{
+    public static InlineKeyboardMarkup GetPrivacyMenuKeyboardMarkup()
+    {
+        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("Обновить личную ссылку", $"user_update_self_link"),
+            },
+            new[]
+            {
+                KeyboardUtils.GetReturnButton("show_settings")
+            },
+        });
+        return inlineKeyboard;
+    }
+
+    public static InlineKeyboardMarkup GetUpdateSelfLinkKeyboardMarkup()
+    {
+        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("Оставить существующие контакты", $"user_update_self_link_with_contacts"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("Оставить только выбранные контакты", $"user_update_self_link_with_new_contacts"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("Удалить все существующие контакты", $"user_update_self_link"),
+            },
+            new[]
+            {
+                KeyboardUtils.GetReturnButton("privacy_menu")
+            },
+        });
+        return inlineKeyboard;
+    }
+}
+
+public static class UsersDefaultActionsMenuKB
+{
     public static InlineKeyboardMarkup GetDefaultActionsMenuKeyboardMarkup()
     {
         var inlineKeyboard = new InlineKeyboardMarkup(new[]

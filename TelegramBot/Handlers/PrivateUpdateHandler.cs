@@ -136,6 +136,14 @@ public class PrivateUpdateHandler
             case "default_actions_menu":
                 await Users.ViewDefaultActionsMenu(botClient, update);
                 break;
+
+            case "privacy_menu":
+                await Users.ViewPrivacyMenu(botClient, update);
+                break;
+            case "user_update_self_link":
+                await Users.ViewLinkPrivacyMenu(botClient, update);
+                break;
+
             case "user_set_auto_send_video_time":
                 await Users.ViewAutoSendVideoTimeMenu(botClient, update);
                 break;

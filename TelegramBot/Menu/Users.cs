@@ -41,9 +41,31 @@ public class Users
         await CommonUtilities.SendMessage(
             botClient,
             update,
-            UsersKB.GetDefaultActionsMenuKeyboardMarkup(),
+            UsersDefaultActionsMenuKB.GetDefaultActionsMenuKeyboardMarkup(),
             cancellationToken,
             Config.GetResourceString("DefaultActionsMenuText")
+        );
+    }
+
+    public static async Task ViewPrivacyMenu(ITelegramBotClient botClient, Update update)
+    {
+        await CommonUtilities.SendMessage(
+            botClient,
+            update,
+            UsersPrivacyMenuKB.GetPrivacyMenuKeyboardMarkup(),
+            cancellationToken,
+            "Выберите настройки приватности"
+        );
+    }
+
+    public static async Task ViewLinkPrivacyMenu(ITelegramBotClient botClient, Update update)
+    {
+        await CommonUtilities.SendMessage(
+            botClient,
+            update,
+            UsersPrivacyMenuKB.GetUpdateSelfLinkKeyboardMarkup(),
+            cancellationToken,
+            "Ваша личная ссылка будет заменена полностью на новую. Сейчас вы можете выбрать то, оставлять ли связь с существующими контактами или нет"
         );
     }
 
@@ -52,7 +74,7 @@ public class Users
         await CommonUtilities.SendMessage(
             botClient,
             update,
-            UsersKB.GetDefaultVideoDistributionKeyboardMarkup(),
+            UsersDefaultActionsMenuKB.GetDefaultVideoDistributionKeyboardMarkup(),
             cancellationToken,
             Config.GetResourceString("VideoDefaultActionsMenuText")
         );
@@ -63,7 +85,7 @@ public class Users
         await CommonUtilities.SendMessage(
             botClient,
             update,
-            UsersKB.GetUsersVideoSentUsersKeyboardMarkup(),
+            UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
             cancellationToken,
             Config.GetResourceString("UsersVideoSentUsersMenuText")
         );
@@ -74,7 +96,7 @@ public class Users
         await CommonUtilities.SendMessage(
             botClient,
             update,
-            UsersKB.GetUsersAutoSendVideoTimeKeyboardMarkup(),
+            UsersDefaultActionsMenuKB.GetUsersAutoSendVideoTimeKeyboardMarkup(),
             cancellationToken,
             Config.GetResourceString("AutoSendVideoTimeMenuText")
         );
