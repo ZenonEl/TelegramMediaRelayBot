@@ -30,6 +30,7 @@ public class ProcessVideoDC : IUserState
     private string action = "";
     private List<long> targetUserIds = new List<long>();
     private List<long> preparedTargetUserIds = new List<long>();
+    public Queue<(string Link, string Text, int MessageId)> linkQueue = new Queue<(string Link, string Text, int MessageId)>();
 
     public ProcessVideoDC(string Link, Message StatusMessage, string Text, CancellationTokenSource cts)
     {
@@ -103,6 +104,37 @@ public class ProcessVideoDC : IUserState
                             break;
                     }
                 }
+                else if (update.Message != null && update.Message.Text != null)
+                {
+                    string messageText = update.Message.Text;
+                    string newLink;
+                    string newText = "";
+
+                    int newLineIndex = messageText.IndexOf('\n');
+                    if (newLineIndex != -1)
+                    {
+                        newLink = messageText[..newLineIndex].Trim();
+                        newText = messageText[(newLineIndex + 1)..].Trim();
+                    }
+                    else
+                    {
+                        newLink = messageText.Trim();
+                    }
+
+                    if (CommonUtilities.IsLink(newLink))
+                    {
+
+                        int replyToMessageId = update.Message.MessageId;
+                        statusMessage = await botClient.SendMessage(
+                            chatId, 
+                            Config.GetResourceString("VideoDistributionQuestion"), 
+                            replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), 
+                            replyParameters: new ReplyParameters { MessageId = replyToMessageId }, 
+                            cancellationToken: cancellationToken
+                        );
+                        linkQueue.Enqueue((newLink, newText, statusMessage.MessageId));
+                    }
+                }
                 break;
 
             case UsersStandardState.ProcessData:
@@ -155,8 +187,42 @@ public class ProcessVideoDC : IUserState
                 }
 
                 await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
-                TelegramBot.userStates.Remove(chatId);
                 _ = TelegramBot.HandleVideoRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
+
+                if (linkQueue.Count > 0)
+                {
+                    // Если в очереди есть ссылки, начинаем обработку следующей
+                    var nextLink = linkQueue.Dequeue();
+                    link = nextLink.Link;
+                    text = nextLink.Text;
+                    int replyToMessageId = nextLink.MessageId;
+                    currentState = UsersStandardState.ProcessAction;
+
+                    // Начинаем обработку новой ссылки
+                    statusMessage = await botClient.SendMessage(
+                        chatId, 
+                        Config.GetResourceString("WaitDownloadingVideo"),
+                        replyParameters: new ReplyParameters { MessageId = replyToMessageId }, 
+                        cancellationToken: cancellationToken
+                    );
+
+                    await botClient.EditMessageText(
+                        statusMessage.Chat.Id, 
+                        statusMessage.MessageId, 
+                        Config.GetResourceString("VideoDistributionQuestion"), 
+                        replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), 
+                        cancellationToken: cancellationToken
+                    );
+
+                    // Повторяем логику обработки
+                    await ProcessState(botClient, update, cancellationToken);
+                }
+                else
+                {
+                    // Если очередь пуста, завершаем состояние
+                    TelegramBot.userStates.Remove(chatId);
+                }
+
                 break;
         }
     }

@@ -88,21 +88,34 @@ class PrivateUtils
                     );
                     _ = TelegramBot.HandleVideoRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
 
+                    if (videoState.linkQueue.Count > 0)
                     {
-                        await botClient.EditMessageText(
-                            statusMessage.Chat.Id,
-                            statusMessage.MessageId,
-                            Config.GetResourceString("DefaultActionTimeoutMessage"),
+                        var nextLink = videoState.linkQueue.Dequeue();
+                        statusMessage = await botClient.EditMessageText(
+                            chatId,
+                            nextLink.MessageId,
+                            Config.GetResourceString("WaitDownloadingVideo"),
                             cancellationToken: cancellationToken
                         );
-
-                        _ = TelegramBot.HandleVideoRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
-
+                        ProcessDefaultSendAction(
+                            botClient,
+                            chatId,
+                            statusMessage,
+                            defaultAction,
+                            cancellationToken,
+                            userId,
+                            defaultCondition,
+                            timeoutCTS,
+                            nextLink.Link,
+                            nextLink.Text
+                        );
+                    }
+                    else
+                    {
                         TelegramBot.userStates.Remove(chatId, out _);
                     }
                 }
-                catch (TaskCanceledException) { }
-            }, cancellationToken);
+            }
             catch (TaskCanceledException) { }
         }, cancellationToken);
     }
