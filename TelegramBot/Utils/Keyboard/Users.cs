@@ -11,10 +11,9 @@
 
 using DataBase.Types;
 using Telegram.Bot.Types.ReplyMarkups;
-using TelegramMediaRelayBot;
 
 
-namespace TelegramMediaRelayBot.TelegramBot.Utils ;
+namespace TelegramMediaRelayBot.TelegramBot.Utils;
 
 public static class UsersKB
 {
@@ -48,7 +47,7 @@ public static class UsersPrivacyMenuKB
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("Обновить личную ссылку", $"user_update_self_link"),
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SelfLinkRefreshButtonText"), $"user_update_self_link"),
             },
             new[]
             {
@@ -64,15 +63,15 @@ public static class UsersPrivacyMenuKB
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("Оставить существующие контакты", $"user_update_self_link_with_contacts"),
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SelfLinkRefreshButtonTextOption1"), $"user_update_self_link_with_contacts"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("Оставить только выбранные контакты", $"user_update_self_link_with_new_contacts"),
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SelfLinkRefreshButtonTextOption2"), $"user_update_self_link_with_new_contacts"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("Удалить все существующие контакты", $"user_update_self_link"),
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SelfLinkRefreshButtonTextOption3"), $"user_update_self_link"),
             },
             new[]
             {

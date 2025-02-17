@@ -191,14 +191,12 @@ public class ProcessVideoDC : IUserState
 
                 if (linkQueue.Count > 0)
                 {
-                    // Если в очереди есть ссылки, начинаем обработку следующей
                     var nextLink = linkQueue.Dequeue();
                     link = nextLink.Link;
                     text = nextLink.Text;
                     int replyToMessageId = nextLink.MessageId;
                     currentState = UsersStandardState.ProcessAction;
 
-                    // Начинаем обработку новой ссылки
                     statusMessage = await botClient.SendMessage(
                         chatId, 
                         Config.GetResourceString("WaitDownloadingVideo"),
@@ -214,12 +212,10 @@ public class ProcessVideoDC : IUserState
                         cancellationToken: cancellationToken
                     );
 
-                    // Повторяем логику обработки
                     await ProcessState(botClient, update, cancellationToken);
                 }
                 else
                 {
-                    // Если очередь пуста, завершаем состояние
                     TelegramBot.userStates.Remove(chatId);
                 }
 

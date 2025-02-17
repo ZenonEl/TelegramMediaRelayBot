@@ -54,7 +54,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetPrivacyMenuKeyboardMarkup(),
             cancellationToken,
-            "Выберите настройки приватности"
+            Config.GetResourceString("ChosePrivacyOptionMenuText")
         );
     }
 
@@ -65,7 +65,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetUpdateSelfLinkKeyboardMarkup(),
             cancellationToken,
-            "Ваша личная ссылка будет заменена полностью на новую. Сейчас вы можете выбрать то, оставлять ли связь с существующими контактами или нет"
+            Config.GetResourceString("SelfLinkRefreshMenuText")
         );
     }
 

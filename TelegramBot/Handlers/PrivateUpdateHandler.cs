@@ -204,7 +204,7 @@ public class PrivateUpdateHandler
                             update,
                             KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
                             cancellationToken,
-                            "Укажи айди пользователей или группы через пробел"
+                            Config.GetResourceString("DefaultActionGetGroupOrUserIDs")
                         );
 
                         bool isGroup = false;
