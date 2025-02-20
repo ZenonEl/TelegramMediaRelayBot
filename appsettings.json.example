@@ -29,6 +29,7 @@
 
         "NewUsersPolicy": {
             "Enabled": true,
+            "ShowAccessDeniedMessage": false,
 
             "AllowNewUsers": true,
             "AllowRules": {
