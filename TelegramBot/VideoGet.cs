@@ -23,22 +23,27 @@ namespace TelegramMediaRelayBot
         private static readonly string Proxy = Config.proxy;
         private static readonly string[] ColonSpaceSeparator = [": "];
 
-        public static async Task<byte[]?> DownloadVideoAsync(ITelegramBotClient botClient, string videoUrl, Message statusMessage, CancellationToken cancellationToken)
+        public static async Task<List<byte[]>?> DownloadMedia(ITelegramBotClient botClient, string videoUrl, Message statusMessage, CancellationToken cancellationToken)
         {
             try
             {
-                Log.Debug("Starting video download.");
-                Log.Debug($"Yt-dlp path: {YtDlpPath}");
+                var galleryFiles = await TryDownloadWithGalleryDlAsync(videoUrl);
+                if (galleryFiles?.Count > 0)
+                {
+                    Log.Debug($"Downloaded {galleryFiles.Count} files via gallery-dl");
+                    return galleryFiles;
+                }
 
+                Log.Debug("Starting video download via yt-dlp...");
+                
                 string tempDirPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
                 Directory.CreateDirectory(tempDirPath);
-                Log.Debug($"Temporary directory path: {tempDirPath}");
-                using (var httpClient = new HttpClient(new SocksPortHandler(Config.torSocksHost, socksPort: Config.torSocksPort)))
-                {
-                    var result = await httpClient.GetStringAsync("https://check.torproject.org/api/ip");
-                    Log.Debug("Tor IP: " + result);
-                }
-                ProcessStartInfo startInfo = new ProcessStartInfo
+                
+                using var httpClient = new HttpClient(new SocksPortHandler(Config.torSocksHost, socksPort: Config.torSocksPort));
+                var result = await httpClient.GetStringAsync("https://check.torproject.org/api/ip");
+                Log.Debug("Tor IP: " + result);
+
+                var startInfo = new ProcessStartInfo
                 {
                     FileName = YtDlpPath,
                     Arguments = $"--proxy \"{Proxy}\" -v -f mp4 --output \"{tempDirPath}/video.%(ext)s\" {videoUrl}",
@@ -47,8 +52,6 @@ namespace TelegramMediaRelayBot
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
-
-                Log.Debug($"Arguments: {startInfo.Arguments}");
 
                 using (Process process = new Process { StartInfo = startInfo })
                 {
@@ -72,7 +75,7 @@ namespace TelegramMediaRelayBot
                     {
                         try
                         {
-                            string downloadLine = output.Split('\n').FirstOrDefault(line => line.StartsWith("[download] Destination:"));
+                            string? downloadLine = output.Split('\n').FirstOrDefault(line => line.StartsWith("[download] Destination:"));
                             if (downloadLine == null)
                             {
                                 Log.Error("Could not find download destination in yt-dlp output.");
@@ -91,39 +94,89 @@ namespace TelegramMediaRelayBot
 
                             if (System.IO.File.Exists(finalFilePath))
                             {
-                                byte[] videoBytes = System.IO.File.ReadAllBytes(finalFilePath);
-                                Log.Debug("Download completed.");
-
+                                var videoBytes = new List<byte[]> { System.IO.File.ReadAllBytes(finalFilePath) };
+                                
                                 System.IO.File.Delete(finalFilePath);
                                 Directory.Delete(tempDirPath, recursive: true);
-                                Log.Debug("Temporary file and directory deleted.");
-
+                                
                                 return videoBytes;
                             }
-                            else
-                            {
-                                Log.Error($"Final file does not exist: {finalFilePath}");
-                                return null;
-                            }
+                            
+                            Log.Error($"Final file does not exist: {finalFilePath}");
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex, $"Error reading file: {ex.Message}, {nameof(DownloadVideoAsync)}");
-                            return null;
+                            Log.Error(ex, $"Error reading file: {ex.Message}");
                         }
                     }
                     else
                     {
-                        Log.Error(error, "Video download failed {MethodName}", nameof(DownloadVideoAsync));
-                        return null;
+                        Log.Error("Video download failed: " + error);
+                    }
+                    
+                    Directory.Delete(tempDirPath, recursive: true);
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error in DownloadVideoAsync");
+                return null;
+            }
+        }
+
+        private static async Task<List<byte[]>?> TryDownloadWithGalleryDlAsync(string url)
+        {
+            string? tempDir = null;
+            try
+            {
+                tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+                Directory.CreateDirectory(tempDir);
+                //TODO Добавить разные параметры настройки gallery в appsettings
+                //TODO Попробовать добавить отображение прогресса скачивания через gallery?
+                //TODO Не забыть добавить переключатель использования gallery-dl и всё окончательно затестить
+
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = "gallery-dl.bin",
+                    Arguments = $"--proxy \"{Config.proxy}\" -d \"{tempDir}\" -D \"{tempDir}\" \"{url}\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using (var process = new Process { StartInfo = startInfo })
+                {
+                    process.Start();
+                    await process.WaitForExitAsync();
+
+                    if (process.ExitCode == 0)
+                    {
+                        var files = Directory.GetFiles(tempDir);
+                        var result = new List<byte[]>();
+                        foreach (var file in files)
+                        {
+                            Log.Debug(file);
+                            if (!file.EndsWith(".mp3")) result.Add(await System.IO.File.ReadAllBytesAsync(file));
+                        }
+
+                        return result.Count > 0 ? result : null;
                     }
                 }
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"Error: {ex.Message}, {nameof(DownloadVideoAsync)}");
-                return null;
+                Log.Error(ex, "Gallery-dl download error");
             }
+            finally
+            {
+                if (tempDir != null && Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, true);
+                }
+            }
+            return null;
         }
 
         private static async Task ReadLinesAsync(StreamReader reader, List<string> lines, ITelegramBotClient botClient, Message statusMessage, CancellationToken cancellationToken)
