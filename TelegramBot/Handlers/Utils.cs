@@ -86,7 +86,7 @@ class PrivateUtils
                         Config.GetResourceString("DefaultActionTimeoutMessage"),
                         cancellationToken: cancellationToken
                     );
-                    _ = TelegramBot.HandleVideoRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
+                    _ = TelegramBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
 
                     if (videoState.linkQueue.Count > 0)
                     {

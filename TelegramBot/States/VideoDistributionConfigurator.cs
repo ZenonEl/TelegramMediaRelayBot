@@ -187,7 +187,7 @@ public class ProcessVideoDC : IUserState
                 }
 
                 await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
-                _ = TelegramBot.HandleVideoRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
+                _ = TelegramBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
 
                 if (linkQueue.Count > 0)
                 {

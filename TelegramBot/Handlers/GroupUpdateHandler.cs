@@ -45,7 +45,7 @@ public class GroupUpdateHandler
             if (CommonUtilities.IsLink(link))
             {
                 Message statusMessage = await botClient.SendMessage(update.Message.Chat.Id, Config.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
-                _ = TelegramBot.HandleVideoRequest(botClient, link, update.Message.Chat.Id, statusMessage: statusMessage, groupChat: true, caption: text);
+                _ = TelegramBot.HandleMediaRequest(botClient, link, update.Message.Chat.Id, statusMessage: statusMessage, groupChat: true, caption: text);
             }
             else
             {
