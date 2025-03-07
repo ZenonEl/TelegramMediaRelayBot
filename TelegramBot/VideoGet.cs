@@ -27,7 +27,8 @@ namespace TelegramMediaRelayBot
         {
             try
             {
-                var galleryFiles = await TryDownloadWithGalleryDlAsync(videoUrl);
+                Log.Debug("Starting video download via gallery-dl...");
+                var galleryFiles = await TryDownloadWithGalleryDlAsync(videoUrl, botClient, statusMessage, cancellationToken);
                 if (galleryFiles?.Count > 0)
                 {
                     Log.Debug($"Downloaded {galleryFiles.Count} files via gallery-dl");
@@ -125,7 +126,7 @@ namespace TelegramMediaRelayBot
             }
         }
 
-        private static async Task<List<byte[]>?> TryDownloadWithGalleryDlAsync(string url)
+        private static async Task<List<byte[]>?> TryDownloadWithGalleryDlAsync(string url, ITelegramBotClient botClient, Message statusMessage, CancellationToken cancellationToken)
         {
             string? tempDir = null;
             try
@@ -133,13 +134,14 @@ namespace TelegramMediaRelayBot
                 tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
                 Directory.CreateDirectory(tempDir);
                 //TODO Добавить разные параметры настройки gallery в appsettings
-                //TODO Попробовать добавить отображение прогресса скачивания через gallery?
+                //TODO Попробовать добавить отображение прогресса скачивания через gallery
                 //TODO Не забыть добавить переключатель использования gallery-dl и всё окончательно затестить
-
+                //TODO Улучшить в целом работу с параметрами yt и gl и их конфиг файлами
+                Log.Debug("Starting process...");
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = "gallery-dl.bin",
-                    Arguments = $"--proxy \"{Config.proxy}\" -d \"{tempDir}\" -D \"{tempDir}\" \"{url}\"",
+                    Arguments = $"--proxy \"{Config.proxy}\" -d \"{tempDir}\" -D \"{tempDir}\" --verbose \"{url}\"",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -149,7 +151,18 @@ namespace TelegramMediaRelayBot
                 using (var process = new Process { StartInfo = startInfo })
                 {
                     process.Start();
+
+                    Log.Debug("Process started.");
+
+                    List<string> outputLines = new List<string>();
+                    List<string> errorLines = new List<string>();
+
+                    Task readOutputTask = ReadLinesAsync(process.StandardOutput, outputLines, botClient, statusMessage, cancellationToken);
+                    Task readErrorTask = ReadLinesAsync(process.StandardError, errorLines, botClient, statusMessage, cancellationToken);
+
                     await process.WaitForExitAsync();
+
+                    await Task.WhenAll(readOutputTask, readErrorTask);
 
                     if (process.ExitCode == 0)
                     {
@@ -158,7 +171,7 @@ namespace TelegramMediaRelayBot
                         foreach (var file in files)
                         {
                             Log.Debug(file);
-                            if (!file.EndsWith(".mp3")) result.Add(await System.IO.File.ReadAllBytesAsync(file));
+                            result.Add(await System.IO.File.ReadAllBytesAsync(file));
                         }
 
                         return result.Count > 0 ? result : null;
