@@ -134,37 +134,49 @@ partial class TelegramBot
         await botClient.SendMessage(chatId, Config.GetResourceString("FailedToProcessLink"));
     }
 
-    private static async Task SendMediaGroupToTelegram(ITelegramBotClient botClient, long chatId, List<byte[]>? mediaFiles,
-                                                        Message statusMessage, List<long>? targetUserIds, bool groupChat = false, string caption = "")
+    private static async Task SendMediaGroupToTelegram(ITelegramBotClient botClient, long chatId, List<byte[]> mediaFiles,
+                                                        Message statusMessage, List<long>? targetUserIds, bool groupChat = false,
+                                                        string caption = "")
     {
-        IEnumerable<IAlbumInputMedia> mediaGroup = mediaFiles.Select(file =>
-            new InputMediaPhoto(new MemoryStream(file))
-        ).ToList();//TODO Добавить поддержку файлов помимо фото?
+        var groupedFiles = mediaFiles.GroupBy(CommonUtilities.DetermineFileType)
+                                    .ToDictionary(g => g.Key, g => g.Reverse().ToList());
 
         try
         {
             string text = string.Empty;
             bool lastMediaGroup = false;
-            for (int i = 0; i < mediaGroup.Count(); i += 10)
+
+            foreach (var fileGroup in groupedFiles.Values)
             {
-                var chunk = mediaGroup.Skip(i).Take(10).ToList();
-                var mess = await botClient.SendMediaGroup(
-                    chatId: chatId,
-                    media: chunk,
-                    cancellationToken: cancellationToken
-                );
-
-                List<InputMediaPhoto> savedMediaGroupIDs = mess.Select(msg => 
-                    new InputMediaPhoto(msg.Photo[0].FileId)
-                ).ToList();
-
-                if (i + 10 >= mediaGroup.Count()) { lastMediaGroup = true; text = caption; }
-
-                if (!groupChat && targetUserIds != null && targetUserIds.Count > 0) await SendVideoToContacts(chatId, botClient, statusMessage, targetUserIds,
-                                                                                                            savedMediaGroupIDs: savedMediaGroupIDs, caption: text,
-                                                                                                            lastMediaGroup: lastMediaGroup);
+                var mediaGroup = CommonUtilities.CreateMediaGroup(fileGroup);
                 
-                await Task.Delay(1000, cancellationToken);
+                for (int i = 0; i < mediaGroup.Count(); i += 10)
+                {
+                    var chunk = mediaGroup.Skip(i).Take(10).ToList();
+                    
+                    var mess = await botClient.SendMediaGroup(
+                        chatId: chatId,
+                        media: chunk,
+                        replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
+                        disableNotification: true,
+                        cancellationToken: cancellationToken
+                    );
+
+                    List<InputMedia> savedMediaGroupIDs = mess.Select<Message, InputMedia>(msg => 
+                                    msg.Photo != null ? new InputMediaPhoto(msg.Photo[0].FileId) :
+                                    msg.Video != null ? new InputMediaVideo(msg.Video.FileId) :
+                                    msg.Audio != null ? new InputMediaAudio(msg.Audio.FileId) :
+                                    new InputMediaDocument(msg.Document.FileId)).ToList();
+
+                    if (i + 10 >= mediaGroup.Count()) { lastMediaGroup = true; text = caption; }
+
+                    if (!groupChat && targetUserIds != null && targetUserIds.Count > 0) 
+                        await SendVideoToContacts(chatId, botClient, statusMessage, targetUserIds,
+                            savedMediaGroupIDs: savedMediaGroupIDs, caption: text,
+                            lastMediaGroup: lastMediaGroup);
+                    
+                    await Task.Delay(1000, cancellationToken);
+                }
             }
 
             Log.Debug($"Successfully sent {mediaFiles.Count} files");
@@ -264,7 +276,7 @@ partial class TelegramBot
 
     private static async Task SendVideoToContacts(long telegramId, ITelegramBotClient botClient,
                                                 Message statusMessage, List<long> targetUserIds, string? fileId = null,
-                                                List<InputMediaPhoto>? savedMediaGroupIDs = null, string caption = "", 
+                                                List<InputMedia>? savedMediaGroupIDs = null, string caption = "", 
                                                 bool lastMediaGroup = false)
     {
         int userId = DBforGetters.GetUserIDbyTelegramID(telegramId);
@@ -290,10 +302,17 @@ partial class TelegramBot
                 }
                 else if (savedMediaGroupIDs != null)
                 {
-                    await botClient.SendMediaGroup(contactUserId, savedMediaGroupIDs);
+                    Message[] mediaMessages = await botClient.SendMediaGroup(contactUserId,
+                                                                            savedMediaGroupIDs.Select(media => (IAlbumInputMedia)media),
+                                                                            disableNotification: true);
                     if (lastMediaGroup)
                     {
-                        await botClient.SendMessage(contactUserId, text, parseMode: ParseMode.Html);
+                        await botClient.SendMessage(
+                            chatId: contactUserId,
+                            text: text,
+                            parseMode: ParseMode.Html,
+                            replyParameters: new ReplyParameters { MessageId = mediaMessages[0].MessageId }
+                        );
                     }
                 }
                 sentCount++;
