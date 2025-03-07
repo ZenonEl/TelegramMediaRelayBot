@@ -14,6 +14,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using System.Text.RegularExpressions;
 
 
 namespace TelegramMediaRelayBot.TelegramBot.Utils ;
@@ -148,6 +149,51 @@ public static class CommonUtilities
         else
         {
             return "";
+        }
+    }
+
+    public static FileType DetermineFileType(byte[] bytes)
+    {
+        if (bytes == null || bytes.Length < 4)
+            return FileType.Document;
+
+        string start = BitConverter.ToString(bytes.Take(4).ToArray()).Replace("-", "");
+        
+        var patterns = new Dictionary<FileType, string>
+        {
+            { FileType.Video, @"^(424242|00000020|52494646|57415645)" }, // H264, MP4, AVI, WAV
+            { FileType.Photo, @"^(FFD8FF|89504E47|424D|49492A|4D4D2A)" }, // JPEG, PNG, BMP, TIFF
+            { FileType.Audio, @"^(49443304)" } // MP3
+        };
+
+        foreach (var pattern in patterns)
+        {
+            Log.Verbose($"File bytes start: {start}");
+            if (Regex.IsMatch(start, pattern.Value, RegexOptions.IgnoreCase))
+                return pattern.Key;
+        }
+
+        return FileType.Document;
+    }
+
+    public static IEnumerable<IAlbumInputMedia> CreateMediaGroup(List<byte[]> files)
+    {
+        return files.Select(CreateMedia);
+    }
+
+    private static IAlbumInputMedia CreateMedia(byte[] file)
+    {
+        var fileType = DetermineFileType(file);
+        switch (fileType)
+        {
+            case FileType.Photo:
+                return new InputMediaPhoto(new MemoryStream(file));
+            case FileType.Video:
+                return new InputMediaVideo(new MemoryStream(file));
+            case FileType.Audio:
+                return new InputMediaAudio(new MemoryStream(file));
+            default:
+                return new InputMediaDocument(new MemoryStream(file));
         }
     }
 }
