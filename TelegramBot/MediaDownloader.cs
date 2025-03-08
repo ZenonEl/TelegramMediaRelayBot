@@ -116,13 +116,14 @@ partial class TelegramBot
     public static async Task HandleMediaRequest(ITelegramBotClient botClient, string videoUrl, long chatId, Message statusMessage,
                                                 List<long>? targetUserIds = null, bool groupChat = false, string caption = "")
     {
-        var mediaFiles = await VideoGet.DownloadMedia(botClient, videoUrl, statusMessage, cancellationToken);
+        List<byte[]>? mediaFiles = await VideoGet.DownloadMedia(botClient, videoUrl, statusMessage, cancellationToken);
         if (mediaFiles?.Count > 0)
         {
-            Log.Debug($"Downloaded {mediaFiles.Count} files"); //TODO скорректировать отправку одиночных картинок
+            Log.Debug($"Downloaded {mediaFiles.Count} files");
             if (mediaFiles.Count == 1)
             {
-                await SendVideoToTelegram(mediaFiles[0], chatId, botClient, statusMessage, targetUserIds, groupChat, caption);
+                MediaFileType fileType = CommonUtilities.DetermineFileType(mediaFiles[0]);
+                await SendMediaToTelegram(mediaFiles[0], chatId, botClient, statusMessage, targetUserIds, fileType, groupChat, caption);
             }
             else
             {
@@ -154,7 +155,7 @@ partial class TelegramBot
                 {
                     var chunk = mediaGroup.Skip(i).Take(10).ToList();
                     
-                    var mess = await botClient.SendMediaGroup(
+                    Message[] mess = await botClient.SendMediaGroup(
                         chatId: chatId,
                         media: chunk,
                         replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
@@ -188,9 +189,14 @@ partial class TelegramBot
         }
     }
 
-    public static async Task SendVideoToTelegram(byte[] videoBytes, long chatId, ITelegramBotClient botClient,
-                                                Message statusMessage, List<long>? targetUserIds, bool groupChat = false, string caption = "")
+    public static async Task SendMediaToTelegram(byte[] videoBytes, long chatId, ITelegramBotClient botClient,
+                                                Message statusMessage, List<long>? targetUserIds,
+                                                MediaFileType fileType, bool groupChat = false,
+                                                string caption = "")
     {
+        //? Избавиться от функции и делать всё через медиагруппы?
+        //TODO Провести тесты для этого
+
         using (var memoryStream = new MemoryStream(videoBytes))
         using (var progressStream = new ProgressReportingStream(memoryStream))
         {
@@ -230,21 +236,54 @@ partial class TelegramBot
 
             Log.Debug("Starting video upload to Telegram.");
 
-            Message message = await botClient.SendDocument(
-                chatId,
-                InputFile.FromStream(progressStream, "video.mp4"),
-                caption: Config.GetResourceString("HereIsYourVideo") + text,
-                replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
-                parseMode: ParseMode.Html
-            );
+            string fileId;
+            Message message = new Message();
+
+            switch (fileType)
+            {
+                case MediaFileType.Video:
+                    message = await botClient.SendVideo(
+                        chatId,
+                        InputFile.FromStream(progressStream, "video.mp4"),
+                        caption: Config.GetResourceString("HereIsYourVideo") + text,
+                        replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
+                        parseMode: ParseMode.Html
+                    );
+                    fileId = message.Video!.FileId;
+                    break;
+                case MediaFileType.Photo:
+                    message = await botClient.SendPhoto(
+                        chatId,
+                        InputFile.FromStream(progressStream, "photo.png"),
+                        caption: Config.GetResourceString("HereIsYourVideo") + text,
+                        replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
+                        parseMode: ParseMode.Html
+                    );
+                    fileId = message.Photo![0].FileId;
+                    break;
+                case MediaFileType.Audio:
+                    message = await botClient.SendAudio(
+                        chatId,
+                        InputFile.FromStream(progressStream, "audio.mp3"),
+                        caption: Config.GetResourceString("HereIsYourVideo") + text,
+                        replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
+                        parseMode: ParseMode.Html
+                    );
+                    fileId = message.Audio!.FileId;
+                    break;
+                default:
+                    message = await botClient.SendDocument(
+                        chatId,
+                        InputFile.FromStream(progressStream, ""),
+                        caption: Config.GetResourceString("HereIsYourVideo") + text,
+                        replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
+                        parseMode: ParseMode.Html
+                    );
+                    fileId = message.Document!.FileId;
+                    break;
+            }
 
             Log.Debug("Video successfully sent to Telegram.");
-
-            string FileId;
-            if (message.Video != null && message.Video.FileId != null)
-                FileId = message.Video.FileId;
-            else
-                FileId = message.Document!.FileId;
 
             if (!groupChat && targetUserIds != null && targetUserIds.Count > 0)
             {
@@ -259,7 +298,7 @@ partial class TelegramBot
                     Log.Debug(ex, "Error editing message.");
                 }
                 Log.Debug("Starting video distribution to contacts.");
-                await SendVideoToContacts(chatId, botClient, statusMessage, targetUserIds, FileId, caption: caption);
+                await SendVideoToContacts(chatId, botClient, statusMessage, targetUserIds, fileId, caption: caption, fileType: fileType);
                 try
                 {
                     await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId,
@@ -277,7 +316,7 @@ partial class TelegramBot
     private static async Task SendVideoToContacts(long telegramId, ITelegramBotClient botClient,
                                                 Message statusMessage, List<long> targetUserIds, string? fileId = null,
                                                 List<InputMedia>? savedMediaGroupIDs = null, string caption = "", 
-                                                bool lastMediaGroup = false)
+                                                bool lastMediaGroup = false, MediaFileType? fileType = null)
     {
         int userId = DBforGetters.GetUserIDbyTelegramID(telegramId);
         List<long> mutedByUserIds = DBforGetters.GetUsersIdForMuteContactId(userId);
@@ -298,7 +337,41 @@ partial class TelegramBot
             {
                 if (fileId != null)
                 {
-                    await botClient.SendDocument(contactUserId, InputFile.FromFileId(fileId), caption: text, parseMode: ParseMode.Html);
+                    switch (fileType)
+                    {
+                        case MediaFileType.Video:
+                            await botClient.SendVideo(
+                                contactUserId,
+                                InputFile.FromFileId(fileId),
+                                caption: Config.GetResourceString("HereIsYourVideo") + text,
+                                parseMode: ParseMode.Html
+                            );
+                            break;
+                        case MediaFileType.Photo:
+                            await botClient.SendPhoto(
+                                contactUserId,
+                                InputFile.FromFileId(fileId),
+                                caption: Config.GetResourceString("HereIsYourVideo") + text,
+                                parseMode: ParseMode.Html
+                            );
+                            break;
+                        case MediaFileType.Audio:
+                            await botClient.SendAudio(
+                                contactUserId,
+                                InputFile.FromFileId(fileId),
+                                caption: Config.GetResourceString("HereIsYourVideo") + text,
+                                parseMode: ParseMode.Html
+                            );
+                            break;
+                        default:
+                            await botClient.SendDocument(
+                                contactUserId,
+                                InputFile.FromFileId(fileId),
+                                caption: Config.GetResourceString("HereIsYourVideo") + text,
+                                parseMode: ParseMode.Html
+                            );
+                            break;
+                    }
                 }
                 else if (savedMediaGroupIDs != null)
                 {
