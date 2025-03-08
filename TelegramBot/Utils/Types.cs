@@ -1,7 +1,7 @@
 namespace TelegramMediaRelayBot.TelegramBot.Utils;
 
 
-public enum FileType
+public enum MediaFileType
 {
     Video,
     Photo,
