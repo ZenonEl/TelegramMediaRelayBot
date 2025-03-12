@@ -46,6 +46,8 @@ For a more detailed understanding of the functionality and capabilities of our p
 The full history of changes can be found in [CHANGELOG.md](CHANGELOG.md).
 
 ## Future Plans
+- Plugin support system and pre-built plugins for monetisation: It is planned to create a system of plugins that will extend the functionality of the bot. This will include plugins that allow you to use the bot for tasks related to commercial activities. These plugins will provide additional tools for convenient management and new features, making the bot a universal solution for both personal use and the possibility of monetising it.
+- (Under review) **Mobile device support**: For users who can't keep the bot running smoothly on the servers, there may be an option to run the bot directly on their mobile phone. If possible, the database will also be synchronised with the main database.
 - (Under consideration) Adding support for **gallery-dl** to download media from even more platforms.
 - More detailed contact management (~~deletion~~, editing, etc.).
 - ~~Creating and managing contact groups within the bot~~.
