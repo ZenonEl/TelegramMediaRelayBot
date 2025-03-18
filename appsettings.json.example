@@ -5,7 +5,8 @@
         "DatabaseName": "TelegramMediaRelayBot",
         "Language": "en-US",
         "Proxy": "socks5://127.0.0.1:9050",
-        "UserUnMuteCheckInterval": 20
+        "UserUnMuteCheckInterval": 20,
+        "UseGalleryDl": true
     },
     "Tor": {
         "Enabled": true,
