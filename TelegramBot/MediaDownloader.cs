@@ -120,13 +120,14 @@ partial class TelegramBot
         if (mediaFiles?.Count > 0)
         {
             Log.Debug($"Downloaded {mediaFiles.Count} files");
+            await SendMediaToTelegram(botClient, chatId, mediaFiles, statusMessage, targetUserIds, groupChat, caption);
             return;
         }
 
         await botClient.SendMessage(chatId, Config.GetResourceString("FailedToProcessLink"));
     }
 
-    private static async Task SendMediaGroupToTelegram(ITelegramBotClient botClient, long chatId, List<byte[]> mediaFiles,
+    private static async Task SendMediaToTelegram(ITelegramBotClient botClient, long chatId, List<byte[]> mediaFiles,
                                                         Message statusMessage, List<long>? targetUserIds, bool groupChat = false,
                                                         string caption = "")
     {
