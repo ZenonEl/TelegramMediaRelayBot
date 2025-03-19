@@ -161,8 +161,8 @@ public static class CommonUtilities
         
         var patterns = new Dictionary<MediaFileType, string>
         {
-            { MediaFileType.Video, @"^(424242|00000020|52494646|57415645)" }, // H264, MP4, AVI, WAV
-            { MediaFileType.Photo, @"^(FFD8FF|89504E47|424D|49492A|4D4D2A)" }, // JPEG, PNG, BMP, TIFF
+            { MediaFileType.Video, @"^(424242|00000018|0000001C|00000020|57415645)" },
+            { MediaFileType.Photo, @"^(FFD8FF|89504E47|52494646|424D|49492A|4D4D2A)" },
             { MediaFileType.Audio, @"^(49443304)" } // MP3
         };
 
