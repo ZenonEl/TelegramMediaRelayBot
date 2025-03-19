@@ -20,19 +20,21 @@ namespace TelegramMediaRelayBot
     public class VideoGet
     {
         private static readonly string YtDlpPath = Path.Combine(AppContext.BaseDirectory, "yt-dlp");
-        private static readonly string Proxy = Config.proxy;
         private static readonly string[] ColonSpaceSeparator = [": "];
 
         public static async Task<List<byte[]>?> DownloadMedia(ITelegramBotClient botClient, string videoUrl, Message statusMessage, CancellationToken cancellationToken)
         {
             try
             {
-                Log.Debug("Starting video download via gallery-dl...");
-                var galleryFiles = await TryDownloadWithGalleryDlAsync(videoUrl, botClient, statusMessage, cancellationToken);
-                if (galleryFiles?.Count > 0)
+                if (Config.isUseGalleryDl)
                 {
-                    Log.Debug($"Downloaded {galleryFiles.Count} files via gallery-dl");
-                    return galleryFiles;
+                    Log.Debug("Starting video download via gallery-dl...");
+                    List<byte[]>? galleryFiles = await TryDownloadWithGalleryDlAsync(videoUrl, botClient, statusMessage, cancellationToken);
+
+                    if (galleryFiles?.Count > 0)
+                    {
+                        return galleryFiles;
+                    }
                 }
 
                 Log.Debug("Starting video download via yt-dlp...");
@@ -41,13 +43,17 @@ namespace TelegramMediaRelayBot
                 Directory.CreateDirectory(tempDirPath);
                 
                 using var httpClient = new HttpClient(new SocksPortHandler(Config.torSocksHost, socksPort: Config.torSocksPort));
-                var result = await httpClient.GetStringAsync("https://check.torproject.org/api/ip");
-                Log.Debug("Tor IP: " + result);
+
+                if (Config.torEnabled)
+                {
+                    var result = await httpClient.GetStringAsync("https://check.torproject.org/api/ip");
+                    Log.Debug("Tor IP: " + result);
+                }
 
                 var startInfo = new ProcessStartInfo
                 {
-                    FileName = YtDlpPath,
-                    Arguments = $"--proxy \"{Proxy}\" -v -f mp4 --output \"{tempDirPath}/video.%(ext)s\" {videoUrl}",
+                    FileName = "yt-dlp",
+                    Arguments = $"--proxy \"{Config.proxy}\" -v -f mp4 --output \"{tempDirPath}/video.%(ext)s\" {videoUrl}",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -95,7 +101,7 @@ namespace TelegramMediaRelayBot
 
                             if (System.IO.File.Exists(finalFilePath))
                             {
-                                var videoBytes = new List<byte[]> { System.IO.File.ReadAllBytes(finalFilePath) };
+                                List<byte[]>? videoBytes = new List<byte[]> { System.IO.File.ReadAllBytes(finalFilePath) };
                                 
                                 System.IO.File.Delete(finalFilePath);
                                 Directory.Delete(tempDirPath, recursive: true);
@@ -134,10 +140,8 @@ namespace TelegramMediaRelayBot
                 tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
                 Directory.CreateDirectory(tempDir);
                 //TODO Добавить разные параметры настройки gallery в appsettings
-                //TODO Попробовать добавить отображение прогресса скачивания через gallery
                 //TODO Не забыть добавить переключатель использования gallery-dl и всё окончательно затестить
                 //TODO Улучшить в целом работу с параметрами yt и gl и их конфиг файлами
-                Log.Debug("Starting process...");
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = "gallery-dl.bin",
@@ -199,15 +203,17 @@ namespace TelegramMediaRelayBot
                 string? line;
                 while ((line = await reader.ReadLineAsync(cancellationToken)) != null)
                 {
-                    lines.Add(line);
                     if (line.Contains("[download]"))
                     {
                         try
                         {
-                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, 
-                            line, 
-                            cancellationToken: cancellationToken);
-                            await Task.Delay(Config.videoGetDelay, cancellationToken);
+                            if (!lines.Contains(line))
+                            {
+                                await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, 
+                                RemoveUntilDownload(line),
+                                cancellationToken: cancellationToken);
+                                await Task.Delay(Config.videoGetDelay, cancellationToken);
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -215,12 +221,19 @@ namespace TelegramMediaRelayBot
                         }
                         if (Config.showVideoDownloadProgress) Log.Debug($"Video download progress: {line}");
                     }
+                    lines.Add(line);
                 }
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Error reading output lines.");
             }
+        }
+
+        private static string RemoveUntilDownload(string line)
+        {
+            int startIndex = line.IndexOf("[download]");
+            return startIndex != -1 ? line.Substring(startIndex) : line;
         }
     }
 }
