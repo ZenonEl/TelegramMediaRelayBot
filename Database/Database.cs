@@ -326,4 +326,51 @@ public class CoreDB
             }
         }
     }
+
+    public static bool ReCreateSelfLink(int userId)
+    {
+        string newLink = Utils.GenerateUserLink();
+        string query = @"
+            UPDATE Users SET Link = @newLink WHERE ID = @userId";
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@newLink", newLink);
+                command.Parameters.AddWithValue("@userId", userId);
+                command.ExecuteNonQuery();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(ReCreateSelfLink));
+                return false;
+            }
+        }
+    }
+
+    public static bool DeleteAllContacts(int userId)
+    {
+        string query = @$"
+            USE {Config.databaseName};
+            DELETE FROM Contacts WHERE (UserId = @userId) OR (ContactId = @userId)";
+        using (MySqlConnection connection = new MySqlConnection(connectionString))
+        {
+            try
+            {
+                connection.Open();
+                MySqlCommand command = new MySqlCommand(query, connection);
+                command.Parameters.AddWithValue("@userId", userId);
+                command.ExecuteNonQuery();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(DeleteAllContacts));
+                return false;
+            }
+        }
+    }
 }
