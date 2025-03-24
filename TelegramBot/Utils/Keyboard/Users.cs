@@ -28,7 +28,7 @@ public static class UsersKB
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("PrivacyButtonText"), $"privacy_menu"),
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("PrivacyButtonText"), $"privacy_menu_and_safety"),
             },
             new[]
             {
@@ -91,7 +91,7 @@ public static class UsersPrivacyMenuKB
             },
             new[]
             {
-                KeyboardUtils.GetReturnButton("privacy_menu")
+                KeyboardUtils.GetReturnButton("privacy_menu_and_safety")
             },
         });
         return inlineKeyboard;

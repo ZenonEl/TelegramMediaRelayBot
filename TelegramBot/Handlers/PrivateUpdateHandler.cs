@@ -137,7 +137,7 @@ public class PrivateUpdateHandler
                 await Users.ViewDefaultActionsMenu(botClient, update);
                 break;
 
-            case "privacy_menu":
+            case "privacy_menu_and_safety":
                 await Users.ViewPrivacyMenu(botClient, update);
                 break;
             case "user_update_self_link":
