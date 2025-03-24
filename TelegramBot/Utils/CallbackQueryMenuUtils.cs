@@ -60,7 +60,7 @@ public static class CallbackQueryMenuUtils
         string userId = update.CallbackQuery!.Data!.Split(':')[1];
         int senderTelegramID = DBforGetters.GetUserIDbyTelegramID(long.Parse(userId));
         int accepterTelegramID = DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery.Message!.Chat.Id);
-        CoreDB.RemoveContact(senderTelegramID, accepterTelegramID);
+        CoreDB.RemoveContactByStatus(senderTelegramID, accepterTelegramID, DataBase.Types.ContactsStatus.WAITING_FOR_ACCEPT);
         return Task.CompletedTask;
     }
 
