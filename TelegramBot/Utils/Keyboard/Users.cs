@@ -51,6 +51,18 @@ public static class UsersPrivacyMenuKB
             },
             new[]
             {
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("WhoCanFindMeByLink"), $"user_update_self_link"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SiteStopList"), $"user_update_self_link"),
+            },
+                        new[]
+            {
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("PermanentContentSpoiler"), $"user_update_self_link"),
+            },
+            new[]
+            {
                 KeyboardUtils.GetReturnButton("show_settings")
             },
         });
@@ -71,7 +83,11 @@ public static class UsersPrivacyMenuKB
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SelfLinkRefreshButtonTextOption3"), $"user_update_self_link"),
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SelfLinkRefreshButtonTextOption3"), $"user_update_self_link_with_keep_selected_contacts"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SelfLinkRefreshButtonTextOption4"), $"user_update_self_link_with_delete_selected_contacts"),
             },
             new[]
             {
