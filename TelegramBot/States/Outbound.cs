@@ -78,7 +78,7 @@ public class UserProcessOutboundState : IUserState
                     {
                         string userId = update.CallbackQuery.Data.Split(':')[1];
                         int accepterTelegramID = DBforGetters.GetUserIDbyTelegramID(long.Parse(userId));
-                        CoreDB.RemoveContactByStatus(DBforGetters.GetUserIDbyTelegramID(chatId), accepterTelegramID, DataBase.Types.ContactsStatus.WAITING_FOR_ACCEPT);
+                        ContactRemover.RemoveContactByStatus(DBforGetters.GetUserIDbyTelegramID(chatId), accepterTelegramID, DataBase.Types.ContactsStatus.WAITING_FOR_ACCEPT);
                     }
                 }
                 TelegramBot.userStates.Remove(chatId);

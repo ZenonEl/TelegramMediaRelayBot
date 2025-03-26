@@ -232,7 +232,7 @@ public class ProcessVideoDC : IUserState
         switch (action)
         {
             case UsersAction.SEND_MEDIA_TO_ALL_CONTACTS:
-                contactUserTGIds = await CoreDB.GetAllContactUserTGIds(userId);
+                contactUserTGIds = await ContactGetter.GetAllContactUserTGIds(userId);
                 targetUserIds = contactUserTGIds.Except(mutedByUserIds).ToList();
                 break;
 
@@ -263,7 +263,7 @@ public class ProcessVideoDC : IUserState
                 {
                     contactUserTGIds.Add(DBforGetters.GetTelegramIDbyUserID(contactId));
                 }
-                List<long> allContactUserTGIds = await CoreDB.GetAllContactUserTGIds(userId);
+                List<long> allContactUserTGIds = await ContactGetter.GetAllContactUserTGIds(userId);
                 List<long> filteredContactUserTGIds = contactUserTGIds.Except(allContactUserTGIds).ToList();
                 targetUserIds = contactUserTGIds.Except(mutedByUserIds).ToList();
                 break;

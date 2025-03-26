@@ -81,7 +81,7 @@ public class ProcessContactState : IUserState
             case ContactState.WaitingForConfirmation:
                 if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId)) return;
 
-                CoreDB.AddContact(chatId, link);
+                ContactAdder.AddContact(chatId, link);
 
                 await SendNotification(botClient, chatId, cancellationToken);
                 await botClient.SendMessage(chatId, Config.GetResourceString("WaitForContactConfirmation"),

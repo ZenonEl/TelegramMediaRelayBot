@@ -97,7 +97,7 @@ public class ProcessRemoveUser : IUserState
 
     private async Task<bool> RetrieveAndDisplayUserInfo(ITelegramBotClient botClient, Update update, long chatId, CancellationToken cancellationToken)
     {
-        List<long> contactUserTGIds = await CoreDB.GetAllContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(chatId));
+        List<long> contactUserTGIds = await ContactGetter.GetAllContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(chatId));
         List<long> preparedTargetUserTGIds = preparedTargetUserIds.Select(id => DBforGetters.GetTelegramIDbyUserID(id)).ToList();
 
         contactUserTGIds = contactUserTGIds.Intersect(preparedTargetUserTGIds).ToList();
@@ -129,10 +129,7 @@ public class ProcessRemoveUser : IUserState
 
     private void RemoveUsersFromContacts(ITelegramBotClient botClient, long chatId, CancellationToken cancellationToken)
     {
-        foreach (int contactId in preparedTargetUserIds)
-        {
-            int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
-            isDeleteSuccessful = CoreDB.RemoveUserFromContacts(userId, contactId);
-        }
+        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
+        isDeleteSuccessful = ContactRemover.RemoveUsersFromContacts(userId, preparedTargetUserIds);
     }
 }

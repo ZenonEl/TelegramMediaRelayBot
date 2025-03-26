@@ -41,7 +41,7 @@ class PrivateUtils
                 switch (defaultAction)
                 {
                     case UsersAction.SEND_MEDIA_TO_ALL_CONTACTS:
-                        List<long> contactUserTGIds = await CoreDB.GetAllContactUserTGIds(userId);
+                        List<long> contactUserTGIds = await ContactGetter.GetAllContactUserTGIds(userId);
                         targetUserIds = contactUserTGIds.Except(mutedByUserIds).ToList();
                         break;
 

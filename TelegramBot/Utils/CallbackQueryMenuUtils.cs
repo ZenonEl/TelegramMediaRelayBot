@@ -51,7 +51,7 @@ public static class CallbackQueryMenuUtils
 
     public static Task AcceptInboundInvite(Update update)
     {
-        CoreDB.SetContactStatus(long.Parse(update.CallbackQuery!.Data!.Split(':')[1]), update.CallbackQuery.Message!.Chat.Id, DataBase.Types.ContactsStatus.ACCEPTED);
+        ContactSetter.SetContactStatus(long.Parse(update.CallbackQuery!.Data!.Split(':')[1]), update.CallbackQuery.Message!.Chat.Id, DataBase.Types.ContactsStatus.ACCEPTED);
         return Task.CompletedTask;
     }
 
@@ -60,7 +60,7 @@ public static class CallbackQueryMenuUtils
         string userId = update.CallbackQuery!.Data!.Split(':')[1];
         int senderTelegramID = DBforGetters.GetUserIDbyTelegramID(long.Parse(userId));
         int accepterTelegramID = DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery.Message!.Chat.Id);
-        CoreDB.RemoveContactByStatus(senderTelegramID, accepterTelegramID, DataBase.Types.ContactsStatus.WAITING_FOR_ACCEPT);
+        ContactRemover.RemoveContactByStatus(senderTelegramID, accepterTelegramID, DataBase.Types.ContactsStatus.WAITING_FOR_ACCEPT);
         return Task.CompletedTask;
     }
 

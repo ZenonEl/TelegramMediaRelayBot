@@ -180,7 +180,7 @@ namespace MediaTelegramBot
 
         static private async Task<List<int>> ValidateUserIds(int actingUserId, List<int> inputIds)
         {
-            var allowedIds = await CoreDB.GetAllContactUserTGIds(actingUserId);
+            var allowedIds = await ContactGetter.GetAllContactUserTGIds(actingUserId);
             return inputIds
                 .Where(id => allowedIds.Contains(DBforGetters.GetTelegramIDbyUserID(id)))
                 .ToList();
