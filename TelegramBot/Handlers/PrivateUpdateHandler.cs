@@ -93,6 +93,7 @@ public class PrivateUpdateHandler
     public static async Task ProcessCallbackQuery(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
     {
         var callbackQuery = update.CallbackQuery;
+        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
 
         switch (callbackQuery!.Data)
         {
@@ -141,6 +142,52 @@ public class PrivateUpdateHandler
                 await Users.ViewPrivacyMenu(botClient, update);
                 break;
             case "user_update_self_link":
+                await Users.ViewLinkPrivacyMenu(botClient, update);
+                break;
+            case "user_update_self_link_with_contacts":
+                await CommonUtilities.SendMessage(botClient, update, 
+                    KeyboardUtils.GetConfirmForActionKeyboardMarkup(
+                        $"process_user_update_self_link_with_contacts", 
+                        $"user_update_self_link"),
+                    cancellationToken, 
+                    Config.GetResourceString("UpdateLinkKeepContactsConfirmation"));
+                break;
+
+            case "user_update_self_link_with_new_contacts":
+                await CommonUtilities.SendMessage(botClient, update, 
+                    KeyboardUtils.GetConfirmForActionKeyboardMarkup(
+                        $"process_user_update_self_link_with_new_contacts", 
+                        $"user_update_self_link"),
+                    cancellationToken, 
+                    Config.GetResourceString("UpdateLinkNewContactsWarning"));
+                break;
+
+            case "user_update_self_link_with_keep_selected_contacts":
+                await CommonUtilities.SendMessage(
+                    botClient,
+                    update,
+                    KeyboardUtils.GetReturnButtonMarkup("user_update_self_link"),
+                    cancellationToken,
+                    Config.GetResourceString("EnterContactIdsPrompt"));
+                TelegramBot.userStates[chatId] = new ProcessContactLinksState(false);
+                break;
+
+            case "user_update_self_link_with_delete_selected_contacts":
+                await CommonUtilities.SendMessage(
+                    botClient,
+                    update,
+                    KeyboardUtils.GetReturnButtonMarkup("user_update_self_link"),
+                    cancellationToken,
+                    Config.GetResourceString("EnterContactIdsPrompt"));
+                TelegramBot.userStates[chatId] = new ProcessContactLinksState(true);
+                break;
+            case "process_user_update_self_link_with_contacts":
+                CoreDB.ReCreateSelfLink(DBforGetters.GetUserIDbyTelegramID(chatId));
+                await Users.ViewLinkPrivacyMenu(botClient, update);
+                break;
+            case "process_user_update_self_link_with_new_contacts":
+                CoreDB.ReCreateSelfLink(userId);
+                ContactRemover.RemoveAllContacts(userId);
                 await Users.ViewLinkPrivacyMenu(botClient, update);
                 break;
 
