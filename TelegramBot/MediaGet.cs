@@ -19,7 +19,6 @@ namespace TelegramMediaRelayBot
 {
     public class VideoGet
     {
-        private static readonly string YtDlpPath = Path.Combine(AppContext.BaseDirectory, "yt-dlp");
         private static readonly string[] ColonSpaceSeparator = [": "];
 
         public static async Task<List<byte[]>?> DownloadMedia(ITelegramBotClient botClient, string videoUrl, Message statusMessage, CancellationToken cancellationToken)
@@ -102,10 +101,10 @@ namespace TelegramMediaRelayBot
                             if (System.IO.File.Exists(finalFilePath))
                             {
                                 List<byte[]>? videoBytes = new List<byte[]> { System.IO.File.ReadAllBytes(finalFilePath) };
-                                
+
                                 System.IO.File.Delete(finalFilePath);
                                 Directory.Delete(tempDirPath, recursive: true);
-                                
+
                                 return videoBytes;
                             }
                             
@@ -139,9 +138,7 @@ namespace TelegramMediaRelayBot
             {
                 tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
                 Directory.CreateDirectory(tempDir);
-                //TODO Добавить разные параметры настройки gallery в appsettings
-                //TODO Не забыть добавить переключатель использования gallery-dl и всё окончательно затестить
-                //TODO Улучшить в целом работу с параметрами yt и gl и их конфиг файлами
+
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = "gallery-dl.bin",
