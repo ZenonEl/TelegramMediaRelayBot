@@ -10,8 +10,6 @@
 // (по вашему выбору) любой более поздней версии.
 
 using Telegram.Bot.Types.ReplyMarkups;
-using DataBase;
-using TelegramMediaRelayBot;
 
 
 namespace TelegramMediaRelayBot.TelegramBot.Utils ;

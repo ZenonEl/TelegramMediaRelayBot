@@ -9,8 +9,8 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using DataBase;
-using Telegram.Bot;
+
+
 using Telegram.Bot.Types;
 using TelegramMediaRelayBot.TelegramBot.Utils ;
 using TelegramMediaRelayBot;

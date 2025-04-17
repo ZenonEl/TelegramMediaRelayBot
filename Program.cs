@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2024-2025 ZenonEl
+// Copyright (C) 2024-2025 ZenonEl
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published
 // by the Free Software Foundation, either version 3 of the License, or
@@ -9,9 +9,11 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
+global using Serilog;
+global using DataBase;
+global using Telegram.Bot;
 using System.Globalization;
-using DataBase;
-using Serilog;
+
 
 namespace TelegramMediaRelayBot
 {
@@ -46,7 +48,7 @@ namespace TelegramMediaRelayBot
                 .Enrich.FromLogContext()
                 .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss} [{Level}] {Message} {Exception}{NewLine}").CreateLogger();
 
-            try 
+            try
             {
                 Log.Information($"Log level: {Config.logLevel}");
                 CoreDB.InitDB();

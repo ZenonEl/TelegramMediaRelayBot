@@ -10,8 +10,8 @@
 // (по вашему выбору) любой более поздней версии.
 
 using MySql.Data.MySqlClient;
-using Serilog;
 using TelegramMediaRelayBot;
+
 
 namespace DataBase;
 

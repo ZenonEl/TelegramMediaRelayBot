@@ -9,9 +9,8 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using DataBase;
 using DotNetTor.SocksPort;
-using Serilog;
+
 
 namespace TelegramMediaRelayBot.Scheduler;
 

@@ -11,8 +11,6 @@
 
 using System.Diagnostics;
 using DotNetTor.SocksPort;
-using Serilog;
-using Telegram.Bot;
 using Telegram.Bot.Types;
 
 namespace TelegramMediaRelayBot

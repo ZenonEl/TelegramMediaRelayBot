@@ -11,8 +11,8 @@
 
 using System.Data;
 using MySql.Data.MySqlClient;
-using Serilog;
 using TelegramMediaRelayBot;
+
 
 namespace DataBase;
 
