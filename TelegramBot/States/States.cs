@@ -13,7 +13,7 @@
 using Telegram.Bot.Types;
 
 
-namespace MediaTelegramBot;
+namespace TelegramMediaRelayBot;
 
 
 public interface IUserState

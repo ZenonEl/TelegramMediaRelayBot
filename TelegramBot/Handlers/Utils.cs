@@ -11,12 +11,10 @@
 
 
 using Telegram.Bot.Types;
-using TelegramMediaRelayBot;
-
 using DataBase.Types;
 
 
-namespace MediaTelegramBot.HandlersUtils;
+namespace TelegramMediaRelayBot.TelegramBot.Handlers;
 
 class PrivateUtils
 {
@@ -78,7 +76,7 @@ class PrivateUtils
                         break;
                 }
 
-                if (TelegramBot.userStates.TryGetValue(chatId, out var state) && state is ProcessVideoDC videoState)
+                if (TGBot.userStates.TryGetValue(chatId, out var state) && state is ProcessVideoDC videoState)
                 {
                     await botClient.EditMessageText(
                         statusMessage.Chat.Id,
@@ -86,7 +84,7 @@ class PrivateUtils
                         Config.GetResourceString("DefaultActionTimeoutMessage"),
                         cancellationToken: cancellationToken
                     );
-                    _ = TelegramBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
+                    _ = TGBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
 
                     if (videoState.linkQueue.Count > 0)
                     {
@@ -112,7 +110,7 @@ class PrivateUtils
                     }
                     else
                     {
-                        TelegramBot.userStates.Remove(chatId, out _);
+                        TGBot.userStates.Remove(chatId, out _);
                     }
                 }
             }

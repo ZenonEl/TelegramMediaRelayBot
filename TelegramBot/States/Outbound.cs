@@ -9,15 +9,12 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-
-
 using Telegram.Bot.Types;
-using TelegramMediaRelayBot.TelegramBot.Utils ;
-using TelegramMediaRelayBot;
 using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 
-namespace MediaTelegramBot;
+namespace TelegramMediaRelayBot;
 
 public class UserProcessOutboundState : IUserState
 {
@@ -43,7 +40,7 @@ public class UserProcessOutboundState : IUserState
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (!TelegramBot.userStates.TryGetValue(chatId, out IUserState? value))
+        if (!TGBot.userStates.TryGetValue(chatId, out IUserState? value))
         {
             return;
         }
@@ -61,7 +58,7 @@ public class UserProcessOutboundState : IUserState
                     userState.currentState = UserOutboundState.Finish;
                     return;
                 }
-                TelegramBot.userStates.Remove(chatId);
+                TGBot.userStates.Remove(chatId);
                 await CallbackQueryMenuUtils.ViewOutboundInviteLinks(botClient, update);
                 break;
 
@@ -70,7 +67,7 @@ public class UserProcessOutboundState : IUserState
                 {
                     if (update.CallbackQuery.Data!.StartsWith("user_show_outbound_invite:"))
                     {
-                        TelegramBot.userStates.Remove(chatId);
+                        TGBot.userStates.Remove(chatId);
                         await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId);
                         return;
                     }
@@ -81,7 +78,7 @@ public class UserProcessOutboundState : IUserState
                         ContactRemover.RemoveContactByStatus(DBforGetters.GetUserIDbyTelegramID(chatId), accepterTelegramID, DataBase.Types.ContactsStatus.WAITING_FOR_ACCEPT);
                     }
                 }
-                TelegramBot.userStates.Remove(chatId);
+                TGBot.userStates.Remove(chatId);
                 await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                 break;

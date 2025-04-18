@@ -9,20 +9,19 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Telegram.Bot;
+
 using Telegram.Bot.Types;
 using Telegram.Bot.Polling;
-using TelegramMediaRelayBot;
 using System.Text.RegularExpressions;
-using DataBase;
-using Serilog;
+using DataBase.Types;
 using Telegram.Bot.Types.Enums;
 using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Handlers;
 
 
-namespace MediaTelegramBot;
+namespace TelegramMediaRelayBot;
 
-partial class TelegramBot
+partial class TGBot
 {
     private static ITelegramBotClient? botClient;
     public static Dictionary<long, IUserState> userStates = [];

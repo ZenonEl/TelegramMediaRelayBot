@@ -10,14 +10,14 @@
 // (по вашему выбору) любой более поздней версии.
 
 using Telegram.Bot.Types;
-using MediaTelegramBot;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 
-namespace TelegramMediaRelayBot.TelegramBot.Utils ;
+namespace TelegramMediaRelayBot.TelegramBot.Utils;
 
 public static class CallbackQueryMenuUtils
 {
-    public static CancellationToken cancellationToken = MediaTelegramBot.TelegramBot.cancellationToken;
+    public static CancellationToken cancellationToken = TGBot.cancellationToken;
 
     public static async Task GetSelfLink(ITelegramBotClient botClient, Update update)
     {
@@ -31,7 +31,7 @@ public static class CallbackQueryMenuUtils
     {
         string text = Config.GetResourceString("YourInboundInvitations");
         await CommonUtilities.SendMessage(botClient, update, InBoundKB.GetInboundsKeyboardMarkup(update), cancellationToken, text);
-        MediaTelegramBot.TelegramBot.userStates[chatId] = new UserProcessInboundState();
+        TGBot.userStates[chatId] = new UserProcessInboundState();
     }
 
     public static async Task ViewOutboundInviteLinks(ITelegramBotClient botClient, Update update)
@@ -44,7 +44,7 @@ public static class CallbackQueryMenuUtils
     {
         string userId = update.CallbackQuery!.Data!.Split(':')[1];
         await CommonUtilities.SendMessage(botClient, update, OutBoundKB.GetOutboundActionsKeyboardMarkup(userId), cancellationToken, Config.GetResourceString("OutboundInviteMenu"));
-        MediaTelegramBot.TelegramBot.userStates[chatId] = new UserProcessOutboundState();
+        TGBot.userStates[chatId] = new UserProcessOutboundState();
     }
 
     public static Task AcceptInboundInvite(Update update)

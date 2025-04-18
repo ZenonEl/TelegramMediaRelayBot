@@ -9,14 +9,11 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-
-
 using Telegram.Bot.Types;
-using TelegramMediaRelayBot;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 
 
-namespace MediaTelegramBot;
+namespace TelegramMediaRelayBot;
 
 public class ProcessUserUnMuteState : IUserState
 {
@@ -45,7 +42,7 @@ public class ProcessUserUnMuteState : IUserState
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (!TelegramBot.userStates.TryGetValue(chatId, out IUserState? value))
+        if (!TGBot.userStates.TryGetValue(chatId, out IUserState? value))
         {
             return;
         }
@@ -106,7 +103,7 @@ public class ProcessUserUnMuteState : IUserState
 
                 ContactRemover.RemoveMutedContact(mutedByUserId, mutedContactId);
                 await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("UserUnmuted"));
-                TelegramBot.userStates.Remove(chatId);
+                TGBot.userStates.Remove(chatId);
                 break;
         }
     }

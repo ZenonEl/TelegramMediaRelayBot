@@ -9,16 +9,15 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Telegram.Bot;
+
 using Telegram.Bot.Types;
-using MediaTelegramBot.Menu;
-using TelegramMediaRelayBot.TelegramBot.Utils ;
-using TelegramMediaRelayBot;
-using DataBase;
 using DataBase.Types;
+using TelegramMediaRelayBot.TelegramBot.Menu;
+using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
 
-namespace MediaTelegramBot;
+namespace TelegramMediaRelayBot.TelegramBot.Handlers;
 
 public class PrivateUpdateHandler
 {
@@ -63,7 +62,7 @@ public class PrivateUpdateHandler
             string defaultActionData = DBforGetters.GetDefaultActionByUserIDAndType(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
 
             CancellationTokenSource timeoutCTS = new CancellationTokenSource();
-            TelegramBot.userStates[chatId] = new ProcessVideoDC(link, statusMessage, text, timeoutCTS);
+            TGBot.userStates[chatId] = new ProcessVideoDC(link, statusMessage, text, timeoutCTS);
 
             if (defaultActionData == UsersAction.NO_VALUE) return;
 
@@ -72,7 +71,7 @@ public class PrivateUpdateHandler
 
             if (defaultAction == UsersAction.OFF) return;
 
-            HandlersUtils.PrivateUtils.ProcessDefaultSendAction(botClient, chatId, statusMessage, defaultAction, cancellationToken,
+            PrivateUtils.ProcessDefaultSendAction(botClient, chatId, statusMessage, defaultAction, cancellationToken,
                                                                 userId, defaultCondition, timeoutCTS, link, text);
         }
         else if (update.Message.Text == "/start")
@@ -258,7 +257,7 @@ public class PrivateUpdateHandler
                         if (action == UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS) isGroup = true;
 
                         Users.SetDefaultActionToUser(chatId, action);
-                        TelegramBot.userStates[chatId] = new ProcessUserSetDCSendState(isGroup);
+                        TGBot.userStates[chatId] = new ProcessUserSetDCSendState(isGroup);
                         return;
                     }
 

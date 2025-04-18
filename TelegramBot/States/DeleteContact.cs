@@ -10,15 +10,14 @@
 // (по вашему выбору) любой более поздней версии.
 
 
-using TelegramMediaRelayBot.TelegramBot.Utils ;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot.Types.Enums;
-using TelegramMediaRelayBot;
+using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 
-
-namespace MediaTelegramBot;
+namespace TelegramMediaRelayBot;
 
 public class ProcessRemoveUser : IUserState
 {
@@ -83,7 +82,7 @@ public class ProcessRemoveUser : IUserState
                         string text = isDeleteSuccessful ? Config.GetResourceString("SuccessActionResult") : Config.GetResourceString("ErrorActionResult");
                         await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, text);
                         
-                        TelegramBot.userStates.Remove(chatId);
+                        TGBot.userStates.Remove(chatId);
                     }
                     else if (callbackData == "cancel_removal")
                     {

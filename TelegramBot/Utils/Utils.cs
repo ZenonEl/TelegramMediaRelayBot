@@ -15,12 +15,12 @@ using Telegram.Bot.Types.ReplyMarkups;
 using System.Text.RegularExpressions;
 
 
-namespace TelegramMediaRelayBot.TelegramBot.Utils ;
+namespace TelegramMediaRelayBot.TelegramBot.Utils;
 
 public static class CommonUtilities
 {
 
-    public static CancellationToken cancellationToken = MediaTelegramBot.TelegramBot.cancellationToken;
+    public static CancellationToken cancellationToken = TGBot.cancellationToken;
     public static Task ErrorHandler(ITelegramBotClient _, Exception exception, CancellationToken __)
     {
         Log.Error($"Error occurred: {exception.Message}");
@@ -99,7 +99,7 @@ public static class CommonUtilities
     {
         await botClient.SendMessage(chatId, text, cancellationToken: cancellationToken);
         await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-        MediaTelegramBot.TelegramBot.userStates.Remove(chatId);
+        TGBot.userStates.Remove(chatId);
     }
 
     public static async Task<bool> HandleStateBreakCommand(ITelegramBotClient botClient,
@@ -114,7 +114,7 @@ public static class CommonUtilities
         {
             if (removeReplyMarkup) await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
             await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-            MediaTelegramBot.TelegramBot.userStates.Remove(chatId);
+            TGBot.userStates.Remove(chatId);
             return true;
         }
         return false;

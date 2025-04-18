@@ -53,7 +53,7 @@ namespace TelegramMediaRelayBot
                 Log.Information($"Log level: {Config.logLevel}");
                 CoreDB.InitDB();
                 Scheduler.Scheduler.Init();
-                await MediaTelegramBot.TelegramBot.Start();
+                await TGBot.Start();
             }
             catch (Exception ex)
             {

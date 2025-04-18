@@ -10,12 +10,12 @@
 // (по вашему выбору) любой более поздней версии.
 
 
-
 using Telegram.Bot.Types;
-using TelegramMediaRelayBot.TelegramBot.Utils ;
-using TelegramMediaRelayBot;
+using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
-namespace MediaTelegramBot;
+
+namespace TelegramMediaRelayBot;
 
 public class ProcessContactLinksState : IUserState
 {
@@ -38,7 +38,7 @@ public class ProcessContactLinksState : IUserState
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (!TelegramBot.userStates.TryGetValue(chatId, out IUserState? value) || value is not ProcessContactLinksState userState)
+        if (!TGBot.userStates.TryGetValue(chatId, out IUserState? value) || value is not ProcessContactLinksState userState)
             return;
 
         switch (userState.currentState)
@@ -137,7 +137,7 @@ public class ProcessContactLinksState : IUserState
             actionStatus = ContactRemover.RemoveAllContactsExcept(userState.actingUserId, userState.targetIds);
         }
 
-        TelegramBot.userStates.Remove(chatId);
+        TGBot.userStates.Remove(chatId);
 
         string statusMessage = actionStatus 
             ? Config.GetResourceString("SuccessActionResult") 
@@ -156,7 +156,7 @@ public class ProcessContactLinksState : IUserState
 
     private static async Task FinishState(ITelegramBotClient botClient, Update update, long chatId, CancellationToken cancellationToken)
     {
-        TelegramBot.userStates.Remove(chatId);
+        TGBot.userStates.Remove(chatId);
         await CommonUtilities.SendMessage(
             botClient,
             update,

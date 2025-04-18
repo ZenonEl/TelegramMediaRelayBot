@@ -12,12 +12,10 @@
 
 
 using Telegram.Bot.Types;
-using TelegramMediaRelayBot.TelegramBot.Utils ;
-using TelegramMediaRelayBot;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 
 
-namespace MediaTelegramBot;
+namespace TelegramMediaRelayBot;
 
 public class ProcessContactState : IUserState
 {
@@ -51,7 +49,7 @@ public class ProcessContactState : IUserState
                 {
                     await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
                     await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-                    TelegramBot.userStates.Remove(chatId);
+                    TGBot.userStates.Remove(chatId);
                     return;
                 }
 
@@ -96,7 +94,7 @@ public class ProcessContactState : IUserState
                 await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
 
-                TelegramBot.userStates.Remove(chatId);
+                TGBot.userStates.Remove(chatId);
                 break;
         }
     }

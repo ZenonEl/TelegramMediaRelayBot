@@ -9,18 +9,17 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Telegram.Bot;
-using Telegram.Bot.Types;
-using TelegramMediaRelayBot.TelegramBot.Utils ;
-using DataBase;
-using DataBase.Types;
-using TelegramMediaRelayBot;
 
-namespace MediaTelegramBot.Menu;
+using DataBase.Types;
+using Telegram.Bot.Types;
+using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
+
+namespace TelegramMediaRelayBot.TelegramBot.Menu;
 
 public class Users
 {
-    public static CancellationToken cancellationToken = TelegramBot.cancellationToken;
+    public static CancellationToken cancellationToken = TGBot.cancellationToken;
 
     public static async Task ViewSettings(ITelegramBotClient botClient, Update update)
     {

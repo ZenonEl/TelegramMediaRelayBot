@@ -10,11 +10,11 @@
 // (по вашему выбору) любой более поздней версии.
 
 using Telegram.Bot.Types;
-using TelegramMediaRelayBot.TelegramBot.Utils ;
-using TelegramMediaRelayBot;
+using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 
-namespace MediaTelegramBot;
+namespace TelegramMediaRelayBot;
 
 public class UserProcessInboundState : IUserState
 {
@@ -40,7 +40,7 @@ public class UserProcessInboundState : IUserState
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (!TelegramBot.userStates.TryGetValue(chatId, out IUserState? value))
+        if (!TGBot.userStates.TryGetValue(chatId, out IUserState? value))
         {
             return;
         }
@@ -58,14 +58,14 @@ public class UserProcessInboundState : IUserState
                     userState.currentState = UserInboundState.ProcessAction;
                     return;
                 }
-                TelegramBot.userStates.Remove(chatId);
+                TGBot.userStates.Remove(chatId);
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                 break;
 
             case UserInboundState.ProcessAction:
                 if (update.Message != null && update.Message.Text != null)
                 {
-                    TelegramBot.userStates.Remove(chatId);
+                    TGBot.userStates.Remove(chatId);
                     await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                     return;
                 }
@@ -106,7 +106,7 @@ public class UserProcessInboundState : IUserState
                     userState.currentState = UserInboundState.ProcessAction;
                     return;
                 }
-                TelegramBot.userStates.Remove(chatId);
+                TGBot.userStates.Remove(chatId);
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                 break;
         }

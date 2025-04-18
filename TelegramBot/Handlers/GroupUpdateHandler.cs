@@ -10,10 +10,9 @@
 // (по вашему выбору) любой более поздней версии.
 
 using Telegram.Bot.Types;
-using TelegramMediaRelayBot;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 
-namespace MediaTelegramBot;
+namespace TelegramMediaRelayBot.TelegramBot.Handlers;
 
 public class GroupUpdateHandler
 {
@@ -43,7 +42,7 @@ public class GroupUpdateHandler
             if (CommonUtilities.IsLink(link))
             {
                 Message statusMessage = await botClient.SendMessage(update.Message.Chat.Id, Config.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
-                _ = TelegramBot.HandleMediaRequest(botClient, link, update.Message.Chat.Id, statusMessage: statusMessage, groupChat: true, caption: text);
+                _ = TGBot.HandleMediaRequest(botClient, link, update.Message.Chat.Id, statusMessage: statusMessage, groupChat: true, caption: text);
             }
             else
             {

@@ -13,7 +13,7 @@ using DataBase.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
 
-namespace TelegramMediaRelayBot.TelegramBot.Utils;
+namespace TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 public static class UsersKB
 {

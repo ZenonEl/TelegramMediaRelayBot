@@ -9,14 +9,12 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-
-
 using Telegram.Bot.Types;
-using TelegramMediaRelayBot.TelegramBot.Utils ;
-using TelegramMediaRelayBot;
+using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 using DataBase.Types;
 
-namespace MediaTelegramBot
+namespace TelegramMediaRelayBot
 {
     public class ProcessUserSetDCSendState : IUserState
     {
@@ -39,7 +37,7 @@ namespace MediaTelegramBot
             long chatId = CommonUtilities.GetIDfromUpdate(update);
             if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-            if (!TelegramBot.userStates.TryGetValue(chatId, out IUserState? value) || value is not ProcessUserSetDCSendState userState)
+            if (!TGBot.userStates.TryGetValue(chatId, out IUserState? value) || value is not ProcessUserSetDCSendState userState)
                 return;
 
             switch (userState.currentState)
@@ -63,7 +61,7 @@ namespace MediaTelegramBot
         {
             if (update.CallbackQuery != null)
             {
-                TelegramBot.userStates.Remove(chatId);
+                TGBot.userStates.Remove(chatId);
                 await CommonUtilities.SendMessage(
                     botClient,
                     update,
@@ -130,7 +128,7 @@ namespace MediaTelegramBot
             }
             else
             {
-                TelegramBot.userStates.Remove(chatId);
+                TGBot.userStates.Remove(chatId);
                 await CommonUtilities.SendMessage(
                     botClient,
                     update,
@@ -168,7 +166,7 @@ namespace MediaTelegramBot
                 }
             }
 
-            TelegramBot.userStates.Remove(chatId);
+            TGBot.userStates.Remove(chatId);
             await CommonUtilities.SendMessage(
                 botClient,
                 update,

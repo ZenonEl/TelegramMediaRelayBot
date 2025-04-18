@@ -11,11 +11,11 @@
 
 
 using Telegram.Bot.Types;
-using TelegramMediaRelayBot.TelegramBot.Utils ;
+using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
-using TelegramMediaRelayBot;
 
-namespace MediaTelegramBot.Menu;
+namespace TelegramMediaRelayBot.TelegramBot.Menu;
 
 public class Groups
 {
@@ -24,7 +24,7 @@ public class Groups
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
         int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
 
-        TelegramBot.userStates[chatId] = new ProcessUsersGroupState();
+        TGBot.userStates[chatId] = new ProcessUsersGroupState();
         List<string> groupInfos = UsersGroup.GetUserGroupInfoByUserId(userId);
 
         string messageText = groupInfos.Any() 

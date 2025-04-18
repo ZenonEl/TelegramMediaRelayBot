@@ -11,14 +11,13 @@
 
 
 using Telegram.Bot.Types;
-
-using TelegramMediaRelayBot.TelegramBot.Utils ;
-using TelegramMediaRelayBot;
+using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 using Telegram.Bot.Types.Enums;
 using DataBase.Types;
 
 
-namespace MediaTelegramBot;
+namespace TelegramMediaRelayBot;
 
 public class ProcessVideoDC : IUserState
 {
@@ -55,7 +54,7 @@ public class ProcessVideoDC : IUserState
             case UsersStandardState.ProcessAction:
                 if (update.CallbackQuery != null)
                 {
-                    if (TelegramBot.userStates.TryGetValue(chatId, out var state) && state is ProcessVideoDC videoState)
+                    if (TGBot.userStates.TryGetValue(chatId, out var state) && state is ProcessVideoDC videoState)
                     {
                         videoState.timeoutCTS.Cancel();
                     }
@@ -187,7 +186,7 @@ public class ProcessVideoDC : IUserState
                 }
 
                 await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
-                _ = TelegramBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
+                _ = TGBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
 
                 if (linkQueue.Count > 0)
                 {
@@ -216,7 +215,7 @@ public class ProcessVideoDC : IUserState
                 }
                 else
                 {
-                    TelegramBot.userStates.Remove(chatId);
+                    TGBot.userStates.Remove(chatId);
                 }
 
                 break;

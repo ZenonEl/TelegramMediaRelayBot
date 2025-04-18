@@ -11,12 +11,11 @@
 
 
 using Telegram.Bot.Types;
+using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
-using TelegramMediaRelayBot.TelegramBot.Utils ;
-using TelegramMediaRelayBot;
 
-
-namespace MediaTelegramBot;
+namespace TelegramMediaRelayBot;
 
 public class ProcessUsersGroupState : IUserState
 {
@@ -46,7 +45,7 @@ public class ProcessUsersGroupState : IUserState
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (!TelegramBot.userStates.TryGetValue(chatId, out IUserState? value))
+        if (!TGBot.userStates.TryGetValue(chatId, out IUserState? value))
         {
             return;
         }
@@ -119,7 +118,7 @@ public class ProcessUsersGroupState : IUserState
                 ProcessFinish(chatId);
                 string text = isDBActionSuccessful ? Config.GetResourceString("SuccessActionResult") : Config.GetResourceString("ErrorActionResult");
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, text);
-                TelegramBot.userStates.Remove(chatId);
+                TGBot.userStates.Remove(chatId);
                 break;
         }
     }
