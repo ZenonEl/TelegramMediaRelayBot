@@ -113,3 +113,32 @@ public class Users
         return DBforDefaultActions.SetAutoSendVideoActionToUser(userId, action, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
     }
 }
+
+public class UsersDB
+{
+
+    public static void UpdateSelfLinkWithKeepSelectedContacts(Update update)
+    {
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
+        TGBot.userStates[chatId] = new ProcessContactLinksState(false);
+    }
+
+    public static void UpdateSelfLinkWithDeleteSelectedContacts(Update update)
+    {
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
+        TGBot.userStates[chatId] = new ProcessContactLinksState(true);
+    }
+
+    public static bool UpdateSelfLinkWithContacts(Update update)
+    {
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
+        return CoreDB.ReCreateSelfLink(DBforGetters.GetUserIDbyTelegramID(chatId));
+    }
+
+    public static void UpdateSelfLinkWithNewContacts(Update update)
+    {
+        int userId = DBforGetters.GetUserIDbyTelegramID(CommonUtilities.GetIDfromUpdate(update));
+        CoreDB.ReCreateSelfLink(userId);
+        ContactRemover.RemoveAllContacts(userId);
+    }
+}
