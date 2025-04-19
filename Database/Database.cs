@@ -30,6 +30,7 @@ public class CoreDB
         AllCreatingFunc.CreateGroupMembersTable();
         AllCreatingFunc.CreateDefaultUsersActions();
         AllCreatingFunc.CreateDefaultUsersActionTargets();
+        AllCreatingFunc.CreatePrivacySettingsTable();
     }
 
     // Временная обёртка

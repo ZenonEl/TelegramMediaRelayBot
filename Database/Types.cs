@@ -30,6 +30,11 @@ public class UsersActionTypes
     public const string DEFAULT_MEDIA_DISTRIBUTION = "default_media_distribution";
 }
 
+public class PrivacyRuleType
+{
+    public const string AllowContentForwarding = "allow_forwarding";
+}
+
 public class UsersAction
 {
     public const string NO_VALUE = "";

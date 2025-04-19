@@ -144,4 +144,22 @@ public class AllCreatingFunc
 
         Utils.executeVoidQuery(query);
     }
+
+    public static void CreatePrivacySettingsTable()
+    {
+        string query = @$"
+            USE {Config.databaseName};
+            CREATE TABLE IF NOT EXISTS PrivacySettings (
+                ID INT PRIMARY KEY AUTO_INCREMENT,
+                UserId INT NOT NULL,
+                Type VARCHAR(255) NOT NULL,
+                Action VARCHAR(255) NOT NULL,
+                IsActive BOOLEAN NOT NULL DEFAULT TRUE,
+                ActionCondition VARCHAR(255),
+                UNIQUE (UserId, Type),
+                FOREIGN KEY (UserId) REFERENCES Users(ID)
+            )";
+
+        Utils.executeVoidQuery(query);
+    }
 }
