@@ -19,6 +19,7 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers;
 
 public class PrivateUpdateHandler
 {
+    private static readonly List<IBotCallbackQueryHandlers> _сallbackQueryHandlers = CallbackQueryHandlersFactory.AutoRegisterCommands();
 
     public static async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
     {
@@ -87,49 +88,15 @@ public class PrivateUpdateHandler
         }
     }
 
-    public static async Task ProcessCallbackQuery(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
+    public static async Task ProcessCallbackQuery(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         var callbackQuery = update.CallbackQuery;
-        var callbackQueryHandlers = new List<IBotCallbackQueryHandlers>
-        {
-            new MainMenuCommand(),
-            new AddContactCommand(),
-            new GetSelfLinkCommand(),
-            new ViewContactsCommand(),
-            new MuteContactCommand(),
-            new UnmuteContactCommand(),
-            new DeleteContactCommand(),
 
-            new ShowOutboundInviteCommand(),
-            new ViewInboundInviteLinksCommand(),
-            new ViewOutboundInviteLinksCommand(),
-
-            new ShowGroupsCommand(),
-            new EditContactGroupCommand(),
-
-            new DefaultActionsMenuCommand(),
-            new VideoDefaultActionsMenuCommand(),
-            new UserSetAutoSendVideoTimeCommand(),
-            new UserSetVideoSendUsersCommand(),
-            new SetAutoSendTimeCommand(),
-            new SetVideoSendUsersCommand(),
-            
-            new ShowSettingsCommand(),
-            new PrivacySafetyMenuCommand(),
-            new UserUpdateSelfLinkCommand(),
-            new UserUpdateSelfLinkWithContactsCommand(),
-            new UserUpdateSelfLinkWithNewContactsCommand(),
-            new UserUpdateSelfLinkWithKeepSelectedContactsCommand(),
-            new UserUpdateSelfLinkWithDeleteSelectedContactsCommand(),
-            new ProcessUserUpdateSelfLinkWithContactsCommand(),
-            new ProcessUserUpdateSelfLinkWithNewContactsCommand(),
-
-            new WhosTheGeniusCommand(),
-        };
-        var commandFactory = new CallbackQueryHandlersFactory(callbackQueryHandlers);
         string data = callbackQuery!.Data!;
         int colonIndex = data.IndexOf(':');
         string commandName = colonIndex >= 0 ? data[..(colonIndex + 1)] : data;
+
+        var commandFactory = new CallbackQueryHandlersFactory(_сallbackQueryHandlers);
         var command = commandFactory.GetCommand(commandName);
         
         await command.ExecuteAsync(update, botClient, cancellationToken);
