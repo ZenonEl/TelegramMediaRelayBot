@@ -83,7 +83,7 @@ class PrivateUtils
                         Config.GetResourceString("DefaultActionTimeoutMessage"),
                         cancellationToken: cancellationToken
                     );
-                    _ = TGBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
+                    _ = Config.bot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
 
                     if (videoState.linkQueue.Count > 0)
                     {

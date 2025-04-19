@@ -185,7 +185,7 @@ public class ProcessVideoDC : IUserState
                 }
 
                 await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
-                _ = TGBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
+                _ = Config.bot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
 
                 if (linkQueue.Count > 0)
                 {

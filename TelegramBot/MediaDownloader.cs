@@ -16,22 +16,32 @@ using DataBase.Types;
 using Telegram.Bot.Types.Enums;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Handlers;
+using TelegramMediaRelayBot.Database.Interfaces;
 
 
 namespace TelegramMediaRelayBot;
 
-partial class TGBot
+public partial class TGBot
 {
-    private static ITelegramBotClient? botClient;
+    private readonly IUserRepository _userRepo;
+    private readonly IUserGettersRepository _userGettersRepo;
     public static Dictionary<long, IUserState> userStates = [];
     public static CancellationToken cancellationToken;
-    
-    static public async Task Start()
+
+    public TGBot(
+        IUserRepository userRepo,
+        IUserGettersRepository userGettersRepo)
+    {
+        _userRepo = userRepo;
+        _userGettersRepo = userGettersRepo;
+    }
+
+    public async Task Start()
     {
         string telegramBotToken = Config.telegramBotToken!;
-        botClient = new TelegramBotClient(telegramBotToken);
+        ITelegramBotClient _botClient = new TelegramBotClient(telegramBotToken);
 
-        var me = await botClient.GetMe();
+        var me = await _botClient.GetMe();
         Log.Information($"Hello, I am {me.Id} ready and my name is {me.FirstName}.");
 
         var cts = new CancellationTokenSource();
@@ -41,10 +51,12 @@ partial class TGBot
         };
         cancellationToken = cts.Token;
 
-        botClient.StartReceiving(UpdateHandler, CommonUtilities.ErrorHandler, receiverOptions, cancellationToken: cancellationToken);
-        Log.Information("Press any key to exit");
-        Console.ReadKey();
-        cts.Cancel();
+        _botClient.StartReceiving(
+            updateHandler: UpdateHandler,
+            errorHandler: CommonUtilities.ErrorHandler,
+            receiverOptions: new ReceiverOptions { AllowedUpdates = Array.Empty<UpdateType>() },
+            cancellationToken: cts.Token
+        );
     }
 
     public static async Task ProcessState(ITelegramBotClient botClient, Update update)
@@ -58,7 +70,7 @@ partial class TGBot
         }
     }
 
-    private static async Task UpdateHandler(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    private async Task UpdateHandler(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
@@ -75,14 +87,14 @@ partial class TGBot
 
             if (update.Message != null && update.Message.Text != null)
             {
-                bool hasAccess = CoreDB.CheckExistsUser(chatId);
+                bool hasAccess = _userRepo.CheckUserExists(chatId);
 
                 if (!hasAccess)
                 {
                     string startParameter = CommonUtilities.ParseStartCommand(update.Message.Text);
                     if (!string.IsNullOrEmpty(startParameter) && Config.CanUserStartUsingBot(startParameter))
                     {
-                        CoreDB.AddUser(update.Message.Chat.FirstName!, chatId);
+                        _userRepo.AddUser(update.Message.Chat.FirstName!, chatId, hasAccess);
                         update.Message.Text = "/start";
                         hasAccess = true;
                     }
@@ -99,7 +111,7 @@ partial class TGBot
             }
             else if (update.CallbackQuery != null)
             {
-                await PrivateUpdateHandler.ProcessCallbackQuery(botClient, update, cancellationToken, chatId);
+                await PrivateUpdateHandler.ProcessCallbackQuery(botClient, update, cancellationToken);
             }
         }
         else 
@@ -111,7 +123,7 @@ partial class TGBot
         }
     }
 
-    public static async Task HandleMediaRequest(ITelegramBotClient botClient, string videoUrl, long chatId, Message statusMessage,
+    public async Task HandleMediaRequest(ITelegramBotClient botClient, string videoUrl, long chatId, Message statusMessage,
                                                 List<long>? targetUserIds = null, bool groupChat = false, string caption = "")
     {
         List<byte[]>? mediaFiles = await VideoGet.DownloadMedia(botClient, videoUrl, statusMessage, cancellationToken);
@@ -125,7 +137,7 @@ partial class TGBot
         await botClient.SendMessage(chatId, Config.GetResourceString("FailedToProcessLink"));
     }
 
-    private static async Task SendMediaToTelegram(ITelegramBotClient botClient, long chatId, List<byte[]> mediaFiles,
+    private async Task SendMediaToTelegram(ITelegramBotClient botClient, long chatId, List<byte[]> mediaFiles,
                                                         Message statusMessage, List<long>? targetUserIds, bool groupChat = false,
                                                         string caption = "")
     {
@@ -179,80 +191,45 @@ partial class TGBot
         }
     }
 
-    private static async Task SendVideoToContacts(long telegramId, ITelegramBotClient botClient,
-                                                Message statusMessage, List<long> targetUserIds, string? fileId = null,
-                                                List<InputMedia>? savedMediaGroupIDs = null, string caption = "", 
-                                                bool lastMediaGroup = false, MediaFileType? fileType = null)
+    private async Task SendVideoToContacts(long telegramId, ITelegramBotClient botClient,
+                                                Message statusMessage, List<long> targetUserIds,
+                                                List<InputMedia> savedMediaGroupIDs, string caption = "", 
+                                                bool lastMediaGroup = false)
     {
-        int userId = DBforGetters.GetUserIDbyTelegramID(telegramId);
-        List<long> mutedByUserIds = DBforGetters.GetUsersIdForMuteContactId(userId);
+        int userId = _userGettersRepo.GetUserIDbyTelegramID(telegramId);
+        List<long> mutedByUserIds = _userGettersRepo.GetUsersIdForMuteContactId(userId);
         List<long> filteredContactUserTGIds = targetUserIds.Except(mutedByUserIds).ToList();
+        bool isPermanentContentSpoiler = PrivacySettingsGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.PermanentContentSpoiler);
 
         Log.Information($"Sending video to ({filteredContactUserTGIds.Count}) users.");
         Log.Information($"User {userId} is muted by: {mutedByUserIds.Count}");
 
         DateTime now = DateTime.Now;
-        string name = DBforGetters.GetUserNameByTelegramID(telegramId);
+        string name = _userGettersRepo.GetUserNameByTelegramID(telegramId);
         string text = string.Format(Config.GetResourceString("ContactSentVideo"), 
                                     name, now.ToString("yyyy_MM_dd_HH_mm_ss"), MyRegex().Replace(name, "_"), caption);
         int sentCount = 0;
 
-        foreach (var contactUserId in filteredContactUserTGIds)
+        foreach (long contactUserTgId in filteredContactUserTGIds)
         {
             try
             {
-                if (fileId != null)
+
+                int contactUserId = _userGettersRepo.GetUserIDbyTelegramID(contactUserTgId);
+
+                Message[] mediaMessages = await botClient.SendMediaGroup(contactUserTgId,
+                                                                        savedMediaGroupIDs.Select(media => (IAlbumInputMedia)media),
+                                                                        disableNotification: true,
+                                                                        protectContent: isPermanentContentSpoiler);
+                if (lastMediaGroup)
                 {
-                    switch (fileType)
-                    {
-                        case MediaFileType.Video:
-                            await botClient.SendVideo(
-                                contactUserId,
-                                InputFile.FromFileId(fileId),
-                                caption: Config.GetResourceString("HereIsYourVideo") + text,
-                                parseMode: ParseMode.Html
-                            );
-                            break;
-                        case MediaFileType.Photo:
-                            await botClient.SendPhoto(
-                                contactUserId,
-                                InputFile.FromFileId(fileId),
-                                caption: Config.GetResourceString("HereIsYourVideo") + text,
-                                parseMode: ParseMode.Html
-                            );
-                            break;
-                        case MediaFileType.Audio:
-                            await botClient.SendAudio(
-                                contactUserId,
-                                InputFile.FromFileId(fileId),
-                                caption: Config.GetResourceString("HereIsYourVideo") + text,
-                                parseMode: ParseMode.Html
-                            );
-                            break;
-                        default:
-                            await botClient.SendDocument(
-                                contactUserId,
-                                InputFile.FromFileId(fileId),
-                                caption: Config.GetResourceString("HereIsYourVideo") + text,
-                                parseMode: ParseMode.Html
-                            );
-                            break;
-                    }
-                }
-                else if (savedMediaGroupIDs != null)
-                {
-                    Message[] mediaMessages = await botClient.SendMediaGroup(contactUserId,
-                                                                            savedMediaGroupIDs.Select(media => (IAlbumInputMedia)media),
-                                                                            disableNotification: true);
-                    if (lastMediaGroup)
-                    {
-                        await botClient.SendMessage(
-                            chatId: contactUserId,
-                            text: text,
-                            parseMode: ParseMode.Html,
-                            replyParameters: new ReplyParameters { MessageId = mediaMessages[0].MessageId }
-                        );
-                    }
+                    await botClient.SendMessage(
+                        chatId: contactUserTgId,
+                        text: text,
+                        parseMode: ParseMode.Html,
+                        replyParameters: new ReplyParameters { MessageId = mediaMessages[0].MessageId },
+                        protectContent: isPermanentContentSpoiler
+                    );
                 }
                 sentCount++;
 
@@ -266,12 +243,12 @@ partial class TGBot
                 {
                     Log.Debug(ex, "Error editing message.");
                 }
-                Log.Information($"Sent video to user {contactUserId}. Total sent: {sentCount}/{filteredContactUserTGIds.Count}");
+                Log.Information($"Sent video to user {contactUserTgId}. Total sent: {sentCount}/{filteredContactUserTGIds.Count}");
                 await Task.Delay(Config.contactSendDelay, cancellationToken);
             }
             catch (Exception ex)
             {
-                Log.Error($"Failed to send video to user {contactUserId}: {ex.Message}");
+                Log.Error($"Failed to send video to user {contactUserTgId}: {ex.Message}");
                 await Task.Delay(Config.contactSendDelay, cancellationToken);
             }
         }

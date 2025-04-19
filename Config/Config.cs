@@ -7,6 +7,7 @@ namespace TelegramMediaRelayBot
 {
     class Config
     {
+        public static TGBot? bot;
         public static string? telegramBotToken;
         public static string? sqlConnectionString;
         public static string databaseName = "TelegramMediaRelayBot";

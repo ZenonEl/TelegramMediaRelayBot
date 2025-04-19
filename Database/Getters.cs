@@ -12,12 +12,15 @@
 using DataBase.Types;
 using MySql.Data.MySqlClient;
 using TelegramMediaRelayBot;
+using TelegramMediaRelayBot.Database.Repositories.MySql;
 
 
 namespace DataBase;
 
 public class DBforGetters
 {
+    static UserGettersRepository repo = new UserGettersRepository(CoreDB.connectionString);
+
     private static string GetLink(long telegramID)
     {
         string query = @$"
@@ -81,86 +84,24 @@ public class DBforGetters
         }
     }
 
+    //Временная обертка
     public static string GetUserNameByID(int UserID)
     {
-        string query = @$"
-            USE {Config.databaseName};
-            SELECT Name FROM Users WHERE ID = @UserID";
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
-        {
-            try
-            {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@UserID", UserID);
-                MySqlDataReader reader = command.ExecuteReader();
-                if (reader.Read())
-                {
-                    return reader.GetString("Name");
-                }
-                return "";
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetUserNameByID));
-                return "Not found";
-            }
-        }
+        return repo.GetUserNameByID(UserID);
     }
 
+    //Временная обертка
     public static long GetTelegramIDbyUserID(int UserID)
     {
-        string query = @$"
-            USE {Config.databaseName};
-            SELECT TelegramID FROM Users WHERE ID = @UserID";
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
-        {
-            try
-            {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@UserID", UserID);
-                MySqlDataReader reader = command.ExecuteReader();
-                if (reader.Read())
-                {
-                    return reader.GetInt64(reader.GetOrdinal("TelegramID"));
-                }
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetTelegramIDbyUserID));
-                return -1;
-            }
-        }
+        return repo.GetTelegramIDbyUserID(UserID);
     }
 
+    //Временная обертка
     public static int GetUserIDbyTelegramID(long TelegramID)
     {
-        string query = @$"
-            USE {Config.databaseName};
-            SELECT ID FROM Users WHERE TelegramID = @TelegramID";
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
-        {
-            try
-            {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@TelegramID", TelegramID);
-                MySqlDataReader reader = command.ExecuteReader();
-                if (reader.Read())
-                {
-                    return reader.GetInt32("ID");
-                }
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetUserIDbyTelegramID));
-                return -1;
-            }
-        }
+        return repo.GetUserIDbyTelegramID(TelegramID);
     }
+
     public static int GetContactIDByLink(string link)
     {
         string query = @$"
@@ -187,6 +128,7 @@ public class DBforGetters
             }
         }
     }
+
     public static int GetContactByTelegramID(long telegramID)
     {
         string query = @$"
@@ -213,67 +155,19 @@ public class DBforGetters
             }
         }
     }
+
+    //Временная обертка
     public static string GetUserNameByTelegramID(long telegramID)
     {
-        string query = @$"
-            USE {Config.databaseName};
-            SELECT Name FROM Users WHERE TelegramID = @telegramID";
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
-        {
-            try
-            {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@telegramID", telegramID);
-                MySqlDataReader reader = command.ExecuteReader();
-                if (reader.Read())
-                {
-                    return reader.GetString("Name");
-                }
-                return "";
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetUserNameByTelegramID));
-                return "Not found";
-            }
-        }
+        return repo.GetUserNameByTelegramID(telegramID);
     }
+
+    //Временная обертка
     public static List<long> GetUsersIdForMuteContactId(int contactId)
     {
-        string query = @$"
-            USE {Config.databaseName};
-            SELECT MutedByUserId FROM MutedContacts WHERE MutedContactId = @contactId AND IsActive = 1";
-        
-        List<int> mutedByUserIds = new List<int>();
-        var TelegramIDs = new List<long>();
-
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
-        {
-            try
-            {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@contactId", contactId);
-                MySqlDataReader reader = command.ExecuteReader();
-
-                while (reader.Read())
-                {
-                    mutedByUserIds.Add(reader.GetInt32("MutedByUserId"));
-                }
-                foreach (var contactUserId in mutedByUserIds)
-                {
-                    TelegramIDs.Add(GetTelegramIDbyUserID(contactUserId));
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetUsersIdForMuteContactId));
-            }
-        }
-
-        return TelegramIDs;
+        return repo.GetUsersIdForMuteContactId(contactId);
     }
+
     public static List<int> GetExpiredMutes()
     {
         string query = @"

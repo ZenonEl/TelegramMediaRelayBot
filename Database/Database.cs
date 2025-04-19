@@ -12,6 +12,7 @@
 using MySql.Data.MySqlClient;
 using TelegramMediaRelayBot;
 using DataBase.DBCreating;
+using TelegramMediaRelayBot.Database.Repositories.MySql;
 
 namespace DataBase;
 
@@ -31,59 +32,11 @@ public class CoreDB
         AllCreatingFunc.CreateDefaultUsersActionTargets();
     }
 
+    // Временная обёртка
     public static bool CheckExistsUser(long telegramID)
     {
-        string query = @$"
-            USE {Config.databaseName};
-            SELECT * FROM Users WHERE TelegramID = @telegramID";
-        using (MySqlConnection connection = new MySqlConnection(connectionString))
-        {
-            try
-            {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@telegramID", telegramID);
-                MySqlDataReader reader = command.ExecuteReader();
-                return reader.HasRows;
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Error getting data from database: " + ex.Message);
-                return false;
-            }
-        }
-    }
-
-    public static void AddUser(string name, long telegramID)
-    {
-        bool user = CheckExistsUser(telegramID);
-        string link = Utils.GenerateUserLink();
-
-        if (user)
-        {
-            return;
-        }
-
-        string query = @$"
-            USE {Config.databaseName};
-            INSERT INTO Users (TelegramID, Name, Link) VALUES (@telegramID, @name, @link)";
-
-        using (MySqlConnection connection = new MySqlConnection(connectionString))
-        {
-            try
-            {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@telegramID", telegramID);
-                command.Parameters.AddWithValue("@name", name);
-                command.Parameters.AddWithValue("@link", link);
-                command.ExecuteNonQuery();
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Error inserting data to Users: " + ex.Message);
-            }
-        }
+        var repo = new UserRepository(connectionString);
+        return repo.CheckUserExists(telegramID);
     }
 
     public static void UnMuteByMuteId(int muteId)

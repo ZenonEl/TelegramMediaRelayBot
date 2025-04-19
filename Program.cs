@@ -14,6 +14,13 @@ global using DataBase;
 global using Telegram.Bot;
 global using Telegram.Bot.Types;
 using System.Globalization;
+using Microsoft.Extensions.DependencyInjection;
+using TelegramMediaRelayBot.Database;
+using Microsoft.AspNetCore.Builder;
+using TelegramMediaRelayBot;
+using TelegramMediaRelayBot.Database.Repositories.MySql;
+using TelegramMediaRelayBot.Database.Interfaces;
+
 
 
 namespace TelegramMediaRelayBot
@@ -51,10 +58,27 @@ namespace TelegramMediaRelayBot
 
             try
             {
+
+                var builder = WebApplication.CreateBuilder(args);
+
+                builder.Services.AddSingleton<ITelegramBotClient>(_ => 
+                    new TelegramBotClient(Config.telegramBotToken!));
+                builder.Services.AddSingleton<IUserRepository>(_ => 
+                    new UserRepository(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IUserGettersRepository>(_ => 
+                    new UserGettersRepository(Config.sqlConnectionString!));
+
+                builder.Services.AddSingleton<TGBot>();
+                var app = builder.Build();
+                Config.bot = app.Services.GetRequiredService<TGBot>();
+
                 Log.Information($"Log level: {Config.logLevel}");
                 CoreDB.InitDB();
                 Scheduler.Scheduler.Init();
-                await TGBot.Start();
+
+                await Config.bot.Start();
+
+                await Task.Delay(-1);
             }
             catch (Exception ex)
             {
