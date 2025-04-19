@@ -169,7 +169,7 @@ public partial class TGBot
                                     msg.Photo != null ? new InputMediaPhoto(msg.Photo[0].FileId) :
                                     msg.Video != null ? new InputMediaVideo(msg.Video.FileId) :
                                     msg.Audio != null ? new InputMediaAudio(msg.Audio.FileId) :
-                                    new InputMediaDocument(msg.Document.FileId)).ToList();
+                                    new InputMediaDocument(msg.Document!.FileId)).ToList();
 
                     if (i + 10 >= mediaGroup.Count()) { lastMediaGroup = true; text = caption; }
 
@@ -199,7 +199,7 @@ public partial class TGBot
         int userId = _userGettersRepo.GetUserIDbyTelegramID(telegramId);
         List<long> mutedByUserIds = _userGettersRepo.GetUsersIdForMuteContactId(userId);
         List<long> filteredContactUserTGIds = targetUserIds.Except(mutedByUserIds).ToList();
-        bool isPermanentContentSpoiler = PrivacySettingsGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.PermanentContentSpoiler);
+        bool isDisallowContentForwarding = PrivacySettingsGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.AllowContentForwarding);
 
         Log.Information($"Sending video to ({filteredContactUserTGIds.Count}) users.");
         Log.Information($"User {userId} is muted by: {mutedByUserIds.Count}");
@@ -220,7 +220,7 @@ public partial class TGBot
                 Message[] mediaMessages = await botClient.SendMediaGroup(contactUserTgId,
                                                                         savedMediaGroupIDs.Select(media => (IAlbumInputMedia)media),
                                                                         disableNotification: true,
-                                                                        protectContent: isPermanentContentSpoiler);
+                                                                        protectContent: isDisallowContentForwarding);
                 if (lastMediaGroup)
                 {
                     await botClient.SendMessage(
@@ -228,7 +228,7 @@ public partial class TGBot
                         text: text,
                         parseMode: ParseMode.Html,
                         replyParameters: new ReplyParameters { MessageId = mediaMessages[0].MessageId },
-                        protectContent: isPermanentContentSpoiler
+                        protectContent: isDisallowContentForwarding
                     );
                 }
                 sentCount++;

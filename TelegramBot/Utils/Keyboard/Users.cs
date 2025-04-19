@@ -51,15 +51,15 @@ public static class UsersPrivacyMenuKB
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("WhoCanFindMeByLink"), $"user_update_self_link"),
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("WhoCanFindMeByLink"), $"user_update_who_can_find_me_by_link"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SiteStopList"), $"user_update_self_link"),
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SiteStopList"), $"user_update_site_stop_list"),
             },
-                        new[]
+            new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("PermanentContentSpoiler"), $"user_update_self_link"),
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("AllowContentForwardingBtn"), $"user_update_content_forwarding_rule"),
             },
             new[]
             {
@@ -88,6 +88,26 @@ public static class UsersPrivacyMenuKB
             new[]
             {
                 InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SelfLinkRefreshButtonTextOption4"), $"user_update_self_link_with_delete_selected_contacts"),
+            },
+            new[]
+            {
+                KeyboardUtils.GetReturnButton("privacy_menu_and_safety")
+            },
+        });
+        return inlineKeyboard;
+    }
+
+    public static InlineKeyboardMarkup GetPermanentContentSpoilerKeyboardMarkup()
+    {
+        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("Enable"), $"user_allow_content_forwarding"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("Disable"), $"user_disallow_content_forwarding"),
             },
             new[]
             {

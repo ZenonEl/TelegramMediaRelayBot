@@ -22,9 +22,6 @@ public class Users
 
     public static async Task ViewSettings(ITelegramBotClient botClient, Update update)
     {
-        long chatId = update.CallbackQuery!.Message!.Chat.Id;
-        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
-
         await CommonUtilities.SendMessage(
             botClient,
             update,
@@ -45,14 +42,14 @@ public class Users
         );
     }
 
-    public static async Task ViewPrivacyMenu(ITelegramBotClient botClient, Update update)
+    public static async Task ViewPrivacyMenu(ITelegramBotClient botClient, Update update, string statusMessage = "")
     {
         await CommonUtilities.SendMessage(
             botClient,
             update,
             UsersPrivacyMenuKB.GetPrivacyMenuKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("ChosePrivacyOptionMenuText")
+            Config.GetResourceString("ChosePrivacyOptionMenuText") + "\n\n" + statusMessage
         );
     }
 
@@ -64,6 +61,28 @@ public class Users
             UsersPrivacyMenuKB.GetUpdateSelfLinkKeyboardMarkup(),
             cancellationToken,
             Config.GetResourceString("SelfLinkRefreshMenuText")
+        );
+    }
+
+    public static async Task ViewPermanentContentSpoilerMenu(ITelegramBotClient botClient, Update update)
+    {
+        await CommonUtilities.SendMessage(
+            botClient,
+            update,
+            UsersPrivacyMenuKB.GetPermanentContentSpoilerKeyboardMarkup(),
+            cancellationToken,
+            Config.GetResourceString("AllowForwardContentRuleText")
+        );
+    }
+
+    public static async Task ProcessViewPermanentContentSpoilerAction(ITelegramBotClient botClient, Update update)
+    {
+        await CommonUtilities.SendMessage(
+            botClient,
+            update,
+            UsersPrivacyMenuKB.GetPermanentContentSpoilerKeyboardMarkup(),
+            cancellationToken,
+            Config.GetResourceString("AllowForwardContentRuleText")
         );
     }
 

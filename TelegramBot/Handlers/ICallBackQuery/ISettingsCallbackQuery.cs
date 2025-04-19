@@ -10,6 +10,7 @@
 // (по вашему выбору) любой более поздней версии.
 
 
+using DataBase.Types;
 using TelegramMediaRelayBot.TelegramBot.Menu;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 
@@ -179,5 +180,45 @@ public class ProcessUserUpdateSelfLinkWithNewContactsCommand : IBotCallbackQuery
     {
         UsersDB.UpdateSelfLinkWithNewContacts(update);
         await Users.ViewLinkPrivacyMenu(botClient, update);
+    }
+}
+
+public class UserUpdatePermanentContentSpoilerCommand : IBotCallbackQueryHandlers
+{
+    public string Name => "user_update_content_forwarding_rule";
+
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        await Users.ViewPermanentContentSpoilerMenu(botClient, update);
+    }
+}
+
+public class UserDisablePermanentContentSpoilerCommand : IBotCallbackQueryHandlers
+{
+    public string Name => "user_disallow_content_forwarding";
+
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        int userId = DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id);
+        bool actionStatus = PrivacySettingsSetter.SetPrivacyRuleToDisabled(userId, PrivacyRuleType.AllowContentForwarding);
+        string statusMessage = actionStatus
+            ? Config.GetResourceString("SuccessActionResult")
+            : Config.GetResourceString("ErrorActionResult");
+        await Users.ViewPrivacyMenu(botClient, update, statusMessage);
+    }
+}
+
+public class UserEnablePermanentContentSpoilerCommand : IBotCallbackQueryHandlers
+{
+    public string Name => "user_allow_content_forwarding";
+
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        int userId = DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id);
+        bool actionStatus = PrivacySettingsSetter.SetPrivacyRule(userId, PrivacyRuleType.AllowContentForwarding, "disallow_content_forwarding", true, "always");
+        string statusMessage = actionStatus
+            ? Config.GetResourceString("SuccessActionResult")
+            : Config.GetResourceString("ErrorActionResult");
+        await Users.ViewPrivacyMenu(botClient, update, statusMessage);
     }
 }
