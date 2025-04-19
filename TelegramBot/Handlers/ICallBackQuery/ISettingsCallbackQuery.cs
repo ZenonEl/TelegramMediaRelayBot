@@ -10,7 +10,6 @@
 // (по вашему выбору) любой более поздней версии.
 
 
-using Telegram.Bot.Types;
 using TelegramMediaRelayBot.TelegramBot.Menu;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 

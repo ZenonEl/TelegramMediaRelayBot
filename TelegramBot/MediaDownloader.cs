@@ -10,7 +10,6 @@
 // (по вашему выбору) любой более поздней версии.
 
 
-using Telegram.Bot.Types;
 using Telegram.Bot.Polling;
 using System.Text.RegularExpressions;
 using DataBase.Types;

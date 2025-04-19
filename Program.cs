@@ -12,6 +12,7 @@
 global using Serilog;
 global using DataBase;
 global using Telegram.Bot;
+global using Telegram.Bot.Types;
 using System.Globalization;
 
 
