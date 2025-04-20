@@ -20,7 +20,6 @@ public class GroupUpdateHandler
         string messageText = update.Message!.Text!;
         if (messageText.Contains("/link"))
         {
-            Log.Information(messageText);
             string link;
             string text = "";
 

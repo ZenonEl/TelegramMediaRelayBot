@@ -274,25 +274,37 @@ public partial class TGBot
     public static void LogEvent(Update update, long chatId)
     {
         string currentUserStatus = "";
-        string logMessage = "";
-        string callbackData = "";
-        long userId = 0;
+        string logMessageType;
+        string logMessageData;
+        long userId;
 
         if (update.CallbackQuery != null)
         {
-            logMessage = "CallbackQuery";
-            callbackData = update.CallbackQuery.Data!;
+            logMessageType = "CallbackQuery";
+            logMessageData = update.CallbackQuery.Data!;
             userId = update.CallbackQuery.From.Id;
         }
-        else if (update.Message != null && update.Message.Text != null)
+        else if (update.Message != null)
         {
-            logMessage = "Message";
-            callbackData = update.Message.Text;
-            userId = update.Message.From!.Id;
-            if (!CommonUtilities.CheckPrivateChatType(update))
+            if (update.Message.Text != null)
             {
-                if (!update.Message.Text.Contains("/link") || !update.Message.Text.Contains("/help")) return;
+                logMessageType = "Message";
+                logMessageData = update.Message.Text;
+                userId = update.Message.From!.Id;
+                
+                if (!CommonUtilities.CheckPrivateChatType(update))
+                {
+                    if (!update.Message.Text.Contains("/link") && !update.Message.Text.Contains("/help")) return;
+                }
             }
+            else
+            {
+                return;
+            }
+        }
+        else
+        {
+            return;
         }
 
         if (userStates.TryGetValue(chatId, out IUserState? value))
@@ -301,7 +313,7 @@ public partial class TGBot
             currentUserStatus = userState.GetCurrentState();
         }
 
-        Log.Information($"Event: {logMessage}, UserId: {userId}, ChatId: {chatId}, {logMessage}: {callbackData}, State: {currentUserStatus}");
+        Log.Information($"Event: {logMessageType}, UserId: {userId}, ChatId: {chatId}, {logMessageType}: {logMessageData}, State: {currentUserStatus}");
     }
 
     [GeneratedRegex(@"[^a-zA-Zа-яА-Я0-9]")]
