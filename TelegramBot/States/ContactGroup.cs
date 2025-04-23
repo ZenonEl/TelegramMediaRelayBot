@@ -10,6 +10,7 @@
 // (по вашему выбору) любой более поздней версии.
 
 
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
@@ -27,6 +28,8 @@ public class ProcessContactGroupState : IUserState
     private List<int> contactIDs = [];
     private int groupId = 0;
     private List<bool> isDBActionSuccessful = [];
+
+    private readonly IContactGroupRepository _contactGroupRepo = Config.contactGroupRepo;
 
     public ProcessContactGroupState()
     {
@@ -204,10 +207,9 @@ public class ProcessContactGroupState : IUserState
                 groupId = int.Parse(callbackAction.Split(':')[1]);
                 contactIDs = update.Message!.Text!.Split(" ").Select(x => int.Parse(x)).ToList();
                 List<int> allowedIds = [];
-
                 foreach (int contactId in contactIDs)
                 {
-                    bool status = DBforContactGroups.CheckUserAndContactConnect(userId, contactId);
+                    bool status = _contactGroupRepo.CheckUserAndContactConnect(userId, contactId);
                     if (status) allowedIds.Add(contactId);
                 }
 
@@ -249,14 +251,14 @@ public class ProcessContactGroupState : IUserState
         {
             foreach (var contactId in contactIDs)
             {
-                isDBActionSuccessful.Add(DBforContactGroups.AddContactToGroup(userId, contactId, groupId));
+                isDBActionSuccessful.Add(_contactGroupRepo.AddContactToGroup(userId, contactId, groupId));
             }
         }
         else if (callbackAction.StartsWith("accept_delete_contact_from_group"))
         {
             foreach (var contactId in contactIDs)
             {
-                isDBActionSuccessful.Add(DBforContactGroups.RemoveContactFromGroup(userId, contactId, groupId));
+                isDBActionSuccessful.Add(_contactGroupRepo.RemoveContactFromGroup(userId, contactId, groupId));
             }
         }
     }
