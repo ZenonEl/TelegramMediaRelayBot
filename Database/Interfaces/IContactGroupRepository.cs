@@ -9,22 +9,13 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
+using System.Data;
+
 namespace TelegramMediaRelayBot.Database.Interfaces;
 
-public interface IUserRepository
+public interface IContactGroupRepository
 {
-    bool CheckUserExists(long telegramId);
-    void AddUser(string name, long telegramID, bool user);
-    void UnMuteUserByMuteId(int userId);
-    bool ReCreateUserSelfLink(int userId);
+    bool AddContactToGroup(int userId, int contactId, int groupId);
+    bool RemoveContactFromGroup(int userId, int contactId, int groupId);
+    bool CheckUserAndContactConnect(int userId, int contactId);
 }
-
-public interface IUserGettersRepository
-{
-    long GetTelegramIDbyUserID(int userID);
-    string? GetUserNameByID(int userID);
-    int GetUserIDbyTelegramID(long telegramID);
-    string GetUserNameByTelegramID(long telegramID);
-    List<long> GetUsersIdForMuteContactId(int contactId);
-}
-
