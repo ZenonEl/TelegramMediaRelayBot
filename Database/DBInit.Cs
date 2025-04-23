@@ -15,6 +15,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database.Repositories.MySql;
+using TelegramMediaRelayBot.TelegramBot.Handlers;
+using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 namespace TelegramMediaRelayBot.Database;
 
 [Migration(20240427)]
@@ -215,6 +217,16 @@ public class FluentDBMigrator : Migration
         var builder = WebApplication.CreateBuilder(args);
         builder.Services.AddSingleton<ITelegramBotClient>(_ =>
             new TelegramBotClient(Config.telegramBotToken!));
+
+        builder.Services.AddSingleton<CallbackQueryHandlersFactory>();
+        builder.Services.AddSingleton<TGBot>();
+
+        builder.Services.Scan(scan => scan
+            .FromAssemblyOf<IBotCallbackQueryHandlers>()
+            .AddClasses(classes => classes.AssignableTo<IBotCallbackQueryHandlers>())
+            .AsImplementedInterfaces()
+            .WithTransientLifetime()
+            );
 
         switch (DBType.ToLower())
         {
