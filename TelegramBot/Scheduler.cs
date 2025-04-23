@@ -33,7 +33,7 @@ class Scheduler
 
             foreach (var muteUserId in expiredMutes)
             {
-                CoreDB.UnMuteByMuteId(muteUserId);
+                CoreDB.UnMuteUserByMuteId(muteUserId);
             }
         }
         catch (Exception ex)

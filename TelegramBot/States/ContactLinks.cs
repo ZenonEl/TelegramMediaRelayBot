@@ -149,7 +149,7 @@ public class ProcessContactLinksState : IUserState
             cancellationToken,
             Config.GetResourceString("SelfLinkRefreshMenuText") + "\n\n" + statusMessage
         );
-        CoreDB.ReCreateSelfLink(userState.actingUserId);
+        CoreDB.ReCreateUserSelfLink(userState.actingUserId);
 
     }
 

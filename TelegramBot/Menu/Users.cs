@@ -150,13 +150,13 @@ public class UsersDB
     public static bool UpdateSelfLinkWithContacts(Update update)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
-        return CoreDB.ReCreateSelfLink(DBforGetters.GetUserIDbyTelegramID(chatId));
+        return CoreDB.ReCreateUserSelfLink(DBforGetters.GetUserIDbyTelegramID(chatId));
     }
 
     public static void UpdateSelfLinkWithNewContacts(Update update)
     {
         int userId = DBforGetters.GetUserIDbyTelegramID(CommonUtilities.GetIDfromUpdate(update));
-        CoreDB.ReCreateSelfLink(userId);
+        CoreDB.ReCreateUserSelfLink(userId);
         ContactRemover.RemoveAllContacts(userId);
     }
 }
