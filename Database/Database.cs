@@ -9,9 +9,7 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using MySql.Data.MySqlClient;
 using TelegramMediaRelayBot;
-using DataBase.DBCreating;
 using TelegramMediaRelayBot.Database.Repositories.MySql;
 
 namespace DataBase;
@@ -19,69 +17,21 @@ namespace DataBase;
 public class CoreDB
 {
     public readonly static string connectionString = Config.sqlConnectionString!;
-
-    public static void InitDB()
-    {
-        AllCreatingFunc.CreateDatabase();
-        AllCreatingFunc.CreateUsersTable();
-        AllCreatingFunc.CreateContactsTable();
-        AllCreatingFunc.CreateMutedContactsTable();
-        AllCreatingFunc.CreateGroupsTable();
-        AllCreatingFunc.CreateGroupMembersTable();
-        AllCreatingFunc.CreateDefaultUsersActions();
-        AllCreatingFunc.CreateDefaultUsersActionTargets();
-        AllCreatingFunc.CreatePrivacySettingsTable();
-    }
+    private readonly static MySqlUserRepository repo = new(connectionString);
 
     // Временная обёртка
     public static bool CheckExistsUser(long telegramID)
     {
-        var repo = new UserRepository(connectionString);
         return repo.CheckUserExists(telegramID);
     }
 
-    public static void UnMuteByMuteId(int muteId)
+    public static void UnMuteUserByMuteId(int muteId)
     {
-        string query = @$"
-            USE {Config.databaseName};
-            UPDATE MutedContacts SET IsActive = 0 WHERE MutedId = @muteId";
-        using (MySqlConnection connection = new MySqlConnection(connectionString))
-        {
-            try
-            {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@muteId", muteId);
-                command.ExecuteNonQuery();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(UnMuteByMuteId));
-            }
-        }
+        repo.UnMuteUserByMuteId(muteId);
     }
 
-    public static bool ReCreateSelfLink(int userId)
+    public static bool ReCreateUserSelfLink(int userId)
     {
-        string newLink = Utils.GenerateUserLink();
-        string query = @"
-            UPDATE Users SET Link = @newLink WHERE ID = @userId";
-        using (MySqlConnection connection = new MySqlConnection(connectionString))
-        {
-            try
-            {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@newLink", newLink);
-                command.Parameters.AddWithValue("@userId", userId);
-                command.ExecuteNonQuery();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(ReCreateSelfLink));
-                return false;
-            }
-        }
+        return repo.ReCreateUserSelfLink(userId);
     }
 }
