@@ -9,8 +9,8 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using DataBase.Types;
 using Telegram.Bot.Types.ReplyMarkups;
+using TelegramMediaRelayBot.Database;
 
 
 namespace TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;

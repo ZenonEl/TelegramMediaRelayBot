@@ -10,7 +10,7 @@
 // (по вашему выбору) любой более поздней версии.
 
 
-using DataBase.Types;
+using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot.Menu;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 

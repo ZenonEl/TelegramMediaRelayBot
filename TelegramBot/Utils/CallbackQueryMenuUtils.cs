@@ -9,6 +9,7 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
+using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 
@@ -48,7 +49,7 @@ public static class CallbackQueryMenuUtils
 
     public static Task AcceptInboundInvite(Update update)
     {
-        ContactSetter.SetContactStatus(long.Parse(update.CallbackQuery!.Data!.Split(':')[1]), update.CallbackQuery.Message!.Chat.Id, DataBase.Types.ContactsStatus.ACCEPTED);
+        ContactSetter.SetContactStatus(long.Parse(update.CallbackQuery!.Data!.Split(':')[1]), update.CallbackQuery.Message!.Chat.Id, ContactsStatus.ACCEPTED);
         return Task.CompletedTask;
     }
 
@@ -57,7 +58,7 @@ public static class CallbackQueryMenuUtils
         string userId = update.CallbackQuery!.Data!.Split(':')[1];
         int senderTelegramID = DBforGetters.GetUserIDbyTelegramID(long.Parse(userId));
         int accepterTelegramID = DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery.Message!.Chat.Id);
-        ContactRemover.RemoveContactByStatus(senderTelegramID, accepterTelegramID, DataBase.Types.ContactsStatus.WAITING_FOR_ACCEPT);
+        ContactRemover.RemoveContactByStatus(senderTelegramID, accepterTelegramID, ContactsStatus.WAITING_FOR_ACCEPT);
         return Task.CompletedTask;
     }
 

@@ -11,7 +11,7 @@
 
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
-using DataBase.Types;
+using TelegramMediaRelayBot.Database;
 
 namespace TelegramMediaRelayBot
 {

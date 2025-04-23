@@ -12,7 +12,7 @@
 
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Menu;
-using DataBase.Types;
+using TelegramMediaRelayBot.Database;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 

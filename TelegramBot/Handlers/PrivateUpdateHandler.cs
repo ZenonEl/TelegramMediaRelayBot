@@ -10,9 +10,9 @@
 // (по вашему выбору) любой более поздней версии.
 
 
-using DataBase.Types;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
+using TelegramMediaRelayBot.Database;
 
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers;

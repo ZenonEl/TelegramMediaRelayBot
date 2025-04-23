@@ -9,6 +9,7 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
+using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
@@ -74,7 +75,7 @@ public class UserProcessOutboundState : IUserState
                     {
                         string userId = update.CallbackQuery.Data.Split(':')[1];
                         int accepterTelegramID = DBforGetters.GetUserIDbyTelegramID(long.Parse(userId));
-                        ContactRemover.RemoveContactByStatus(DBforGetters.GetUserIDbyTelegramID(chatId), accepterTelegramID, DataBase.Types.ContactsStatus.WAITING_FOR_ACCEPT);
+                        ContactRemover.RemoveContactByStatus(DBforGetters.GetUserIDbyTelegramID(chatId), accepterTelegramID, ContactsStatus.WAITING_FOR_ACCEPT);
                     }
                 }
                 TGBot.userStates.Remove(chatId);

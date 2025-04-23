@@ -12,11 +12,11 @@
 
 using Telegram.Bot.Polling;
 using System.Text.RegularExpressions;
-using DataBase.Types;
 using Telegram.Bot.Types.Enums;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Handlers;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.Database;
 
 
 namespace TelegramMediaRelayBot;
@@ -25,15 +25,18 @@ public partial class TGBot
 {
     private readonly IUserRepository _userRepo;
     private readonly IUserGettersRepository _userGettersRepo;
+
     public static Dictionary<long, IUserState> userStates = [];
     public static CancellationToken cancellationToken;
 
     public TGBot(
         IUserRepository userRepo,
-        IUserGettersRepository userGettersRepo)
+        IUserGettersRepository userGettersRepo,
+        IContactGroupRepository contactGroupRepo)
     {
         _userRepo = userRepo;
         _userGettersRepo = userGettersRepo;
+        Config.contactGroupRepo = contactGroupRepo;
     }
 
     public async Task Start()

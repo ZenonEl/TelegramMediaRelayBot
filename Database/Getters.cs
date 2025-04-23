@@ -9,9 +9,9 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using DataBase.Types;
 using MySql.Data.MySqlClient;
 using TelegramMediaRelayBot;
+using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Repositories.MySql;
 
 

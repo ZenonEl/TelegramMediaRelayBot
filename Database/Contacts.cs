@@ -11,6 +11,7 @@
 
 using MySql.Data.MySqlClient;
 using TelegramMediaRelayBot;
+using TelegramMediaRelayBot.Database;
 
 
 namespace DataBase;
@@ -22,6 +23,7 @@ public static class ContactAdder
         string query = @$"
             USE {Config.databaseName};
             INSERT INTO Contacts (UserId, ContactId, Status) VALUES (@userId, @contactId, @status)";
+
         using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
         {
             try
@@ -30,7 +32,7 @@ public static class ContactAdder
                 MySqlCommand command = new MySqlCommand(query, connection);
                 command.Parameters.AddWithValue("@userId", DBforGetters.GetContactByTelegramID(telegramID));
                 command.Parameters.AddWithValue("@contactId", DBforGetters.GetContactIDByLink(link));
-                command.Parameters.AddWithValue("@status", Types.ContactsStatus.WAITING_FOR_ACCEPT);
+                command.Parameters.AddWithValue("@status", ContactsStatus.WAITING_FOR_ACCEPT);
                 command.ExecuteNonQuery();
             }
             catch (Exception ex)
@@ -240,22 +242,22 @@ public static class ContactRemover
                     {
                         MySqlCommand deleteContactsCommand = new MySqlCommand(deleteContactsQuery, connection, transaction);
                         deleteContactsCommand.Parameters.AddWithValue("@userId", userId);
-                        
+
                         for (int i = 0; i < excludeIds.Count; i++)
                         {
                             deleteContactsCommand.Parameters.AddWithValue($"@excludeId{i}", excludeIds[i]);
                         }
-                        
+
                         deleteContactsCommand.ExecuteNonQuery();
 
                         MySqlCommand deleteGroupMembersCommand = new MySqlCommand(deleteGroupMembersQuery, connection, transaction);
                         deleteGroupMembersCommand.Parameters.AddWithValue("@userId", userId);
-                        
+
                         for (int i = 0; i < excludeIds.Count; i++)
                         {
                             deleteGroupMembersCommand.Parameters.AddWithValue($"@excludeId{i}", excludeIds[i]);
                         }
-                        
+
                         deleteGroupMembersCommand.ExecuteNonQuery();
 
                         transaction.Commit();
@@ -366,7 +368,7 @@ public static class ContactGetter
         string query = @$"
             SELECT UserId, ContactId
             FROM Contacts
-            WHERE (ContactId = @UserId OR UserId = @UserId) AND status = '{Types.ContactsStatus.ACCEPTED}'";
+            WHERE (ContactId = @UserId OR UserId = @UserId) AND status = '{ContactsStatus.ACCEPTED}'";
 
         using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
         {
