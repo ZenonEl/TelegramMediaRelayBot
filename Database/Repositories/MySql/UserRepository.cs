@@ -47,15 +47,24 @@ public class MySqlUserRepository(string connectionString) : IUserRepository
         using var connection = new MySqlConnection(_connectionString);
         connection.Execute(query, new { telegramID, name, link });
     }
-}
 
-public class UserGettersRepository : IUserGettersRepository
-{
-    private readonly string _connectionString;
-
-    public UserGettersRepository(string connectionString)
+    public void UnMuteUserByMuteId(int muteId)
     {
-        _connectionString = connectionString;
+        string query = @$"
+            UPDATE MutedContacts SET IsActive = 0 WHERE MutedId = @muteId";
+        
+        using var connection = new MySqlConnection(_connectionString);
+        connection.Execute(query, new { muteId });
+    }
+
+    public bool ReCreateUserSelfLink(int userId)
+    {
+        string newLink = Utils.GenerateUserLink();
+        const string query = @"
+            UPDATE Users SET Link = @newLink WHERE ID = @userId";
+        
+        using var connection = new MySqlConnection(_connectionString);
+        return connection.Execute(query, new { newLink, userId }) > 0;
     }
 }
 
