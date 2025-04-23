@@ -200,7 +200,7 @@ public class UserDisablePermanentContentSpoilerCommand : IBotCallbackQueryHandle
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         int userId = DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id);
-        bool actionStatus = PrivacySettingsSetter.SetPrivacyRuleToDisabled(userId, PrivacyRuleType.AllowContentForwarding);
+        bool actionStatus = PrivacySettingsSetter.SetPrivacyRuleToDisabled(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING);
         string statusMessage = actionStatus
             ? Config.GetResourceString("SuccessActionResult")
             : Config.GetResourceString("ErrorActionResult");
@@ -215,7 +215,7 @@ public class UserEnablePermanentContentSpoilerCommand : IBotCallbackQueryHandler
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         int userId = DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id);
-        bool actionStatus = PrivacySettingsSetter.SetPrivacyRule(userId, PrivacyRuleType.AllowContentForwarding, "disallow_content_forwarding", true, "always");
+        bool actionStatus = PrivacySettingsSetter.SetPrivacyRule(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING, "disallow_content_forwarding", true, "always");
         string statusMessage = actionStatus
             ? Config.GetResourceString("SuccessActionResult")
             : Config.GetResourceString("ErrorActionResult");

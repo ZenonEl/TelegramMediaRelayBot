@@ -31,7 +31,7 @@ public class UsersActionTypes
 
 public class PrivacyRuleType
 {
-    public const string AllowContentForwarding = "allow_forwarding";
+    public const string ALLOW_CONTENT_FORWARDING = "allow_forwarding";
 }
 
 public class UsersAction

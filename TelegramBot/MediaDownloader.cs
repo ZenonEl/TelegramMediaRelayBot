@@ -207,7 +207,6 @@ public partial class TGBot
         int userId = _userGettersRepo.GetUserIDbyTelegramID(telegramId);
         List<long> mutedByUserIds = _userGettersRepo.GetUsersIdForMuteContactId(userId);
         List<long> filteredContactUserTGIds = targetUserIds.Except(mutedByUserIds).ToList();
-        bool isDisallowContentForwarding = PrivacySettingsGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.AllowContentForwarding);
         bool isDisallowContentForwarding = PrivacySettingsGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING);
 
         Log.Information($"Sending video to ({filteredContactUserTGIds.Count}) users.");
