@@ -1,6 +1,7 @@
 using System.Resources;
 using Serilog.Events;
 using Microsoft.Extensions.Configuration;
+using TelegramMediaRelayBot.Database.Interfaces;
 
 
 namespace TelegramMediaRelayBot
@@ -8,9 +9,11 @@ namespace TelegramMediaRelayBot
     class Config
     {
         public static TGBot? bot;
+        public static IContactGroupRepository contactGroupRepo;
         public static string? telegramBotToken;
-        public static string? sqlConnectionString;
+        public static string sqlConnectionString;
         public static string databaseName = "TelegramMediaRelayBot";
+        public static string dbType = "mysql";
         public static string? language;
         public static string proxy = "";
         public static int userUnMuteCheckInterval = 20; // Seconds
