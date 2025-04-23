@@ -19,7 +19,7 @@ namespace DataBase;
 
 public class DBforGetters
 {
-    static UserGettersRepository repo = new UserGettersRepository(CoreDB.connectionString);
+    static MySqlUserGettersRepository repo = new MySqlUserGettersRepository(CoreDB.connectionString);
 
     private static string GetLink(long telegramID)
     {

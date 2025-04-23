@@ -15,7 +15,7 @@ using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.Database.Repositories.MySql;
 
-public class UserRepository(string connectionString) : IUserRepository
+public class MySqlUserRepository(string connectionString) : IUserRepository
 {
     private readonly string _connectionString = connectionString;
 
@@ -57,6 +57,11 @@ public class UserGettersRepository : IUserGettersRepository
     {
         _connectionString = connectionString;
     }
+}
+
+public class MySqlUserGettersRepository(string connectionString) : IUserGettersRepository
+{
+    private readonly string _connectionString = connectionString;
 
     public long GetTelegramIDbyUserID(int userId)
     {
