@@ -31,16 +31,6 @@ public class MainMenuCommand : IBotCallbackQueryHandlers
     }
 }
 
-public class AddContactCommand : IBotCallbackQueryHandlers
-{
-    public string Name => "add_contact";
-
-    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
-    {
-        await Contacts.AddContact(botClient, update, update.CallbackQuery!.Message!.Chat.Id);
-    }
-}
-
 public class GetSelfLinkCommand : IBotCallbackQueryHandlers
 {
     public string Name => "get_self_link";
