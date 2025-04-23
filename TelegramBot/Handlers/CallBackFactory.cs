@@ -15,9 +15,15 @@ using System.Reflection;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers;
 
-public class CallbackQueryHandlersFactory(IEnumerable<IBotCallbackQueryHandlers> commands)
+
+public class CallbackQueryHandlersFactory
 {
-    private readonly Dictionary<string, IBotCallbackQueryHandlers> _commands = commands.ToDictionary(c => c.Name);
+    private readonly Dictionary<string, IBotCallbackQueryHandlers> _commands;
+
+    public CallbackQueryHandlersFactory(IEnumerable<IBotCallbackQueryHandlers> commands)
+    {
+        _commands = commands.ToDictionary(c => c.Name);
+    }
 
     public IBotCallbackQueryHandlers GetCommand(string commandName)
     {
@@ -25,24 +31,5 @@ public class CallbackQueryHandlersFactory(IEnumerable<IBotCallbackQueryHandlers>
             return command;
 
         throw new Exception($"CallbackQuery command: {commandName} not found");
-    }
-
-    public static List<IBotCallbackQueryHandlers> AutoRegisterCommands()
-    {
-        var commandTypes = Assembly.GetExecutingAssembly()
-            .GetTypes()
-            .Where(t => 
-                t.IsClass && 
-                !t.IsAbstract && 
-                typeof(IBotCallbackQueryHandlers).IsAssignableFrom(t)
-            );
-
-        var CallbackQueryHandlers = new List<IBotCallbackQueryHandlers>();
-        foreach (var type in commandTypes)
-        {
-            IBotCallbackQueryHandlers command = (IBotCallbackQueryHandlers)Activator.CreateInstance(type)!;
-            CallbackQueryHandlers.Add(command);
-        }
-        return CallbackQueryHandlers;
     }
 }
