@@ -14,13 +14,9 @@ global using DataBase;
 global using Telegram.Bot;
 global using Telegram.Bot.Types;
 using System.Globalization;
+using FluentMigrator.Runner;
 using Microsoft.Extensions.DependencyInjection;
 using TelegramMediaRelayBot.Database;
-using Microsoft.AspNetCore.Builder;
-using TelegramMediaRelayBot;
-using TelegramMediaRelayBot.Database.Repositories.MySql;
-using TelegramMediaRelayBot.Database.Interfaces;
-
 
 
 namespace TelegramMediaRelayBot
@@ -40,7 +36,6 @@ namespace TelegramMediaRelayBot
             Console.WriteLine("============================================\n");
 
             Config.LoadConfig();
-
             CultureInfo currentCulture = CultureInfo.CurrentUICulture;
 
             if (Config.language != null)
@@ -58,26 +53,23 @@ namespace TelegramMediaRelayBot
 
             try
             {
-
-                var builder = WebApplication.CreateBuilder(args);
-
-                builder.Services.AddSingleton<ITelegramBotClient>(_ => 
-                    new TelegramBotClient(Config.telegramBotToken!));
-                builder.Services.AddSingleton<IUserRepository>(_ => 
-                    new UserRepository(Config.sqlConnectionString!));
-                builder.Services.AddSingleton<IUserGettersRepository>(_ => 
-                    new UserGettersRepository(Config.sqlConnectionString!));
-
+                var builder = FluentDBMigrator.CreateBuilderByDBType(args, Config.dbType);
                 builder.Services.AddSingleton<TGBot>();
+
+                ServiceProvider serviceProvider = FluentDBMigrator.GetCurrentServiceProvider(Config.dbType);
+                using (var scope = serviceProvider.CreateScope())
+                {
+                    var migrator = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
+                    migrator.MigrateUp();
+                }
+
                 var app = builder.Build();
                 Config.bot = app.Services.GetRequiredService<TGBot>();
 
                 Log.Information($"Log level: {Config.logLevel}");
-                CoreDB.InitDB();
                 Scheduler.Scheduler.Init();
 
                 await Config.bot.Start();
-
                 await Task.Delay(-1);
             }
             catch (Exception ex)
