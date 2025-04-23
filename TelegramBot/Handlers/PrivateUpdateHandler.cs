@@ -19,9 +19,18 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers;
 
 public class PrivateUpdateHandler
 {
-    private static readonly List<IBotCallbackQueryHandlers> _сallbackQueryHandlers = CallbackQueryHandlersFactory.AutoRegisterCommands();
+    private readonly TGBot _tgBot;
+    private readonly CallbackQueryHandlersFactory _handlersFactory;
 
-    public static async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
+    public PrivateUpdateHandler(
+        TGBot tgBot,
+        CallbackQueryHandlersFactory handlersFactory)
+    {
+        _tgBot = tgBot;
+        _handlersFactory = handlersFactory;
+    }
+
+    public async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
     {
         string messageText = update.Message!.Text!;
         string link;
@@ -61,7 +70,7 @@ public class PrivateUpdateHandler
             string defaultActionData = DBforGetters.GetDefaultActionByUserIDAndType(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
 
             CancellationTokenSource timeoutCTS = new CancellationTokenSource();
-            TGBot.userStates[chatId] = new ProcessVideoDC(link, statusMessage, text, timeoutCTS);
+            TGBot.userStates[chatId] = new ProcessVideoDC(link, statusMessage, text, timeoutCTS, _tgBot);
 
             if (defaultActionData == UsersAction.NO_VALUE) return;
 
@@ -69,8 +78,8 @@ public class PrivateUpdateHandler
             int defaultCondition = int.Parse(defaultActionData.Split(';')[1]);
 
             if (defaultAction == UsersAction.OFF) return;
-
-            PrivateUtils.ProcessDefaultSendAction(botClient, chatId, statusMessage, defaultAction, cancellationToken,
+            var privateUtils = new PrivateUtils(_tgBot);
+            privateUtils.ProcessDefaultSendAction(botClient, chatId, statusMessage, defaultAction, cancellationToken,
                                                                 userId, defaultCondition, timeoutCTS, link, text);
         }
         else if (update.Message.Text == "/start")
@@ -88,7 +97,7 @@ public class PrivateUpdateHandler
         }
     }
 
-    public static async Task ProcessCallbackQuery(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    public async Task ProcessCallbackQuery(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         var callbackQuery = update.CallbackQuery;
 
@@ -96,8 +105,7 @@ public class PrivateUpdateHandler
         int colonIndex = data.IndexOf(':');
         string commandName = colonIndex >= 0 ? data[..(colonIndex + 1)] : data;
 
-        var commandFactory = new CallbackQueryHandlersFactory(_сallbackQueryHandlers);
-        var command = commandFactory.GetCommand(commandName);
+        var command = _handlersFactory.GetCommand(commandName);
         
         await command.ExecuteAsync(update, botClient, cancellationToken);
     }

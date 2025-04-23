@@ -14,6 +14,7 @@ using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 using Telegram.Bot.Types.Enums;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.TelegramBot;
 
 
 namespace TelegramMediaRelayBot;
@@ -25,18 +26,26 @@ public class ProcessVideoDC : IUserState
     public Message statusMessage { get; set; }
     public string text { get; set; }
     public CancellationTokenSource timeoutCTS { get; }
+    public Queue<(string Link, string Text, int MessageId)> linkQueue = new Queue<(string Link, string Text, int MessageId)>();
     private string action = "";
     private List<long> targetUserIds = new List<long>();
     private List<long> preparedTargetUserIds = new List<long>();
-    public Queue<(string Link, string Text, int MessageId)> linkQueue = new Queue<(string Link, string Text, int MessageId)>();
+    private readonly TGBot _tgBot;
 
-    public ProcessVideoDC(string Link, Message StatusMessage, string Text, CancellationTokenSource cts)
+    public ProcessVideoDC(
+        string Link,
+        Message StatusMessage,
+        string Text,
+        CancellationTokenSource cts,
+        TGBot tgBot
+        )
     {
         link = Link;
         statusMessage = StatusMessage;
         text = Text;
         currentState = UsersStandardState.ProcessAction;
         timeoutCTS = cts;
+        _tgBot = tgBot;
     }
 
     public string GetCurrentState()
@@ -185,7 +194,7 @@ public class ProcessVideoDC : IUserState
                 }
 
                 await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
-                _ = Config.bot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
+                _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
 
                 if (linkQueue.Count > 0)
                 {

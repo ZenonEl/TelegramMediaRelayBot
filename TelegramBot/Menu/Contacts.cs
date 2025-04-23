@@ -10,6 +10,7 @@
 // (по вашему выбору) любой более поздней версии.
 
 
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
@@ -60,9 +61,9 @@ public class Contacts
         await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), cancellationToken, $"{Config.GetResourceString("YourContacts")}\n{string.Join("\n", contactUsersInfo)}");
     }
 
-    public static async Task EditContactGroup(ITelegramBotClient botClient, Update update, long chatId)
+    public static async Task EditContactGroup(ITelegramBotClient botClient, Update update, long chatId, IContactGroupRepository contactGroupRepository)
     {
-        TGBot.userStates[chatId] = new ProcessContactGroupState();
+        TGBot.userStates[chatId] = new ProcessContactGroupState(contactGroupRepository);
 
         int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
         List<string> groupInfos = UsersGroup.GetUserGroupInfoByUserId(userId);

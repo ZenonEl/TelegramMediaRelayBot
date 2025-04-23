@@ -17,10 +17,17 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers;
 
 class PrivateUtils
 {
+    private TGBot _tgBot;
 
-    public static void ProcessDefaultSendAction(ITelegramBotClient botClient, long chatId, Message statusMessage, string defaultAction,
-                                                CancellationToken cancellationToken, int userId, int defaultCondition, CancellationTokenSource timeoutCTS,
-                                                string link, string text)
+    public PrivateUtils(
+        TGBot tgBot)
+    {
+        _tgBot = tgBot;
+    }
+
+    public void ProcessDefaultSendAction(ITelegramBotClient botClient, long chatId, Message statusMessage, string defaultAction,
+                                        CancellationToken cancellationToken, int userId, int defaultCondition, CancellationTokenSource timeoutCTS,
+                                        string link, string text)
     {
         _ = Task.Run(async () =>
         {
@@ -83,7 +90,7 @@ class PrivateUtils
                         Config.GetResourceString("DefaultActionTimeoutMessage"),
                         cancellationToken: cancellationToken
                     );
-                    _ = Config.bot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
+                    _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
 
                     if (videoState.linkQueue.Count > 0)
                     {

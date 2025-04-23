@@ -17,6 +17,7 @@ using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Handlers;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.TelegramBot;
 
 
 namespace TelegramMediaRelayBot;
@@ -25,18 +26,21 @@ public partial class TGBot
 {
     private readonly IUserRepository _userRepo;
     private readonly IUserGettersRepository _userGettersRepo;
-
+    private readonly CallbackQueryHandlersFactory _handlersFactory;
+    private readonly PrivateUpdateHandler _updateHandler;
     public static Dictionary<long, IUserState> userStates = [];
     public static CancellationToken cancellationToken;
 
     public TGBot(
         IUserRepository userRepo,
         IUserGettersRepository userGettersRepo,
-        IContactGroupRepository contactGroupRepo)
+        CallbackQueryHandlersFactory handlersFactory 
+        )
     {
         _userRepo = userRepo;
         _userGettersRepo = userGettersRepo;
-        Config.contactGroupRepo = contactGroupRepo;
+        _handlersFactory = handlersFactory;
+        _updateHandler = new PrivateUpdateHandler(this, _handlersFactory);
     }
 
     public async Task Start()
@@ -109,19 +113,20 @@ public partial class TGBot
 
                 if (hasAccess)
                 {
-                    await PrivateUpdateHandler.ProcessMessage(botClient, update, cancellationToken, chatId);
+                    await _updateHandler.ProcessMessage(botClient, update, cancellationToken, chatId);
                 }
             }
             else if (update.CallbackQuery != null)
             {
-                await PrivateUpdateHandler.ProcessCallbackQuery(botClient, update, cancellationToken);
+                await _updateHandler.ProcessCallbackQuery(botClient, update, cancellationToken);
             }
         }
         else 
         {
             if (update.Message != null && update.Message.Text != null && update.Message.Text.Contains('/'))
             {
-                await GroupUpdateHandler.HandleGroupUpdate(update, botClient, cancellationToken);
+                GroupUpdateHandler groupUpdateHandler = new GroupUpdateHandler(this);
+                await groupUpdateHandler.HandleGroupUpdate(update, botClient, cancellationToken);
             }
         }
     }
@@ -203,6 +208,7 @@ public partial class TGBot
         List<long> mutedByUserIds = _userGettersRepo.GetUsersIdForMuteContactId(userId);
         List<long> filteredContactUserTGIds = targetUserIds.Except(mutedByUserIds).ToList();
         bool isDisallowContentForwarding = PrivacySettingsGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.AllowContentForwarding);
+        bool isDisallowContentForwarding = PrivacySettingsGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING);
 
         Log.Information($"Sending video to ({filteredContactUserTGIds.Count}) users.");
         Log.Information($"User {userId} is muted by: {mutedByUserIds.Count}");

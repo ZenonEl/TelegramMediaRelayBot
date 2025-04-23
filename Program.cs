@@ -17,6 +17,8 @@ using System.Globalization;
 using FluentMigrator.Runner;
 using Microsoft.Extensions.DependencyInjection;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.TelegramBot.Handlers;
+using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
 
 namespace TelegramMediaRelayBot
@@ -54,7 +56,6 @@ namespace TelegramMediaRelayBot
             try
             {
                 var builder = FluentDBMigrator.CreateBuilderByDBType(args, Config.dbType);
-                builder.Services.AddSingleton<TGBot>();
 
                 ServiceProvider serviceProvider = FluentDBMigrator.GetCurrentServiceProvider(Config.dbType);
                 using (var scope = serviceProvider.CreateScope())
@@ -64,12 +65,12 @@ namespace TelegramMediaRelayBot
                 }
 
                 var app = builder.Build();
-                Config.bot = app.Services.GetRequiredService<TGBot>();
+                TGBot tgBot = app.Services.GetRequiredService<TGBot>();
 
                 Log.Information($"Log level: {Config.logLevel}");
                 Scheduler.Scheduler.Init();
 
-                await Config.bot.Start();
+                await tgBot.Start();
                 await Task.Delay(-1);
             }
             catch (Exception ex)

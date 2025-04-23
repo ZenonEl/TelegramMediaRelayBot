@@ -11,6 +11,7 @@
 
 
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
@@ -28,12 +29,12 @@ public class ProcessContactGroupState : IUserState
     private List<int> contactIDs = [];
     private int groupId = 0;
     private List<bool> isDBActionSuccessful = [];
+    private IContactGroupRepository _contactGroupRepository;
 
-    private readonly IContactGroupRepository _contactGroupRepo = Config.contactGroupRepo;
-
-    public ProcessContactGroupState()
+    public ProcessContactGroupState(IContactGroupRepository contactGroupRepository)
     {
         currentState = UsersStandardState.ProcessAction;
+        _contactGroupRepository = contactGroupRepository;
     }
 
     public string GetCurrentState()
@@ -209,7 +210,7 @@ public class ProcessContactGroupState : IUserState
                 List<int> allowedIds = [];
                 foreach (int contactId in contactIDs)
                 {
-                    bool status = _contactGroupRepo.CheckUserAndContactConnect(userId, contactId);
+                    bool status = _contactGroupRepository.CheckUserAndContactConnect(userId, contactId);
                     if (status) allowedIds.Add(contactId);
                 }
 
@@ -251,14 +252,14 @@ public class ProcessContactGroupState : IUserState
         {
             foreach (var contactId in contactIDs)
             {
-                isDBActionSuccessful.Add(_contactGroupRepo.AddContactToGroup(userId, contactId, groupId));
+                isDBActionSuccessful.Add(_contactGroupRepository.AddContactToGroup(userId, contactId, groupId));
             }
         }
         else if (callbackAction.StartsWith("accept_delete_contact_from_group"))
         {
             foreach (var contactId in contactIDs)
             {
-                isDBActionSuccessful.Add(_contactGroupRepo.RemoveContactFromGroup(userId, contactId, groupId));
+                isDBActionSuccessful.Add(_contactGroupRepository.RemoveContactFromGroup(userId, contactId, groupId));
             }
         }
     }
