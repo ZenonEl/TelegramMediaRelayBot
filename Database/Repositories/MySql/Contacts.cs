@@ -9,31 +9,32 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
+using Dapper;
 using MySql.Data.MySqlClient;
-using TelegramMediaRelayBot;
 using TelegramMediaRelayBot.Database;
-
+using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace DataBase;
 
-public static class ContactAdder
+public class MySqlContactAdder(string connectionString) : IContactAdder
 {
-    public static void AddContact(long telegramID, string link)
+    private readonly string _connectionString = connectionString;
+
+    public void AddContact(long telegramID, string link)
     {
         string query = @$"
-            USE {Config.databaseName};
             INSERT INTO Contacts (UserId, ContactId, Status) VALUES (@userId, @contactId, @status)";
 
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        using (var connection = new MySqlConnection(_connectionString))
         {
             try
             {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@userId", DBforGetters.GetContactByTelegramID(telegramID));
-                command.Parameters.AddWithValue("@contactId", DBforGetters.GetContactIDByLink(link));
-                command.Parameters.AddWithValue("@status", ContactsStatus.WAITING_FOR_ACCEPT);
-                command.ExecuteNonQuery();
+                connection.Execute(query, new 
+                {
+                    userId = DBforGetters.GetContactByTelegramID(telegramID),
+                    contactId = DBforGetters.GetContactIDByLink(link),
+                    status = ContactsStatus.WAITING_FOR_ACCEPT
+                });
             }
             catch (Exception ex)
             {
@@ -42,7 +43,7 @@ public static class ContactAdder
         }
     }
 
-    public static bool AddMutedContact(int mutedByUserId, int mutedContactId, DateTime? expirationDate = null, DateTime muteDate = default)
+    public bool AddMutedContact(int mutedByUserId, int mutedContactId, DateTime? expirationDate = null, DateTime muteDate = default)
     {
         if (muteDate == default)
         {
@@ -50,7 +51,6 @@ public static class ContactAdder
         }
 
         string query = @$"
-            USE {Config.databaseName};
             INSERT INTO MutedContacts (MutedByUserId, MutedContactId, MuteDate, ExpirationDate)
             VALUES (@mutedByUserId, @mutedContactId, @muteDate, @expirationDate)
             ON DUPLICATE KEY UPDATE
@@ -58,18 +58,17 @@ public static class ContactAdder
                 ExpirationDate = @expirationDate,
                 IsActive = 1";
 
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        using (var connection = new MySqlConnection(_connectionString))
         {
             try
             {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@mutedByUserId", mutedByUserId);
-                command.Parameters.AddWithValue("@mutedContactId", mutedContactId);
-                command.Parameters.AddWithValue("@muteDate", muteDate);
-                command.Parameters.AddWithValue("@expirationDate", (object)expirationDate ?? DBNull.Value);
-
-                command.ExecuteNonQuery();
+                connection.Execute(query, new 
+                {
+                    mutedByUserId,
+                    mutedContactId,
+                    muteDate,
+                    expirationDate
+                });
                 return true;
             }
             catch (Exception ex)
@@ -85,24 +84,23 @@ public static class ContactAdder
 // ----------------------------------------------------------------------------------
 // ----------------------------------------------------------------------------------
 
-public static class ContactRemover
+public class MySqlContactRemover(string connectionString) : IContactRemover
 {
-    public static void RemoveMutedContact(int userId, int contactId)
+
+    private readonly string _connectionString = connectionString;
+
+    public void RemoveMutedContact(int userId, int contactId)
     {
         string query = @"
             UPDATE MutedContacts
             SET IsActive = 0
             WHERE MutedByUserId = @userId AND MutedContactId = @contactId";
 
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        using (var connection = new MySqlConnection(_connectionString))
         {
             try
             {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@userId", userId);
-                command.Parameters.AddWithValue("@contactId", contactId);
-                command.ExecuteNonQuery();
+                connection.Execute(query, new { userId, contactId });
             }
             catch (Exception ex)
             {
@@ -111,24 +109,23 @@ public static class ContactRemover
         }
     }
 
-    public static bool RemoveContactByStatus(int senderTelegramID, int accepterTelegramID, string? status = null)
+    public bool RemoveContactByStatus(int senderTelegramID, int accepterTelegramID, string? status = null)
     {
         string query = @$"
-            USE {Config.databaseName};
             DELETE FROM Contacts
             WHERE (UserId = @senderTelegramID AND ContactId = @accepterTelegramID AND (@status IS NULL OR Status = @status))
             OR (UserId = @accepterTelegramID AND ContactId = @senderTelegramID AND (@status IS NULL OR Status = @status))";
 
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        using (var connection = new MySqlConnection(_connectionString))
         {
             try
             {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@senderTelegramID", senderTelegramID);
-                command.Parameters.AddWithValue("@accepterTelegramID", accepterTelegramID);
-                command.Parameters.AddWithValue("@status", (object)status ?? DBNull.Value);
-                command.ExecuteNonQuery();
+                connection.Execute(query, new 
+                {
+                    senderTelegramID,
+                    accepterTelegramID,
+                    status
+                });
                 return true;
             }
             catch (Exception ex)
@@ -139,7 +136,7 @@ public static class ContactRemover
         }
     }
 
-    public static bool RemoveUsersFromContacts(int userId, List<int> contactIds)
+    public bool RemoveUsersFromContacts(int userId, List<int> contactIds)
     {
         if (contactIds == null || contactIds.Count == 0)
         {
@@ -149,47 +146,34 @@ public static class ContactRemover
         string contactIdParams = string.Join(", ", contactIds.Select((_, i) => $"@contactId{i}"));
 
         string deleteContactsQuery = @$"
-            USE {Config.databaseName};
             DELETE FROM Contacts
             WHERE (UserId = @userId AND ContactId IN ({contactIdParams}))
             OR (ContactId = @userId AND UserId IN ({contactIdParams}));";
 
         string deleteGroupMembersQuery = @$"
-            USE {Config.databaseName};
             DELETE FROM GroupMembers
             WHERE (UserId = @userId AND ContactId IN ({contactIdParams}))
             OR (ContactId = @userId AND UserId IN ({contactIdParams}));";
 
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        using (var connection = new MySqlConnection(_connectionString))
         {
             try
             {
                 connection.Open();
-
-                using (MySqlTransaction transaction = connection.BeginTransaction())
+                using (var transaction = connection.BeginTransaction())
                 {
                     try
                     {
-                        MySqlCommand deleteContactsCommand = new MySqlCommand(deleteContactsQuery, connection, transaction);
-                        deleteContactsCommand.Parameters.AddWithValue("@userId", userId);
-
+                        var parameters = new DynamicParameters();
+                        parameters.Add("userId", userId);
                         for (int i = 0; i < contactIds.Count; i++)
                         {
-                            deleteContactsCommand.Parameters.AddWithValue($"@contactId{i}", contactIds[i]);
+                            parameters.Add($"contactId{i}", contactIds[i]);
                         }
 
-                        deleteContactsCommand.ExecuteNonQuery();
-
-                        MySqlCommand deleteGroupMembersCommand = new MySqlCommand(deleteGroupMembersQuery, connection, transaction);
-                        deleteGroupMembersCommand.Parameters.AddWithValue("@userId", userId);
-
-                        for (int i = 0; i < contactIds.Count; i++)
-                        {
-                            deleteGroupMembersCommand.Parameters.AddWithValue($"@contactId{i}", contactIds[i]);
-                        }
-
-                        deleteGroupMembersCommand.ExecuteNonQuery();
-
+                        connection.Execute(deleteContactsQuery, parameters, transaction);
+                        connection.Execute(deleteGroupMembersQuery, parameters, transaction);
+                        
                         transaction.Commit();
                         return true;
                     }
@@ -209,7 +193,7 @@ public static class ContactRemover
         }
     }
 
-    public static bool RemoveAllContactsExcept(int userId, List<int> excludeIds)
+    public bool RemoveAllContactsExcept(int userId, List<int> excludeIds)
     {
         if (excludeIds == null || excludeIds.Count == 0)
         {
@@ -219,47 +203,34 @@ public static class ContactRemover
         string excludeParams = string.Join(",", excludeIds.Select((_, i) => $"@excludeId{i}"));
 
         string deleteContactsQuery = @$"
-            USE {Config.databaseName};
             DELETE FROM Contacts
             WHERE (UserId = @userId AND ContactId NOT IN ({excludeParams}))
             OR (ContactId = @userId AND UserId NOT IN ({excludeParams}));";
 
         string deleteGroupMembersQuery = @$"
-            USE {Config.databaseName};
             DELETE FROM GroupMembers
             WHERE (UserId = @userId AND ContactId NOT IN ({excludeParams}))
             OR (ContactId = @userId AND UserId NOT IN ({excludeParams}));";
 
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        using (var connection = new MySqlConnection(_connectionString))
         {
             try
             {
                 connection.Open();
-
-                using (MySqlTransaction transaction = connection.BeginTransaction())
+                using (var transaction = connection.BeginTransaction())
                 {
                     try
                     {
-                        MySqlCommand deleteContactsCommand = new MySqlCommand(deleteContactsQuery, connection, transaction);
-                        deleteContactsCommand.Parameters.AddWithValue("@userId", userId);
-
+                        var parameters = new DynamicParameters();
+                        parameters.Add("userId", userId);
                         for (int i = 0; i < excludeIds.Count; i++)
                         {
-                            deleteContactsCommand.Parameters.AddWithValue($"@excludeId{i}", excludeIds[i]);
+                            parameters.Add($"excludeId{i}", excludeIds[i]);
                         }
 
-                        deleteContactsCommand.ExecuteNonQuery();
-
-                        MySqlCommand deleteGroupMembersCommand = new MySqlCommand(deleteGroupMembersQuery, connection, transaction);
-                        deleteGroupMembersCommand.Parameters.AddWithValue("@userId", userId);
-
-                        for (int i = 0; i < excludeIds.Count; i++)
-                        {
-                            deleteGroupMembersCommand.Parameters.AddWithValue($"@excludeId{i}", excludeIds[i]);
-                        }
-
-                        deleteGroupMembersCommand.ExecuteNonQuery();
-
+                        connection.Execute(deleteContactsQuery, parameters, transaction);
+                        connection.Execute(deleteGroupMembersQuery, parameters, transaction);
+                        
                         transaction.Commit();
                         return true;
                     }
@@ -279,36 +250,27 @@ public static class ContactRemover
         }
     }
 
-    public static bool RemoveAllContacts(int userId)
+    public bool RemoveAllContacts(int userId)
     {
         string deleteContactsQuery = @$"
-            USE {Config.databaseName};
             DELETE FROM Contacts
             WHERE UserId = @userId OR ContactId = @userId;";
 
         string deleteGroupMembersQuery = @$"
-            USE {Config.databaseName};
             DELETE FROM GroupMembers
             WHERE UserId = @userId OR ContactId = @userId;";
 
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        using (var connection = new MySqlConnection(_connectionString))
         {
             try
             {
                 connection.Open();
-
-                using (MySqlTransaction transaction = connection.BeginTransaction())
+                using (var transaction = connection.BeginTransaction())
                 {
                     try
                     {
-                        MySqlCommand deleteContactsCommand = new MySqlCommand(deleteContactsQuery, connection, transaction);
-                        deleteContactsCommand.Parameters.AddWithValue("@userId", userId);
-                        deleteContactsCommand.ExecuteNonQuery();
-
-                        MySqlCommand deleteGroupMembersCommand = new MySqlCommand(deleteGroupMembersQuery, connection, transaction);
-                        deleteGroupMembersCommand.Parameters.AddWithValue("@userId", userId);
-                        deleteGroupMembersCommand.ExecuteNonQuery();
-
+                        connection.Execute(deleteContactsQuery, new { userId }, transaction);
+                        connection.Execute(deleteGroupMembersQuery, new { userId }, transaction);
                         transaction.Commit();
                         return true;
                     }
@@ -333,23 +295,24 @@ public static class ContactRemover
 // ----------------------------------------------------------------------------------
 // ----------------------------------------------------------------------------------
 
-public static class ContactSetter
+public class MySqlContactSetter(string connectionString) : IContactSetter
 {
-    public static void SetContactStatus(long SenderTelegramID, long AccepterTelegramID, string status)
+    private readonly string _connectionString = connectionString;
+
+    public void SetContactStatus(long SenderTelegramID, long AccepterTelegramID, string status)
     {
         string query = @$"
-            USE {Config.databaseName};
             UPDATE Contacts SET Status = @Status WHERE UserId = @UserId AND ContactId = @ContactId";
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        using (var connection = new MySqlConnection(_connectionString))
         {
             try
             {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@Status", status);
-                command.Parameters.AddWithValue("@UserId", DBforGetters.GetUserIDbyTelegramID(SenderTelegramID));
-                command.Parameters.AddWithValue("@ContactId", DBforGetters.GetContactByTelegramID(AccepterTelegramID));
-                command.ExecuteNonQuery();
+                connection.Execute(query, new 
+                {
+                    Status = status,
+                    UserId = DBforGetters.GetUserIDbyTelegramID(SenderTelegramID),
+                    ContactId = DBforGetters.GetContactByTelegramID(AccepterTelegramID)
+                });
             }
             catch (Exception ex)
             {
@@ -359,9 +322,11 @@ public static class ContactSetter
     }
 }
 
-public static class ContactGetter
+public class MySqlContactGetter(string connectionString) : IContactGetter
 {
-    public static async Task<List<long>> GetAllContactUserTGIds(int userId)
+    private readonly string _connectionString = connectionString;
+
+    public async Task<List<long>> GetAllContactUserTGIds(int userId)
     {
         List<long> contactUserIds = new List<long>();
         List<long> TelegramIDs = new List<long>();
@@ -370,27 +335,24 @@ public static class ContactGetter
             FROM Contacts
             WHERE (ContactId = @UserId OR UserId = @UserId) AND status = '{ContactsStatus.ACCEPTED}'";
 
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        using (var connection = new MySqlConnection(_connectionString))
         {
             try
             {
                 await connection.OpenAsync();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@UserId", userId);
-
-                using (MySqlDataReader reader = command.ExecuteReader())
+                var results = await connection.QueryAsync(query, new { UserId = userId });
+                
+                foreach (var row in results)
                 {
-                    while (await reader.ReadAsync())
-                    {
-                        long contactUserId = reader.GetInt64("UserId");
-                        long contactId = reader.GetInt64("ContactId");
-                        if (contactUserId != userId) contactUserIds.Add(contactUserId);
-                        if (userId != contactId) contactUserIds.Add(contactId);
-                    }
-                    foreach (var contactUserId in contactUserIds)
-                    {
-                        TelegramIDs.Add(DBforGetters.GetTelegramIDbyUserID((int)contactUserId));
-                    }
+                    long contactUserId = row.UserId;
+                    long contactId = row.ContactId;
+                    if (contactUserId != userId) contactUserIds.Add(contactUserId);
+                    if (userId != contactId) contactUserIds.Add(contactId);
+                }
+                
+                foreach (var contactUserId in contactUserIds)
+                {
+                    TelegramIDs.Add(DBforGetters.GetTelegramIDbyUserID((int)contactUserId));
                 }
             }
             catch (Exception ex)
