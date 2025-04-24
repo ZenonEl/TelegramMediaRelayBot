@@ -17,8 +17,6 @@ using System.Globalization;
 using FluentMigrator.Runner;
 using Microsoft.Extensions.DependencyInjection;
 using TelegramMediaRelayBot.Database;
-using TelegramMediaRelayBot.TelegramBot.Handlers;
-using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
 
 namespace TelegramMediaRelayBot

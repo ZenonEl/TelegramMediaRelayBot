@@ -9,7 +9,6 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using System.Data;
 
 namespace TelegramMediaRelayBot.Database.Interfaces;
 
