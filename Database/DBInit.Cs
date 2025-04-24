@@ -237,6 +237,14 @@ public class FluentDBMigrator : Migration
                     new MySqlUserGettersRepository(Config.sqlConnectionString!));
                 builder.Services.AddSingleton<IContactGroupRepository>(_ =>
                     new MySqlContactGroupRepository(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IContactAdder>(_ =>
+                    new MySqlContactAdder(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IContactGetter>(_ =>
+                    new MySqlContactGetter(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IContactSetter>(_ =>
+                    new MySqlContactSetter(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IContactRemover>(_ =>
+                    new MySqlContactRemover(Config.sqlConnectionString!));
                 return builder;
             default:
                 builder.Services.AddSingleton<IUserRepository>(_ =>
@@ -245,6 +253,14 @@ public class FluentDBMigrator : Migration
                     new MySqlUserGettersRepository(Config.sqlConnectionString!));
                 builder.Services.AddSingleton<IContactGroupRepository>(_ =>
                     new MySqlContactGroupRepository(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IContactAdder>(_ =>
+                    new MySqlContactAdder(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IContactGetter>(_ =>
+                    new MySqlContactGetter(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IContactSetter>(_ =>
+                    new MySqlContactSetter(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IContactRemover>(_ =>
+                    new MySqlContactRemover(Config.sqlConnectionString!));
                 return builder;
         }
     }
