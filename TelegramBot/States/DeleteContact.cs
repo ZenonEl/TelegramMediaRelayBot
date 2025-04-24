@@ -13,6 +13,7 @@
 using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot.Types.Enums;
 using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.Database.Interfaces;
 
 
 namespace TelegramMediaRelayBot;
@@ -21,13 +22,20 @@ public class ProcessRemoveUser : IUserState
 {
     public UsersStandardState currentState;
     private List<int> preparedTargetUserIds = new List<int>();
-    private Message statusMessage;
+    private readonly Message statusMessage;
+    private readonly IContactRemover _contactRemoverRepository;
+    private readonly IContactGetter _contactGetterRepository;
     bool isDeleteSuccessful = false;
 
-    public ProcessRemoveUser(Message statusMessage)
+    public ProcessRemoveUser(
+        Message statusMessage,
+        IContactRemover contactRemoverRepository,
+        IContactGetter contactGetterRepository)
     {
         this.statusMessage = statusMessage;
         currentState = UsersStandardState.ProcessAction;
+        _contactRemoverRepository = contactRemoverRepository;
+        _contactGetterRepository = contactGetterRepository;
     }
 
     public string GetCurrentState()
@@ -43,7 +51,7 @@ public class ProcessRemoveUser : IUserState
         {
             case UsersStandardState.ProcessAction:
                 if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
-                if (update.Message != null)
+                if (update.Message != null && update.Message.Text != null)
                 {
                     string input = update.Message.Text;
                     if (string.IsNullOrWhiteSpace(input))
@@ -94,7 +102,7 @@ public class ProcessRemoveUser : IUserState
 
     private async Task<bool> RetrieveAndDisplayUserInfo(ITelegramBotClient botClient, Update update, long chatId, CancellationToken cancellationToken)
     {
-        List<long> contactUserTGIds = await ContactGetter.GetAllContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(chatId));
+        List<long> contactUserTGIds = await _contactGetterRepository.GetAllContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(chatId));
         List<long> preparedTargetUserTGIds = preparedTargetUserIds.Select(id => DBforGetters.GetTelegramIDbyUserID(id)).ToList();
 
         contactUserTGIds = contactUserTGIds.Intersect(preparedTargetUserTGIds).ToList();
@@ -127,6 +135,6 @@ public class ProcessRemoveUser : IUserState
     private void RemoveUsersFromContacts(ITelegramBotClient botClient, long chatId, CancellationToken cancellationToken)
     {
         int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
-        isDeleteSuccessful = ContactRemover.RemoveUsersFromContacts(userId, preparedTargetUserIds);
+        isDeleteSuccessful = _contactRemoverRepository.RemoveUsersFromContacts(userId, preparedTargetUserIds);
     }
 }

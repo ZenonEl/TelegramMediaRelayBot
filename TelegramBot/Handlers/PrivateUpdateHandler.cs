@@ -13,6 +13,7 @@
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers;
@@ -21,13 +22,16 @@ public class PrivateUpdateHandler
 {
     private readonly TGBot _tgBot;
     private readonly CallbackQueryHandlersFactory _handlersFactory;
+    private readonly IContactGetter _contactGetterRepository;
 
     public PrivateUpdateHandler(
         TGBot tgBot,
-        CallbackQueryHandlersFactory handlersFactory)
+        CallbackQueryHandlersFactory handlersFactory,
+        IContactGetter contactGetterRepository)
     {
         _tgBot = tgBot;
         _handlersFactory = handlersFactory;
+        _contactGetterRepository = contactGetterRepository;
     }
 
     public async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
@@ -70,7 +74,7 @@ public class PrivateUpdateHandler
             string defaultActionData = DBforGetters.GetDefaultActionByUserIDAndType(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
 
             CancellationTokenSource timeoutCTS = new CancellationTokenSource();
-            TGBot.userStates[chatId] = new ProcessVideoDC(link, statusMessage, text, timeoutCTS, _tgBot);
+            TGBot.userStates[chatId] = new ProcessVideoDC(link, statusMessage, text, timeoutCTS, _tgBot, _contactGetterRepository);
 
             if (defaultActionData == UsersAction.NO_VALUE) return;
 
@@ -78,7 +82,7 @@ public class PrivateUpdateHandler
             int defaultCondition = int.Parse(defaultActionData.Split(';')[1]);
 
             if (defaultAction == UsersAction.OFF) return;
-            var privateUtils = new PrivateUtils(_tgBot);
+            var privateUtils = new PrivateUtils(_tgBot, _contactGetterRepository);
             privateUtils.ProcessDefaultSendAction(botClient, chatId, statusMessage, defaultAction, cancellationToken,
                                                                 userId, defaultCondition, timeoutCTS, link, text);
         }

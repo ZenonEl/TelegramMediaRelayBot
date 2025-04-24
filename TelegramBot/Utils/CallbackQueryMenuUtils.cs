@@ -10,6 +10,7 @@
 // (по вашему выбору) любой более поздней версии.
 
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 
@@ -27,11 +28,11 @@ public static class CallbackQueryMenuUtils
         await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(Config.GetResourceString("YourLink") + startLink, link));
     }
 
-    public static async Task ViewInboundInviteLinks(ITelegramBotClient botClient, Update update, long chatId)
+    public static async Task ViewInboundInviteLinks(ITelegramBotClient botClient, Update update, long chatId, IContactSetter contactSetterRepository, IContactRemover contactRemoverRepository)
     {
         string text = Config.GetResourceString("YourInboundInvitations");
         await CommonUtilities.SendMessage(botClient, update, InBoundKB.GetInboundsKeyboardMarkup(update), cancellationToken, text);
-        TGBot.userStates[chatId] = new UserProcessInboundState();
+        TGBot.userStates[chatId] = new UserProcessInboundState(contactSetterRepository, contactRemoverRepository);
     }
 
     public static async Task ViewOutboundInviteLinks(ITelegramBotClient botClient, Update update)
@@ -40,25 +41,25 @@ public static class CallbackQueryMenuUtils
         await CommonUtilities.SendMessage(botClient, update, OutBoundKB.GetOutboundKeyboardMarkup(CommonUtilities.GetIDfromUpdate(update)), cancellationToken, text);
     }
 
-    public static async Task ShowOutboundInvite(ITelegramBotClient botClient, Update update, long chatId)
+    public static async Task ShowOutboundInvite(ITelegramBotClient botClient, Update update, long chatId, IContactRemover contactRepository)
     {
         string userId = update.CallbackQuery!.Data!.Split(':')[1];
         await CommonUtilities.SendMessage(botClient, update, OutBoundKB.GetOutboundActionsKeyboardMarkup(userId), cancellationToken, Config.GetResourceString("OutboundInviteMenu"));
-        TGBot.userStates[chatId] = new UserProcessOutboundState();
+        TGBot.userStates[chatId] = new UserProcessOutboundState(contactRepository);
     }
 
-    public static Task AcceptInboundInvite(Update update)
+    public static Task AcceptInboundInvite(Update update, IContactSetter contactSetter)
     {
-        ContactSetter.SetContactStatus(long.Parse(update.CallbackQuery!.Data!.Split(':')[1]), update.CallbackQuery.Message!.Chat.Id, ContactsStatus.ACCEPTED);
+        contactSetter.SetContactStatus(long.Parse(update.CallbackQuery!.Data!.Split(':')[1]), update.CallbackQuery.Message!.Chat.Id, ContactsStatus.ACCEPTED);
         return Task.CompletedTask;
     }
 
-    public static Task DeclineInboundInvite(Update update)
+    public static Task DeclineInboundInvite(Update update, IContactRemover contactRemover)
     {
         string userId = update.CallbackQuery!.Data!.Split(':')[1];
         int senderTelegramID = DBforGetters.GetUserIDbyTelegramID(long.Parse(userId));
         int accepterTelegramID = DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery.Message!.Chat.Id);
-        ContactRemover.RemoveContactByStatus(senderTelegramID, accepterTelegramID, ContactsStatus.WAITING_FOR_ACCEPT);
+        contactRemover.RemoveContactByStatus(senderTelegramID, accepterTelegramID, ContactsStatus.WAITING_FOR_ACCEPT);
         return Task.CompletedTask;
     }
 

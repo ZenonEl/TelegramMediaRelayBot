@@ -11,6 +11,7 @@
 
 
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Menu;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 
@@ -131,6 +132,17 @@ public class UserUpdateSelfLinkWithNewContactsCommand : IBotCallbackQueryHandler
 
 public class UserUpdateSelfLinkWithKeepSelectedContactsCommand : IBotCallbackQueryHandlers
 {
+    private readonly IContactRemover _contactRemoverRepository;
+    private readonly IContactGetter _contactGetterRepository;
+
+    public UserUpdateSelfLinkWithKeepSelectedContactsCommand(
+        IContactRemover contactRemoverRepository,
+        IContactGetter contactGetterRepository)
+    {
+        _contactRemoverRepository = contactRemoverRepository;
+        _contactGetterRepository = contactGetterRepository;
+    }
+
     public string Name => "user_update_self_link_with_keep_selected_contacts";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
@@ -141,12 +153,23 @@ public class UserUpdateSelfLinkWithKeepSelectedContactsCommand : IBotCallbackQue
             KeyboardUtils.GetReturnButtonMarkup("user_update_self_link"),
             ct,
             Config.GetResourceString("EnterContactIdsPrompt"));
-        UsersDB.UpdateSelfLinkWithKeepSelectedContacts(update);
+        UsersDB.UpdateSelfLinkWithKeepSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository);
     }
 }
 
 public class UserUpdateSelfLinkWithDeleteSelectedContactsCommand : IBotCallbackQueryHandlers
 {
+    private readonly IContactRemover _contactRemoverRepository;
+    private readonly IContactGetter _contactGetterRepository;    
+
+    public UserUpdateSelfLinkWithDeleteSelectedContactsCommand(
+        IContactRemover contactRemoverRepository,
+        IContactGetter contactGetterRepository)
+    {
+        _contactRemoverRepository = contactRemoverRepository;
+        _contactGetterRepository = contactGetterRepository;
+    }
+
     public string Name => "user_update_self_link_with_delete_selected_contacts";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
@@ -157,7 +180,7 @@ public class UserUpdateSelfLinkWithDeleteSelectedContactsCommand : IBotCallbackQ
             KeyboardUtils.GetReturnButtonMarkup("user_update_self_link"),
             ct,
             Config.GetResourceString("EnterContactIdsPrompt"));
-        UsersDB.UpdateSelfLinkWithDeleteSelectedContacts(update);
+        UsersDB.UpdateSelfLinkWithDeleteSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository);
     }
 }
 
@@ -174,11 +197,18 @@ public class ProcessUserUpdateSelfLinkWithContactsCommand : IBotCallbackQueryHan
 
 public class ProcessUserUpdateSelfLinkWithNewContactsCommand : IBotCallbackQueryHandlers
 {
+    private readonly IContactRemover _contactRepository;
+
+    public ProcessUserUpdateSelfLinkWithNewContactsCommand(IContactRemover contactRepository)
+    {
+        _contactRepository = contactRepository;
+    }
+
     public string Name => "process_user_update_self_link_with_new_contacts";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        UsersDB.UpdateSelfLinkWithNewContacts(update);
+        UsersDB.UpdateSelfLinkWithNewContacts(update, _contactRepository);
         await Users.ViewLinkPrivacyMenu(botClient, update);
     }
 }

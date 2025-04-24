@@ -11,6 +11,7 @@
 
 
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
@@ -135,16 +136,16 @@ public class Users
 public class UsersDB
 {
 
-    public static void UpdateSelfLinkWithKeepSelectedContacts(Update update)
+    public static void UpdateSelfLinkWithKeepSelectedContacts(Update update, IContactRemover contactRemoverRepository, IContactGetter contactGetterRepository)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
-        TGBot.userStates[chatId] = new ProcessContactLinksState(false);
+        TGBot.userStates[chatId] = new ProcessContactLinksState(false, contactRemoverRepository, contactGetterRepository);
     }
 
-    public static void UpdateSelfLinkWithDeleteSelectedContacts(Update update)
+    public static void UpdateSelfLinkWithDeleteSelectedContacts(Update update, IContactRemover contactRemoverRepository, IContactGetter contactGetterRepository)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
-        TGBot.userStates[chatId] = new ProcessContactLinksState(true);
+        TGBot.userStates[chatId] = new ProcessContactLinksState(true, contactRemoverRepository, contactGetterRepository);
     }
 
     public static bool UpdateSelfLinkWithContacts(Update update)
@@ -153,10 +154,10 @@ public class UsersDB
         return CoreDB.ReCreateUserSelfLink(DBforGetters.GetUserIDbyTelegramID(chatId));
     }
 
-    public static void UpdateSelfLinkWithNewContacts(Update update)
+    public static void UpdateSelfLinkWithNewContacts(Update update, IContactRemover contactRemover)
     {
         int userId = DBforGetters.GetUserIDbyTelegramID(CommonUtilities.GetIDfromUpdate(update));
         CoreDB.ReCreateUserSelfLink(userId);
-        ContactRemover.RemoveAllContacts(userId);
+        contactRemover.RemoveAllContacts(userId);
     }
 }

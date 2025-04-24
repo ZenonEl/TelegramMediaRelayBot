@@ -34,13 +34,14 @@ public partial class TGBot
     public TGBot(
         IUserRepository userRepo,
         IUserGettersRepository userGettersRepo,
-        CallbackQueryHandlersFactory handlersFactory 
+        CallbackQueryHandlersFactory handlersFactory,
+        IContactGetter contactGetterRepository
         )
     {
         _userRepo = userRepo;
         _userGettersRepo = userGettersRepo;
         _handlersFactory = handlersFactory;
-        _updateHandler = new PrivateUpdateHandler(this, _handlersFactory);
+        _updateHandler = new PrivateUpdateHandler(this, _handlersFactory, contactGetterRepository);
     }
 
     public async Task Start()

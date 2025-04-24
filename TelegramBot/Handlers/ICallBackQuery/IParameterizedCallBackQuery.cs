@@ -13,6 +13,7 @@
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Menu;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
@@ -20,12 +21,19 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
 public class ShowOutboundInviteCommand : IBotCallbackQueryHandlers
 {
+    private readonly IContactRemover _contactRepository;
+
+    public ShowOutboundInviteCommand(IContactRemover contactRepository)
+    {
+        _contactRepository = contactRepository;
+    }
+
     public string Name => "user_show_outbound_invite";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         var chatId = update.CallbackQuery!.Message!.Chat.Id;
-        await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId);
+        await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId, _contactRepository);
     }
 }
 
@@ -55,6 +63,13 @@ public class SetAutoSendTimeCommand : IBotCallbackQueryHandlers
 
 public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
 {
+    private readonly IContactGetter _contactGetterRepository;
+
+    public SetVideoSendUsersCommand(IContactGetter contactGetterRepository)
+    {
+        _contactGetterRepository = contactGetterRepository;
+    }
+
     public string Name => "user_set_video_send_users:";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
@@ -82,7 +97,7 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
             if (action == UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS) isGroup = true;
 
             Users.SetDefaultActionToUser(chatId, action);
-            TGBot.userStates[chatId] = new ProcessUserSetDCSendState(isGroup);
+            TGBot.userStates[chatId] = new ProcessUserSetDCSendState(isGroup, _contactGetterRepository);
             return;
         }
 

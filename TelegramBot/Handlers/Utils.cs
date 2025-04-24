@@ -11,18 +11,23 @@
 
 
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers;
 
 class PrivateUtils
 {
-    private TGBot _tgBot;
+    private readonly TGBot _tgBot;
+    private readonly IContactGetter _contactGetterRepository;
 
     public PrivateUtils(
-        TGBot tgBot)
+        TGBot tgBot,
+        IContactGetter contactGetterRepository
+        )
     {
         _tgBot = tgBot;
+        _contactGetterRepository = contactGetterRepository;
     }
 
     public void ProcessDefaultSendAction(ITelegramBotClient botClient, long chatId, Message statusMessage, string defaultAction,
@@ -45,7 +50,7 @@ class PrivateUtils
                 switch (defaultAction)
                 {
                     case UsersAction.SEND_MEDIA_TO_ALL_CONTACTS:
-                        List<long> contactUserTGIds = await ContactGetter.GetAllContactUserTGIds(userId);
+                        List<long> contactUserTGIds = await _contactGetterRepository.GetAllContactUserTGIds(userId);
                         targetUserIds = contactUserTGIds.Except(mutedByUserIds).ToList();
                         break;
 

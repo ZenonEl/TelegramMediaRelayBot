@@ -10,6 +10,7 @@
 // (по вашему выбору) любой более поздней версии.
 
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
@@ -18,11 +19,13 @@ namespace TelegramMediaRelayBot;
 
 public class UserProcessOutboundState : IUserState
 {
+    private IContactRemover _contactRepository;
     public UserOutboundState currentState;
 
-    public UserProcessOutboundState()
+    public UserProcessOutboundState(IContactRemover contactRepository)
     {
         currentState = UserOutboundState.ProcessAction;
+        _contactRepository = contactRepository;
     }
 
     public static UserOutboundState[] GetAllStates()
@@ -68,14 +71,14 @@ public class UserProcessOutboundState : IUserState
                     if (update.CallbackQuery.Data!.StartsWith("user_show_outbound_invite:"))
                     {
                         TGBot.userStates.Remove(chatId);
-                        await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId);
+                        await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId, _contactRepository);
                         return;
                     }
                     else if (update.CallbackQuery.Data!.StartsWith("user_accept_revoke_outbound_invite:"))
                     {
                         string userId = update.CallbackQuery.Data.Split(':')[1];
                         int accepterTelegramID = DBforGetters.GetUserIDbyTelegramID(long.Parse(userId));
-                        ContactRemover.RemoveContactByStatus(DBforGetters.GetUserIDbyTelegramID(chatId), accepterTelegramID, ContactsStatus.WAITING_FOR_ACCEPT);
+                        _contactRepository.RemoveContactByStatus(DBforGetters.GetUserIDbyTelegramID(chatId), accepterTelegramID, ContactsStatus.WAITING_FOR_ACCEPT);
                     }
                 }
                 TGBot.userStates.Remove(chatId);

@@ -10,6 +10,7 @@
 // (по вашему выбору) любой более поздней версии.
 
 
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
@@ -22,12 +23,19 @@ public class ProcessContactLinksState : IUserState
     public UsersStandardState currentState;
     private List<int> targetIds = new();
     private int actingUserId;
-    private bool isDeleteSelected;
+    private readonly bool isDeleteSelected;
+    private readonly IContactRemover _contactRemover;
+    private readonly IContactGetter _contactGetterRepository;
 
-    public ProcessContactLinksState(bool isDelete)
+    public ProcessContactLinksState(
+        bool isDelete,
+        IContactRemover contactRemoverRepository,
+        IContactGetter contactGetterRepository)
     {
         currentState = UsersStandardState.ProcessAction;
         isDeleteSelected = isDelete;
+        _contactRemover = contactRemoverRepository;
+        _contactGetterRepository = contactGetterRepository;
     }
 
     public string GetCurrentState() => currentState.ToString();
@@ -126,14 +134,14 @@ public class ProcessContactLinksState : IUserState
     private async Task HandleFinish(ITelegramBotClient botClient, Update update, long chatId,
         ProcessContactLinksState userState, CancellationToken cancellationToken)
     {
-        bool actionStatus = false;
+        bool actionStatus;
         if (userState.isDeleteSelected)
         {
-            actionStatus = ContactRemover.RemoveUsersFromContacts(userState.actingUserId, userState.targetIds);
+            actionStatus = _contactRemover.RemoveUsersFromContacts(userState.actingUserId, userState.targetIds);
         }
         else 
         {
-            actionStatus = ContactRemover.RemoveAllContactsExcept(userState.actingUserId, userState.targetIds);
+            actionStatus = _contactRemover.RemoveAllContactsExcept(userState.actingUserId, userState.targetIds);
         }
 
         TGBot.userStates.Remove(chatId);
@@ -165,9 +173,9 @@ public class ProcessContactLinksState : IUserState
         );
     }
 
-    static private async Task<List<int>> ValidateUserIds(int actingUserId, List<int> inputIds)
+    private async Task<List<int>> ValidateUserIds(int actingUserId, List<int> inputIds)
     {
-        var allowedIds = await ContactGetter.GetAllContactUserTGIds(actingUserId);
+        var allowedIds = await _contactGetterRepository.GetAllContactUserTGIds(actingUserId);
         return inputIds
             .Where(id => allowedIds.Contains(DBforGetters.GetTelegramIDbyUserID(id)))
             .ToList();

@@ -12,6 +12,7 @@
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot
 {
@@ -19,14 +20,18 @@ namespace TelegramMediaRelayBot
     {
 
         public UsersStandardState currentState;
-        private List<int> targetIds = new();
-        private bool isGroupIds;
-        private int actingUserId;
+        private List<int> _targetIds = new();
+        private bool _isGroupIds;
+        private int _actingUserId;
+        private readonly IContactGetter _contactGetterRepository;
 
-        public ProcessUserSetDCSendState(bool isGroup)
+        public ProcessUserSetDCSendState(
+            bool isGroup,
+            IContactGetter contactGetterRepository)
         {
             currentState = UsersStandardState.ProcessAction;
-            isGroupIds = isGroup;
+            _isGroupIds = isGroup;
+            _contactGetterRepository = contactGetterRepository;
         }
 
         public string GetCurrentState() => currentState.ToString();
@@ -88,20 +93,20 @@ namespace TelegramMediaRelayBot
                 return;
             }
 
-            userState.actingUserId = DBforGetters.GetUserIDbyTelegramID(chatId);
+            userState._actingUserId = DBforGetters.GetUserIDbyTelegramID(chatId);
             
-            userState.targetIds = isGroupIds 
-                ? ValidateGroupIds(userState.actingUserId, inputIds)
-                : await ValidateUserIds(userState.actingUserId, inputIds);
+            userState._targetIds = _isGroupIds 
+                ? ValidateGroupIds(userState._actingUserId, inputIds)
+                : await ValidateUserIds(userState._actingUserId, inputIds);
 
-            if (userState.targetIds.Count == 0)
+            if (userState._targetIds.Count == 0)
             {
                 await botClient.SendMessage(chatId, "No valid IDs found for your account", cancellationToken: cancellationToken);
                 return;
             }
 
-            var idsList = string.Join(", ", userState.targetIds);
-            var message = $"{(isGroupIds ? "Groups" : "Users")} to process:\n{idsList}\n\nConfirm?";
+            var idsList = string.Join(", ", userState._targetIds);
+            var message = $"{(_isGroupIds ? "Groups" : "Users")} to process:\n{idsList}\n\nConfirm?";
             
             await botClient.SendMessage(
                 chatId,
@@ -144,7 +149,7 @@ namespace TelegramMediaRelayBot
             int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
             int actionId = DBforDefaultActions.GetDefaultActionId(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
 
-            if (isGroupIds)
+            if (_isGroupIds)
             {
                 DBforDefaultActions.RemoveAllDefaultUsersActionTargets(userId, TargetTypes.GROUP, actionId);
             }
@@ -153,9 +158,9 @@ namespace TelegramMediaRelayBot
                 DBforDefaultActions.RemoveAllDefaultUsersActionTargets(userId, TargetTypes.USER, actionId);
             }
 
-            foreach (var id in userState.targetIds)
+            foreach (var id in userState._targetIds)
             {
-                if (isGroupIds)
+                if (_isGroupIds)
                 {
                     DBforDefaultActions.AddDefaultUsersActionTargets(userId, actionId, TargetTypes.GROUP, id);
                 }
@@ -171,13 +176,13 @@ namespace TelegramMediaRelayBot
                 update,
                 UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
                 cancellationToken,
-                $"Successfully processed {userState.targetIds.Count} {(isGroupIds ? "groups" : "users")}"
+                $"Successfully processed {userState._targetIds.Count} {(_isGroupIds ? "groups" : "users")}"
             );
         }
 
-        static private async Task<List<int>> ValidateUserIds(int actingUserId, List<int> inputIds)
+        private async Task<List<int>> ValidateUserIds(int actingUserId, List<int> inputIds)
         {
-            var allowedIds = await ContactGetter.GetAllContactUserTGIds(actingUserId);
+            var allowedIds = await _contactGetterRepository.GetAllContactUserTGIds(actingUserId);
             return inputIds
                 .Where(id => allowedIds.Contains(DBforGetters.GetTelegramIDbyUserID(id)))
                 .ToList();

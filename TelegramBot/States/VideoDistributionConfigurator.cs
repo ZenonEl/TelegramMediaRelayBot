@@ -15,6 +15,7 @@ using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 using Telegram.Bot.Types.Enums;
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot;
+using TelegramMediaRelayBot.Database.Interfaces;
 
 
 namespace TelegramMediaRelayBot;
@@ -31,13 +32,15 @@ public class ProcessVideoDC : IUserState
     private List<long> targetUserIds = new List<long>();
     private List<long> preparedTargetUserIds = new List<long>();
     private readonly TGBot _tgBot;
+    private readonly IContactGetter _contactGetterRepository;
 
     public ProcessVideoDC(
         string Link,
         Message StatusMessage,
         string Text,
         CancellationTokenSource cts,
-        TGBot tgBot
+        TGBot tgBot,
+        IContactGetter contactGetterRepository
         )
     {
         link = Link;
@@ -46,6 +49,7 @@ public class ProcessVideoDC : IUserState
         currentState = UsersStandardState.ProcessAction;
         timeoutCTS = cts;
         _tgBot = tgBot;
+        _contactGetterRepository = contactGetterRepository;
     }
 
     public string GetCurrentState()
@@ -239,7 +243,7 @@ public class ProcessVideoDC : IUserState
         switch (action)
         {
             case UsersAction.SEND_MEDIA_TO_ALL_CONTACTS:
-                contactUserTGIds = await ContactGetter.GetAllContactUserTGIds(userId);
+                contactUserTGIds = await _contactGetterRepository.GetAllContactUserTGIds(userId);
                 targetUserIds = contactUserTGIds.Except(mutedByUserIds).ToList();
                 break;
 
@@ -270,7 +274,7 @@ public class ProcessVideoDC : IUserState
                 {
                     contactUserTGIds.Add(DBforGetters.GetTelegramIDbyUserID(contactId));
                 }
-                List<long> allContactUserTGIds = await ContactGetter.GetAllContactUserTGIds(userId);
+                List<long> allContactUserTGIds = await _contactGetterRepository.GetAllContactUserTGIds(userId);
                 List<long> filteredContactUserTGIds = contactUserTGIds.Except(allContactUserTGIds).ToList();
                 targetUserIds = contactUserTGIds.Except(mutedByUserIds).ToList();
                 break;

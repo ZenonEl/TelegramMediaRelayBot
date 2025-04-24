@@ -11,6 +11,7 @@
 
 
 
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 
 
@@ -19,11 +20,13 @@ namespace TelegramMediaRelayBot;
 public class ProcessContactState : IUserState
 {
     private string link;
+    private readonly IContactAdder _contactAdderRepository;
     public ContactState currentState;
 
-    public ProcessContactState()
+    public ProcessContactState(IContactAdder contactRepository)
     {
         currentState = ContactState.WaitingForLink;
+        _contactAdderRepository = contactRepository;
     }
 
     public static ContactState[] GetAllStates()
@@ -78,7 +81,7 @@ public class ProcessContactState : IUserState
             case ContactState.WaitingForConfirmation:
                 if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId)) return;
 
-                ContactAdder.AddContact(chatId, link);
+                _contactAdderRepository.AddContact(chatId, link);
 
                 await SendNotification(botClient, chatId, cancellationToken);
                 await botClient.SendMessage(chatId, Config.GetResourceString("WaitForContactConfirmation"),
