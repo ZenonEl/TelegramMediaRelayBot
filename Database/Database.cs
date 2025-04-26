@@ -24,14 +24,4 @@ public class CoreDB
     {
         return repo.CheckUserExists(telegramID);
     }
-
-    public static void UnMuteUserByMuteId(int muteId)
-    {
-        repo.UnMuteUserByMuteId(muteId);
-    }
-
-    public static bool ReCreateUserSelfLink(int userId)
-    {
-        return repo.ReCreateUserSelfLink(userId);
-    }
 }

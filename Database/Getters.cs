@@ -10,8 +10,6 @@
 // (по вашему выбору) любой более поздней версии.
 
 using MySql.Data.MySqlClient;
-using TelegramMediaRelayBot;
-using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Repositories.MySql;
 
 
@@ -19,12 +17,11 @@ namespace DataBase;
 
 public class DBforGetters
 {
-    static MySqlUserGettersRepository repo = new MySqlUserGettersRepository(CoreDB.connectionString);
+    static MySqlUserGetter repo = new MySqlUserGetter(CoreDB.connectionString);
 
-    private static string GetLink(long telegramID)
+    private static string GetUserLink(long telegramID)
     {
         string query = @$"
-            USE {Config.databaseName};
             SELECT Link FROM Users WHERE TelegramID = @telegramID";
         using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
         {
@@ -42,25 +39,24 @@ public class DBforGetters
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetLink));
+                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetUserLink));
                 return "";
             }
         }
     }
 
-    public static string GetSelfLink(long telegramID)
+    public static string GetUserSelfLink(long telegramID)
     {
         if (CoreDB.CheckExistsUser(telegramID))
         {
-            return GetLink(telegramID);
+            return GetUserLink(telegramID);
         }
         return "";
     }
 
-    public static long GetTelegramIdByLink(string link)
+    public static long GetUserTelegramIdByLink(string link)
     {
         string query = @$"
-            USE {Config.databaseName};
             SELECT TelegramID FROM Users WHERE Link = @link";
         using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
         {
@@ -78,7 +74,7 @@ public class DBforGetters
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetTelegramIdByLink));
+                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetUserTelegramIdByLink));
                 return -1;
             }
         }
@@ -100,168 +96,6 @@ public class DBforGetters
     public static int GetUserIDbyTelegramID(long TelegramID)
     {
         return repo.GetUserIDbyTelegramID(TelegramID);
-    }
-
-    public static int GetContactIDByLink(string link)
-    {
-        string query = @$"
-            USE {Config.databaseName};
-            SELECT * FROM Users WHERE Link = @link";
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
-        {
-            try
-            {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@link", link);
-                MySqlDataReader reader = command.ExecuteReader();
-                if (reader.Read())
-                {
-                    return reader.GetInt32("ID");
-                }
-                return -1;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetContactIDByLink));
-                return -1;
-            }
-        }
-    }
-
-    public static int GetContactByTelegramID(long telegramID)
-    {
-        string query = @$"
-            USE {Config.databaseName};
-            SELECT * FROM Users WHERE TelegramID = @telegramID";
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
-        {
-            try
-            {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@telegramID", telegramID);
-                MySqlDataReader reader = command.ExecuteReader();
-                if (reader.Read())
-                {
-                    return reader.GetInt32("ID");
-                }
-                return -1;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetContactByTelegramID));
-                return -1;
-            }
-        }
-    }
-
-    //Временная обертка
-    public static string GetUserNameByTelegramID(long telegramID)
-    {
-        return repo.GetUserNameByTelegramID(telegramID);
-    }
-
-    //Временная обертка
-    public static List<long> GetUsersIdForMuteContactId(int contactId)
-    {
-        return repo.GetUsersIdForMuteContactId(contactId);
-    }
-
-    public static List<int> GetExpiredMutes()
-    {
-        string query = @"
-            SELECT MutedId 
-            FROM MutedContacts 
-            WHERE ExpirationDate <= NOW() 
-            AND IsActive = 1;";
-
-        List<int> expiredMuteIds = new List<int>();
-
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
-        {
-            try
-            {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                MySqlDataReader reader = command.ExecuteReader();
-
-                while (reader.Read())
-                {
-                    int mutedId = reader.GetInt32("MutedId");
-                    expiredMuteIds.Add(mutedId);
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetExpiredMutes));
-            }
-        }
-        return expiredMuteIds;
-    }
-
-    public static string GetActiveMuteTimeByContactID(int contactID)
-    {
-        string query = @$"
-            USE {Config.databaseName};
-            SELECT ExpirationDate FROM MutedContacts WHERE MutedContactId = @contactID AND IsActive = 1";
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
-        {
-            try
-            {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@contactID", contactID);
-                MySqlDataReader reader = command.ExecuteReader();
-                if (reader.Read())
-                {
-                    return reader.GetDateTime("ExpirationDate").ToString("yyyy-MM-dd HH:mm:ss");
-                }
-                return Config.GetResourceString("NoActiveMute");
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(GetActiveMuteTimeByContactID));
-                return "";
-            }
-        }
-    }
-
-    public static string GetDefaultActionByUserIDAndType(int userID, string type)
-    {
-        string query = @$"
-            USE {Config.databaseName};
-            SELECT Action, ActionCondition
-            FROM DefaultUsersActions
-            WHERE UserID = @userID
-            AND Type = @type
-            AND IsActive = 1";
-
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
-        {
-            try
-            {
-                connection.Open();
-                MySqlCommand command = new MySqlCommand(query, connection);
-                command.Parameters.AddWithValue("@userID", userID);
-                command.Parameters.AddWithValue("@type", type);
-                MySqlDataReader reader = command.ExecuteReader();
-
-                if (reader.Read())
-                {
-                    string action = reader.GetString("Action");
-                    string condition = reader.GetString("ActionCondition");
-                    return $"{action};{condition}";
-                }
-
-                return UsersAction.NO_VALUE;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetDefaultActionByUserIDAndType));
-                return "";
-            }
-        }
     }
 }
 

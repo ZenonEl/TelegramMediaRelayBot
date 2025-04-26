@@ -11,7 +11,6 @@
 
 using System.Data;
 using MySql.Data.MySqlClient;
-using TelegramMediaRelayBot;
 
 
 namespace DataBase;
@@ -22,7 +21,6 @@ public class DBforGroups
     public static List<int> GetGroupIDsByUserId(int userId)
     {
         string query = @$"
-            USE {Config.databaseName};
             SELECT ID 
             FROM UsersGroups 
             WHERE UserId = @userId";
@@ -57,7 +55,6 @@ public class DBforGroups
     public static bool CheckGroupOwnership(int groupId, int userId)
     {
         string query = @$"
-            USE {Config.databaseName};
             SELECT COUNT(*) 
             FROM UsersGroups 
             WHERE ID = @groupId AND UserId = @userId";
@@ -90,7 +87,6 @@ public class DBforGroups
     public static string GetGroupNameById(int groupId)
     {
         string query = @$"
-            USE {Config.databaseName};
             SELECT GroupName 
             FROM UsersGroups 
             WHERE ID = @groupId";
@@ -122,7 +118,6 @@ public class DBforGroups
     public static string GetGroupDescriptionById(int groupId)
     {
         string query = @$"
-            USE {Config.databaseName};
             SELECT Description 
             FROM UsersGroups 
             WHERE ID = @groupId";
@@ -154,7 +149,6 @@ public class DBforGroups
     public static int GetGroupMemberCount(int groupId)
     {
         string query = @$"
-            USE {Config.databaseName};
             SELECT COUNT(*) AS MemberCount 
             FROM GroupMembers 
             WHERE GroupId = @groupId";
@@ -187,7 +181,6 @@ public class DBforGroups
     public static bool GetIsDefaultGroup(int groupId)
     {
         string query = @$"
-            USE {Config.databaseName};
             SELECT IsDefaultEnabled 
             FROM UsersGroups 
             WHERE ID = @groupId";
@@ -219,7 +212,6 @@ public class DBforGroups
     public static bool AddGroup(int userId, string groupName, string description)
     {
         string query = @$"
-            USE {Config.databaseName};
             INSERT INTO UsersGroups (UserId, GroupName, Description) 
             VALUES (@userId, @groupName, @description)";
 
@@ -246,7 +238,6 @@ public class DBforGroups
     public static bool SetGroupName(int groupId, string groupName)
     {
         string query = @$"
-            USE {Config.databaseName};
             UPDATE UsersGroups 
             SET GroupName = @groupName 
             WHERE ID = @groupId";
@@ -269,10 +260,9 @@ public class DBforGroups
         }
     }
 
-    public static bool UpdateGroupDescription(int groupId, string description)
+    public static bool SetGroupDescription(int groupId, string description)
     {
         string query = @$"
-            USE {Config.databaseName};
             UPDATE UsersGroups 
             SET Description = @description 
             WHERE ID = @groupId";
@@ -289,7 +279,7 @@ public class DBforGroups
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "An error occurred in the method {MethodName}", nameof(UpdateGroupDescription));
+                Log.Error(ex, "An error occurred in the method {MethodName}", nameof(SetGroupDescription));
                 return false;
             }
         }
@@ -298,7 +288,6 @@ public class DBforGroups
     public static bool SetIsDefaultGroup(int groupId)
     {
         string query = @$"
-            USE {Config.databaseName};
             UPDATE UsersGroups 
             SET IsDefaultEnabled = NOT IsDefaultEnabled 
             WHERE ID = @groupId";
@@ -323,7 +312,6 @@ public class DBforGroups
     public static bool DeleteGroup(int groupId)
     {
         string query = @$"
-            USE {Config.databaseName};
             DELETE FROM UsersGroups 
             WHERE ID = @groupId";
 
@@ -347,7 +335,6 @@ public class DBforGroups
     public static List<int> GetAllUsersIdsInGroup(int groupId)
     {
         string query = @$"
-            USE {Config.databaseName};
             SELECT ContactId 
             FROM GroupMembers 
             WHERE GroupId = @groupId";
@@ -380,7 +367,6 @@ public class DBforGroups
     public static List<int> GetDefaultEnabledGroupIds(int userId)
     {
         string query = @$"
-            USE {Config.databaseName};
             SELECT ID
             FROM UsersGroups
             WHERE UserId = @userId AND IsDefaultEnabled = 1";
@@ -414,7 +400,6 @@ public class DBforGroups
     public static List<int> GetAllUsersInGroup(int groupId, int userId)
     {
         string query = @$"
-            USE {Config.databaseName};
             SELECT ContactId
             FROM GroupMembers
             WHERE GroupId = @groupId AND UserId = @userId";
