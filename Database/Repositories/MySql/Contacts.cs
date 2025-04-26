@@ -11,10 +11,9 @@
 
 using Dapper;
 using MySql.Data.MySqlClient;
-using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Interfaces;
 
-namespace DataBase;
+namespace TelegramMediaRelayBot.Database.Repositories.MySql;
 
 public class MySqlContactAdder(string connectionString) : IContactAdder
 {
@@ -24,6 +23,7 @@ public class MySqlContactAdder(string connectionString) : IContactAdder
     {
         string query = @$"
             INSERT INTO Contacts (UserId, ContactId, Status) VALUES (@userId, @contactId, @status)";
+        MySqlContactGetter contactGetter = new(_connectionString);
 
         using (var connection = new MySqlConnection(_connectionString))
         {
@@ -31,8 +31,8 @@ public class MySqlContactAdder(string connectionString) : IContactAdder
             {
                 connection.Execute(query, new 
                 {
-                    userId = DBforGetters.GetContactByTelegramID(telegramID),
-                    contactId = DBforGetters.GetContactIDByLink(link),
+                    userId = contactGetter.GetContactByTelegramID(telegramID),
+                    contactId = contactGetter.GetContactIDByLink(link),
                     status = ContactsStatus.WAITING_FOR_ACCEPT
                 });
             }
@@ -303,6 +303,8 @@ public class MySqlContactSetter(string connectionString) : IContactSetter
     {
         string query = @$"
             UPDATE Contacts SET Status = @Status WHERE UserId = @UserId AND ContactId = @ContactId";
+        MySqlContactGetter contactGetter = new(_connectionString);
+
         using (var connection = new MySqlConnection(_connectionString))
         {
             try
@@ -311,7 +313,7 @@ public class MySqlContactSetter(string connectionString) : IContactSetter
                 {
                     Status = status,
                     UserId = DBforGetters.GetUserIDbyTelegramID(SenderTelegramID),
-                    ContactId = DBforGetters.GetContactByTelegramID(AccepterTelegramID)
+                    ContactId = contactGetter.GetContactByTelegramID(AccepterTelegramID)
                 });
             }
             catch (Exception ex)
@@ -328,39 +330,86 @@ public class MySqlContactGetter(string connectionString) : IContactGetter
 
     public async Task<List<long>> GetAllContactUserTGIds(int userId)
     {
-        List<long> contactUserIds = new List<long>();
-        List<long> TelegramIDs = new List<long>();
-        string query = @$"
-            SELECT UserId, ContactId
-            FROM Contacts
-            WHERE (ContactId = @UserId OR UserId = @UserId) AND status = '{ContactsStatus.ACCEPTED}'";
-
-        using (var connection = new MySqlConnection(_connectionString))
+        try
         {
-            try
-            {
-                await connection.OpenAsync();
-                var results = await connection.QueryAsync(query, new { UserId = userId });
-                
-                foreach (var row in results)
-                {
-                    long contactUserId = row.UserId;
-                    long contactId = row.ContactId;
-                    if (contactUserId != userId) contactUserIds.Add(contactUserId);
-                    if (userId != contactId) contactUserIds.Add(contactId);
-                }
-                
-                foreach (var contactUserId in contactUserIds)
-                {
-                    TelegramIDs.Add(DBforGetters.GetTelegramIDbyUserID((int)contactUserId));
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Error retrieving contact user IDs: " + ex.Message);
-            }
-        }
+            using var connection = new MySqlConnection(_connectionString);
+            
+            var results = await connection.QueryAsync<(long UserId, long ContactId)>(
+                @"SELECT UserId, ContactId
+                FROM Contacts
+                WHERE (ContactId = @UserId OR UserId = @UserId) 
+                AND status = @Status",
+                new { UserId = userId, Status = ContactsStatus.ACCEPTED });
 
-        return TelegramIDs;
+            var contactUserIds = results
+                .SelectMany(row => new[] { row.UserId, row.ContactId })
+                .Where(id => id != userId)
+                .Distinct()
+                .ToList();
+
+            return contactUserIds
+                .Select(contactUserId => DBforGetters.GetTelegramIDbyUserID((int)contactUserId))
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error retrieving contact user IDs");
+            return new List<long>();
+        }
+    }
+
+    public string GetActiveMuteTimeByContactID(int contactID)
+    {
+        try
+        {
+            using var connection = new MySqlConnection(_connectionString);
+            
+            var expirationDate = connection.QueryFirstOrDefault<DateTime?>(
+                @"SELECT ExpirationDate 
+                FROM MutedContacts 
+                WHERE MutedContactId = @contactID 
+                AND IsActive = 1",
+                new { contactID });
+
+            return expirationDate?.ToString("yyyy-MM-dd HH:mm:ss") 
+                ?? Config.GetResourceString("NoActiveMute");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetActiveMuteTimeByContactID));
+            return "";
+        }
+    }
+
+    public int GetContactIDByLink(string link)
+    {
+        const string query = "SELECT ID FROM User WHERE Link = @link";
+        try
+        {
+            using var connection = new MySqlConnection(_connectionString);
+            var result = connection.QueryFirstOrDefault<int?>(query, new { link });
+            return result ?? -1;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetContactIDByLink));
+            return -1;
+        }
+    }
+
+    public int GetContactByTelegramID(long telegramID)
+    {
+        const string query = "SELECT ID FROM User WHERE TelegramID = @telegramID";
+        try
+        {
+            using var connection = new MySqlConnection(_connectionString);
+            var result = connection.QueryFirstOrDefault<int?>(query, new { telegramID });
+            return result ?? -1;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetContactByTelegramID));
+            return -1;
+        }
     }
 }

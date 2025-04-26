@@ -68,7 +68,7 @@ public class MySqlUserRepository(string connectionString) : IUserRepository
     }
 }
 
-public class MySqlUserGettersRepository(string connectionString) : IUserGettersRepository
+public class MySqlUserGetter(string connectionString) : IUserGetter
 {
     private readonly string _connectionString = connectionString;
 
@@ -115,5 +115,68 @@ public class MySqlUserGettersRepository(string connectionString) : IUserGettersR
         var mutedByUserIds = connection.Query<int>(query, new { ContactId = contactId }).ToList();
         
         return mutedByUserIds.Select(GetTelegramIDbyUserID).ToList();
+    }
+
+    public long GetUserTelegramIdByLink(string link)
+    {
+        const string query = "SELECT TelegramID FROM User WHERE Link = @link";
+        try
+        {
+            using var connection = new MySqlConnection(_connectionString);
+            var result = connection.QueryFirstOrDefault<long?>(query, new { link });
+            return result ?? -1;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred in method {MethodName}", nameof(GetUserTelegramIdByLink));
+            return -1;
+        }
+    }
+
+    private static string GetUserLink(long telegramID, string connectionString)
+    {
+        const string query = "SELECT Link FROM User WHERE TelegramID = @telegramID";
+        try
+        {
+            using var connection = new MySqlConnection(connectionString);
+            var result = connection.QueryFirstOrDefault<string>(query, new { telegramID });
+            return result ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred in method {MethodName}", nameof(GetUserLink));
+            return string.Empty;
+        }
+    }
+
+    public string GetUserSelfLink(long telegramID)
+    {
+        MySqlUserRepository repo = new(_connectionString);
+        if (repo.CheckUserExists(telegramID))
+        {
+            return GetUserLink(telegramID, _connectionString);
+        }
+        return "";
+    }
+
+    public List<int> GetExpiredUsersMutes()
+    {
+        const string query = @"
+            SELECT MutedId 
+            FROM MutedContacts 
+            WHERE ExpirationDate <= NOW() 
+            AND IsActive = 1";
+
+        try
+        {
+            using var connection = new MySqlConnection(_connectionString);
+            var expiredMuteIds = connection.Query<int>(query).ToList();
+            return expiredMuteIds;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetExpiredUsersMutes));
+            return new List<int>();
+        }
     }
 }
