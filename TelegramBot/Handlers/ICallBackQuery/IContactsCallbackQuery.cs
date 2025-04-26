@@ -20,17 +20,24 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 public class AddContactCommand : IBotCallbackQueryHandlers
 {
     private readonly IContactAdder _contactRepository;
+    private readonly IContactGetter _contactGetter;
+    private readonly IUserGetter _userGetter;
 
-    public AddContactCommand(IContactAdder contactRepository)
+    public AddContactCommand(
+        IContactAdder contactRepository,
+        IContactGetter contactGetter,
+        IUserGetter userGetter)
     {
         _contactRepository = contactRepository;
+        _contactGetter = contactGetter;
+        _userGetter = userGetter;
     }
 
     public string Name => "add_contact";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        await Contacts.AddContact(botClient, update, update.CallbackQuery!.Message!.Chat.Id, _contactRepository);
+        await Contacts.AddContact(botClient, update, update.CallbackQuery!.Message!.Chat.Id, _contactRepository, _contactGetter, _userGetter);
     }
 }
 
@@ -39,13 +46,16 @@ public class ViewInboundInviteLinksCommand : IBotCallbackQueryHandlers
 {
     private readonly IContactSetter _contactSetterRepository;
     private readonly IContactRemover _contactRepository;
+    private readonly IInboundDBGetter _inboundDBGetter;
 
     public ViewInboundInviteLinksCommand(
         IContactSetter contactSetterRepository, 
-        IContactRemover contactRepository)
+        IContactRemover contactRepository,
+        IInboundDBGetter inboundDBGetter)
     {
         _contactSetterRepository = contactSetterRepository;
         _contactRepository = contactRepository;
+        _inboundDBGetter = inboundDBGetter;
     }
 
     public string Name => "view_inbound_invite_links";
@@ -53,17 +63,30 @@ public class ViewInboundInviteLinksCommand : IBotCallbackQueryHandlers
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
-        await CallbackQueryMenuUtils.ViewInboundInviteLinks(botClient, update, chatId, _contactSetterRepository, _contactRepository);
+        await CallbackQueryMenuUtils.ViewInboundInviteLinks(
+            botClient,
+            update,
+            chatId,
+            _contactSetterRepository,
+            _contactRepository,
+            _inboundDBGetter);
     }
 }
 
 public class ViewOutboundInviteLinksCommand : IBotCallbackQueryHandlers
 {
+    private readonly IOutboundDBGetter _outboundDBGetter;
+    
+    public ViewOutboundInviteLinksCommand(
+        IOutboundDBGetter outboundDBGetter)
+    {
+        _outboundDBGetter = outboundDBGetter;
+    }  
     public string Name => "view_outbound_invite_links";
     
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        await CallbackQueryMenuUtils.ViewOutboundInviteLinks(botClient, update);
+        await CallbackQueryMenuUtils.ViewOutboundInviteLinks(botClient, update, _outboundDBGetter);
     }
 }
 
@@ -99,18 +122,21 @@ public class EditContactGroupCommand : IBotCallbackQueryHandlers
 public class ViewContactsCommand : IBotCallbackQueryHandlers
 {
     private readonly IContactGetter _contactGetterRepository;
+    private readonly IUserGetter _userGetter;
 
     public ViewContactsCommand(
-        IContactGetter contactGetterRepository)
+        IContactGetter contactGetterRepository,
+        IUserGetter userGetter)
     {
         _contactGetterRepository = contactGetterRepository;
+        _userGetter = userGetter;
     }
 
     public string Name => "view_contacts";
     
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        await Contacts.ViewContacts(botClient, update, _contactGetterRepository);
+        await Contacts.ViewContacts(botClient, update, _contactGetterRepository, _userGetter);
     }
 }
 
@@ -162,13 +188,16 @@ public class DeleteContactCommand : IBotCallbackQueryHandlers
 {
     private readonly IContactRemover _contactRemoverRepository;
     private readonly IContactGetter _contactGetterRepository;
+    private readonly IUserGetter _userGetter;
 
     public DeleteContactCommand(
         IContactRemover contactRemoverRepository,
-        IContactGetter contactGetterRepository)
+        IContactGetter contactGetterRepository,
+        IUserGetter userGetter)
     {
         _contactRemoverRepository = contactRemoverRepository;
         _contactGetterRepository = contactGetterRepository;
+        _userGetter = userGetter;
     }
 
     public string Name => "delete_contact";
@@ -176,6 +205,6 @@ public class DeleteContactCommand : IBotCallbackQueryHandlers
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
-        await Contacts.DeleteContact(botClient, update, chatId, _contactRemoverRepository, _contactGetterRepository);
+        await Contacts.DeleteContact(botClient, update, chatId, _contactRemoverRepository, _contactGetterRepository, _userGetter);
     }
 }

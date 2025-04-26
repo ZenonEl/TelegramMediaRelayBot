@@ -102,6 +102,7 @@ public class UserUpdateSelfLinkWithContactsCommand : IBotCallbackQueryHandlers
 {
     public string Name => "user_update_self_link_with_contacts";
 
+
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         await CommonUtilities.SendMessage(botClient, update,
@@ -115,12 +116,18 @@ public class UserUpdateSelfLinkWithContactsCommand : IBotCallbackQueryHandlers
 
 public class UserUpdateSelfLinkWithNewContactsCommand : IBotCallbackQueryHandlers
 {
+    private readonly IUserGetter _userGetter;
     public string Name => "user_update_self_link_with_new_contacts";
 
+    public UserUpdateSelfLinkWithNewContactsCommand(
+        IUserGetter userGetter)
+    {
+        _userGetter = userGetter;
+    }
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
-        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
         await CommonUtilities.SendMessage(botClient, update,
             KeyboardUtils.GetConfirmForActionKeyboardMarkup(
                 $"process_user_update_self_link_with_new_contacts",
@@ -134,13 +141,16 @@ public class UserUpdateSelfLinkWithKeepSelectedContactsCommand : IBotCallbackQue
 {
     private readonly IContactRemover _contactRemoverRepository;
     private readonly IContactGetter _contactGetterRepository;
+    private readonly IUserRepository _userRepository;
 
     public UserUpdateSelfLinkWithKeepSelectedContactsCommand(
         IContactRemover contactRemoverRepository,
-        IContactGetter contactGetterRepository)
+        IContactGetter contactGetterRepository,
+        IUserRepository userRepository)
     {
         _contactRemoverRepository = contactRemoverRepository;
         _contactGetterRepository = contactGetterRepository;
+        _userRepository = userRepository;
     }
 
     public string Name => "user_update_self_link_with_keep_selected_contacts";
@@ -153,7 +163,7 @@ public class UserUpdateSelfLinkWithKeepSelectedContactsCommand : IBotCallbackQue
             KeyboardUtils.GetReturnButtonMarkup("user_update_self_link"),
             ct,
             Config.GetResourceString("EnterContactIdsPrompt"));
-        UsersDB.UpdateSelfLinkWithKeepSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository);
+        UsersDB.UpdateSelfLinkWithKeepSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository, _userRepository);
     }
 }
 
@@ -161,13 +171,16 @@ public class UserUpdateSelfLinkWithDeleteSelectedContactsCommand : IBotCallbackQ
 {
     private readonly IContactRemover _contactRemoverRepository;
     private readonly IContactGetter _contactGetterRepository;    
+    private readonly IUserRepository _userRepository;
 
     public UserUpdateSelfLinkWithDeleteSelectedContactsCommand(
         IContactRemover contactRemoverRepository,
-        IContactGetter contactGetterRepository)
+        IContactGetter contactGetterRepository,
+        IUserRepository userRepository)
     {
         _contactRemoverRepository = contactRemoverRepository;
         _contactGetterRepository = contactGetterRepository;
+        _userRepository = userRepository;
     }
 
     public string Name => "user_update_self_link_with_delete_selected_contacts";
@@ -180,17 +193,25 @@ public class UserUpdateSelfLinkWithDeleteSelectedContactsCommand : IBotCallbackQ
             KeyboardUtils.GetReturnButtonMarkup("user_update_self_link"),
             ct,
             Config.GetResourceString("EnterContactIdsPrompt"));
-        UsersDB.UpdateSelfLinkWithDeleteSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository);
+        UsersDB.UpdateSelfLinkWithDeleteSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository, _userRepository);
     }
 }
 
 public class ProcessUserUpdateSelfLinkWithContactsCommand : IBotCallbackQueryHandlers
 {
+    private readonly IUserRepository _userRepository;
+
+    public ProcessUserUpdateSelfLinkWithContactsCommand(
+        IUserRepository userRepository)
+    {
+        _userRepository = userRepository;
+    }
+
     public string Name => "process_user_update_self_link_with_contacts";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        UsersDB.UpdateSelfLinkWithContacts(update);
+        UsersDB.UpdateSelfLinkWithContacts(update, _userRepository);
         await Users.ViewLinkPrivacyMenu(botClient, update);
     }
 }
@@ -198,17 +219,21 @@ public class ProcessUserUpdateSelfLinkWithContactsCommand : IBotCallbackQueryHan
 public class ProcessUserUpdateSelfLinkWithNewContactsCommand : IBotCallbackQueryHandlers
 {
     private readonly IContactRemover _contactRepository;
+    private readonly IUserRepository _userRepository;
 
-    public ProcessUserUpdateSelfLinkWithNewContactsCommand(IContactRemover contactRepository)
+    public ProcessUserUpdateSelfLinkWithNewContactsCommand(
+        IContactRemover contactRepository,
+        IUserRepository userRepository)
     {
         _contactRepository = contactRepository;
+        _userRepository = userRepository;
     }
 
     public string Name => "process_user_update_self_link_with_new_contacts";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        UsersDB.UpdateSelfLinkWithNewContacts(update, _contactRepository);
+        UsersDB.UpdateSelfLinkWithNewContacts(update, _contactRepository, _userRepository);
         await Users.ViewLinkPrivacyMenu(botClient, update);
     }
 }
@@ -225,12 +250,23 @@ public class UserUpdatePermanentContentSpoilerCommand : IBotCallbackQueryHandler
 
 public class UserDisablePermanentContentSpoilerCommand : IBotCallbackQueryHandlers
 {
+    private readonly IPrivacySettingsSetter _privacySettingsSetter;
+    private readonly IUserGetter _userGetter;
+
+    public UserDisablePermanentContentSpoilerCommand(
+        IPrivacySettingsSetter privacySettingsSetter,
+        IUserGetter userGetter)
+    {
+        _privacySettingsSetter = privacySettingsSetter;
+        _userGetter = userGetter;
+    }
+
     public string Name => "user_disallow_content_forwarding";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        int userId = DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id);
-        bool actionStatus = PrivacySettingsSetter.SetPrivacyRuleToDisabled(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING);
+        int userId = _userGetter.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id);
+        bool actionStatus = _privacySettingsSetter.SetPrivacyRuleToDisabled(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING);
         string statusMessage = actionStatus
             ? Config.GetResourceString("SuccessActionResult")
             : Config.GetResourceString("ErrorActionResult");
@@ -240,12 +276,23 @@ public class UserDisablePermanentContentSpoilerCommand : IBotCallbackQueryHandle
 
 public class UserEnablePermanentContentSpoilerCommand : IBotCallbackQueryHandlers
 {
+    private readonly IPrivacySettingsSetter _privacySettingsSetter;
+    private readonly IUserGetter _userGetter;
+
+    public UserEnablePermanentContentSpoilerCommand(
+        IPrivacySettingsSetter privacySettingsSetter,
+        IUserGetter userGetter)
+    {
+        _privacySettingsSetter = privacySettingsSetter;
+        _userGetter = userGetter;
+    }
+
     public string Name => "user_allow_content_forwarding";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        int userId = DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id);
-        bool actionStatus = PrivacySettingsSetter.SetPrivacyRule(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING, "disallow_content_forwarding", true, "always");
+        int userId = _userGetter.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id);
+        bool actionStatus = _privacySettingsSetter.SetPrivacyRule(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING, "disallow_content_forwarding", true, "always");
         string statusMessage = actionStatus
             ? Config.GetResourceString("SuccessActionResult")
             : Config.GetResourceString("ErrorActionResult");

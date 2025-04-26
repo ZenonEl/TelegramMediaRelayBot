@@ -22,18 +22,22 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 public class ShowOutboundInviteCommand : IBotCallbackQueryHandlers
 {
     private readonly IContactRemover _contactRepository;
+    private readonly IOutboundDBGetter _outboundDBGetter;
 
-    public ShowOutboundInviteCommand(IContactRemover contactRepository)
+    public ShowOutboundInviteCommand(
+        IContactRemover contactRepository,
+        IOutboundDBGetter outboundDBGetter)
     {
         _contactRepository = contactRepository;
+        _outboundDBGetter = outboundDBGetter;
     }
 
-    public string Name => "user_show_outbound_invite";
+    public string Name => "user_show_outbound_invite:";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         var chatId = update.CallbackQuery!.Message!.Chat.Id;
-        await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId, _contactRepository);
+        await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId, _contactRepository, _outboundDBGetter);
     }
 }
 
@@ -41,11 +45,19 @@ public class SetAutoSendTimeCommand : IBotCallbackQueryHandlers
 {
     public string Name => "user_set_auto_send_video_time_to:";
 
+    private readonly IDefaultActionSetter _defaultActionSetter;
+
+    public SetAutoSendTimeCommand(
+        IDefaultActionSetter defaultActionSetter)
+    {
+        _defaultActionSetter = defaultActionSetter;
+    }
+
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         string callbackQueryData = update.CallbackQuery!.Data!.Split(':')[1];
         var chatId = update.CallbackQuery!.Message!.Chat.Id;
-        bool result = Users.SetAutoSendVideoTimeToUser(chatId, callbackQueryData);
+        bool result = Users.SetAutoSendVideoTimeToUser(chatId, callbackQueryData, _defaultActionSetter);
 
         var message = result 
             ? Config.GetResourceString("AutoSendTimeChangedMessage") + callbackQueryData
@@ -64,10 +76,17 @@ public class SetAutoSendTimeCommand : IBotCallbackQueryHandlers
 public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
 {
     private readonly IContactGetter _contactGetterRepository;
+    private readonly IDefaultAction _defaultAction;
+    private readonly IDefaultActionSetter _defaultActionSetter;
 
-    public SetVideoSendUsersCommand(IContactGetter contactGetterRepository)
+    public SetVideoSendUsersCommand(
+        IContactGetter contactGetterRepository,
+        IDefaultAction defaultAction,
+        IDefaultActionSetter defaultActionSetter)
     {
         _contactGetterRepository = contactGetterRepository;
+        _defaultAction = defaultAction;
+        _defaultActionSetter = defaultActionSetter;
     }
 
     public string Name => "user_set_video_send_users:";
@@ -96,13 +115,13 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
             bool isGroup = false;
             if (action == UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS) isGroup = true;
 
-            Users.SetDefaultActionToUser(chatId, action);
-            TGBot.userStates[chatId] = new ProcessUserSetDCSendState(isGroup, _contactGetterRepository);
+            Users.SetDefaultActionToUser(chatId, action, _defaultActionSetter);
+            TGBot.userStates[chatId] = new ProcessUserSetDCSendState(isGroup, _contactGetterRepository, _defaultAction);
             return;
         }
 
 
-        bool result = Users.SetDefaultActionToUser(chatId, action);
+        bool result = Users.SetDefaultActionToUser(chatId, action, _defaultActionSetter);
 
         if (result)
         {
