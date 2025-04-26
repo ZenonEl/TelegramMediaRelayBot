@@ -20,13 +20,20 @@ namespace TelegramMediaRelayBot;
 public class ProcessContactState : IUserState
 {
     private string link;
-    private readonly IContactAdder _contactAdderRepository;
+    private readonly IContactAdder _contactAdder;
+    private readonly IContactGetter _contactGetter;
+    private readonly IUserGetter _userGetter;
     public ContactState currentState;
 
-    public ProcessContactState(IContactAdder contactRepository)
+    public ProcessContactState(
+        IContactAdder contactAdder,
+        IContactGetter contactGetter,
+        IUserGetter userGetter)
     {
         currentState = ContactState.WaitingForLink;
-        _contactAdderRepository = contactRepository;
+        _contactAdder = contactAdder;
+        _contactGetter = contactGetter; 
+        _userGetter = userGetter;
     }
 
     public static ContactState[] GetAllStates()
@@ -57,7 +64,7 @@ public class ProcessContactState : IUserState
 
                 link = update.Message!.Text!;
 
-                if (DBforGetters.GetContactIDByLink(link) == -1)
+                if (_contactGetter.GetContactIDByLink(link) == -1)
                 {
                     await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByLink"));
                     return;
@@ -70,7 +77,7 @@ public class ProcessContactState : IUserState
                 break;
 
             case ContactState.WaitingForName:
-                string text_data = $"{Config.GetResourceString("LinkText")}: {link} \n{Config.GetResourceString("NameText")}: {DBforGetters.GetUserNameByID(DBforGetters.GetContactIDByLink(link))}";
+                string text_data = $"{Config.GetResourceString("LinkText")}: {link} \n{Config.GetResourceString("NameText")}: {DBforGetters.GetUserNameByID(_contactGetter.GetContactIDByLink(link))}";
 
                 await botClient.SendMessage(chatId, Config.GetResourceString("ConfirmAdditionText") + text_data, cancellationToken: cancellationToken,
                                             replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.GetResourceString("NextButtonText")));
@@ -81,7 +88,7 @@ public class ProcessContactState : IUserState
             case ContactState.WaitingForConfirmation:
                 if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId)) return;
 
-                _contactAdderRepository.AddContact(chatId, link);
+                _contactAdder.AddContact(chatId, link);
 
                 await SendNotification(botClient, chatId, cancellationToken);
                 await botClient.SendMessage(chatId, Config.GetResourceString("WaitForContactConfirmation"),
@@ -103,8 +110,8 @@ public class ProcessContactState : IUserState
 
     public async Task SendNotification(ITelegramBotClient botClient, long chatId, CancellationToken cancellationToken)
     {
-        await botClient.SendMessage(DBforGetters.GetTelegramIDbyUserID(DBforGetters.GetContactIDByLink(link)), 
-                                    string.Format(Config.GetResourceString("UserWantsToAddYou"), DBforGetters.GetUserNameByTelegramID(chatId)), 
+        await botClient.SendMessage(DBforGetters.GetTelegramIDbyUserID(_contactGetter.GetContactIDByLink(link)), 
+                                    string.Format(Config.GetResourceString("UserWantsToAddYou"), _userGetter.GetUserNameByTelegramID(chatId)), 
                                     cancellationToken: cancellationToken);
     }
 }

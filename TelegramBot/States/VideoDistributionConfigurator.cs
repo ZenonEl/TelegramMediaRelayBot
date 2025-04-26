@@ -33,6 +33,7 @@ public class ProcessVideoDC : IUserState
     private List<long> preparedTargetUserIds = new List<long>();
     private readonly TGBot _tgBot;
     private readonly IContactGetter _contactGetterRepository;
+    private readonly IUserGetter _userGetter;
 
     public ProcessVideoDC(
         string Link,
@@ -40,7 +41,8 @@ public class ProcessVideoDC : IUserState
         string Text,
         CancellationTokenSource cts,
         TGBot tgBot,
-        IContactGetter contactGetterRepository
+        IContactGetter contactGetterRepository,
+        IUserGetter userGetter
         )
     {
         link = Link;
@@ -50,6 +52,7 @@ public class ProcessVideoDC : IUserState
         timeoutCTS = cts;
         _tgBot = tgBot;
         _contactGetterRepository = contactGetterRepository;
+        _userGetter = userGetter;
     }
 
     public string GetCurrentState()
@@ -237,7 +240,7 @@ public class ProcessVideoDC : IUserState
     private async Task PrepareTargetUserIds(long chatId)
     {
         int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
-        List<long> mutedByUserIds = DBforGetters.GetUsersIdForMuteContactId(userId);
+        List<long> mutedByUserIds = _userGetter.GetUsersIdForMuteContactId(userId);
         List<long> contactUserTGIds = new List<long>();
 
         switch (action)

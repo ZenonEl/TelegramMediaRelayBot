@@ -25,17 +25,21 @@ public class ProcessRemoveUser : IUserState
     private readonly Message statusMessage;
     private readonly IContactRemover _contactRemoverRepository;
     private readonly IContactGetter _contactGetterRepository;
+    private readonly IUserGetter _userGetter;
     bool isDeleteSuccessful = false;
 
     public ProcessRemoveUser(
         Message statusMessage,
         IContactRemover contactRemoverRepository,
-        IContactGetter contactGetterRepository)
+        IContactGetter contactGetterRepository,
+        IUserGetter userGetter
+        )
     {
         this.statusMessage = statusMessage;
         currentState = UsersStandardState.ProcessAction;
         _contactRemoverRepository = contactRemoverRepository;
         _contactGetterRepository = contactGetterRepository;
+        _userGetter = userGetter;
     }
 
     public string GetCurrentState()
@@ -111,8 +115,8 @@ public class ProcessRemoveUser : IUserState
         foreach (var contactUserId in contactUserTGIds)
         {
             int id = DBforGetters.GetUserIDbyTelegramID(contactUserId);
-            string username = DBforGetters.GetUserNameByTelegramID(contactUserId);
-            string link = DBforGetters.GetSelfLink(contactUserId);
+            string username = _userGetter.GetUserNameByTelegramID(contactUserId);
+            string link = DBforGetters.GetUserSelfLink(contactUserId);
 
             contactUsersInfo.Add(string.Format(Config.GetResourceString("ContactInfo"), id, username, link));
         }

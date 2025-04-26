@@ -20,12 +20,16 @@ namespace TelegramMediaRelayBot;
 public class UserProcessOutboundState : IUserState
 {
     private IContactRemover _contactRepository;
+    private IOutboundDBGetter _outboundDBGetter;
     public UserOutboundState currentState;
 
-    public UserProcessOutboundState(IContactRemover contactRepository)
+    public UserProcessOutboundState(
+        IContactRemover contactRepository,
+        IOutboundDBGetter outboundDBGetter)
     {
         currentState = UserOutboundState.ProcessAction;
         _contactRepository = contactRepository;
+        _outboundDBGetter = outboundDBGetter;
     }
 
     public static UserOutboundState[] GetAllStates()
@@ -62,7 +66,7 @@ public class UserProcessOutboundState : IUserState
                     return;
                 }
                 TGBot.userStates.Remove(chatId);
-                await CallbackQueryMenuUtils.ViewOutboundInviteLinks(botClient, update);
+                await CallbackQueryMenuUtils.ViewOutboundInviteLinks(botClient, update, _outboundDBGetter);
                 break;
 
             case UserOutboundState.Finish:
@@ -71,7 +75,7 @@ public class UserProcessOutboundState : IUserState
                     if (update.CallbackQuery.Data!.StartsWith("user_show_outbound_invite:"))
                     {
                         TGBot.userStates.Remove(chatId);
-                        await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId, _contactRepository);
+                        await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId, _contactRepository, _outboundDBGetter);
                         return;
                     }
                     else if (update.CallbackQuery.Data!.StartsWith("user_accept_revoke_outbound_invite:"))

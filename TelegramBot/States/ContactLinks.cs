@@ -26,16 +26,19 @@ public class ProcessContactLinksState : IUserState
     private readonly bool isDeleteSelected;
     private readonly IContactRemover _contactRemover;
     private readonly IContactGetter _contactGetterRepository;
+    private readonly IUserRepository _userRepository;
 
     public ProcessContactLinksState(
         bool isDelete,
         IContactRemover contactRemoverRepository,
-        IContactGetter contactGetterRepository)
+        IContactGetter contactGetterRepository,
+        IUserRepository userRepository)
     {
         currentState = UsersStandardState.ProcessAction;
         isDeleteSelected = isDelete;
         _contactRemover = contactRemoverRepository;
         _contactGetterRepository = contactGetterRepository;
+        _userRepository = userRepository;
     }
 
     public string GetCurrentState() => currentState.ToString();
@@ -157,7 +160,7 @@ public class ProcessContactLinksState : IUserState
             cancellationToken,
             Config.GetResourceString("SelfLinkRefreshMenuText") + "\n\n" + statusMessage
         );
-        CoreDB.ReCreateUserSelfLink(userState.actingUserId);
+        _userRepository.ReCreateUserSelfLink(userState.actingUserId);
 
     }
 

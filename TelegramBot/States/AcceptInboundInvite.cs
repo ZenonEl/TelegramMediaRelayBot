@@ -21,14 +21,17 @@ public class UserProcessInboundState : IUserState
     public UserInboundState currentState;
     private readonly IContactSetter _contactSetterRepository;
     private readonly IContactRemover _contactRemoverRepository;
+    private readonly IInboundDBGetter _inboundDBGetter;
 
     public UserProcessInboundState(
         IContactSetter contactSetterRepository, 
-        IContactRemover contactRemoverRepository)
+        IContactRemover contactRemoverRepository,
+        IInboundDBGetter inboundDBGetter)
     {
         currentState = UserInboundState.SelectInvite;
         _contactSetterRepository = contactSetterRepository;
         _contactRemoverRepository = contactRemoverRepository;
+        _inboundDBGetter = inboundDBGetter;
     }
 
     public static UserInboundState[] GetAllStates()
@@ -77,7 +80,13 @@ public class UserProcessInboundState : IUserState
                 }
                 else if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("view_inbound_invite_links"))
                 {
-                    await CallbackQueryMenuUtils.ViewInboundInviteLinks(botClient, update, chatId, _contactSetterRepository, _contactRemoverRepository);
+                    await CallbackQueryMenuUtils.ViewInboundInviteLinks(
+                        botClient,
+                        update,
+                        chatId,
+                        _contactSetterRepository,
+                        _contactRemoverRepository,
+                        _inboundDBGetter);
                     return;
                 }
                 string userID = update.CallbackQuery!.Data!.Split(':')[1];

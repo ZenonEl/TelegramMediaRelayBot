@@ -266,7 +266,7 @@ public class ProcessUsersGroupState : IUserState
                 }
                 else if (action.StartsWith("user_change_group_description:"))
                 {
-                    isDBActionSuccessful = DBforGroups.UpdateGroupDescription(groupId, description);
+                    isDBActionSuccessful = DBforGroups.SetGroupDescription(groupId, description);
                 }
                 break;
         }

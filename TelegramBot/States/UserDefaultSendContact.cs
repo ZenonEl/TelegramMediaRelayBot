@@ -24,14 +24,18 @@ namespace TelegramMediaRelayBot
         private bool _isGroupIds;
         private int _actingUserId;
         private readonly IContactGetter _contactGetterRepository;
+        private readonly IDefaultAction _defaultAction;
+        private readonly IDefaultActionGetter _defaultActionGetter;
 
         public ProcessUserSetDCSendState(
             bool isGroup,
-            IContactGetter contactGetterRepository)
+            IContactGetter contactGetterRepository,
+            IDefaultAction defaultAction)
         {
             currentState = UsersStandardState.ProcessAction;
             _isGroupIds = isGroup;
             _contactGetterRepository = contactGetterRepository;
+            _defaultAction = defaultAction;
         }
 
         public string GetCurrentState() => currentState.ToString();
@@ -147,26 +151,26 @@ namespace TelegramMediaRelayBot
             ProcessUserSetDCSendState userState, CancellationToken cancellationToken)
         {
             int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
-            int actionId = DBforDefaultActions.GetDefaultActionId(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+            int actionId = _defaultActionGetter.GetDefaultActionId(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
 
             if (_isGroupIds)
             {
-                DBforDefaultActions.RemoveAllDefaultUsersActionTargets(userId, TargetTypes.GROUP, actionId);
+                _defaultAction.RemoveAllDefaultUsersActionTargets(userId, TargetTypes.GROUP, actionId);
             }
             else
             {
-                DBforDefaultActions.RemoveAllDefaultUsersActionTargets(userId, TargetTypes.USER, actionId);
+                _defaultAction.RemoveAllDefaultUsersActionTargets(userId, TargetTypes.USER, actionId);
             }
 
             foreach (var id in userState._targetIds)
             {
                 if (_isGroupIds)
                 {
-                    DBforDefaultActions.AddDefaultUsersActionTargets(userId, actionId, TargetTypes.GROUP, id);
+                    _defaultAction.AddDefaultUsersActionTargets(userId, actionId, TargetTypes.GROUP, id);
                 }
                 else
                 {
-                    DBforDefaultActions.AddDefaultUsersActionTargets(userId, actionId, TargetTypes.USER, id);
+                    _defaultAction.AddDefaultUsersActionTargets(userId, actionId, TargetTypes.USER, id);
                 }
             }
 

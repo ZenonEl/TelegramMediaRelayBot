@@ -22,16 +22,16 @@ public class ProcessUserMuteState : IUserState
     private int mutedByUserId { get; set; }
     private int mutedContactId { get; set; }
     private DateTime? expirationDate { get; set; }
-    private IContactAdder _contactAdderRepository;
-    private IContactGetter _contactGettersRepository;
+    private IContactAdder _contactAdder;
+    private IContactGetter _contactGetter;
 
     public ProcessUserMuteState(
-        IContactAdder contactAdderRepository,
-        IContactGetter contactGettersRepository)
+        IContactAdder contactAdder,
+        IContactGetter contactGetters)
     {
         currentState = UserMuteState.WaitingForLinkOrID;
-        _contactAdderRepository = contactAdderRepository;
-        _contactGettersRepository = contactGettersRepository;
+        _contactAdder = contactAdder;
+        _contactGetter = contactGetters;
     }
 
     public static UserMuteState[] GetAllStates()
@@ -62,7 +62,7 @@ public class ProcessUserMuteState : IUserState
                 int contactId;
                 if (int.TryParse(update.Message!.Text, out contactId))
                 {
-                    List<long> allowedIds = await _contactGettersRepository.GetAllContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(update.Message.Chat.Id));
+                    List<long> allowedIds = await _contactGetter.GetAllContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(update.Message.Chat.Id));
                     string name = DBforGetters.GetUserNameByID(contactId);
                     if (name == "" || !allowedIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
                     {
@@ -75,8 +75,8 @@ public class ProcessUserMuteState : IUserState
                 else
                 {
                     string link = update.Message.Text!;
-                    contactId = DBforGetters.GetContactIDByLink(link);
-                    List<long> allowedIds = await _contactGettersRepository.GetAllContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(update.Message.Chat.Id));
+                    contactId = _contactGetter.GetContactIDByLink(link);
+                    List<long> allowedIds = await _contactGetter.GetAllContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(update.Message.Chat.Id));
 
                     if (contactId == -1 || !allowedIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
                     {
@@ -137,7 +137,7 @@ public class ProcessUserMuteState : IUserState
                 await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
 
                 TGBot.userStates.Remove(chatId);
-                if (_contactAdderRepository.AddMutedContact(mutedByUserId, mutedContactId, expirationDate))
+                if (_contactAdder.AddMutedContact(mutedByUserId, mutedContactId, expirationDate))
                 {
                     await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("ActionCancelledError"));
                     return;
