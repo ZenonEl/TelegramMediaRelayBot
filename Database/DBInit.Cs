@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database.Repositories.MySql;
+using TelegramMediaRelayBot.TelegramBot;
 using TelegramMediaRelayBot.TelegramBot.Handlers;
 using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 namespace TelegramMediaRelayBot.Database;
@@ -220,6 +221,7 @@ public class FluentDBMigrator : Migration
 
         builder.Services.AddSingleton<CallbackQueryHandlersFactory>();
         builder.Services.AddSingleton<TGBot>();
+        builder.Services.AddSingleton<Scheduler>();
 
         builder.Services.Scan(scan => scan
             .FromAssemblyOf<IBotCallbackQueryHandlers>()
@@ -233,8 +235,8 @@ public class FluentDBMigrator : Migration
             case "mysql":
                 builder.Services.AddSingleton<IUserRepository>(_ =>
                     new MySqlUserRepository(Config.sqlConnectionString!));
-                builder.Services.AddSingleton<IUserGettersRepository>(_ =>
-                    new MySqlUserGettersRepository(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IUserGetter>(_ =>
+                    new MySqlUserGetter(Config.sqlConnectionString!));
                 builder.Services.AddSingleton<IContactGroupRepository>(_ =>
                     new MySqlContactGroupRepository(Config.sqlConnectionString!));
                 builder.Services.AddSingleton<IContactAdder>(_ =>
@@ -245,12 +247,26 @@ public class FluentDBMigrator : Migration
                     new MySqlContactSetter(Config.sqlConnectionString!));
                 builder.Services.AddSingleton<IContactRemover>(_ =>
                     new MySqlContactRemover(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IOutboundDBGetter>(_ =>
+                    new MySqlOutboundDBGetter(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IInboundDBGetter>(_ =>
+                    new MySqlInboundDBGetter(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IPrivacySettingsSetter>(_ =>
+                    new MySqlPrivacySettingsSetter(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IPrivacySettingsGetter>(_ =>
+                    new MySqlPrivacySettingsGetter(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IDefaultAction>(_ =>
+                    new MySqlDefaultAction(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IDefaultActionSetter>(_ =>
+                    new MySqlDefaultActionSetter(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IDefaultActionGetter>(_ =>
+                    new MySqlDefaultActionGetter(Config.sqlConnectionString!));
                 return builder;
             default:
                 builder.Services.AddSingleton<IUserRepository>(_ =>
                     new MySqlUserRepository(Config.sqlConnectionString!));
-                builder.Services.AddSingleton<IUserGettersRepository>(_ =>
-                    new MySqlUserGettersRepository(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IUserGetter>(_ =>
+                    new MySqlUserGetter(Config.sqlConnectionString!));
                 builder.Services.AddSingleton<IContactGroupRepository>(_ =>
                     new MySqlContactGroupRepository(Config.sqlConnectionString!));
                 builder.Services.AddSingleton<IContactAdder>(_ =>
