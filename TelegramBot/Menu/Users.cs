@@ -120,44 +120,50 @@ public class Users
         );
     }
 
-    public static bool SetAutoSendVideoTimeToUser(long chatId, string time)
+    public static bool SetAutoSendVideoTimeToUser(long chatId, string time, IDefaultActionSetter defaultActionSetter)
     {
         int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
-        return DBforDefaultActions.SetAutoSendVideoConditionToUser(userId, time, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+        return defaultActionSetter.SetAutoSendVideoConditionToUser(userId, time, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
     }
 
-    public static bool SetDefaultActionToUser(long chatId, string action)
+    public static bool SetDefaultActionToUser(long chatId, string action, IDefaultActionSetter defaultActionSetter)
     {
         int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
-        return DBforDefaultActions.SetAutoSendVideoActionToUser(userId, action, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+        return defaultActionSetter.SetAutoSendVideoActionToUser(userId, action, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
     }
 }
 
 public class UsersDB
 {
-
-    public static void UpdateSelfLinkWithKeepSelectedContacts(Update update, IContactRemover contactRemoverRepository, IContactGetter contactGetterRepository)
+    public static void UpdateSelfLinkWithKeepSelectedContacts(
+        Update update,
+        IContactRemover contactRemoverRepository,
+        IContactGetter contactGetterRepository,
+        IUserRepository userRepository)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
-        TGBot.userStates[chatId] = new ProcessContactLinksState(false, contactRemoverRepository, contactGetterRepository);
+        TGBot.userStates[chatId] = new ProcessContactLinksState(false, contactRemoverRepository, contactGetterRepository, userRepository);
     }
 
-    public static void UpdateSelfLinkWithDeleteSelectedContacts(Update update, IContactRemover contactRemoverRepository, IContactGetter contactGetterRepository)
+    public static void UpdateSelfLinkWithDeleteSelectedContacts(Update update,
+        IContactRemover contactRemoverRepository,
+        IContactGetter contactGetterRepository,
+        IUserRepository userRepository)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
-        TGBot.userStates[chatId] = new ProcessContactLinksState(true, contactRemoverRepository, contactGetterRepository);
+        TGBot.userStates[chatId] = new ProcessContactLinksState(true, contactRemoverRepository, contactGetterRepository, userRepository);
     }
 
-    public static bool UpdateSelfLinkWithContacts(Update update)
+    public static bool UpdateSelfLinkWithContacts(Update update, IUserRepository userRepository)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
-        return CoreDB.ReCreateUserSelfLink(DBforGetters.GetUserIDbyTelegramID(chatId));
+        return userRepository.ReCreateUserSelfLink(DBforGetters.GetUserIDbyTelegramID(chatId));
     }
 
-    public static void UpdateSelfLinkWithNewContacts(Update update, IContactRemover contactRemover)
+    public static void UpdateSelfLinkWithNewContacts(Update update, IContactRemover contactRemover, IUserRepository userRepository)
     {
         int userId = DBforGetters.GetUserIDbyTelegramID(CommonUtilities.GetIDfromUpdate(update));
-        CoreDB.ReCreateUserSelfLink(userId);
+        userRepository.ReCreateUserSelfLink(userId);
         contactRemover.RemoveAllContacts(userId);
     }
 }

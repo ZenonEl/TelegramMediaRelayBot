@@ -20,16 +20,15 @@ public class Contacts
 {
     public static CancellationToken cancellationToken = TGBot.cancellationToken;
 
-    public static async Task AddContact(ITelegramBotClient botClient, Update update, long chatId, IContactAdder contactRepository)
+    public static async Task AddContact(ITelegramBotClient botClient, Update update, long chatId, IContactAdder contactRepository, IContactGetter contactGetter, IUserGetter userGetter)
     {
-        TGBot.userStates[chatId] = new ProcessContactState(contactRepository);
+        TGBot.userStates[chatId] = new ProcessContactState(contactRepository, contactGetter, userGetter);
         await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, Config.GetResourceString("SpecifyContactLink"));
     }
 
-    public static async Task DeleteContact(ITelegramBotClient botClient, Update update, long chatId, IContactRemover contactRemoverRepository, IContactGetter contactGetterRepository)
+    public static async Task DeleteContact(ITelegramBotClient botClient, Update update, long chatId, IContactRemover contactRemoverRepository, IContactGetter contactGetterRepository, IUserGetter userGetter)
     {
-        Message statusMessage = await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, "Укажите айди контактов для удаления:", cancellationToken: cancellationToken);
-        TGBot.userStates[chatId] = new ProcessRemoveUser(statusMessage, contactRemoverRepository, contactGetterRepository);
+        TGBot.userStates[chatId] = new ProcessRemoveUser(statusMessage, contactRemoverRepository, contactGetterRepository, userGetter);
     }
 
     public static async Task MuteUserContact(ITelegramBotClient botClient, Update update, long chatId, IContactAdder contactAdderRepository, IContactGetter contactGetterRepository)
@@ -44,7 +43,7 @@ public class Contacts
         TGBot.userStates[chatId] = new ProcessUserUnMuteState(contactRemoverRepository, contactGetter);
     }
 
-    public static async Task ViewContacts(ITelegramBotClient botClient, Update update, IContactGetter contactGetterRepository)
+    public static async Task ViewContacts(ITelegramBotClient botClient, Update update, IContactGetter contactGetterRepository, IUserGetter userGetter)
     {
         List<long> contactUserTGIds = await contactGetterRepository.GetAllContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id));
         List<string> contactUsersInfo = new List<string>();
@@ -52,8 +51,8 @@ public class Contacts
         foreach (var contactUserId in contactUserTGIds)
         {
             int id = DBforGetters.GetUserIDbyTelegramID(contactUserId);
-            string username = DBforGetters.GetUserNameByTelegramID(contactUserId);
-            string link = DBforGetters.GetSelfLink(contactUserId);
+            string username = userGetter.GetUserNameByTelegramID(contactUserId);
+            string link = DBforGetters.GetUserSelfLink(contactUserId);
 
             contactUsersInfo.Add(string.Format(Config.GetResourceString("ContactInfo"), id, username, link));
         }
