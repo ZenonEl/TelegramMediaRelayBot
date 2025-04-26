@@ -19,12 +19,13 @@ public interface IUserRepository
     bool ReCreateUserSelfLink(int userId);
 }
 
-public interface IUserGettersRepository
+public interface IUserGetter
 {
     long GetTelegramIDbyUserID(int userID);
     string? GetUserNameByID(int userID);
     int GetUserIDbyTelegramID(long telegramID);
     string GetUserNameByTelegramID(long telegramID);
     List<long> GetUsersIdForMuteContactId(int contactId);
+    List<int> GetExpiredUsersMutes();
 }
 

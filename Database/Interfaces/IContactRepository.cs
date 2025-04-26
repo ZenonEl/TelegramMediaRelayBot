@@ -35,4 +35,7 @@ public interface IContactSetter
 public interface IContactGetter
 {
     Task<List<long>> GetAllContactUserTGIds(int userId);
+    string GetActiveMuteTimeByContactID(int contactID);
+    int GetContactIDByLink(string link);
+    int GetContactByTelegramID(long telegramID);
 }
