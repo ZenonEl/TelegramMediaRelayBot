@@ -20,14 +20,20 @@ class PrivateUtils
 {
     private readonly TGBot _tgBot;
     private readonly IContactGetter _contactGetterRepository;
+    private readonly IDefaultActionGetter _defaultActionGetter;
+    private readonly IUserGetter _userGetter;
 
     public PrivateUtils(
         TGBot tgBot,
-        IContactGetter contactGetterRepository
+        IContactGetter contactGetterRepository,
+        IDefaultActionGetter defaultActionGetter,
+        IUserGetter userGetter
         )
     {
         _tgBot = tgBot;
         _contactGetterRepository = contactGetterRepository;
+        _defaultActionGetter = defaultActionGetter;
+        _userGetter = userGetter;
     }
 
     public void ProcessDefaultSendAction(ITelegramBotClient botClient, long chatId, Message statusMessage, string defaultAction,
@@ -44,8 +50,8 @@ class PrivateUtils
                 List<long> mutedByUserIds = new List<long>();
                 List<int> userIds = new List<int>();
 
-                int actionId = DBforDefaultActions.GetDefaultActionId(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
-                mutedByUserIds = DBforGetters.GetUsersIdForMuteContactId(userId);
+                int actionId = _defaultActionGetter.GetDefaultActionId(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+                mutedByUserIds = _userGetter.GetUsersIdForMuteContactId(userId);
 
                 switch (defaultAction)
                 {
@@ -64,7 +70,7 @@ class PrivateUtils
                         break;
 
                     case UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS:
-                        List<int> groupIds = DBforDefaultActions.GetAllDefaultUsersActionTargets(userId, TargetTypes.GROUP, actionId);
+                        List<int> groupIds = _defaultActionGetter.GetAllDefaultUsersActionTargets(userId, TargetTypes.GROUP, actionId);
 
                         foreach (int groupId in groupIds)
                         {
@@ -78,7 +84,7 @@ class PrivateUtils
                         break;
 
                     case UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS:
-                        userIds = DBforDefaultActions.GetAllDefaultUsersActionTargets(userId, TargetTypes.USER, actionId);
+                        userIds = _defaultActionGetter.GetAllDefaultUsersActionTargets(userId, TargetTypes.USER, actionId);
 
                         targetUserIds = userIds
                             .Where(contactId => !mutedByUserIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
