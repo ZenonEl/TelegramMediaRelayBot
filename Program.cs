@@ -17,6 +17,7 @@ using System.Globalization;
 using FluentMigrator.Runner;
 using Microsoft.Extensions.DependencyInjection;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.TelegramBot;
 
 
 namespace TelegramMediaRelayBot
@@ -64,9 +65,10 @@ namespace TelegramMediaRelayBot
 
                 var app = builder.Build();
                 TGBot tgBot = app.Services.GetRequiredService<TGBot>();
+                Scheduler scheduler = app.Services.GetRequiredService<Scheduler>();
 
                 Log.Information($"Log level: {Config.logLevel}");
-                Scheduler.Scheduler.Init();
+                scheduler.Init();
 
                 await tgBot.Start();
                 await Task.Delay(-1);

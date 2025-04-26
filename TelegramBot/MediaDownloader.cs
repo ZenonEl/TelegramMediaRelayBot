@@ -17,7 +17,6 @@ using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Handlers;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
-using TelegramMediaRelayBot.TelegramBot;
 
 
 namespace TelegramMediaRelayBot;
@@ -25,23 +24,27 @@ namespace TelegramMediaRelayBot;
 public partial class TGBot
 {
     private readonly IUserRepository _userRepo;
-    private readonly IUserGettersRepository _userGettersRepo;
+    private readonly IUserGetter _userGetter;
     private readonly CallbackQueryHandlersFactory _handlersFactory;
     private readonly PrivateUpdateHandler _updateHandler;
+    private readonly IPrivacySettingsGetter _privacySettingsGetter;
     public static Dictionary<long, IUserState> userStates = [];
     public static CancellationToken cancellationToken;
 
     public TGBot(
         IUserRepository userRepo,
-        IUserGettersRepository userGettersRepo,
+        IUserGetter userGetters,
         CallbackQueryHandlersFactory handlersFactory,
-        IContactGetter contactGetterRepository
+        IContactGetter contactGetterRepository,
+        IDefaultActionGetter defaultActionGetter,
+        IPrivacySettingsGetter privacySettingsGetter
         )
     {
         _userRepo = userRepo;
-        _userGettersRepo = userGettersRepo;
+        _userGetter = userGetters;
         _handlersFactory = handlersFactory;
-        _updateHandler = new PrivateUpdateHandler(this, _handlersFactory, contactGetterRepository);
+        _updateHandler = new PrivateUpdateHandler(this, _handlersFactory, contactGetterRepository, defaultActionGetter, _userGetter);
+        _privacySettingsGetter = privacySettingsGetter;
     }
 
     public async Task Start()
@@ -205,16 +208,16 @@ public partial class TGBot
                                                 List<InputMedia> savedMediaGroupIDs, string caption = "", 
                                                 bool lastMediaGroup = false)
     {
-        int userId = _userGettersRepo.GetUserIDbyTelegramID(telegramId);
-        List<long> mutedByUserIds = _userGettersRepo.GetUsersIdForMuteContactId(userId);
+        int userId = _userGetter.GetUserIDbyTelegramID(telegramId);
+        List<long> mutedByUserIds = _userGetter.GetUsersIdForMuteContactId(userId);
         List<long> filteredContactUserTGIds = targetUserIds.Except(mutedByUserIds).ToList();
-        bool isDisallowContentForwarding = PrivacySettingsGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING);
+        bool isDisallowContentForwarding = _privacySettingsGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING);
 
         Log.Information($"Sending video to ({filteredContactUserTGIds.Count}) users.");
         Log.Information($"User {userId} is muted by: {mutedByUserIds.Count}");
 
         DateTime now = DateTime.Now;
-        string name = _userGettersRepo.GetUserNameByTelegramID(telegramId);
+        string name = _userGetter.GetUserNameByTelegramID(telegramId);
         string text = string.Format(Config.GetResourceString("ContactSentVideo"), 
                                     name, now.ToString("yyyy_MM_dd_HH_mm_ss"), MyRegex().Replace(name, "_"), caption);
         int sentCount = 0;
@@ -224,7 +227,7 @@ public partial class TGBot
             try
             {
 
-                int contactUserId = _userGettersRepo.GetUserIDbyTelegramID(contactUserTgId);
+                int contactUserId = _userGetter.GetUserIDbyTelegramID(contactUserTgId);
 
                 Message[] mediaMessages = await botClient.SendMediaGroup(contactUserTgId,
                                                                         savedMediaGroupIDs.Select(media => (IAlbumInputMedia)media),

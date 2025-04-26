@@ -22,30 +22,41 @@ public static class CallbackQueryMenuUtils
 
     public static async Task GetSelfLink(ITelegramBotClient botClient, Update update)
     {
-        string link = DBforGetters.GetSelfLink(update.CallbackQuery!.Message!.Chat.Id);
+        string link = DBforGetters.GetUserSelfLink(update.CallbackQuery!.Message!.Chat.Id);
         User me = await botClient.GetMe();
         string startLink = $"\nhttps://t.me/{me.Username}?start={link}";
         await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(Config.GetResourceString("YourLink") + startLink, link));
     }
 
-    public static async Task ViewInboundInviteLinks(ITelegramBotClient botClient, Update update, long chatId, IContactSetter contactSetterRepository, IContactRemover contactRemoverRepository)
+    public static async Task ViewInboundInviteLinks(
+        ITelegramBotClient botClient,
+        Update update,
+        long chatId,
+        IContactSetter contactSetterRepository,
+        IContactRemover contactRemoverRepository,
+        IInboundDBGetter inboundDBGetter)
     {
         string text = Config.GetResourceString("YourInboundInvitations");
-        await CommonUtilities.SendMessage(botClient, update, InBoundKB.GetInboundsKeyboardMarkup(update), cancellationToken, text);
-        TGBot.userStates[chatId] = new UserProcessInboundState(contactSetterRepository, contactRemoverRepository);
+        await CommonUtilities.SendMessage(botClient, update, InBoundKB.GetInboundsKeyboardMarkup(update, inboundDBGetter), cancellationToken, text);
+        TGBot.userStates[chatId] = new UserProcessInboundState(contactSetterRepository, contactRemoverRepository, inboundDBGetter);
     }
 
-    public static async Task ViewOutboundInviteLinks(ITelegramBotClient botClient, Update update)
+    public static async Task ViewOutboundInviteLinks(ITelegramBotClient botClient, Update update, IOutboundDBGetter outboundDBGetter)
     {
         string text = Config.GetResourceString("YourOutboundInvitations");
-        await CommonUtilities.SendMessage(botClient, update, OutBoundKB.GetOutboundKeyboardMarkup(CommonUtilities.GetIDfromUpdate(update)), cancellationToken, text);
+        await CommonUtilities.SendMessage(botClient, update, OutBoundKB.GetOutboundKeyboardMarkup(CommonUtilities.GetIDfromUpdate(update), outboundDBGetter), cancellationToken, text);
     }
 
-    public static async Task ShowOutboundInvite(ITelegramBotClient botClient, Update update, long chatId, IContactRemover contactRepository)
+    public static async Task ShowOutboundInvite(
+        ITelegramBotClient botClient,
+        Update update,
+        long chatId,
+        IContactRemover contactRepository,
+        IOutboundDBGetter outboundDBGetter)
     {
         string userId = update.CallbackQuery!.Data!.Split(':')[1];
         await CommonUtilities.SendMessage(botClient, update, OutBoundKB.GetOutboundActionsKeyboardMarkup(userId), cancellationToken, Config.GetResourceString("OutboundInviteMenu"));
-        TGBot.userStates[chatId] = new UserProcessOutboundState(contactRepository);
+        TGBot.userStates[chatId] = new UserProcessOutboundState(contactRepository, outboundDBGetter);
     }
 
     public static Task AcceptInboundInvite(Update update, IContactSetter contactSetter)
