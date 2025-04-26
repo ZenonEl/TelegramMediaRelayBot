@@ -10,6 +10,7 @@
 // (по вашему выбору) любой более поздней версии.
 
 using Telegram.Bot.Types.ReplyMarkups;
+using TelegramMediaRelayBot.Database.Interfaces;
 
 
 namespace TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
@@ -36,9 +37,9 @@ public static class InBoundKB
         return inlineKeyboard;
     }
 
-    public static InlineKeyboardMarkup GetInboundsKeyboardMarkup(Update update)
+    public static InlineKeyboardMarkup GetInboundsKeyboardMarkup(Update update, IInboundDBGetter inboundDBGetter)
     {
-        var buttonDataList = DBforInbounds.GetInboundsButtonData(DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id));
+        var buttonDataList = inboundDBGetter.GetInboundsButtonData(DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id));
 
         var inlineKeyboardButtons = new List<InlineKeyboardButton[]>();
 
