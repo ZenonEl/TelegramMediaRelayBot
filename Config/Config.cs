@@ -95,7 +95,7 @@ namespace TelegramMediaRelayBot
         {
             if (!isAccessPolicyEnabled) return true;
 
-            long referrerUserId = DBforGetters.GetTelegramIdByLink(referrerLink);
+            long referrerUserId = DBforGetters.GetUserTelegramIdByLink(referrerLink);
             if (referrerUserId == -1) return false;
 
             bool isReferrerBlacklisted = blacklistedReferrerIds?.Contains(referrerUserId) ?? false;
