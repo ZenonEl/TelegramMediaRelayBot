@@ -17,9 +17,9 @@ namespace TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 public class OutBoundKB
 {
-    public static InlineKeyboardMarkup GetOutboundKeyboardMarkup(long userId, IOutboundDBGetter outboundDBGetter)
+    public static InlineKeyboardMarkup GetOutboundKeyboardMarkup(long userId, IOutboundDBGetter outboundDBGetter, IUserGetter userGetter)
     {
-        var buttonDataList = outboundDBGetter.GetOutboundButtonData(DBforGetters.GetUserIDbyTelegramID(userId));
+        var buttonDataList = outboundDBGetter.GetOutboundButtonData(userGetter.GetUserIDbyTelegramID(userId));
 
         var inlineKeyboardButtons = new List<InlineKeyboardButton[]>();
 

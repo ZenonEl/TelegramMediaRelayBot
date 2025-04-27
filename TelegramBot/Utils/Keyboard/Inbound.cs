@@ -37,9 +37,9 @@ public static class InBoundKB
         return inlineKeyboard;
     }
 
-    public static InlineKeyboardMarkup GetInboundsKeyboardMarkup(Update update, IInboundDBGetter inboundDBGetter)
+    public static InlineKeyboardMarkup GetInboundsKeyboardMarkup(Update update, IInboundDBGetter inboundDBGetter, IUserGetter userGetter)
     {
-        var buttonDataList = inboundDBGetter.GetInboundsButtonData(DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id));
+        var buttonDataList = inboundDBGetter.GetInboundsButtonData(userGetter.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id));
 
         var inlineKeyboardButtons = new List<InlineKeyboardButton[]>();
 

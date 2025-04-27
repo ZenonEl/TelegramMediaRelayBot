@@ -11,6 +11,7 @@
 
 
 using Telegram.Bot.Types.ReplyMarkups;
+using TelegramMediaRelayBot.Database.Interfaces;
 
 
 namespace TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
@@ -80,38 +81,39 @@ public static class UsersGroup
         return inlineKeyboard;
     }
 
-    public static List<string> GetUserGroupInfoByUserId(int userId)
+    public static async Task<List<string>> GetUserGroupInfoByUserId(int userId, IGroupGetter groupGetter)
     {
-        List<int> groupIds = DBforGroups.GetGroupIDsByUserId(userId);
+        IEnumerable<int> groupIds = await groupGetter.GetGroupIDsByUserId(userId);
 
         var groupInfos = new List<string>();
         string groupInfo;
         foreach (var groupId in groupIds)
         {
-            string groupName = DBforGroups.GetGroupNameById(groupId);
+            string groupName = await groupGetter.GetGroupNameById(groupId);
 
-            string groupDescription = DBforGroups.GetGroupDescriptionById(groupId);
+            string groupDescription = await groupGetter.GetGroupDescriptionById(groupId);
 
-            int memberCount = DBforGroups.GetGroupMemberCount(groupId);
-            bool isDefault = DBforGroups.GetIsDefaultGroup(groupId);
+            int memberCount = await groupGetter.GetGroupMemberCount(groupId);
+            bool isDefault = await groupGetter.GetIsDefaultGroup(groupId);
             groupInfo = string.Format(
                 Config.GetResourceString("GroupInfoText"), 
-                DBforGroups.GetGroupNameById(groupId),
+                await groupGetter.GetGroupNameById(groupId),
                 groupId,
-                DBforGroups.GetGroupDescriptionById(groupId),
-                DBforGroups.GetGroupMemberCount(groupId),
-                DBforGroups.GetIsDefaultGroup(groupId)
+                await groupGetter.GetGroupDescriptionById(groupId),
+                await groupGetter.GetGroupMemberCount(groupId),
+                await groupGetter.GetIsDefaultGroup(groupId)
             );
             groupInfos.Add(groupInfo);
         }
         return groupInfos;
     }
 
-    public static string GetUserGroupInfoByGroupId(int groupId)
+    public static async Task<string> GetUserGroupInfoByGroupId(int groupId, IGroupGetter groupGetter)
     {
-        return string.Format(Config.GetResourceString("GroupInfoText"), DBforGroups.GetGroupNameById(groupId),
+        return string.Format(Config.GetResourceString("GroupInfoText"), await groupGetter.GetGroupNameById(groupId),
                                                 groupId,
-                                                DBforGroups.GetGroupDescriptionById(groupId), DBforGroups.GetGroupMemberCount(groupId), 
-                                                DBforGroups.GetIsDefaultGroup(groupId));
+                                                await groupGetter.GetGroupDescriptionById(groupId), 
+                                                await groupGetter.GetGroupMemberCount(groupId), 
+                                                await groupGetter.GetIsDefaultGroup(groupId));
     }
 }
