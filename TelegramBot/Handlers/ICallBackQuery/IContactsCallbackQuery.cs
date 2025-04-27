@@ -47,15 +47,18 @@ public class ViewInboundInviteLinksCommand : IBotCallbackQueryHandlers
     private readonly IContactSetter _contactSetterRepository;
     private readonly IContactRemover _contactRepository;
     private readonly IInboundDBGetter _inboundDBGetter;
+    private readonly IUserGetter _userGetter;
 
     public ViewInboundInviteLinksCommand(
         IContactSetter contactSetterRepository, 
         IContactRemover contactRepository,
-        IInboundDBGetter inboundDBGetter)
+        IInboundDBGetter inboundDBGetter,
+        IUserGetter userGetter)
     {
         _contactSetterRepository = contactSetterRepository;
         _contactRepository = contactRepository;
         _inboundDBGetter = inboundDBGetter;
+        _userGetter = userGetter;
     }
 
     public string Name => "view_inbound_invite_links";
@@ -69,34 +72,51 @@ public class ViewInboundInviteLinksCommand : IBotCallbackQueryHandlers
             chatId,
             _contactSetterRepository,
             _contactRepository,
-            _inboundDBGetter);
+            _inboundDBGetter,
+            _userGetter);
     }
 }
 
 public class ViewOutboundInviteLinksCommand : IBotCallbackQueryHandlers
 {
     private readonly IOutboundDBGetter _outboundDBGetter;
+    private readonly IUserGetter _userGetter;
     
     public ViewOutboundInviteLinksCommand(
-        IOutboundDBGetter outboundDBGetter)
+        IOutboundDBGetter outboundDBGetter,
+        IUserGetter userGetter)
     {
         _outboundDBGetter = outboundDBGetter;
+        _userGetter = userGetter;
     }  
     public string Name => "view_outbound_invite_links";
     
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        await CallbackQueryMenuUtils.ViewOutboundInviteLinks(botClient, update, _outboundDBGetter);
+        await CallbackQueryMenuUtils.ViewOutboundInviteLinks(botClient, update, _outboundDBGetter, _userGetter);
     }
 }
 
 public class ShowGroupsCommand : IBotCallbackQueryHandlers
 {
+    private readonly IUserGetter _userGetter;
+    private readonly IGroupGetter _groupGetter;
+    private readonly IGroupSetter _groupSetter;
     public string Name => "show_groups";
-    
+
+    public ShowGroupsCommand(
+        IUserGetter userGetter,
+        IGroupGetter groupGetter,
+        IGroupSetter groupSetter)
+    {
+        _userGetter = userGetter;
+        _groupGetter = groupGetter;
+        _groupSetter = groupSetter;
+    }
+
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        await Groups.ViewGroups(botClient, update, ct);
+        await Groups.ViewGroups(botClient, update, ct, _userGetter, _groupGetter, _groupSetter);
     }
 }
 
@@ -104,10 +124,17 @@ public class ShowGroupsCommand : IBotCallbackQueryHandlers
 public class EditContactGroupCommand : IBotCallbackQueryHandlers
 {
     private readonly IContactGroupRepository _contactGroupRepository;
+    private readonly IUserGetter _userGetter;
+    private readonly IGroupGetter _groupGetter;
 
-    public EditContactGroupCommand(IContactGroupRepository contactGroupRepository)
+    public EditContactGroupCommand(
+        IContactGroupRepository contactGroupRepository,
+        IUserGetter userGetter,
+        IGroupGetter groupGetter)
     {
         _contactGroupRepository = contactGroupRepository;
+        _userGetter = userGetter;
+        _groupGetter = groupGetter;
     }
 
     public string Name => "edit_contact_group";
@@ -115,7 +142,7 @@ public class EditContactGroupCommand : IBotCallbackQueryHandlers
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
-        await Contacts.EditContactGroup(botClient, update, chatId, _contactGroupRepository);
+        await Contacts.EditContactGroup(botClient, update, chatId, _contactGroupRepository, _userGetter, _groupGetter);
     }
 }
 
@@ -144,13 +171,16 @@ public class MuteContactCommand : IBotCallbackQueryHandlers
 {
     private readonly IContactAdder _contactAdderRepository;
     private readonly IContactGetter _contactGetterRepository;
+    private readonly IUserGetter _userGetter;
 
     public MuteContactCommand(
         IContactAdder contactAdderRepository,
-        IContactGetter contactGetterRepository)
+        IContactGetter contactGetterRepository,
+        IUserGetter userGetter)
     {
         _contactAdderRepository = contactAdderRepository;
         _contactGetterRepository = contactGetterRepository;
+        _userGetter = userGetter;
     }
 
     public string Name => "mute_contact";
@@ -158,7 +188,7 @@ public class MuteContactCommand : IBotCallbackQueryHandlers
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
-        await Contacts.MuteUserContact(botClient, update, chatId, _contactAdderRepository, _contactGetterRepository);
+        await Contacts.MuteUserContact(botClient, update, chatId, _contactAdderRepository, _contactGetterRepository, _userGetter);
     }
 }
 
@@ -166,13 +196,16 @@ public class UnmuteContactCommand : IBotCallbackQueryHandlers
 {
     private readonly IContactRemover _contactRemoverRepository;
     private readonly IContactGetter _contactGetterRepository;
+    private readonly IUserGetter _userGetter;
 
     public UnmuteContactCommand(
         IContactRemover contactRepository,
-        IContactGetter contactGetterRepository)
+        IContactGetter contactGetterRepository,
+        IUserGetter userGetter)
     {
         _contactRemoverRepository = contactRepository;
         _contactGetterRepository = contactGetterRepository;
+        _userGetter = userGetter;
     }
 
     public string Name => "unmute_contact";
@@ -180,7 +213,7 @@ public class UnmuteContactCommand : IBotCallbackQueryHandlers
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
-        await Contacts.UnMuteUserContact(botClient, update, chatId, _contactRemoverRepository, _contactGetterRepository);
+        await Contacts.UnMuteUserContact(botClient, update, chatId, _contactRemoverRepository, _contactGetterRepository, _userGetter);
     }
 }
 

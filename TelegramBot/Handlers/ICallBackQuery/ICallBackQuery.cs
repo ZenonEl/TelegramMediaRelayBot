@@ -12,6 +12,7 @@
 
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Menu;
+using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
@@ -33,11 +34,17 @@ public class MainMenuCommand : IBotCallbackQueryHandlers
 
 public class GetSelfLinkCommand : IBotCallbackQueryHandlers
 {
+    private readonly IUserGetter _userGetter;
     public string Name => "get_self_link";
+
+    public GetSelfLinkCommand(IUserGetter userGetter)
+    {
+        _userGetter = userGetter;
+    }
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        await CallbackQueryMenuUtils.GetSelfLink(botClient, update);
+        await CallbackQueryMenuUtils.GetSelfLink(botClient, update, _userGetter);
     }
 }
 

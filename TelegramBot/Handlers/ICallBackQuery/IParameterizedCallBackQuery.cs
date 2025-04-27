@@ -23,13 +23,16 @@ public class ShowOutboundInviteCommand : IBotCallbackQueryHandlers
 {
     private readonly IContactRemover _contactRepository;
     private readonly IOutboundDBGetter _outboundDBGetter;
+    private readonly IUserGetter _userGetter;
 
     public ShowOutboundInviteCommand(
         IContactRemover contactRepository,
-        IOutboundDBGetter outboundDBGetter)
+        IOutboundDBGetter outboundDBGetter,
+        IUserGetter userGetter)
     {
         _contactRepository = contactRepository;
         _outboundDBGetter = outboundDBGetter;
+        _userGetter = userGetter;
     }
 
     public string Name => "user_show_outbound_invite:";
@@ -37,7 +40,7 @@ public class ShowOutboundInviteCommand : IBotCallbackQueryHandlers
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         var chatId = update.CallbackQuery!.Message!.Chat.Id;
-        await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId, _contactRepository, _outboundDBGetter);
+        await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId, _contactRepository, _outboundDBGetter, _userGetter);
     }
 }
 
@@ -46,10 +49,13 @@ public class SetAutoSendTimeCommand : IBotCallbackQueryHandlers
     public string Name => "user_set_auto_send_video_time_to:";
 
     private readonly IDefaultActionSetter _defaultActionSetter;
+    private readonly IUserGetter _userGetter;
 
     public SetAutoSendTimeCommand(
+        IUserGetter userGetter,
         IDefaultActionSetter defaultActionSetter)
     {
+        _userGetter = userGetter;
         _defaultActionSetter = defaultActionSetter;
     }
 
@@ -57,7 +63,7 @@ public class SetAutoSendTimeCommand : IBotCallbackQueryHandlers
     {
         string callbackQueryData = update.CallbackQuery!.Data!.Split(':')[1];
         var chatId = update.CallbackQuery!.Message!.Chat.Id;
-        bool result = Users.SetAutoSendVideoTimeToUser(chatId, callbackQueryData, _defaultActionSetter);
+        bool result = Users.SetAutoSendVideoTimeToUser(chatId, callbackQueryData, _defaultActionSetter, _userGetter);
 
         var message = result 
             ? Config.GetResourceString("AutoSendTimeChangedMessage") + callbackQueryData
@@ -78,15 +84,26 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
     private readonly IContactGetter _contactGetterRepository;
     private readonly IDefaultAction _defaultAction;
     private readonly IDefaultActionSetter _defaultActionSetter;
+    private readonly IUserGetter _userGetter;
+    private readonly IGroupGetter _groupGetter;
+    private readonly IDefaultActionGetter _defaultActionGetter;
 
     public SetVideoSendUsersCommand(
         IContactGetter contactGetterRepository,
         IDefaultAction defaultAction,
-        IDefaultActionSetter defaultActionSetter)
+        IDefaultActionSetter defaultActionSetter,
+        IUserGetter userGetter,
+        IGroupGetter groupGetter,
+        IDefaultActionGetter defaultActionGetter
+        )
     {
         _contactGetterRepository = contactGetterRepository;
         _defaultAction = defaultAction;
         _defaultActionSetter = defaultActionSetter;
+        _userGetter = userGetter;
+        _userGetter = userGetter;
+        _groupGetter = groupGetter;
+        _defaultActionGetter = defaultActionGetter;
     }
 
     public string Name => "user_set_video_send_users:";
@@ -115,13 +132,19 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
             bool isGroup = false;
             if (action == UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS) isGroup = true;
 
-            Users.SetDefaultActionToUser(chatId, action, _defaultActionSetter);
-            TGBot.userStates[chatId] = new ProcessUserSetDCSendState(isGroup, _contactGetterRepository, _defaultAction);
+            Users.SetDefaultActionToUser(chatId, action, _defaultActionSetter, _userGetter);
+            TGBot.userStates[chatId] = new ProcessUserSetDCSendState(
+                isGroup,
+                _contactGetterRepository,
+                _defaultAction,
+                _defaultActionGetter,
+                _userGetter,
+                _groupGetter);
             return;
         }
 
 
-        bool result = Users.SetDefaultActionToUser(chatId, action, _defaultActionSetter);
+        bool result = Users.SetDefaultActionToUser(chatId, action, _defaultActionSetter, _userGetter);
 
         if (result)
         {

@@ -142,15 +142,18 @@ public class UserUpdateSelfLinkWithKeepSelectedContactsCommand : IBotCallbackQue
     private readonly IContactRemover _contactRemoverRepository;
     private readonly IContactGetter _contactGetterRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IUserGetter _userGetter;
 
     public UserUpdateSelfLinkWithKeepSelectedContactsCommand(
         IContactRemover contactRemoverRepository,
         IContactGetter contactGetterRepository,
-        IUserRepository userRepository)
+        IUserRepository userRepository,
+        IUserGetter userGetter)
     {
         _contactRemoverRepository = contactRemoverRepository;
         _contactGetterRepository = contactGetterRepository;
         _userRepository = userRepository;
+        _userGetter = userGetter;
     }
 
     public string Name => "user_update_self_link_with_keep_selected_contacts";
@@ -163,7 +166,7 @@ public class UserUpdateSelfLinkWithKeepSelectedContactsCommand : IBotCallbackQue
             KeyboardUtils.GetReturnButtonMarkup("user_update_self_link"),
             ct,
             Config.GetResourceString("EnterContactIdsPrompt"));
-        UsersDB.UpdateSelfLinkWithKeepSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository, _userRepository);
+        UsersDB.UpdateSelfLinkWithKeepSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository, _userRepository, _userGetter);
     }
 }
 
@@ -172,15 +175,18 @@ public class UserUpdateSelfLinkWithDeleteSelectedContactsCommand : IBotCallbackQ
     private readonly IContactRemover _contactRemoverRepository;
     private readonly IContactGetter _contactGetterRepository;    
     private readonly IUserRepository _userRepository;
+    private readonly IUserGetter _userGetter;
 
     public UserUpdateSelfLinkWithDeleteSelectedContactsCommand(
         IContactRemover contactRemoverRepository,
         IContactGetter contactGetterRepository,
-        IUserRepository userRepository)
+        IUserRepository userRepository,
+        IUserGetter userGetter)
     {
         _contactRemoverRepository = contactRemoverRepository;
         _contactGetterRepository = contactGetterRepository;
         _userRepository = userRepository;
+        _userGetter = userGetter;
     }
 
     public string Name => "user_update_self_link_with_delete_selected_contacts";
@@ -193,25 +199,28 @@ public class UserUpdateSelfLinkWithDeleteSelectedContactsCommand : IBotCallbackQ
             KeyboardUtils.GetReturnButtonMarkup("user_update_self_link"),
             ct,
             Config.GetResourceString("EnterContactIdsPrompt"));
-        UsersDB.UpdateSelfLinkWithDeleteSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository, _userRepository);
+        UsersDB.UpdateSelfLinkWithDeleteSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository, _userRepository, _userGetter);
     }
 }
 
 public class ProcessUserUpdateSelfLinkWithContactsCommand : IBotCallbackQueryHandlers
 {
     private readonly IUserRepository _userRepository;
+    private readonly IUserGetter _userGetter;
 
     public ProcessUserUpdateSelfLinkWithContactsCommand(
-        IUserRepository userRepository)
+        IUserRepository userRepository,
+        IUserGetter userGetter)
     {
         _userRepository = userRepository;
+        _userGetter = userGetter;
     }
 
     public string Name => "process_user_update_self_link_with_contacts";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        UsersDB.UpdateSelfLinkWithContacts(update, _userRepository);
+        UsersDB.UpdateSelfLinkWithContacts(update, _userRepository, _userGetter);
         await Users.ViewLinkPrivacyMenu(botClient, update);
     }
 }
@@ -220,20 +229,23 @@ public class ProcessUserUpdateSelfLinkWithNewContactsCommand : IBotCallbackQuery
 {
     private readonly IContactRemover _contactRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IUserGetter _userGetter;
 
     public ProcessUserUpdateSelfLinkWithNewContactsCommand(
         IContactRemover contactRepository,
-        IUserRepository userRepository)
+        IUserRepository userRepository,
+        IUserGetter userGetter)
     {
         _contactRepository = contactRepository;
         _userRepository = userRepository;
+        _userGetter = userGetter;
     }
 
     public string Name => "process_user_update_self_link_with_new_contacts";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        UsersDB.UpdateSelfLinkWithNewContacts(update, _contactRepository, _userRepository);
+        UsersDB.UpdateSelfLinkWithNewContacts(update, _contactRepository, _userRepository, _userGetter);
         await Users.ViewLinkPrivacyMenu(botClient, update);
     }
 }
