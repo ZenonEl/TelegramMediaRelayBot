@@ -178,4 +178,11 @@ public class MySqlUserGetter(string connectionString) : IUserGetter
             return new List<int>();
         }
     }
+
+    public async Task<int> GetAllUsersCount()
+    {
+        const string query = "SELECT EXISTS(SELECT 1 FROM Users LIMIT 1)";
+        using var connection = new MySqlConnection(_connectionString);
+        return await connection.ExecuteScalarAsync<int>(query);
+    }
 }
