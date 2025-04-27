@@ -26,7 +26,7 @@ public class MySqlPrivacySettingsSetter : IPrivacySettingsSetter
 
     public bool SetPrivacyRule(int userId, string type, string action, bool isActive, string actionCondition)
     {
-        string query = @$"
+        const string query = @$"
             INSERT INTO PrivacySettings (UserId, Type, Action, IsActive, ActionCondition)
             VALUES (@userId, @type, @action, @isActive, @actionCondition)
             ON DUPLICATE KEY UPDATE
@@ -40,7 +40,7 @@ public class MySqlPrivacySettingsSetter : IPrivacySettingsSetter
 
     public bool SetPrivacyRuleToDisabled(int userId, string type)
     {
-        string query = @"
+        const string query = @"
             UPDATE PrivacySettings
             SET IsActive = 0
             WHERE UserId = @userId AND Type = @type";
@@ -61,7 +61,7 @@ public class MySqlPrivacySettingsGetter : IPrivacySettingsGetter
 
     public bool GetIsActivePrivacyRule(int userId, string type)
     {
-        string query = @"
+        const string query = @"
             SELECT IsActive
             FROM PrivacySettings
             WHERE UserId = @userId AND Type = @type";

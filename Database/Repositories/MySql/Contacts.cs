@@ -21,7 +21,7 @@ public class MySqlContactAdder(string connectionString) : IContactAdder
 
     public void AddContact(long telegramID, string link)
     {
-        string query = @$"
+        const string query = @$"
             INSERT INTO Contacts (UserId, ContactId, Status) VALUES (@userId, @contactId, @status)";
         MySqlContactGetter contactGetter = new(_connectionString);
 
@@ -50,7 +50,7 @@ public class MySqlContactAdder(string connectionString) : IContactAdder
             muteDate = DateTime.Now;
         }
 
-        string query = @$"
+        const string query = @$"
             INSERT INTO MutedContacts (MutedByUserId, MutedContactId, MuteDate, ExpirationDate)
             VALUES (@mutedByUserId, @mutedContactId, @muteDate, @expirationDate)
             ON DUPLICATE KEY UPDATE
@@ -91,7 +91,7 @@ public class MySqlContactRemover(string connectionString) : IContactRemover
 
     public void RemoveMutedContact(int userId, int contactId)
     {
-        string query = @"
+        const string query = @"
             UPDATE MutedContacts
             SET IsActive = 0
             WHERE MutedByUserId = @userId AND MutedContactId = @contactId";
@@ -111,7 +111,7 @@ public class MySqlContactRemover(string connectionString) : IContactRemover
 
     public bool RemoveContactByStatus(int senderTelegramID, int accepterTelegramID, string? status = null)
     {
-        string query = @$"
+        const string query = @$"
             DELETE FROM Contacts
             WHERE (UserId = @senderTelegramID AND ContactId = @accepterTelegramID AND (@status IS NULL OR Status = @status))
             OR (UserId = @accepterTelegramID AND ContactId = @senderTelegramID AND (@status IS NULL OR Status = @status))";
@@ -301,9 +301,10 @@ public class MySqlContactSetter(string connectionString) : IContactSetter
 
     public void SetContactStatus(long SenderTelegramID, long AccepterTelegramID, string status)
     {
-        string query = @$"
+        const string query = @$"
             UPDATE Contacts SET Status = @Status WHERE UserId = @UserId AND ContactId = @ContactId";
         MySqlContactGetter contactGetter = new(_connectionString);
+        MySqlUserGetter userGetter = new(_connectionString);
 
         using (var connection = new MySqlConnection(_connectionString))
         {
@@ -312,7 +313,7 @@ public class MySqlContactSetter(string connectionString) : IContactSetter
                 connection.Execute(query, new 
                 {
                     Status = status,
-                    UserId = DBforGetters.GetUserIDbyTelegramID(SenderTelegramID),
+                    UserId = userGetter.GetUserIDbyTelegramID(SenderTelegramID),
                     ContactId = contactGetter.GetContactByTelegramID(AccepterTelegramID)
                 });
             }
@@ -333,6 +334,7 @@ public class MySqlContactGetter(string connectionString) : IContactGetter
         try
         {
             using var connection = new MySqlConnection(_connectionString);
+            MySqlUserGetter userGetter = new(_connectionString);
             
             var results = await connection.QueryAsync<(long UserId, long ContactId)>(
                 @"SELECT UserId, ContactId
@@ -348,7 +350,7 @@ public class MySqlContactGetter(string connectionString) : IContactGetter
                 .ToList();
 
             return contactUserIds
-                .Select(contactUserId => DBforGetters.GetTelegramIDbyUserID((int)contactUserId))
+                .Select(contactUserId => userGetter.GetTelegramIDbyUserID((int)contactUserId))
                 .ToList();
         }
         catch (Exception ex)

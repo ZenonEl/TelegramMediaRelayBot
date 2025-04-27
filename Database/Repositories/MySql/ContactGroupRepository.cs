@@ -31,7 +31,7 @@ public class MySqlContactGroupRepository(string connectionString) : IContactGrou
 
     public bool RemoveContactFromGroup(int userId, int contactId, int groupId)
     {
-        string query = @"
+        const string query = @"
             DELETE FROM GroupMembers
             WHERE UserId = @userId AND ContactId = @contactId AND GroupId = @groupId";
 
@@ -42,7 +42,7 @@ public class MySqlContactGroupRepository(string connectionString) : IContactGrou
 
     public bool CheckUserAndContactConnect(int userId, int contactId)
     {
-        string query = @"
+        const string query = @"
             SELECT COUNT(*) FROM Contacts
             WHERE 
                 ((UserId = @userId AND ContactId = @contactId) OR (UserId = @contactId AND ContactId = @userId))

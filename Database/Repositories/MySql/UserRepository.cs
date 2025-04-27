@@ -40,8 +40,7 @@ public class MySqlUserRepository(string connectionString) : IUserRepository
             return;
         }
 
-        string query = @$"
-            USE {Config.databaseName};
+        const string query = @$"
             INSERT INTO Users (TelegramID, Name, Link) VALUES (@telegramID, @name, @link)";
 
         using var connection = new MySqlConnection(_connectionString);
@@ -119,7 +118,7 @@ public class MySqlUserGetter(string connectionString) : IUserGetter
 
     public long GetUserTelegramIdByLink(string link)
     {
-        const string query = "SELECT TelegramID FROM User WHERE Link = @link";
+        const string query = "SELECT TelegramID FROM Users WHERE Link = @link";
         try
         {
             using var connection = new MySqlConnection(_connectionString);
@@ -135,7 +134,7 @@ public class MySqlUserGetter(string connectionString) : IUserGetter
 
     private static string GetUserLink(long telegramID, string connectionString)
     {
-        const string query = "SELECT Link FROM User WHERE TelegramID = @telegramID";
+        const string query = "SELECT Link FROM Users WHERE TelegramID = @telegramID";
         try
         {
             using var connection = new MySqlConnection(connectionString);

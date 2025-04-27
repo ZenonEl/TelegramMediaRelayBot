@@ -27,7 +27,7 @@ public class MySqlDefaultAction : IDefaultAction
 
     public bool AddDefaultUsersActionTargets(int userId, int actionId, string targetType, int targetId)
     {
-        string query = @"
+        const string query = @"
             INSERT INTO DefaultUsersActionTargets (UserId, ActionID, TargetType, TargetID) 
             VALUES (@userId, @actionId, @targetType, @targetId)";
 
@@ -37,8 +37,7 @@ public class MySqlDefaultAction : IDefaultAction
 
     public bool RemoveAllDefaultUsersActionTargets(int userId, string targetType, int actionId)
     {
-        string query = @"
-            USE {Config.databaseName};
+        const string query = @"
             DELETE FROM DefaultUsersActionTargets 
             WHERE UserId = @userId AND ActionID = @actionId AND TargetType = @targetType;";
 
@@ -58,7 +57,7 @@ public class MySqlDefaultActionSetter : IDefaultActionSetter
 
     public bool SetAutoSendVideoConditionToUser(int userId, string actionCondition, string type)
     {
-        string query = @"
+        const string query = @"
             INSERT INTO DefaultUsersActions (UserId, Type, ActionCondition) VALUES (@userId, @type, @actionCondition)
             ON DUPLICATE KEY UPDATE
                 ActionCondition = @actionCondition";
@@ -69,7 +68,7 @@ public class MySqlDefaultActionSetter : IDefaultActionSetter
 
     public bool SetAutoSendVideoActionToUser(int userId, string action, string type)
     {
-        string query = @"
+        const string query = @"
             INSERT INTO DefaultUsersActions (UserId, Type, Action) VALUES (@userId, @type, @action)
             ON DUPLICATE KEY UPDATE
                 Action = @action";
@@ -111,7 +110,7 @@ public class MySqlDefaultActionGetter : IDefaultActionGetter
 
     public int GetDefaultActionId(int userId, string type)
     {
-        string query = @$"
+        const string query = @$"
             SELECT ID FROM DefaultUsersActions 
             WHERE UserId = @userId AND Type = @type;";
         try
