@@ -37,13 +37,21 @@ public partial class TGBot
         CallbackQueryHandlersFactory handlersFactory,
         IContactGetter contactGetterRepository,
         IDefaultActionGetter defaultActionGetter,
-        IPrivacySettingsGetter privacySettingsGetter
+        IPrivacySettingsGetter privacySettingsGetter,
+        IGroupGetter groupGetter
         )
     {
         _userRepo = userRepo;
         _userGetter = userGetters;
         _handlersFactory = handlersFactory;
-        _updateHandler = new PrivateUpdateHandler(this, _handlersFactory, contactGetterRepository, defaultActionGetter, _userGetter);
+        _updateHandler = new PrivateUpdateHandler(
+            this,
+            _handlersFactory,
+            contactGetterRepository,
+            defaultActionGetter,
+            _userGetter,
+            groupGetter
+            );
         _privacySettingsGetter = privacySettingsGetter;
     }
 
@@ -102,8 +110,9 @@ public partial class TGBot
 
                 if (!hasAccess)
                 {
+                    int usersCount = await _userGetter.GetAllUsersCount();
                     string startParameter = CommonUtilities.ParseStartCommand(update.Message.Text);
-                    if (!string.IsNullOrEmpty(startParameter) && Config.CanUserStartUsingBot(startParameter))
+                    if ((usersCount == 0 || !string.IsNullOrEmpty(startParameter)) && Config.CanUserStartUsingBot(startParameter, _userGetter))
                     {
                         _userRepo.AddUser(update.Message.Chat.FirstName!, chatId, hasAccess);
                         update.Message.Text = "/start";
@@ -111,7 +120,7 @@ public partial class TGBot
                     }
                     else if (Config.showAccessDeniedMessage)
                     {
-                        await botClient.SendMessage(chatId, Config.GetResourceString("AccessDeniedMessage"), cancellationToken: cancellationToken);
+                        await botClient.SendMessage(chatId, Config.GetResourceString("AccessDeniedMessage"), cancellationToken: cancellationToken, parseMode: ParseMode.Html);
                     }
                 }
 
@@ -281,6 +290,10 @@ public partial class TGBot
                                             string.Format(Config.GetResourceString("MutedByContacts"), mutedByUserIds.Count),
                                             replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId });
         }
+
+        await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId,
+            $"Рассылка окончена. Отправлено {sentCount}/{filteredContactUserTGIds.Count}", //TODO вынести переводы
+            cancellationToken: cancellationToken);
     }
 
     public static void LogEvent(Update update, long chatId)

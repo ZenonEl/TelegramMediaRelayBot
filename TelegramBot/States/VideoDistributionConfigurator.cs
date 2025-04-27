@@ -34,6 +34,7 @@ public class ProcessVideoDC : IUserState
     private readonly TGBot _tgBot;
     private readonly IContactGetter _contactGetterRepository;
     private readonly IUserGetter _userGetter;
+    private readonly IGroupGetter _groupGetter;
 
     public ProcessVideoDC(
         string Link,
@@ -42,7 +43,8 @@ public class ProcessVideoDC : IUserState
         CancellationTokenSource cts,
         TGBot tgBot,
         IContactGetter contactGetterRepository,
-        IUserGetter userGetter
+        IUserGetter userGetter,
+        IGroupGetter groupGetter
         )
     {
         link = Link;
@@ -53,6 +55,7 @@ public class ProcessVideoDC : IUserState
         _tgBot = tgBot;
         _contactGetterRepository = contactGetterRepository;
         _userGetter = userGetter;
+        _groupGetter = groupGetter;
     }
 
     public string GetCurrentState()
@@ -90,7 +93,7 @@ public class ProcessVideoDC : IUserState
 
                         case UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS:
                             action = UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS;
-                            List<string> groupInfos = UsersGroup.GetUserGroupInfoByUserId(DBforGetters.GetUserIDbyTelegramID(chatId));
+                            List<string> groupInfos = await UsersGroup.GetUserGroupInfoByUserId(_userGetter.GetUserIDbyTelegramID(chatId), _groupGetter);
 
                             string messageText = groupInfos.Any() 
                                 ? $"{Config.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
@@ -239,7 +242,7 @@ public class ProcessVideoDC : IUserState
 
     private async Task PrepareTargetUserIds(long chatId)
     {
-        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
         List<long> mutedByUserIds = _userGetter.GetUsersIdForMuteContactId(userId);
         List<long> contactUserTGIds = new List<long>();
 
@@ -251,11 +254,11 @@ public class ProcessVideoDC : IUserState
                 break;
 
             case UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS:
-                List<int> defaultGroupContactIDs = DBforGroups.GetAllUsersInDefaultEnabledGroups(userId);
+                List<int> defaultGroupContactIDs = await _groupGetter.GetAllUsersInDefaultEnabledGroups(userId);
 
                 targetUserIds = defaultGroupContactIDs
-                    .Where(contactId => !mutedByUserIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
-                    .Select(DBforGetters.GetTelegramIDbyUserID)
+                    .Where(contactId => !mutedByUserIds.Contains(_userGetter.GetTelegramIDbyUserID(contactId)))
+                    .Select(_userGetter.GetTelegramIDbyUserID)
                     .ToList();
                 break;
 
@@ -263,19 +266,19 @@ public class ProcessVideoDC : IUserState
                 List<int> contactUserIds = new List<int>();
                 foreach (int groupId in preparedTargetUserIds)
                 {
-                    contactUserIds.AddRange(DBforGroups.GetAllUsersInGroup(groupId, userId));
+                    contactUserIds.AddRange(await _groupGetter.GetAllUsersInGroup(groupId, userId));
                 }
 
                 targetUserIds = contactUserIds
-                    .Where(contactId => !mutedByUserIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
-                    .Select(DBforGetters.GetTelegramIDbyUserID)
+                    .Where(contactId => !mutedByUserIds.Contains(_userGetter.GetTelegramIDbyUserID(contactId)))
+                    .Select(_userGetter.GetTelegramIDbyUserID)
                     .ToList();
                     break;
 
             case UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS:
                 foreach (int contactId in preparedTargetUserIds)
                 {
-                    contactUserTGIds.Add(DBforGetters.GetTelegramIDbyUserID(contactId));
+                    contactUserTGIds.Add(_userGetter.GetTelegramIDbyUserID(contactId));
                 }
                 List<long> allContactUserTGIds = await _contactGetterRepository.GetAllContactUserTGIds(userId);
                 List<long> filteredContactUserTGIds = contactUserTGIds.Except(allContactUserTGIds).ToList();

@@ -12,6 +12,7 @@
 using System.Resources;
 using Serilog.Events;
 using Microsoft.Extensions.Configuration;
+using TelegramMediaRelayBot.Database.Interfaces;
 
 
 namespace TelegramMediaRelayBot
@@ -91,11 +92,11 @@ namespace TelegramMediaRelayBot
             return resourceManager.GetString(key)!;
         }
 
-        public static bool CanUserStartUsingBot(string referrerLink)
+        public static bool CanUserStartUsingBot(string referrerLink, IUserGetter userGetter)
         {
             if (!isAccessPolicyEnabled) return true;
 
-            long referrerUserId = DBforGetters.GetUserTelegramIdByLink(referrerLink);
+            long referrerUserId = userGetter.GetUserTelegramIdByLink(referrerLink);
             if (referrerUserId == -1) return false;
 
             bool isReferrerBlacklisted = blacklistedReferrerIds?.Contains(referrerUserId) ?? false;
