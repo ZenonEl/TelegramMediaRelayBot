@@ -10,6 +10,7 @@
 // (по вашему выбору) любой более поздней версии.
 
 
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
@@ -18,13 +19,19 @@ namespace TelegramMediaRelayBot.TelegramBot.Menu;
 
 public class Groups
 {
-    public static async Task ViewGroups(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    public static async Task ViewGroups(
+        ITelegramBotClient botClient,
+        Update update,
+        CancellationToken cancellationToken,
+        IUserGetter userGetter,
+        IGroupGetter groupGetter,
+        IGroupSetter groupSetter)
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
-        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
+        int userId = userGetter.GetUserIDbyTelegramID(chatId);
 
-        TGBot.userStates[chatId] = new ProcessUsersGroupState();
-        List<string> groupInfos = UsersGroup.GetUserGroupInfoByUserId(userId);
+        TGBot.userStates[chatId] = new ProcessUsersGroupState(userGetter, groupGetter, groupSetter);
+        List<string> groupInfos = await UsersGroup.GetUserGroupInfoByUserId(userId, groupGetter);
 
         string messageText = groupInfos.Any() 
             ? $"{Config.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
