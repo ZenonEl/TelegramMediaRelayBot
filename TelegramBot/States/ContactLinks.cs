@@ -27,18 +27,22 @@ public class ProcessContactLinksState : IUserState
     private readonly IContactRemover _contactRemover;
     private readonly IContactGetter _contactGetterRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IUserGetter _userGetter;
 
     public ProcessContactLinksState(
         bool isDelete,
         IContactRemover contactRemoverRepository,
         IContactGetter contactGetterRepository,
-        IUserRepository userRepository)
+        IUserRepository userRepository,
+        IUserGetter userGetter
+        )
     {
         currentState = UsersStandardState.ProcessAction;
         isDeleteSelected = isDelete;
         _contactRemover = contactRemoverRepository;
         _contactGetterRepository = contactGetterRepository;
         _userRepository = userRepository;
+        _userGetter = userGetter;
     }
 
     public string GetCurrentState() => currentState.ToString();
@@ -93,7 +97,7 @@ public class ProcessContactLinksState : IUserState
             return;
         }
 
-        userState.actingUserId = DBforGetters.GetUserIDbyTelegramID(chatId);
+        userState.actingUserId = _userGetter.GetUserIDbyTelegramID(chatId);
         
         userState.targetIds = await ValidateUserIds(userState.actingUserId, inputIds);
 
@@ -180,7 +184,7 @@ public class ProcessContactLinksState : IUserState
     {
         var allowedIds = await _contactGetterRepository.GetAllContactUserTGIds(actingUserId);
         return inputIds
-            .Where(id => allowedIds.Contains(DBforGetters.GetTelegramIDbyUserID(id)))
+            .Where(id => allowedIds.Contains(_userGetter.GetTelegramIDbyUserID(id)))
             .ToList();
     }
 

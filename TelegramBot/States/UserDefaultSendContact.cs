@@ -26,16 +26,25 @@ namespace TelegramMediaRelayBot
         private readonly IContactGetter _contactGetterRepository;
         private readonly IDefaultAction _defaultAction;
         private readonly IDefaultActionGetter _defaultActionGetter;
+        private readonly IUserGetter _userGetter;
+        private readonly IGroupGetter _groupGetter;
 
         public ProcessUserSetDCSendState(
             bool isGroup,
             IContactGetter contactGetterRepository,
-            IDefaultAction defaultAction)
+            IDefaultAction defaultAction,
+            IDefaultActionGetter defaultActionGetter,
+            IUserGetter userGetter,
+            IGroupGetter groupGetter
+            )
         {
             currentState = UsersStandardState.ProcessAction;
             _isGroupIds = isGroup;
             _contactGetterRepository = contactGetterRepository;
             _defaultAction = defaultAction;
+            _defaultActionGetter = defaultActionGetter;
+            _userGetter = userGetter;
+            _groupGetter = groupGetter;
         }
 
         public string GetCurrentState() => currentState.ToString();
@@ -97,10 +106,10 @@ namespace TelegramMediaRelayBot
                 return;
             }
 
-            userState._actingUserId = DBforGetters.GetUserIDbyTelegramID(chatId);
+            userState._actingUserId = _userGetter.GetUserIDbyTelegramID(chatId);
             
             userState._targetIds = _isGroupIds 
-                ? ValidateGroupIds(userState._actingUserId, inputIds)
+                ? await ValidateGroupIds(userState._actingUserId, inputIds)
                 : await ValidateUserIds(userState._actingUserId, inputIds);
 
             if (userState._targetIds.Count == 0)
@@ -150,7 +159,7 @@ namespace TelegramMediaRelayBot
         private async Task HandleFinish(ITelegramBotClient botClient, Update update, long chatId,
             ProcessUserSetDCSendState userState, CancellationToken cancellationToken)
         {
-            int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
+            int userId = _userGetter.GetUserIDbyTelegramID(chatId);
             int actionId = _defaultActionGetter.GetDefaultActionId(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
 
             if (_isGroupIds)
@@ -188,13 +197,13 @@ namespace TelegramMediaRelayBot
         {
             var allowedIds = await _contactGetterRepository.GetAllContactUserTGIds(actingUserId);
             return inputIds
-                .Where(id => allowedIds.Contains(DBforGetters.GetTelegramIDbyUserID(id)))
+                .Where(id => allowedIds.Contains(_userGetter.GetTelegramIDbyUserID(id)))
                 .ToList();
         }
 
-        static private List<int> ValidateGroupIds(int actingUserId, List<int> inputIds)
+        private async Task<List<int>> ValidateGroupIds(int actingUserId, List<int> inputIds)
         {
-            var userGroups = DBforGroups.GetGroupIDsByUserId(actingUserId);
+            var userGroups = await _groupGetter.GetGroupIDsByUserId(actingUserId);
             return inputIds
                 .Where(id => userGroups.Any(g => g == id))
                 .ToList();

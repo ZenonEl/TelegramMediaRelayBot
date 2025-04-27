@@ -30,11 +30,19 @@ public class ProcessContactGroupState : IUserState
     private int groupId = 0;
     private List<bool> isDBActionSuccessful = [];
     private IContactGroupRepository _contactGroupRepository;
+    private readonly IUserGetter _userGetter;
+    private readonly IGroupGetter _groupGetter;
 
-    public ProcessContactGroupState(IContactGroupRepository contactGroupRepository)
+    public ProcessContactGroupState(
+        IContactGroupRepository contactGroupRepository,
+        IUserGetter userGetter,
+        IGroupGetter groupGetter
+        )
     {
         currentState = UsersStandardState.ProcessAction;
         _contactGroupRepository = contactGroupRepository;
+        _userGetter = userGetter;
+        _groupGetter = groupGetter;
     }
 
     public string GetCurrentState()
@@ -141,20 +149,20 @@ public class ProcessContactGroupState : IUserState
             callbackAction = update.CallbackQuery!.Data!;
         }
 
-        int userId = DBforGetters.GetUserIDbyTelegramID(CommonUtilities.GetIDfromUpdate(update));
+        int userId = _userGetter.GetUserIDbyTelegramID(CommonUtilities.GetIDfromUpdate(update));
         switch (callbackAction)
         {
             case "edit_contact_group":
-                if (int.TryParse(update.Message!.Text!, out groupId) && DBforGroups.CheckGroupOwnership(groupId, userId))
+                if (int.TryParse(update.Message!.Text!, out groupId) && await _groupGetter.GetGroupOwnership(groupId, userId))
                 {
-                    groupInfo = UsersGroup.GetUserGroupInfoByGroupId(groupId);
+                    groupInfo = await UsersGroup.GetUserGroupInfoByGroupId(groupId, _groupGetter);
 
-                    List<int> allContactsIds = DBforGroups.GetAllUsersIdsInGroup(groupId);
+                    IEnumerable<int> allContactsIds = await _groupGetter.GetAllUsersIdsInGroup(groupId);
                     List<string> allContactsNames = [];
 
                     foreach (int contactId in allContactsIds)
                     {
-                        allContactsNames.Add(DBforGetters.GetUserNameByID(contactId) + $" (ID: {contactId})");
+                        allContactsNames.Add(_userGetter.GetUserNameByID(contactId) + $" (ID: {contactId})");
                     }
 
                     string allContactsText;
@@ -199,7 +207,7 @@ public class ProcessContactGroupState : IUserState
     public async Task<bool?> ProcessAction(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
-        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
 
         try
         {
@@ -246,7 +254,7 @@ public class ProcessContactGroupState : IUserState
 
     public void ProcessFinish(long chatId)
     {
-        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
 
         if (callbackAction.StartsWith("accept_add_contact_to_group"))
         {

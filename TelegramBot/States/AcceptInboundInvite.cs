@@ -22,16 +22,19 @@ public class UserProcessInboundState : IUserState
     private readonly IContactSetter _contactSetterRepository;
     private readonly IContactRemover _contactRemoverRepository;
     private readonly IInboundDBGetter _inboundDBGetter;
+    private readonly IUserGetter _userGetter;
 
     public UserProcessInboundState(
         IContactSetter contactSetterRepository, 
         IContactRemover contactRemoverRepository,
-        IInboundDBGetter inboundDBGetter)
+        IInboundDBGetter inboundDBGetter,
+        IUserGetter userGetter)
     {
         currentState = UserInboundState.SelectInvite;
         _contactSetterRepository = contactSetterRepository;
         _contactRemoverRepository = contactRemoverRepository;
         _inboundDBGetter = inboundDBGetter;
+        _userGetter = userGetter;
     }
 
     public static UserInboundState[] GetAllStates()
@@ -86,7 +89,8 @@ public class UserProcessInboundState : IUserState
                         chatId,
                         _contactSetterRepository,
                         _contactRemoverRepository,
-                        _inboundDBGetter);
+                        _inboundDBGetter,
+                        _userGetter);
                     return;
                 }
                 string userID = update.CallbackQuery!.Data!.Split(':')[1];
@@ -111,7 +115,7 @@ public class UserProcessInboundState : IUserState
                 }
                 else if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("accept_decline_invite:"))
                 {
-                    await CallbackQueryMenuUtils.DeclineInboundInvite(update, _contactRemoverRepository);
+                    await CallbackQueryMenuUtils.DeclineInboundInvite(update, _contactRemoverRepository, _userGetter);
                 }
                 else if (update.CallbackQuery != null && !update.CallbackQuery.Data!.StartsWith("main_menu"))
                 {

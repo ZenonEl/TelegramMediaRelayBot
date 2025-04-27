@@ -106,17 +106,17 @@ public class ProcessRemoveUser : IUserState
 
     private async Task<bool> RetrieveAndDisplayUserInfo(ITelegramBotClient botClient, Update update, long chatId, CancellationToken cancellationToken)
     {
-        List<long> contactUserTGIds = await _contactGetterRepository.GetAllContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(chatId));
-        List<long> preparedTargetUserTGIds = preparedTargetUserIds.Select(id => DBforGetters.GetTelegramIDbyUserID(id)).ToList();
+        List<long> contactUserTGIds = await _contactGetterRepository.GetAllContactUserTGIds(_userGetter.GetUserIDbyTelegramID(chatId));
+        List<long> preparedTargetUserTGIds = preparedTargetUserIds.Select(id => _userGetter.GetTelegramIDbyUserID(id)).ToList();
 
         contactUserTGIds = contactUserTGIds.Intersect(preparedTargetUserTGIds).ToList();
         List<string> contactUsersInfo = new List<string>();
 
         foreach (var contactUserId in contactUserTGIds)
         {
-            int id = DBforGetters.GetUserIDbyTelegramID(contactUserId);
+            int id = _userGetter.GetUserIDbyTelegramID(contactUserId);
             string username = _userGetter.GetUserNameByTelegramID(contactUserId);
-            string link = DBforGetters.GetUserSelfLink(contactUserId);
+            string link = _userGetter.GetUserSelfLink(contactUserId);
 
             contactUsersInfo.Add(string.Format(Config.GetResourceString("ContactInfo"), id, username, link));
         }
@@ -138,7 +138,7 @@ public class ProcessRemoveUser : IUserState
 
     private void RemoveUsersFromContacts(ITelegramBotClient botClient, long chatId, CancellationToken cancellationToken)
     {
-        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
         isDeleteSuccessful = _contactRemoverRepository.RemoveUsersFromContacts(userId, preparedTargetUserIds);
     }
 }

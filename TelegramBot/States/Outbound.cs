@@ -21,15 +21,18 @@ public class UserProcessOutboundState : IUserState
 {
     private IContactRemover _contactRepository;
     private IOutboundDBGetter _outboundDBGetter;
+    private IUserGetter _userGetter;
     public UserOutboundState currentState;
 
     public UserProcessOutboundState(
         IContactRemover contactRepository,
-        IOutboundDBGetter outboundDBGetter)
+        IOutboundDBGetter outboundDBGetter,
+        IUserGetter userGetter)
     {
         currentState = UserOutboundState.ProcessAction;
         _contactRepository = contactRepository;
         _outboundDBGetter = outboundDBGetter;
+        _userGetter = userGetter;
     }
 
     public static UserOutboundState[] GetAllStates()
@@ -66,7 +69,7 @@ public class UserProcessOutboundState : IUserState
                     return;
                 }
                 TGBot.userStates.Remove(chatId);
-                await CallbackQueryMenuUtils.ViewOutboundInviteLinks(botClient, update, _outboundDBGetter);
+                await CallbackQueryMenuUtils.ViewOutboundInviteLinks(botClient, update, _outboundDBGetter, _userGetter);
                 break;
 
             case UserOutboundState.Finish:
@@ -75,14 +78,14 @@ public class UserProcessOutboundState : IUserState
                     if (update.CallbackQuery.Data!.StartsWith("user_show_outbound_invite:"))
                     {
                         TGBot.userStates.Remove(chatId);
-                        await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId, _contactRepository, _outboundDBGetter);
+                        await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId, _contactRepository, _outboundDBGetter, _userGetter);
                         return;
                     }
                     else if (update.CallbackQuery.Data!.StartsWith("user_accept_revoke_outbound_invite:"))
                     {
                         string userId = update.CallbackQuery.Data.Split(':')[1];
-                        int accepterTelegramID = DBforGetters.GetUserIDbyTelegramID(long.Parse(userId));
-                        _contactRepository.RemoveContactByStatus(DBforGetters.GetUserIDbyTelegramID(chatId), accepterTelegramID, ContactsStatus.WAITING_FOR_ACCEPT);
+                        int accepterTelegramID = _userGetter.GetUserIDbyTelegramID(long.Parse(userId));
+                        _contactRepository.RemoveContactByStatus(_userGetter.GetUserIDbyTelegramID(chatId), accepterTelegramID, ContactsStatus.WAITING_FOR_ACCEPT);
                     }
                 }
                 TGBot.userStates.Remove(chatId);

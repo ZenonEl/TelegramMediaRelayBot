@@ -10,6 +10,7 @@
 // (по вашему выбору) любой более поздней версии.
 
 
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
@@ -28,10 +29,20 @@ public class ProcessUsersGroupState : IUserState
     private string description = "";
     private int groupId = 0;
     private bool isDBActionSuccessful = false;
+    private readonly IUserGetter _userGetter;
+    private readonly IGroupGetter _groupGetter;
+    private readonly IGroupSetter _groupSetter;
 
-    public ProcessUsersGroupState()
+    public ProcessUsersGroupState(
+        IUserGetter userGetter,
+        IGroupGetter groupGetter,
+        IGroupSetter groupSetter
+    )
     {
         currentState = UsersStandardState.ProcessAction;
+        _userGetter = userGetter;
+        _groupGetter = groupGetter;
+        _groupSetter = groupSetter;
     }
 
     public string GetCurrentState()
@@ -55,7 +66,7 @@ public class ProcessUsersGroupState : IUserState
         {
             case UsersStandardState.ProcessAction:
                 if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
-                groupInfo = UsersGroup.GetUserGroupInfoByGroupId(groupId);
+                groupInfo = await UsersGroup.GetUserGroupInfoByGroupId(groupId, _groupGetter);
 
                 bool? isCallbackSuccessful = await ProcessCallbackData(botClient, update, cancellationToken);
                 if (isCallbackSuccessful == true)
@@ -114,7 +125,7 @@ public class ProcessUsersGroupState : IUserState
                         $"{groupInfo}\n{Config.GetResourceString("ChooseOptionText")}");
                     return;
                 }
-                ProcessFinish(chatId);
+                await ProcessFinish(chatId);
                 string text = isDBActionSuccessful ? Config.GetResourceString("SuccessActionResult") : Config.GetResourceString("ErrorActionResult");
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, text);
                 TGBot.userStates.Remove(chatId);
@@ -168,9 +179,9 @@ public class ProcessUsersGroupState : IUserState
                 else if (action.StartsWith("user_change_is_default:"))
                 {
                     groupId = int.Parse(action.Split(':')[1]);
-                    isDBActionSuccessful = DBforGroups.SetIsDefaultGroup(groupId);
+                    isDBActionSuccessful = await _groupSetter.SetIsDefaultGroup(groupId);
 
-                    groupInfo = UsersGroup.GetUserGroupInfoByGroupId(groupId);
+                    groupInfo = await UsersGroup.GetUserGroupInfoByGroupId(groupId, _groupGetter);
                     await CommonUtilities.SendMessage(botClient, update, UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId), cancellationToken, groupInfo);
                     return false;
                 }
@@ -181,7 +192,7 @@ public class ProcessUsersGroupState : IUserState
     public async Task<bool?> ProcessAction(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
-        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
         switch (action)
         {
             case "user_create_group":
@@ -194,7 +205,7 @@ public class ProcessUsersGroupState : IUserState
                     Config.GetResourceString("ConfirmDecision"));
                 return true;
             case "user_edit_group":
-                if (int.TryParse(update.Message!.Text!, out groupId) && DBforGroups.CheckGroupOwnership(groupId, userId))
+                if (int.TryParse(update.Message!.Text!, out groupId) && await _groupGetter.GetGroupOwnership(groupId, userId))
                 {
                     await CommonUtilities.SendMessage(
                         botClient,
@@ -206,9 +217,9 @@ public class ProcessUsersGroupState : IUserState
                 }
                 return null;
             case "user_delete_group":
-                if (int.TryParse(update.Message!.Text!, out groupId) && DBforGroups.CheckGroupOwnership(groupId, userId))
+                if (int.TryParse(update.Message!.Text!, out groupId) && await _groupGetter.GetGroupOwnership(groupId, userId))
                 {
-                    groupInfo = UsersGroup.GetUserGroupInfoByGroupId(groupId);
+                    groupInfo = await UsersGroup.GetUserGroupInfoByGroupId(groupId, _groupGetter);
 
                     await CommonUtilities.SendMessage(
                         botClient,
@@ -248,25 +259,25 @@ public class ProcessUsersGroupState : IUserState
         }
     }
 
-    public void ProcessFinish(long chatId)
+    public async Task ProcessFinish(long chatId)
     {
-        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
         switch (action)
         {
             case "user_create_group":
-                isDBActionSuccessful = DBforGroups.AddGroup(userId, groupName, "");
+                isDBActionSuccessful = await _groupSetter.SetNewGroup(userId, groupName, "");
                 break;
             case "user_delete_group":
-                isDBActionSuccessful = DBforGroups.DeleteGroup(groupId);
+                isDBActionSuccessful = await _groupSetter.SetDeleteGroup(groupId);
                 break;
             default:
                 if (action.StartsWith("user_change_group_name:"))
                 {
-                    isDBActionSuccessful = DBforGroups.SetGroupName(groupId, groupName);
+                    isDBActionSuccessful = await _groupSetter.SetGroupName(groupId, groupName);
                 }
                 else if (action.StartsWith("user_change_group_description:"))
                 {
-                    isDBActionSuccessful = DBforGroups.SetGroupDescription(groupId, description);
+                    isDBActionSuccessful = await _groupSetter.SetGroupDescription(groupId, description);
                 }
                 break;
         }

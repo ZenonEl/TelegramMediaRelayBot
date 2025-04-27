@@ -21,16 +21,20 @@ public class ProcessUserUnMuteState : IUserState
 
     private int mutedByUserId { get; set; }
     private int mutedContactId { get; set; }
-    private IContactRemover _contactRemover;
-    private IContactGetter _contactGetter;
+    private readonly IContactRemover _contactRemover;
+    private readonly IContactGetter _contactGetter;
+    private readonly IUserGetter _userGetter;
 
     public ProcessUserUnMuteState(
         IContactRemover contactRemover,
-        IContactGetter contactGetters)
+        IContactGetter contactGetters,
+        IUserGetter userGetter
+        )
     {
         currentState = UserUnMuteState.WaitingForLinkOrID;
         _contactRemover = contactRemover;
         _contactGetter = contactGetters;
+        _userGetter = userGetter;
     }
 
     public static UserUnMuteState[] GetAllStates()
@@ -61,10 +65,10 @@ public class ProcessUserUnMuteState : IUserState
                 int contactId;
                 if (int.TryParse(update.Message!.Text, out contactId))
                 {
-                    List<long> allowedIds = await _contactGetter.GetAllContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(update.Message.Chat.Id));
-                    string name = DBforGetters.GetUserNameByID(contactId);
+                    List<long> allowedIds = await _contactGetter.GetAllContactUserTGIds(_userGetter.GetUserIDbyTelegramID(update.Message.Chat.Id));
+                    string name = _userGetter.GetUserNameByID(contactId);
 
-                    if (name == "" || !allowedIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
+                    if (name == "" || !allowedIds.Contains(_userGetter.GetTelegramIDbyUserID(contactId)))
                     {
                         await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByID"));
                         return;
@@ -76,17 +80,17 @@ public class ProcessUserUnMuteState : IUserState
                 {
                     string link = update.Message.Text!;
                     contactId = _contactGetter.GetContactIDByLink(link);
-                    List<long> allowedIds = await _contactGetter.GetAllContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(update.Message.Chat.Id));
+                    List<long> allowedIds = await _contactGetter.GetAllContactUserTGIds(_userGetter.GetUserIDbyTelegramID(update.Message.Chat.Id));
 
-                    if (contactId == -1 || !allowedIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
+                    if (contactId == -1 || !allowedIds.Contains(_userGetter.GetTelegramIDbyUserID(contactId)))
                     {
                         await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByLink"));
                         return;
                     }
-                    string name = DBforGetters.GetUserNameByID(contactId);
+                    string name = _userGetter.GetUserNameByID(contactId);
                     await botClient.SendMessage(chatId, string.Format(Config.GetResourceString("WillWorkWithContact"), contactId, name), cancellationToken: cancellationToken);
                 }
-                mutedByUserId = DBforGetters.GetUserIDbyTelegramID(chatId);
+                mutedByUserId = _userGetter.GetUserIDbyTelegramID(chatId);
                 mutedContactId = contactId;
                 await botClient.SendMessage(chatId, Config.GetResourceString("ConfirmDecision"), cancellationToken: cancellationToken,
                                             replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.GetResourceString("NextButtonText")));
