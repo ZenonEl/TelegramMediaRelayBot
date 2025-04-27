@@ -96,5 +96,3 @@ public class MySqlInboundDBGetter : IInboundDBGetter
         return null;
     }
 }
-
-//TODO тут прям та же история что и с outbound
