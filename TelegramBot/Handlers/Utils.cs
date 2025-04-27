@@ -22,18 +22,21 @@ class PrivateUtils
     private readonly IContactGetter _contactGetterRepository;
     private readonly IDefaultActionGetter _defaultActionGetter;
     private readonly IUserGetter _userGetter;
+    private readonly IGroupGetter _groupGetter;
 
     public PrivateUtils(
         TGBot tgBot,
         IContactGetter contactGetterRepository,
         IDefaultActionGetter defaultActionGetter,
-        IUserGetter userGetter
+        IUserGetter userGetter,
+        IGroupGetter groupGetter
         )
     {
         _tgBot = tgBot;
         _contactGetterRepository = contactGetterRepository;
         _defaultActionGetter = defaultActionGetter;
         _userGetter = userGetter;
+        _groupGetter = groupGetter;
     }
 
     public void ProcessDefaultSendAction(ITelegramBotClient botClient, long chatId, Message statusMessage, string defaultAction,
@@ -61,11 +64,11 @@ class PrivateUtils
                         break;
 
                     case UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS:
-                        userIds = DBforGroups.GetAllUsersInDefaultEnabledGroups(userId);
+                        userIds = await _groupGetter.GetAllUsersInDefaultEnabledGroups(userId);
 
                         targetUserIds = userIds
-                            .Where(contactId => !mutedByUserIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
-                            .Select(DBforGetters.GetTelegramIDbyUserID)
+                            .Where(contactId => !mutedByUserIds.Contains(_userGetter.GetTelegramIDbyUserID(contactId)))
+                            .Select(_userGetter.GetTelegramIDbyUserID)
                             .ToList();
                         break;
 
@@ -74,12 +77,12 @@ class PrivateUtils
 
                         foreach (int groupId in groupIds)
                         {
-                            userIds.AddRange(DBforGroups.GetAllUsersIdsInGroup(groupId));
+                            userIds.AddRange(await _groupGetter.GetAllUsersIdsInGroup(groupId));
                         }
 
                         targetUserIds = userIds
-                            .Where(contactId => !mutedByUserIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
-                            .Select(DBforGetters.GetTelegramIDbyUserID)
+                            .Where(contactId => !mutedByUserIds.Contains(_userGetter.GetTelegramIDbyUserID(contactId)))
+                            .Select(_userGetter.GetTelegramIDbyUserID)
                             .ToList();
                         break;
 
@@ -87,8 +90,8 @@ class PrivateUtils
                         userIds = _defaultActionGetter.GetAllDefaultUsersActionTargets(userId, TargetTypes.USER, actionId);
 
                         targetUserIds = userIds
-                            .Where(contactId => !mutedByUserIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
-                            .Select(DBforGetters.GetTelegramIDbyUserID)
+                            .Where(contactId => !mutedByUserIds.Contains(_userGetter.GetTelegramIDbyUserID(contactId)))
+                            .Select(_userGetter.GetTelegramIDbyUserID)
                             .ToList();
                         break;
                 }

@@ -24,13 +24,15 @@ public class PrivateUpdateHandler
     private readonly IContactGetter _contactGetterRepository;
     private readonly IDefaultActionGetter _defaultActionGetter;
     private readonly IUserGetter _userGetter;
+    private readonly IGroupGetter _groupGetter;
 
     public PrivateUpdateHandler(
         TGBot tgBot,
         CallbackQueryHandlersFactory handlersFactory,
         IContactGetter contactGetterRepository,
         IDefaultActionGetter defaultActionGetter,
-        IUserGetter userGetter
+        IUserGetter userGetter,
+        IGroupGetter groupGetter
         )
     {
         _tgBot = tgBot;
@@ -38,6 +40,7 @@ public class PrivateUpdateHandler
         _contactGetterRepository = contactGetterRepository;
         _defaultActionGetter = defaultActionGetter;
         _userGetter = userGetter;
+        _groupGetter = groupGetter;
     }
 
     public async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
@@ -76,11 +79,11 @@ public class PrivateUpdateHandler
                 cancellationToken: cancellationToken
             );
 
-            int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
+            int userId = _userGetter.GetUserIDbyTelegramID(chatId);
             string defaultActionData = _defaultActionGetter.GetDefaultActionByUserIDAndType(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
 
             CancellationTokenSource timeoutCTS = new CancellationTokenSource();
-            TGBot.userStates[chatId] = new ProcessVideoDC(link, statusMessage, text, timeoutCTS, _tgBot, _contactGetterRepository, _userGetter);
+            TGBot.userStates[chatId] = new ProcessVideoDC(link, statusMessage, text, timeoutCTS, _tgBot, _contactGetterRepository, _userGetter, _groupGetter);
 
             if (defaultActionData == UsersAction.NO_VALUE) return;
 
@@ -88,7 +91,7 @@ public class PrivateUpdateHandler
             int defaultCondition = int.Parse(defaultActionData.Split(';')[1]);
 
             if (defaultAction == UsersAction.OFF) return;
-            var privateUtils = new PrivateUtils(_tgBot, _contactGetterRepository, _defaultActionGetter, _userGetter);
+            var privateUtils = new PrivateUtils(_tgBot, _contactGetterRepository, _defaultActionGetter, _userGetter, _groupGetter);
             privateUtils.ProcessDefaultSendAction(botClient, chatId, statusMessage, defaultAction, cancellationToken,
                                                                 userId, defaultCondition, timeoutCTS, link, text);
         }
