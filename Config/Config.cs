@@ -63,7 +63,7 @@ namespace TelegramMediaRelayBot
             databaseName = configuration["AppSettings:DatabaseName"]!;
             language = configuration["AppSettings:Language"]!;
             proxy = configuration["AppSettings:Proxy"]!;
-            isUseGalleryDl = bool.Parse(configuration["GalleryDlSettings:Enabled"]!);
+            isUseGalleryDl = bool.Parse(configuration["AppSettings:UseGalleryDl"]!);
 
             videoGetDelay = int.Parse(configuration["MessageDelaySettings:VideoGetDelay"]!);
             contactSendDelay = int.Parse(configuration["MessageDelaySettings:ContactSendDelay"]!);
