@@ -27,5 +27,8 @@ public interface IUserGetter
     string GetUserNameByTelegramID(long telegramID);
     List<long> GetUsersIdForMuteContactId(int contactId);
     List<int> GetExpiredUsersMutes();
+    long GetUserTelegramIdByLink(string link);
+    string GetUserSelfLink(long telegramId);
+    Task<int> GetAllUsersCount();
 }
 
