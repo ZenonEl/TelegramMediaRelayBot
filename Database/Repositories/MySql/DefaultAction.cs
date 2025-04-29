@@ -32,7 +32,7 @@ public class MySqlDefaultAction : IDefaultAction
             VALUES (@userId, @actionId, @targetType, @targetId)";
 
         using var connection = new MySqlConnection(_connectionString);
-        return connection.ExecuteScalar<bool>(query, new {userId, actionId, targetType, targetId});
+        return connection.Execute(query, new { userId, actionId, targetType, targetId }) > 0;
     }
 
     public bool RemoveAllDefaultUsersActionTargets(int userId, string targetType, int actionId)
@@ -42,7 +42,7 @@ public class MySqlDefaultAction : IDefaultAction
             WHERE UserId = @userId AND ActionID = @actionId AND TargetType = @targetType;";
 
         using var connection = new MySqlConnection(_connectionString);
-        return connection.ExecuteScalar<bool>(query, new {userId, actionId, targetType});
+        return connection.Execute(query, new { userId, targetType, actionId }) > 0;
     }
 }
 
@@ -63,7 +63,7 @@ public class MySqlDefaultActionSetter : IDefaultActionSetter
                 ActionCondition = @actionCondition";
 
         using var connection = new MySqlConnection(_connectionString);
-        return connection.ExecuteScalar<bool>(query, new {userId, type, actionCondition});
+        return connection.Execute(query, new { userId, type, actionCondition }) > 0;
     }
 
     public bool SetAutoSendVideoActionToUser(int userId, string action, string type)
@@ -74,7 +74,7 @@ public class MySqlDefaultActionSetter : IDefaultActionSetter
                 Action = @action";
 
         using var connection = new MySqlConnection(_connectionString);
-        return connection.ExecuteScalar<bool>(query, new {userId, type, action});
+        return connection.Execute(query, new { userId, type, action }) > 0;
     }
 }
 

@@ -35,7 +35,7 @@ public class MySqlPrivacySettingsSetter : IPrivacySettingsSetter
             ActionCondition = @actionCondition";
 
         using var connection = new MySqlConnection(_connectionString);
-        return connection.ExecuteScalar<bool>(query, new {userId, type, action, isActive, actionCondition});
+        return connection.Execute(query, new {userId, type, action, isActive, actionCondition}) > 0;
     }
 
     public bool SetPrivacyRuleToDisabled(int userId, string type)
@@ -46,7 +46,7 @@ public class MySqlPrivacySettingsSetter : IPrivacySettingsSetter
             WHERE UserId = @userId AND Type = @type";
 
         using var connection = new MySqlConnection(_connectionString);
-        return connection.ExecuteScalar<bool>(query, new {userId, type});
+        return connection.Execute(query, new {userId, type}) > 0;
     }
 }
 

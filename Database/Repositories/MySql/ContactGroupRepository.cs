@@ -26,7 +26,7 @@ public class MySqlContactGroupRepository(string connectionString) : IContactGrou
             VALUES (@userId, @contactId, @groupId);";
 
         using var connection = new MySqlConnection(_connectionString);
-        return connection.ExecuteScalar<bool>(query, new { userId, contactId, groupId });
+        return connection.Execute(query, new { userId, contactId, groupId }) > 0;
     }
 
     public bool RemoveContactFromGroup(int userId, int contactId, int groupId)
@@ -36,9 +36,8 @@ public class MySqlContactGroupRepository(string connectionString) : IContactGrou
             WHERE UserId = @userId AND ContactId = @contactId AND GroupId = @groupId";
 
         using var connection = new MySqlConnection(_connectionString);
-        return connection.ExecuteScalar<bool>(query, new { userId, contactId, groupId });
+        return connection.Execute(query, new { userId, contactId, groupId }) > 0;
     }
-
 
     public bool CheckUserAndContactConnect(int userId, int contactId)
     {
