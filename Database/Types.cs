@@ -17,6 +17,13 @@ public class ButtonData
     public required string CallbackData { get; set; }
 }
 
+public class PrivacyRuleResult
+{
+    public required string Type { get; set; }
+    public required string Action { get; set; }
+    public required string TargetValue { get; set; }
+}
+
 public class ContactsStatus
 {
     public const string WAITING_FOR_ACCEPT = "waiting_for_accept";
@@ -32,6 +39,18 @@ public class UsersActionTypes
 public class PrivacyRuleType
 {
     public const string ALLOW_CONTENT_FORWARDING = "allow_forwarding";
+    public const string SOCIAL_SITE_FILTER = "social_sites_filter";
+    public const string NSFW_SITE_FILTER = "nsfw_sites_filter";
+    public const string UNIFIED_SITE_FILTER = "unified_sites_filter";
+    public const string SITES_BY_DOMAIN_FILTER = "sites_by_domain_filter";
+}
+
+public class PrivacyRuleAction
+{
+    public const string SOCIAL_FILTER = "block_social_sites";
+    public const string NSFW_FILTER = "block_nsfw_sites";
+    public const string UNIFIED_FILTER = "block_unified_sites";
+    public const string DOMAIN_FILTER = "block_sites_by_domain";
 }
 
 public class UsersAction
