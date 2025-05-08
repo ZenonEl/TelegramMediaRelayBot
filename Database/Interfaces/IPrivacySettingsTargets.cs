@@ -9,20 +9,20 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
+
 using TelegramMediaRelayBot.TelegramBot.SiteFilter;
 
 namespace TelegramMediaRelayBot.Database.Interfaces;
 
-public interface IPrivacySettingsSetter
+
+public interface IPrivacySettingsTargetsSetter
 {
-    Task<bool> SetPrivacyRule(int userId, string type, string action, bool isActive, string actionCondition);
-    bool SetPrivacyRuleToDisabled(int userId, string type);
+    public Task<bool> SetPrivacyRuleTarget(int userId, int privacySettingId, string targetType, string targetValue);
+    public Task<bool> SetToRemovePrivacyRuleTarget(int privacySettingId, string targetValue);
 }
 
-public interface IPrivacySettingsGetter
+public interface IPrivacySettingsTargetsGetter
 {
-    bool GetIsActivePrivacyRule(int userId, string type);
-    Task<int> GetPrivacyRuleId(int userId, string type);
-    Task<List<PrivacyRuleResult>> GetAllActiveUserRulesWithTargets(int userId);
+    public Task<bool> CheckPrivacyRuleTargetExists(int userId, string type);
+    public Task<List<string>> GetAllActiveUserRuleTargets(int userId);
 }
-
