@@ -131,6 +131,28 @@ public class Users
         int userId = userGetter.GetUserIDbyTelegramID(chatId);
         return defaultActionSetter.SetAutoSendVideoActionToUser(userId, action, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
     }
+
+    public static async Task ViewSiteFilterMenu(ITelegramBotClient botClient, Update update)
+    {
+        await CommonUtilities.SendMessage(
+            botClient,
+            update,
+            UsersPrivacyMenuKB.GetSiteFilterKeyboardMarkup(),
+            cancellationToken,
+            Config.GetResourceString("SiteFilterMenuText")
+        );
+    }
+
+    public static async Task ViewSiteFilterSettingsMenu(ITelegramBotClient botClient, Update update)
+    {
+        await CommonUtilities.SendMessage(
+            botClient,
+            update,
+            UsersPrivacyMenuKB.GetSiteFilterSettingsKeyboardMarkup(),
+            cancellationToken,
+            Config.GetResourceString("SiteFilterMenuText")
+        );
+    }
 }
 
 public class UsersDB
