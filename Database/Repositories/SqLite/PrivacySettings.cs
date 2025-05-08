@@ -24,7 +24,7 @@ public class SqlitePrivacySettingsSetter : IPrivacySettingsSetter
         _connectionString = connectionString;
     }
 
-    public bool SetPrivacyRule(int userId, string type, string action, bool isActive, string actionCondition)
+    public async Task<bool> SetPrivacyRule(int userId, string type, string action, bool isActive, string actionCondition)
     {
         const string query = @"
             INSERT INTO PrivacySettings (UserId, Type, Action, IsActive, ActionCondition)
@@ -36,7 +36,7 @@ public class SqlitePrivacySettingsSetter : IPrivacySettingsSetter
                 ActionCondition = @actionCondition";
 
         using var connection = new SqliteConnection(_connectionString);
-        return connection.Execute(query, new {userId, type, action, isActive, actionCondition}) > 0;
+        return await connection.ExecuteAsync(query, new {userId, type, action, isActive, actionCondition}) > 0;
     }
 
     public bool SetPrivacyRuleToDisabled(int userId, string type)
@@ -69,5 +69,45 @@ public class SqlitePrivacySettingsGetter : IPrivacySettingsGetter
 
         using var connection = new SqliteConnection(_connectionString);
         return connection.ExecuteScalar<bool>(query, new {userId, type});
+    }
+
+    public async Task<int> GetPrivacyRuleId(int userId, string type)
+    {
+        const string query = @"
+            SELECT ID
+            FROM PrivacySettings
+            WHERE UserId = @userId AND Type = @type";
+
+        using var connection = new SqliteConnection(_connectionString);
+        return await connection.ExecuteScalarAsync<int>(query, new {userId, type});
+    }
+
+    public async Task<List<PrivacyRuleResult>> GetAllActiveUserRulesWithTargets(int userId)
+    {
+        const string query = @"
+            SELECT 
+                PS.Type,
+                PS.Action,
+                PST.TargetValue
+            FROM PrivacySettings PS
+            LEFT JOIN PrivacySettingsTargets PST ON PS.Id = PST.PrivacySettingId
+            WHERE PS.UserId = @userId 
+                AND PS.IsActive = 1
+                AND PS.Action IN @actions";
+
+        var allowedActions = new[] {
+            PrivacyRuleAction.SOCIAL_FILTER,
+            PrivacyRuleAction.NSFW_FILTER,
+            PrivacyRuleAction.UNIFIED_FILTER,
+            PrivacyRuleAction.DOMAIN_FILTER
+        };
+
+        using var connection = new SqliteConnection(_connectionString);
+        var result = await connection.QueryAsync<PrivacyRuleResult>(query, new {
+            userId,
+            actions = allowedActions
+        });
+        
+        return result.ToList();
     }
 }
