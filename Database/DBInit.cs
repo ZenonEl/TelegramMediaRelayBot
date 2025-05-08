@@ -18,6 +18,7 @@ using TelegramMediaRelayBot.Database.Repositories.Sqlite;
 using TelegramMediaRelayBot.TelegramBot;
 using TelegramMediaRelayBot.TelegramBot.Handlers;
 using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
+using TelegramMediaRelayBot.TelegramBot.SiteFilter;
 
 
 namespace TelegramMediaRelayBot.Database;
@@ -56,6 +57,9 @@ public class FluentDBMigrator
         var builder = WebApplication.CreateBuilder(args);
         builder.Services.AddSingleton<ITelegramBotClient>(_ =>
             new TelegramBotClient(Config.telegramBotToken!));
+
+        builder.Services.AddSingleton<ILinkCategorizer>(_ =>
+                    new HashTableLinkCategorizer(new DomainsLoader()));
 
         builder.Services.AddSingleton<CallbackQueryHandlersFactory>();
         builder.Services.AddSingleton<TGBot>();
@@ -98,6 +102,10 @@ public class FluentDBMigrator
                     new MySqlPrivacySettingsSetter(Config.sqlConnectionString!));
                 builder.Services.AddSingleton<IPrivacySettingsGetter>(_ =>
                     new MySqlPrivacySettingsGetter(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IPrivacySettingsTargetsSetter>(_ =>
+                    new MySqlPrivacySettingsTargetsSetter(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IPrivacySettingsTargetsGetter>(_ =>
+                    new MySqlPrivacySettingsTargetsGetter(Config.sqlConnectionString!));
 
                 builder.Services.AddSingleton<IDefaultAction>(_ =>
                     new MySqlDefaultAction(Config.sqlConnectionString!));
