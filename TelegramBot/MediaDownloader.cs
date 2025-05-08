@@ -17,6 +17,7 @@ using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Handlers;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.TelegramBot.SiteFilter;
 
 
 namespace TelegramMediaRelayBot;
@@ -28,6 +29,8 @@ public partial class TGBot
     private readonly CallbackQueryHandlersFactory _handlersFactory;
     private readonly PrivateUpdateHandler _updateHandler;
     private readonly IPrivacySettingsGetter _privacySettingsGetter;
+    private readonly ILinkCategorizer _categorizer;
+    private readonly IUserFilterService _userFilter;
     public static Dictionary<long, IUserState> userStates = [];
     public static CancellationToken cancellationToken;
 
@@ -38,7 +41,8 @@ public partial class TGBot
         IContactGetter contactGetterRepository,
         IDefaultActionGetter defaultActionGetter,
         IPrivacySettingsGetter privacySettingsGetter,
-        IGroupGetter groupGetter
+        IGroupGetter groupGetter,
+        ILinkCategorizer categorizer
         )
     {
         _userRepo = userRepo;
@@ -53,6 +57,8 @@ public partial class TGBot
             groupGetter
             );
         _privacySettingsGetter = privacySettingsGetter;
+        _categorizer = categorizer;
+        _userFilter = new DefaultUserFilterService(_userGetter, _privacySettingsGetter);
     }
 
     public async Task Start()
@@ -144,14 +150,14 @@ public partial class TGBot
         }
     }
 
-    public async Task HandleMediaRequest(ITelegramBotClient botClient, string videoUrl, long chatId, Message statusMessage,
+    public async Task HandleMediaRequest(ITelegramBotClient botClient, string contentUrl, long chatId, Message statusMessage,
                                                 List<long>? targetUserIds = null, bool groupChat = false, string caption = "")
     {
-        List<byte[]>? mediaFiles = await VideoGet.DownloadMedia(botClient, videoUrl, statusMessage, cancellationToken);
+        List<byte[]>? mediaFiles = await VideoGet.DownloadMedia(botClient, contentUrl, statusMessage, cancellationToken);
         if (mediaFiles?.Count > 0)
         {
             Log.Debug($"Downloaded {mediaFiles.Count} files");
-            await SendMediaToTelegram(botClient, chatId, mediaFiles, statusMessage, targetUserIds, groupChat, caption);
+            await SendMediaToTelegram(botClient, chatId, mediaFiles, statusMessage, targetUserIds, contentUrl, groupChat, caption);
             return;
         }
 
@@ -159,7 +165,7 @@ public partial class TGBot
     }
 
     private async Task SendMediaToTelegram(ITelegramBotClient botClient, long chatId, List<byte[]> mediaFiles,
-                                                        Message statusMessage, List<long>? targetUserIds, bool groupChat = false,
+                                                        Message statusMessage, List<long>? targetUserIds, string contentUrl, bool groupChat = false,
                                                         string caption = "")
     {
         var groupedFiles = mediaFiles.GroupBy(CommonUtilities.DetermineFileType)
@@ -196,7 +202,7 @@ public partial class TGBot
 
                     if (!groupChat && targetUserIds != null && targetUserIds.Count > 0) 
                         await SendVideoToContacts(chatId, botClient, statusMessage, targetUserIds,
-                            savedMediaGroupIDs: savedMediaGroupIDs, caption: text,
+                            savedMediaGroupIDs: savedMediaGroupIDs, contentUrl, caption: text,
                             lastMediaGroup: lastMediaGroup);
                     
                     await Task.Delay(1000, cancellationToken);
@@ -212,18 +218,26 @@ public partial class TGBot
         }
     }
 
-    private async Task SendVideoToContacts(long telegramId, ITelegramBotClient botClient,
-                                                Message statusMessage, List<long> targetUserIds,
-                                                List<InputMedia> savedMediaGroupIDs, string caption = "", 
-                                                bool lastMediaGroup = false)
+    private async Task SendVideoToContacts(
+        long telegramId,
+        ITelegramBotClient botClient,
+        Message statusMessage,
+        List<long> targetUserIds,
+        List<InputMedia> savedMediaGroupIDs,
+        string contentUrl,
+        string caption = "",
+        bool lastMediaGroup = false
+        )
     {
         int userId = _userGetter.GetUserIDbyTelegramID(telegramId);
-        List<long> mutedByUserIds = _userGetter.GetUsersIdForMuteContactId(userId);
-        List<long> filteredContactUserTGIds = targetUserIds.Except(mutedByUserIds).ToList();
         bool isDisallowContentForwarding = _privacySettingsGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING);
 
-        Log.Information($"Sending video to ({filteredContactUserTGIds.Count}) users.");
-        Log.Information($"User {userId} is muted by: {mutedByUserIds.Count}");
+        List<long> mutedByUserIds = _userGetter.GetUsersIdForMuteContactId(userId);
+        List<long> filteredContactUserTGIds = targetUserIds.Except(mutedByUserIds).ToList();
+        List<long> usersAllowedByLink = await _userFilter.FilterUsersByLink(filteredContactUserTGIds, contentUrl, _categorizer);
+
+        Log.Information($"Sending video to ({usersAllowedByLink.Count}) users.");
+        Log.Debug($"User {userId} is muted by: {mutedByUserIds.Count}");
 
         DateTime now = DateTime.Now;
         string name = _userGetter.GetUserNameByTelegramID(telegramId);
@@ -231,7 +245,7 @@ public partial class TGBot
                                     name, now.ToString("yyyy_MM_dd_HH_mm_ss"), MyRegex().Replace(name, "_"), caption);
         int sentCount = 0;
 
-        foreach (long contactUserTgId in filteredContactUserTGIds)
+        foreach (long contactUserTgId in usersAllowedByLink)
         {
             try
             {
