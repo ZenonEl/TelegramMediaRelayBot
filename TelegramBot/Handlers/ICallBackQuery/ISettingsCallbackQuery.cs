@@ -304,10 +304,30 @@ public class UserEnablePermanentContentSpoilerCommand : IBotCallbackQueryHandler
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         int userId = _userGetter.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id);
-        bool actionStatus = _privacySettingsSetter.SetPrivacyRule(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING, "disallow_content_forwarding", true, "always");
+        bool actionStatus = await _privacySettingsSetter.SetPrivacyRule(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING, "disallow_content_forwarding", true, "always");
         string statusMessage = actionStatus
             ? Config.GetResourceString("SuccessActionResult")
             : Config.GetResourceString("ErrorActionResult");
         await Users.ViewPrivacyMenu(botClient, update, statusMessage);
+    }
+}
+
+public class UserUpdateSiteStopListCommand : IBotCallbackQueryHandlers
+{
+    public string Name => "user_update_site_stop_list";
+
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        await Users.ViewSiteFilterMenu(botClient, update);
+    }
+}
+
+public class UserSetSiteStopListSettingsCommand : IBotCallbackQueryHandlers
+{
+    public string Name => "user_set_site_stop_list_settings";
+
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        await Users.ViewSiteFilterSettingsMenu(botClient, update);
     }
 }

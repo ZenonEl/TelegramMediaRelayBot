@@ -166,3 +166,156 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
         );
     }
 }
+
+public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
+{
+    private readonly IPrivacySettingsSetter _privacySettingsSetter;
+    private readonly IPrivacySettingsGetter _privacySettingsGetter;
+    private readonly IPrivacySettingsTargetsSetter _privacySettingsTargetsSetter;
+    private readonly IPrivacySettingsTargetsGetter _privacySettingsTargetsGetter;
+    private readonly IUserGetter _userGetter;
+    private bool isActive = false;
+
+    public SetPrivacySiteFilterCommand(
+        IPrivacySettingsSetter privacySettingsSetter,
+        IPrivacySettingsGetter privacySettingsGetter,
+        IPrivacySettingsTargetsSetter privacySettingsTargetsSetter,
+        IPrivacySettingsTargetsGetter privacySettingsTargetsGetter,
+        IUserGetter userGetter
+    )
+    {
+        _privacySettingsSetter = privacySettingsSetter; 
+        _privacySettingsGetter = privacySettingsGetter;
+        _privacySettingsTargetsSetter = privacySettingsTargetsSetter;
+        _privacySettingsTargetsGetter = privacySettingsTargetsGetter;
+        _userGetter = userGetter;
+    }
+
+    public string Name => "user_set_site_stop_list:";
+
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        string callbackQueryData = update.CallbackQuery!.Data!.Split(':')[1];
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        bool switchResult = false;
+
+        switch (callbackQueryData)
+        {
+            case "social":
+                switchResult = await SwitchSocial(userId);
+                break;
+            case "nsfw":
+                switchResult = await SwitchNSFW(userId);
+                break;
+            case "unified":
+                switchResult = await SwitchUnified(userId);
+                break;
+            case "domains":
+                switchResult = await SwitchDomains(userId);
+                break;
+            case "add_domains":
+                await AddDomains(chatId, userId, update, botClient, ct);
+                return;
+            case "remove_domains":
+                await RemoveDomains(chatId, userId, update, botClient, ct);
+                return;
+        }
+
+        string text = switchResult ? Config.GetResourceString("SuccessActionResult") : Config.GetResourceString("ErrorActionResult");
+        string actionText = !isActive ? Config.GetResourceString("Enable") : Config.GetResourceString("Disable");
+
+        await CommonUtilities.SendMessage(
+            botClient,
+            update,
+            KeyboardUtils.GetReturnButtonMarkup("user_update_site_stop_list"),
+            ct,
+            $"{text} ({actionText})"
+        );
+    }
+
+    private async Task<bool> SwitchSocial(int userId)
+    {
+        isActive = _privacySettingsGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.SOCIAL_SITE_FILTER);
+        return await _privacySettingsSetter.SetPrivacyRule(userId, PrivacyRuleType.SOCIAL_SITE_FILTER, PrivacyRuleAction.SOCIAL_FILTER, !isActive, "always");
+    }
+
+    private async Task<bool> SwitchNSFW(int userId)
+    {
+        isActive = _privacySettingsGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.NSFW_SITE_FILTER);
+        return await _privacySettingsSetter.SetPrivacyRule(userId, PrivacyRuleType.NSFW_SITE_FILTER, PrivacyRuleAction.NSFW_FILTER, !isActive, "always");
+    }
+
+    private async Task<bool> SwitchUnified(int userId)
+    {
+        isActive = _privacySettingsGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.UNIFIED_SITE_FILTER);
+        return await _privacySettingsSetter.SetPrivacyRule(userId, PrivacyRuleType.UNIFIED_SITE_FILTER, PrivacyRuleAction.UNIFIED_FILTER, !isActive, "always");
+    }
+
+    private async Task<bool> SwitchDomains(int userId)
+    {
+        isActive = _privacySettingsGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.SITES_BY_DOMAIN_FILTER);
+        return await _privacySettingsSetter.SetPrivacyRule(userId, PrivacyRuleType.SITES_BY_DOMAIN_FILTER, PrivacyRuleAction.DOMAIN_FILTER, !isActive, "always");
+    }
+
+    private async Task AddDomains(long chatId, int userId, Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        int privacyRuleId = await _privacySettingsGetter.GetPrivacyRuleId(userId, PrivacyRuleType.SITES_BY_DOMAIN_FILTER);
+        
+        if (privacyRuleId == 0) 
+        {
+            await CommonUtilities.SendMessage(
+                botClient,
+                update,
+                KeyboardUtils.GetReturnButtonMarkup("user_update_site_stop_list"),
+                ct,
+                Config.GetResourceString("DomainFilterNotEnabledError")
+            );
+            return;
+        }
+
+        await botClient.SendMessage(
+            chatId, 
+            Config.GetResourceString("EnterDomainsToAddPrompt"), 
+            cancellationToken: ct
+        );
+
+        TGBot.userStates[chatId] = new ProcessUserAddDomainFilterState(
+                privacyRuleId,
+                _privacySettingsTargetsSetter,
+                userId,
+                false
+            );
+    }
+
+    private async Task RemoveDomains(long chatId, int userId, Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        bool isPrivacyTargetExist = await _privacySettingsTargetsGetter.CheckPrivacyRuleTargetExists(userId, PrivacyRuleType.SITES_BY_DOMAIN_FILTER);
+        
+        if (!isPrivacyTargetExist) 
+        {
+            await CommonUtilities.SendMessage(
+                botClient,
+                update,
+                KeyboardUtils.GetReturnButtonMarkup("user_update_site_stop_list"),
+                ct,
+                Config.GetResourceString("NoDomainsAddedError")
+            );
+            return;
+        }
+
+        int privacyRuleId = await _privacySettingsGetter.GetPrivacyRuleId(userId, PrivacyRuleType.SITES_BY_DOMAIN_FILTER);
+        await botClient.SendMessage(
+            chatId, 
+            Config.GetResourceString("EnterDomainsToRemovePrompt"), 
+            cancellationToken: ct
+        );
+
+        TGBot.userStates[chatId] = new ProcessUserAddDomainFilterState(
+                privacyRuleId,
+                _privacySettingsTargetsSetter,
+                userId,
+                true
+            );
+    }
+}
