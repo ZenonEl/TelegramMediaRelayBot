@@ -128,6 +128,13 @@ public static class CommonUtilities
                             && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
     }
 
+    public static string ExtractDomain(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            return string.Empty;
+        return uri.Host.ToLower();
+    }
+
     public static string ParseStartCommand(string message)
     {
         string[] parts = message.Split(' ', StringSplitOptions.RemoveEmptyEntries);

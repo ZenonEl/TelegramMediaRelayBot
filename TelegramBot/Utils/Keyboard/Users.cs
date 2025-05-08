@@ -116,6 +116,77 @@ public static class UsersPrivacyMenuKB
         });
         return inlineKeyboard;
     }
+
+    public static InlineKeyboardMarkup GetSiteFilterKeyboardMarkup()
+    {
+        return new InlineKeyboardMarkup(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(
+                    Config.GetResourceString("SocialFilterButton"), 
+                    "user_set_site_stop_list:social"
+                ), 
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(
+                    Config.GetResourceString("NSFWFilterButton"),
+                    "user_set_site_stop_list:nsfw"
+                ),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(
+                    Config.GetResourceString("UnifiedFilterButton"),
+                    "user_set_site_stop_list:unified"
+                ),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(
+                    Config.GetResourceString("DomainFilterButton"),
+                    "user_set_site_stop_list:domains"
+                ),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(
+                    Config.GetResourceString("ConfigureDomainsButton"),
+                    "user_set_site_stop_list_settings"
+                ),
+            },
+            new[]
+            {
+                KeyboardUtils.GetReturnButton("privacy_menu_and_safety")
+            },
+        });
+    }
+
+    public static InlineKeyboardMarkup GetSiteFilterSettingsKeyboardMarkup()
+    {
+        return new InlineKeyboardMarkup(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(
+                    Config.GetResourceString("AddDomainButton"),
+                    "user_set_site_stop_list:add_domains"
+                ),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(
+                    Config.GetResourceString("RemoveDomainButton"),
+                    "user_set_site_stop_list:remove_domains"
+                ),
+            },
+            new[]
+            {
+                KeyboardUtils.GetReturnButton("user_update_site_stop_list")
+            },
+        });
+    }
 }
 
 public static class UsersDefaultActionsMenuKB
