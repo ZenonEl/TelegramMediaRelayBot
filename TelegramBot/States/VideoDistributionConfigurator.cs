@@ -175,7 +175,7 @@ public class ProcessVideoDC : IUserState
                         }
                         else
                         {
-                            await botClient.SendMessage(chatId, Config.GetResourceString("InvalidInputNumbers"), cancellationToken: cancellationToken);
+                            await botClient.SendMessage(chatId, Config.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
                         }
                     }
                     else
@@ -188,7 +188,7 @@ public class ProcessVideoDC : IUserState
                         }
                         else
                         {
-                            await botClient.SendMessage(chatId, Config.GetResourceString("InvalidInputNumbers"), cancellationToken: cancellationToken);
+                            await botClient.SendMessage(chatId, Config.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
                         }
                     }
                 }

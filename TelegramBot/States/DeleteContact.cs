@@ -73,7 +73,7 @@ public class ProcessRemoveUser : IUserState
                     }
                     else
                     {
-                        await botClient.SendMessage(chatId, Config.GetResourceString("InvalidInputNumbers"), cancellationToken: cancellationToken);
+                        await botClient.SendMessage(chatId, Config.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
                     }
                 }
                 break;
