@@ -385,7 +385,7 @@ public class SqliteContactGetter(string connectionString) : IContactGetter
 
     public int GetContactIDByLink(string link)
     {
-        const string query = "SELECT ID FROM User WHERE Link = @link";
+        const string query = "SELECT ID FROM Users WHERE Link = @link";
         try
         {
             using var connection = new SqliteConnection(_connectionString);
@@ -401,7 +401,7 @@ public class SqliteContactGetter(string connectionString) : IContactGetter
 
     public int GetContactByTelegramID(long telegramID)
     {
-        const string query = "SELECT ID FROM User WHERE TelegramID = @telegramID";
+        const string query = "SELECT ID FROM Users WHERE TelegramID = @telegramID";
         try
         {
             using var connection = new SqliteConnection(_connectionString);

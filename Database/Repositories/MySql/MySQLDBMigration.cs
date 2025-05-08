@@ -11,10 +11,11 @@
 
 using System.Data;
 using FluentMigrator;
+
+
 namespace TelegramMediaRelayBot.Database;
 
-// MySQL Implementation
-[Migration(20240427)]
+[Migration(20241439)]
 public class MySQLDBMigration : BaseDBMigration
 {
     protected override string DBType => "mysql";
@@ -29,16 +30,14 @@ public class MySQLDBMigration : BaseDBMigration
         if (Config.dbType != "mysql") return;
 
         // ========== Contacts ==========
-        Create.PrimaryKey("PK_Contacts")
-            .OnTable("Contacts").Columns("UserId", "ContactId");
 
         Create.ForeignKey("FK_Contacts_UserId")
             .FromTable("Contacts").ForeignColumn("UserId")
-            .ToTable("Users").PrimaryColumn("ID");
+            .ToTable("Users").PrimaryColumn("ID").OnDelete(Rule.Cascade);
 
         Create.ForeignKey("FK_Contacts_ContactId")
             .FromTable("Contacts").ForeignColumn("ContactId")
-            .ToTable("Users").PrimaryColumn("ID");
+            .ToTable("Users").PrimaryColumn("ID").OnDelete(Rule.Cascade);
 
         // ========== MutedContacts ==========
         Create.UniqueConstraint("UQ_MutedContacts")
@@ -47,11 +46,11 @@ public class MySQLDBMigration : BaseDBMigration
 
         Create.ForeignKey("FK_MutedContacts_MutedByUserId")
             .FromTable("MutedContacts").ForeignColumn("MutedByUserId")
-            .ToTable("Users").PrimaryColumn("ID");
+            .ToTable("Users").PrimaryColumn("ID").OnDelete(Rule.Cascade);
 
         Create.ForeignKey("FK_MutedContacts_MutedContactId")
             .FromTable("MutedContacts").ForeignColumn("MutedContactId")
-            .ToTable("Users").PrimaryColumn("ID");
+            .ToTable("Users").PrimaryColumn("ID").OnDelete(Rule.Cascade);
 
         // ========== UsersGroups ==========
         Create.UniqueConstraint("UQ_UsersGroups")
@@ -60,7 +59,7 @@ public class MySQLDBMigration : BaseDBMigration
 
         Create.ForeignKey("FK_UsersGroups_UserId")
             .FromTable("UsersGroups").ForeignColumn("UserId")
-            .ToTable("Users").PrimaryColumn("ID");
+            .ToTable("Users").PrimaryColumn("ID").OnDelete(Rule.Cascade);
 
         // ========== GroupMembers ==========
         Create.UniqueConstraint("UQ_GroupMembers")
@@ -69,11 +68,11 @@ public class MySQLDBMigration : BaseDBMigration
 
         Create.ForeignKey("FK_GroupMembers_UserId")
             .FromTable("GroupMembers").ForeignColumn("UserId")
-            .ToTable("Users").PrimaryColumn("ID");
+            .ToTable("Users").PrimaryColumn("ID").OnDelete(Rule.Cascade);
 
         Create.ForeignKey("FK_GroupMembers_GroupId")
             .FromTable("GroupMembers").ForeignColumn("GroupId")
-            .ToTable("UsersGroups").PrimaryColumn("ID");
+            .ToTable("UsersGroups").PrimaryColumn("ID").OnDelete(Rule.Cascade);
 
         // ========== DefaultUsersActions ==========
         Create.UniqueConstraint("UQ_DefaultUsersActions")
@@ -82,7 +81,7 @@ public class MySQLDBMigration : BaseDBMigration
 
         Create.ForeignKey("FK_DefaultUsersActions_UserId")
             .FromTable("DefaultUsersActions").ForeignColumn("UserId")
-            .ToTable("Users").PrimaryColumn("ID");
+            .ToTable("Users").PrimaryColumn("ID").OnDelete(Rule.Cascade);
 
         // ========== DefaultUsersActionTargets ==========
         Create.UniqueConstraint("UQ_DefaultUsersActionTargets")
@@ -104,6 +103,6 @@ public class MySQLDBMigration : BaseDBMigration
 
         Create.ForeignKey("FK_PrivacySettings_UserId")
             .FromTable("PrivacySettings").ForeignColumn("UserId")
-            .ToTable("Users").PrimaryColumn("ID");
+            .ToTable("Users").PrimaryColumn("ID").OnDelete(Rule.Cascade);
     }
 }

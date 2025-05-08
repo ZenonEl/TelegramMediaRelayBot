@@ -130,7 +130,7 @@ public class MySqlDefaultActionGetter : IDefaultActionGetter
         try
         {
             using var connection = new MySqlConnection(_connectionString);
-            
+
             var result = connection.QueryFirstOrDefault<(string Action, string ActionCondition)>(
                 @"SELECT Action, ActionCondition
                 FROM DefaultUsersActions
