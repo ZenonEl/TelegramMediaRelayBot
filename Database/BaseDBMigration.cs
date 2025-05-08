@@ -37,12 +37,11 @@ public abstract class BaseDBMigration : Migration
                 .WithColumn("Status").AsString(255).Nullable();
         }
 
-        // Contacts (с разной реализацией PK для разных БД)
+        // Contacts
         if (!Schema.Table("Contacts").Exists())
         {
             if (DBType == "sqlite")
             {
-                // Для SQLite создаем таблицу с inline PK
                 Execute.Sql(@"
                     CREATE TABLE Contacts (
                         UserId INTEGER NOT NULL,
@@ -53,7 +52,6 @@ public abstract class BaseDBMigration : Migration
             }
             else
             {
-                // Для других БД стандартный подход
                 Create.Table("Contacts")
                     .WithColumn("UserId").AsInt32().NotNullable()
                     .WithColumn("ContactId").AsInt32().NotNullable()
@@ -61,7 +59,7 @@ public abstract class BaseDBMigration : Migration
             }
         }
 
-        // Остальные таблицы создаются одинаково для всех БД
+        // MutedContacts
         if (!Schema.Table("MutedContacts").Exists())
         {
             Create.Table("MutedContacts")
@@ -128,6 +126,17 @@ public abstract class BaseDBMigration : Migration
                 .WithColumn("Action").AsString(255).NotNullable()
                 .WithColumn("IsActive").AsBoolean().NotNullable().WithDefaultValue(true)
                 .WithColumn("ActionCondition").AsString(255).Nullable();
+        }
+
+        // PrivacySettingsTargets
+        if (!Schema.Table("PrivacySettingsTargets").Exists())
+        {
+            Create.Table("PrivacySettingsTargets")
+                .WithColumn("ID").AsInt32().PrimaryKey().Identity()
+                .WithColumn("UserId").AsInt32().NotNullable()
+                .WithColumn("PrivacySettingId").AsInt32().NotNullable()
+                .WithColumn("TargetType").AsString(255).NotNullable()
+                .WithColumn("TargetValue").AsString(255).NotNullable();
         }
     }
 

@@ -104,5 +104,14 @@ public class MySQLDBMigration : BaseDBMigration
         Create.ForeignKey("FK_PrivacySettings_UserId")
             .FromTable("PrivacySettings").ForeignColumn("UserId")
             .ToTable("Users").PrimaryColumn("ID").OnDelete(Rule.Cascade);
+
+        // ========== PrivacySettingsTargets ==========
+        Create.UniqueConstraint("UQ_PrivacySettingsTargets")
+            .OnTable("PrivacySettingsTargets")
+            .Columns("UserId", "TargetValue");
+
+        Create.ForeignKey("FK_PrivacySettingsTargets_PrivacySettingId")
+            .FromTable("PrivacySettingsTargets").ForeignColumn("PrivacySettingId")
+            .ToTable("PrivacySettings").PrimaryColumn("ID").OnDelete(Rule.Cascade);
     }
 }
