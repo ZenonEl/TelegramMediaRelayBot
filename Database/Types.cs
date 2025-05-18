@@ -38,6 +38,7 @@ public class UsersActionTypes
 
 public class PrivacyRuleType
 {
+    public const string WHO_CAN_FIND_ME_BY_LINK = "who_can_find_me_by_link";
     public const string ALLOW_CONTENT_FORWARDING = "allow_forwarding";
     public const string SOCIAL_SITE_FILTER = "social_sites_filter";
     public const string NSFW_SITE_FILTER = "nsfw_sites_filter";
@@ -47,6 +48,9 @@ public class PrivacyRuleType
 
 public class PrivacyRuleAction
 {
+    public const string ALL_CAN_FIND_ME_BY_LINK = "all_can_find_me_by_link";
+    public const string GENERAL_CAN_FIND_ME_BY_LINK = "general_can_find_me_by_link";
+    public const string NOBODY_CAN_FIND_ME_BY_LINK = "nobody_can_find_me_by_link";
     public const string SOCIAL_FILTER = "block_social_sites";
     public const string NSFW_FILTER = "block_nsfw_sites";
     public const string UNIFIED_FILTER = "block_unified_sites";
