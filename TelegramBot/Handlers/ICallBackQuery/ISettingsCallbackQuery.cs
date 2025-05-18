@@ -225,6 +225,103 @@ public class ProcessUserUpdateSelfLinkWithContactsCommand : IBotCallbackQueryHan
     }
 }
 
+public class ProcessUserUpdateWhoCanFindMeByLinkCommand : IBotCallbackQueryHandlers
+{
+    public string Name => "user_update_who_can_find_me_by_link";
+
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        await Users.ViewWhoCanFindMeByLinkMenu(botClient, update);
+    }
+}
+
+public class ProcessUserSetNobodyWhoCanFindMeByLinkCommand : IBotCallbackQueryHandlers
+{
+    private readonly IUserGetter _userGetter;
+    private readonly IPrivacySettingsSetter _privacySettingsSetter;
+
+    public ProcessUserSetNobodyWhoCanFindMeByLinkCommand(
+        IUserGetter userGetter,
+        IPrivacySettingsSetter privacySettingsSetter
+    )
+    {
+        _userGetter = userGetter;
+        _privacySettingsSetter = privacySettingsSetter;
+    }
+
+    public string Name => "user_set_nobody_who_can_find_me_by_link";
+
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        long telegramId = CommonUtilities.GetIDfromUpdate(update);
+        int userId = _userGetter.GetUserIDbyTelegramID(telegramId);
+        await _privacySettingsSetter.SetPrivacyRule(
+            userId,
+            PrivacyRuleType.WHO_CAN_FIND_ME_BY_LINK,
+            PrivacyRuleAction.NOBODY_CAN_FIND_ME_BY_LINK,
+            true,
+            "always");
+    }
+}
+
+public class ProcessUserSetGeneralWhoCanFindMeByLinkCommand : IBotCallbackQueryHandlers
+{
+    private readonly IUserGetter _userGetter;
+    private readonly IPrivacySettingsSetter _privacySettingsSetter;
+
+    public ProcessUserSetGeneralWhoCanFindMeByLinkCommand(
+        IUserGetter userGetter,
+        IPrivacySettingsSetter privacySettingsSetter
+    )
+    {
+        _userGetter = userGetter;
+        _privacySettingsSetter = privacySettingsSetter;
+    }
+
+    public string Name => "user_set_general_who_can_find_me_by_link";
+
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        long telegramId = CommonUtilities.GetIDfromUpdate(update);
+        int userId = _userGetter.GetUserIDbyTelegramID(telegramId);
+        await _privacySettingsSetter.SetPrivacyRule(
+            userId,
+            PrivacyRuleType.WHO_CAN_FIND_ME_BY_LINK,
+            PrivacyRuleAction.GENERAL_CAN_FIND_ME_BY_LINK,
+            true,
+            "always");
+    }
+}
+
+public class ProcessUserSetAllWhoCanFindMeByLinkCommand : IBotCallbackQueryHandlers
+{
+    private readonly IUserGetter _userGetter;
+    private readonly IPrivacySettingsSetter _privacySettingsSetter;
+
+    public ProcessUserSetAllWhoCanFindMeByLinkCommand(
+        IUserGetter userGetter,
+        IPrivacySettingsSetter privacySettingsSetter
+    )
+    {
+        _userGetter = userGetter;
+        _privacySettingsSetter = privacySettingsSetter;
+    }
+
+    public string Name => "user_set_all_who_can_find_me_by_link";
+
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        long telegramId = CommonUtilities.GetIDfromUpdate(update);
+        int userId = _userGetter.GetUserIDbyTelegramID(telegramId);
+        await _privacySettingsSetter.SetPrivacyRule(
+            userId,
+            PrivacyRuleType.WHO_CAN_FIND_ME_BY_LINK,
+            PrivacyRuleAction.ALL_CAN_FIND_ME_BY_LINK,
+            true,
+            "always");
+    }
+}
+
 public class ProcessUserUpdateSelfLinkWithNewContactsCommand : IBotCallbackQueryHandlers
 {
     private readonly IContactRemover _contactRepository;
