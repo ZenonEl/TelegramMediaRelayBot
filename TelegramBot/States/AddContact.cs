@@ -11,6 +11,7 @@
 
 
 
+using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 
@@ -23,17 +24,21 @@ public class ProcessContactState : IUserState
     private readonly IContactAdder _contactAdder;
     private readonly IContactGetter _contactGetter;
     private readonly IUserGetter _userGetter;
+    private readonly IPrivacySettingsGetter _privacySettingsGetter;
+
     public ContactState currentState;
 
     public ProcessContactState(
         IContactAdder contactAdder,
         IContactGetter contactGetter,
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        IPrivacySettingsGetter privacySettingsGetter)
     {
         currentState = ContactState.WaitingForLink;
         _contactAdder = contactAdder;
         _contactGetter = contactGetter; 
         _userGetter = userGetter;
+        _privacySettingsGetter = privacySettingsGetter;
     }
 
     public static ContactState[] GetAllStates()
@@ -63,11 +68,34 @@ public class ProcessContactState : IUserState
                 }
 
                 link = update.Message!.Text!;
+                int contactId = _contactGetter.GetContactIDByLink(link);
 
-                if (_contactGetter.GetContactIDByLink(link) == -1)
+                if (contactId == -1)
                 {
                     await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByLink"));
                     return;
+                }
+
+                string privacyRuleValue = await _privacySettingsGetter.GetPrivacyRuleValue(contactId, PrivacyRuleType.WHO_CAN_FIND_ME_BY_LINK);
+                if (privacyRuleValue == PrivacyRuleAction.NOBODY_CAN_FIND_ME_BY_LINK)
+                {
+                    await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByLink"));
+                    return;
+                }
+
+                else if (privacyRuleValue == PrivacyRuleAction.GENERAL_CAN_FIND_ME_BY_LINK)
+                {
+                    int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+                    List<int> contacts1 = await _contactGetter.GetAllContactUserIds(userId);
+                    List<int> contacts2 = await _contactGetter.GetAllContactUserIds(contactId);
+
+                    HashSet<int> contactsSet = new HashSet<int>(contacts1);
+                    bool hasCommon = contacts2.Any(contactsSet.Contains);
+                    if (!hasCommon)
+                    {
+                        await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByLink"));
+                        return;
+                    }
                 }
 
                 await botClient.SendMessage(chatId, Config.GetResourceString("UserFoundByLink"), cancellationToken: cancellationToken,
