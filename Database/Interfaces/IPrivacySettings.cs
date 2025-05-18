@@ -23,6 +23,7 @@ public interface IPrivacySettingsGetter
 {
     bool GetIsActivePrivacyRule(int userId, string type);
     Task<int> GetPrivacyRuleId(int userId, string type);
+    Task<string> GetPrivacyRuleValue(int userId, string type);
     Task<List<PrivacyRuleResult>> GetAllActiveUserRulesWithTargets(int userId);
 }
 
