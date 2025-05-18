@@ -360,6 +360,31 @@ public class MySqlContactGetter(string connectionString) : IContactGetter
         }
     }
 
+    public async Task<List<int>> GetAllContactUserIds(int userId)
+    {
+        try
+        {
+            using var connection = new MySqlConnection(_connectionString);
+            
+            var results = await connection.QueryAsync<long>(
+                @"SELECT DISTINCT CASE 
+                    WHEN UserId = @UserId THEN ContactId 
+                    ELSE UserId 
+                END AS ContactId
+                FROM Contacts
+                WHERE (UserId = @UserId OR ContactId = @UserId)
+                AND Status = @Status",
+                new { UserId = userId, Status = ContactsStatus.ACCEPTED });
+
+            return results.Select(id => (int)id).Where(id => id != userId).ToList();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error retrieving contact user IDs");
+            return new List<int>();
+        }
+    }
+
     public string GetActiveMuteTimeByContactID(int contactID)
     {
         try

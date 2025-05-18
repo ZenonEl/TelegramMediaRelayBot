@@ -82,6 +82,17 @@ public class SqlitePrivacySettingsGetter : IPrivacySettingsGetter
         return await connection.ExecuteScalarAsync<int>(query, new {userId, type});
     }
 
+    public async Task<string> GetPrivacyRuleValue(int userId, string type)
+    {
+        const string query = @"
+            SELECT Action
+            FROM PrivacySettings
+            WHERE UserId = @userId AND Type = @type";
+
+        using var connection = new SqliteConnection(_connectionString);
+        return await connection.ExecuteScalarAsync<string>(query, new {userId, type}) ?? string.Empty;
+    }
+
     public async Task<List<PrivacyRuleResult>> GetAllActiveUserRulesWithTargets(int userId)
     {
         const string query = @"
