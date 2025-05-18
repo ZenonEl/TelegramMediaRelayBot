@@ -126,7 +126,7 @@ public partial class TGBot
                     }
                     else if (Config.showAccessDeniedMessage)
                     {
-                        await botClient.SendMessage(chatId, Config.GetResourceString("AccessDeniedMessage"), cancellationToken: cancellationToken, parseMode: ParseMode.Html);
+                        await botClient.SendMessage(chatId, string.Format(Config.GetResourceString("AccessDeniedMessage"), "https://mastodon.ml/@ZenonEl"), cancellationToken: cancellationToken, parseMode: ParseMode.Html);
                     }
                 }
 
