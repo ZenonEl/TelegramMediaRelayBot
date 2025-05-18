@@ -65,6 +65,17 @@ public class Users
         );
     }
 
+    public static async Task ViewWhoCanFindMeByLinkMenu(ITelegramBotClient botClient, Update update)
+    {
+        await CommonUtilities.SendMessage(
+            botClient,
+            update,
+            UsersPrivacyMenuKB.GetWhoCanFindMeByLinkKeyboardMarkup(),
+            cancellationToken,
+            "Выберите, кто может искать/добавлять вас в свои контакты"
+        );
+    }
+
     public static async Task ViewPermanentContentSpoilerMenu(ITelegramBotClient botClient, Update update)
     {
         await CommonUtilities.SendMessage(
