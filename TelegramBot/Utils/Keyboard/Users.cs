@@ -69,6 +69,30 @@ public static class UsersPrivacyMenuKB
         return inlineKeyboard;
     }
 
+    public static InlineKeyboardMarkup GetWhoCanFindMeByLinkKeyboardMarkup()
+    {
+        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("Никто", "user_set_nobody_who_can_find_me_by_link"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("Только общие контакты", "user_set_general_who_can_find_me_by_link"),
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("Все", "user_set_all_who_can_find_me_by_link"),
+            },
+            new[]
+            {
+                KeyboardUtils.GetReturnButton("privacy_menu_and_safety")
+            },
+        });
+        return inlineKeyboard;
+    }
+
     public static InlineKeyboardMarkup GetUpdateSelfLinkKeyboardMarkup()
     {
         var inlineKeyboard = new InlineKeyboardMarkup(new[]
