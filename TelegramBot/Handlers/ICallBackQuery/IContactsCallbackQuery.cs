@@ -22,22 +22,25 @@ public class AddContactCommand : IBotCallbackQueryHandlers
     private readonly IContactAdder _contactRepository;
     private readonly IContactGetter _contactGetter;
     private readonly IUserGetter _userGetter;
+    private readonly IPrivacySettingsGetter _privacySettingsGetter;
 
     public AddContactCommand(
         IContactAdder contactRepository,
         IContactGetter contactGetter,
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        IPrivacySettingsGetter privacySettingsGetter)
     {
         _contactRepository = contactRepository;
         _contactGetter = contactGetter;
         _userGetter = userGetter;
+        _privacySettingsGetter = privacySettingsGetter;
     }
 
     public string Name => "add_contact";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        await Contacts.AddContact(botClient, update, update.CallbackQuery!.Message!.Chat.Id, _contactRepository, _contactGetter, _userGetter);
+        await Contacts.AddContact(botClient, update, update.CallbackQuery!.Message!.Chat.Id, _contactRepository, _contactGetter, _userGetter, _privacySettingsGetter);
     }
 }
 
