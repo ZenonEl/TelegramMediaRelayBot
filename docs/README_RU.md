@@ -13,7 +13,8 @@
 ![License](https://img.shields.io/badge/License-AGPL--3.0-blue)
 ![.NET Version](https://img.shields.io/badge/.NET-8.0-purple)
 ![Telegram Bot API](https://img.shields.io/badge/Telegram%20Bot%20API-22.1.3-green)
- 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ZenonEl/TelegramMediaRelayBot)
+
 </div>
 
 **TelegramMediaRelayBot** — это селфхостинг-бот для Telegram, который позволяет автоматически скачивать и пересылать видео, с множества [платформ](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md) (благодаря [yt-dlp](https://github.com/yt-dlp/yt-dlp/tree/master)), вам и вашим контактам. Бот упрощает процесс обмена медиафайлами, избавляя от необходимости вручную скачивать и отправлять видео тем кто не использует ту или иную платформу.
