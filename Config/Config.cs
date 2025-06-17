@@ -27,6 +27,7 @@ namespace TelegramMediaRelayBot
         public static string proxy = "";
         public static int userUnMuteCheckInterval = 20; // Seconds
         public static bool isUseGalleryDl = false;
+        public static string accessDeniedMessageContact = " ";
 
         public static int videoGetDelay = 1000;
         public static int contactSendDelay = 1000;
@@ -69,6 +70,7 @@ namespace TelegramMediaRelayBot
             proxy = configuration["AppSettings:Proxy"]!;
             dbType = configuration.GetValue("AppSettings:DatabaseType", "sqlite");
             isUseGalleryDl = bool.Parse(configuration["AppSettings:UseGalleryDl"]!);
+            accessDeniedMessageContact = configuration.GetValue("AppSettings:AccessDeniedMessageContact", " ");
 
             videoGetDelay = int.Parse(configuration["MessageDelaySettings:VideoGetDelay"]!);
             contactSendDelay = int.Parse(configuration["MessageDelaySettings:ContactSendDelay"]!);
