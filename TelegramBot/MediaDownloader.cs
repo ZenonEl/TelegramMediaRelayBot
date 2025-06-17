@@ -153,7 +153,7 @@ public partial class TGBot
     public async Task HandleMediaRequest(ITelegramBotClient botClient, string contentUrl, long chatId, Message statusMessage,
                                                 List<long>? targetUserIds = null, bool groupChat = false, string caption = "")
     {
-        List<byte[]>? mediaFiles = await VideoGet.DownloadMedia(botClient, contentUrl, statusMessage, cancellationToken);
+        List<byte[]>? mediaFiles = await MediaGet.DownloadMedia(botClient, contentUrl, statusMessage, cancellationToken);
         if (mediaFiles?.Count > 0)
         {
             Log.Debug($"Downloaded {mediaFiles.Count} files");

@@ -14,7 +14,7 @@ using DotNetTor.SocksPort;
 
 namespace TelegramMediaRelayBot
 {
-    public class VideoGet
+    public class MediaGet
     {
         private static readonly string[] ColonSpaceSeparator = [": "];
 
