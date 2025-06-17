@@ -73,7 +73,7 @@ The project is distributed under the **AGPL-3.0** license. Details can be found 
 
 
 ## Feedback
-If you have questions, suggestions, or find a bug, please create an [issue](hhttps://github.com/ZenonEl/TelegramMediaRelayBot/issues) in the repository.
+If you have questions, suggestions, or find a bug, please create an [issue](https://github.com/ZenonEl/TelegramMediaRelayBot/issues) in the repository.
 Or you can contact me at [Mastodon](https://lor.sh/@ZenonEl)
 
 
