@@ -72,7 +72,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetWhoCanFindMeByLinkKeyboardMarkup(),
             cancellationToken,
-            "Выберите, кто может искать/добавлять вас в свои контакты"
+            Config.GetResourceString("SearchPrivacyText")
         );
     }
 

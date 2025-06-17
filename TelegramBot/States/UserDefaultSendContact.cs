@@ -91,7 +91,7 @@ namespace TelegramMediaRelayBot
             var messageText = update.Message?.Text;
             if (string.IsNullOrEmpty(messageText))
             {
-                await botClient.SendMessage(chatId, "Invalid input", cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, Config.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
                 return;
             }
 
@@ -102,24 +102,24 @@ namespace TelegramMediaRelayBot
 
             if (inputIds.Count == 0)
             {
-                await botClient.SendMessage(chatId, "No valid IDs found", cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, Config.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
                 return;
             }
 
             userState._actingUserId = _userGetter.GetUserIDbyTelegramID(chatId);
             
-            userState._targetIds = _isGroupIds 
+            userState._targetIds = _isGroupIds
                 ? await ValidateGroupIds(userState._actingUserId, inputIds)
                 : await ValidateUserIds(userState._actingUserId, inputIds);
 
             if (userState._targetIds.Count == 0)
             {
-                await botClient.SendMessage(chatId, "No valid IDs found for your account", cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, Config.GetResourceString("NoUsersFound"), cancellationToken: cancellationToken);
                 return;
             }
 
             var idsList = string.Join(", ", userState._targetIds);
-            var message = $"{(_isGroupIds ? "Groups" : "Users")} to process:\n{idsList}\n\nConfirm?";
+            var message = string.Format(Config.GetResourceString("ProcessIDsList"), idsList);
             
             await botClient.SendMessage(
                 chatId,
@@ -189,7 +189,7 @@ namespace TelegramMediaRelayBot
                 update,
                 UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
                 cancellationToken,
-                $"Successfully processed {userState._targetIds.Count} {(_isGroupIds ? "groups" : "users")}"
+                string.Format(Config.GetResourceString("SuccessMessageProcessIDsList"), userState._targetIds.Count)
             );
         }
 

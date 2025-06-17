@@ -28,7 +28,7 @@ public class Contacts
 
     public static async Task DeleteContact(ITelegramBotClient botClient, Update update, long chatId, IContactRemover contactRemoverRepository, IContactGetter contactGetterRepository, IUserGetter userGetter)
     {
-        Message statusMessage = await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, "Укажите айди контактов для удаления:", cancellationToken: cancellationToken);//TODO Вынести перевод
+        Message statusMessage = await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Config.GetResourceString("InputContactId"), cancellationToken: cancellationToken);
         TGBot.userStates[chatId] = new ProcessRemoveUser(statusMessage, contactRemoverRepository, contactGetterRepository, userGetter);
     }
 

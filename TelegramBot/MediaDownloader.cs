@@ -306,7 +306,7 @@ public partial class TGBot
         }
 
         await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId,
-            $"Рассылка окончена. Отправлено {sentCount}/{filteredContactUserTGIds.Count}", //TODO вынести переводы
+            string.Format(Config.GetResourceString("MessageProcessMediaSend"), sentCount, filteredContactUserTGIds.Count),
             cancellationToken: cancellationToken);
     }
 
