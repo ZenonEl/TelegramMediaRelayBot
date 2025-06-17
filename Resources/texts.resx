@@ -169,6 +169,9 @@ Please specify the group ID for work:</value>
     <data name="RemoveContactsButtonText" xml:space="preserve">
         <value>Remove member(s)</value>
     </data>
+    <data name="InputContactId" xml:space="preserve">
+        <value>Specify the contact ID to delete:</value>
+    </data>
 
     <!-- Mutes and unmutes -->
     <data name="MuteUserInstructions" xml:space="preserve">
@@ -380,6 +383,10 @@ Are you sure you want to unmute them? If not, type /start</value>
     <data name="SixtyMinutesButtonText" xml:space="preserve">
         <value>60 Minutes</value>
     </data>
+    <data name="SearchPrivacyText" xml:space="preserve">
+        <value>Choose who can search for/add you to their contacts</value>
+    </data>
+
 
     <!-- Text for Group Management Buttons -->
     <data name="CreateGroupButtonText" xml:space="preserve">
@@ -559,5 +566,14 @@ If you'd like to get access, you can contact &lt;a href="{0}"&gt;me here&lt;/a&g
     </data>
     <data name="ErrorActionResult" xml:space="preserve">
         <value>The action was (fully/partially) not completed</value>
+    </data>
+    <data name="ProcessIDsList" xml:space="preserve">
+        <value>Specified IDs:\n{0}\n\n Continue?</value>
+    </data>
+    <data name="SuccessMessageProcessIDsList" xml:space="preserve">
+        <value>Successfully processed: {0}</value>
+    </data>
+    <data name="MessageProcessMediaSend" xml:space="preserve">
+        <value>The mailing list is over. Sent {0}/{1}</value>
     </data>
 </root>

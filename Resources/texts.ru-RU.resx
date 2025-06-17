@@ -154,7 +154,7 @@ ID: {0}
         <value>Удалить контакт</value>
     </data>
     <data name="InputContactIDsText" xml:space="preserve">
-        <value>Отправьте id контакта(ов)</value>
+        <value>Отправьте ID контакта(ов)</value>
     </data>
     <data name="ConfirmAddContactsToGroupText" xml:space="preserve">
         <value>Вы точно хотите добавить эти контакты в группу?</value>
@@ -167,6 +167,9 @@ ID: {0}
     </data>
     <data name="RemoveContactsButtonText" xml:space="preserve">
         <value>Удалить участника(ов)</value>
+    </data>
+    <data name="InputContactId" xml:space="preserve">
+        <value>Укажите ID контактов для удаления:</value>
     </data>
 
     <!-- Муты и размуты -->
@@ -385,6 +388,10 @@ ID: {0}
     <data name="SixtyMinutesButtonText" xml:space="preserve">
         <value>60 минут</value>
     </data>
+    <data name="SearchPrivacyText" xml:space="preserve">
+        <value>Выберите, кто может искать/добавлять вас в свои контакты</value>
+    </data>
+
 
     <!-- Текст кнопок управления Группами-->
     <data name="CreateGroupButtonText" xml:space="preserve">
@@ -609,5 +616,14 @@ PS: квадратные скобки не нужны :)</value>
     </data>
     <data name="ErrorActionResult" xml:space="preserve">
         <value>Действие (полностью/частично) не было выполнено</value>
+    </data>
+    <data name="ProcessIDsList" xml:space="preserve">
+        <value>Указанные ID:\n{0}\n\nПродолжить?</value>
+    </data>
+    <data name="SuccessMessageProcessIDsList" xml:space="preserve">
+        <value>Успешно обработано: {0}</value>
+    </data>
+    <data name="MessageProcessMediaSend" xml:space="preserve">
+        <value>Рассылка окончена. Отправлено {0}/{1}</value>
     </data>
 </root>
