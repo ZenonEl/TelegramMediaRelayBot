@@ -33,7 +33,6 @@ namespace TelegramMediaRelayBot
 
         public static LogEventLevel logLevel = LogEventLevel.Information;
         public static bool showVideoDownloadProgress = false;
-        public static bool showVideoUploadProgress = false;
 
         public static bool torEnabled = false;
         public static string? torControlPassword;
@@ -55,7 +54,12 @@ namespace TelegramMediaRelayBot
         {
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
+                
+                .AddJsonFile("appsettings.example.json", optional: true, reloadOnChange: true)
+                
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                
+                .AddEnvironmentVariables()
                 .Build();
 
             telegramBotToken = configuration["AppSettings:TelegramBotToken"]!;
@@ -63,6 +67,7 @@ namespace TelegramMediaRelayBot
             databaseName = configuration["AppSettings:DatabaseName"]!;
             language = configuration["AppSettings:Language"]!;
             proxy = configuration["AppSettings:Proxy"]!;
+            dbType = configuration.GetValue("AppSettings:DatabaseType", "sqlite");
             isUseGalleryDl = bool.Parse(configuration["AppSettings:UseGalleryDl"]!);
 
             videoGetDelay = int.Parse(configuration["MessageDelaySettings:VideoGetDelay"]!);
@@ -70,7 +75,6 @@ namespace TelegramMediaRelayBot
 
             logLevel = Enum.Parse<LogEventLevel>(configuration["ConsoleOutputSettings:LogLevel"]!, true);
             showVideoDownloadProgress = bool.Parse(configuration["ConsoleOutputSettings:ShowVideoDownloadProgress"]!);
-            showVideoUploadProgress = bool.Parse(configuration["ConsoleOutputSettings:ShowVideoUploadProgress"]!);
 
             torEnabled = bool.Parse(configuration["Tor:Enabled"]!);
             torControlPassword = configuration["Tor:TorControlPassword"];
