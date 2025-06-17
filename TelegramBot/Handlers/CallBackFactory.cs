@@ -11,7 +11,6 @@
 
 
 using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
-using System.Reflection;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers;
 
