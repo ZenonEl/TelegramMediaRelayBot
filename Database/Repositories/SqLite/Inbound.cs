@@ -11,7 +11,7 @@
 
 using Microsoft.Data.Sqlite;
 using TelegramMediaRelayBot.Database.Interfaces;
-using System.Data;
+
 
 namespace TelegramMediaRelayBot.Database.Repositories.Sqlite;
 
