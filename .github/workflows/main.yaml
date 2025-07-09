@@ -1,0 +1,39 @@
+name: TelegramMediaRelayBot CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build_and_run:
+    runs-on: ubuntu-latest
+
+    env:
+      AppSettings__TelegramBotToken: ${{ secrets.BOT_TOKEN }}
+      AppSettings__SqlConnectionString: "Data Source=:memory:"
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Install yt-dlp and gallery-dl
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y yt-dlp gallery-dl
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+
+    - name: Run bot (2 minutes)
+      run: |
+        timeout 120 dotnet run --configuration Release --project TelegramMediaRelayBot.csproj
