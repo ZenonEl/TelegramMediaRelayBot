@@ -136,44 +136,16 @@ namespace TelegramMediaRelayBot
                 tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
                 Directory.CreateDirectory(tempDir);
 
-                var startInfo = new ProcessStartInfo
+                try
                 {
-                    FileName = "gallery-dl.bin",
-                    Arguments = $"--proxy \"{Config.proxy}\" -d \"{tempDir}\" -D \"{tempDir}\" --verbose \"{url}\"",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                using (var process = new Process { StartInfo = startInfo })
+                    return await RunGalleryDlAsync("gallery-dl", url, tempDir, botClient, statusMessage, cancellationToken);
+                }
+                catch (Exception ex) when (
+                    ex is System.ComponentModel.Win32Exception ||
+                    ex is FileNotFoundException
+                )
                 {
-                    process.Start();
-
-                    Log.Debug("Process started.");
-
-                    List<string> outputLines = new List<string>();
-                    List<string> errorLines = new List<string>();
-
-                    Task readOutputTask = ReadLinesAsync(process.StandardOutput, outputLines, botClient, statusMessage, cancellationToken);
-                    Task readErrorTask = ReadLinesAsync(process.StandardError, errorLines, botClient, statusMessage, cancellationToken);
-
-                    await process.WaitForExitAsync();
-
-                    await Task.WhenAll(readOutputTask, readErrorTask);
-
-                    if (process.ExitCode == 0)
-                    {
-                        var files = Directory.GetFiles(tempDir);
-                        var result = new List<byte[]>();
-                        foreach (var file in files)
-                        {
-                            Log.Debug(file);
-                            result.Add(await System.IO.File.ReadAllBytesAsync(file));
-                        }
-
-                        return result.Count > 0 ? result : null;
-                    }
+                    return await RunGalleryDlAsync("gallery-dl.bin", url, tempDir, botClient, statusMessage, cancellationToken);
                 }
             }
             catch (Exception ex)
@@ -188,6 +160,57 @@ namespace TelegramMediaRelayBot
                 }
             }
             return null;
+        }
+
+        private static async Task<List<byte[]>?> RunGalleryDlAsync(
+            string galleryDlPath,
+            string url,
+            string tempDir,
+            ITelegramBotClient botClient,
+            Message statusMessage,
+            CancellationToken cancellationToken)
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = galleryDlPath,
+                Arguments = $"--proxy \"{Config.proxy}\" -d \"{tempDir}\" -D \"{tempDir}\" --verbose \"{url}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using (var process = new Process { StartInfo = startInfo })
+            {
+                process.Start();
+
+                Log.Debug($"Process started: {galleryDlPath}");
+
+                List<string> outputLines = new List<string>();
+                List<string> errorLines = new List<string>();
+
+                Task readOutputTask = ReadLinesAsync(process.StandardOutput, outputLines, botClient, statusMessage, cancellationToken);
+                Task readErrorTask = ReadLinesAsync(process.StandardError, errorLines, botClient, statusMessage, cancellationToken);
+
+                await process.WaitForExitAsync();
+                await Task.WhenAll(readOutputTask, readErrorTask);
+
+                if (process.ExitCode == 0)
+                {
+                    var files = Directory.GetFiles(tempDir);
+                    var result = new List<byte[]>();
+                    foreach (var file in files)
+                    {
+                        Log.Debug(file);
+                        result.Add(await System.IO.File.ReadAllBytesAsync(file));
+                    }
+                    return result.Count > 0 ? result : null;
+                }
+                else
+                {
+                    throw new Exception($"gallery-dl exited with code {process.ExitCode}");
+                }
+            }
         }
 
         private static async Task ReadLinesAsync(StreamReader reader, List<string> lines, ITelegramBotClient botClient, Message statusMessage, CancellationToken cancellationToken)
