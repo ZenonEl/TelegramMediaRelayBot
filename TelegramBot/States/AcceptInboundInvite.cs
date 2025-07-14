@@ -9,21 +9,32 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Telegram.Bot;
-using Telegram.Bot.Types;
-using MediaTelegramBot.Utils;
-using TelegramMediaRelayBot;
+using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 
-namespace MediaTelegramBot;
+namespace TelegramMediaRelayBot;
 
 public class UserProcessInboundState : IUserState
 {
     public UserInboundState currentState;
+    private readonly IContactSetter _contactSetterRepository;
+    private readonly IContactRemover _contactRemoverRepository;
+    private readonly IInboundDBGetter _inboundDBGetter;
+    private readonly IUserGetter _userGetter;
 
-    public UserProcessInboundState()
+    public UserProcessInboundState(
+        IContactSetter contactSetterRepository, 
+        IContactRemover contactRemoverRepository,
+        IInboundDBGetter inboundDBGetter,
+        IUserGetter userGetter)
     {
         currentState = UserInboundState.SelectInvite;
+        _contactSetterRepository = contactSetterRepository;
+        _contactRemoverRepository = contactRemoverRepository;
+        _inboundDBGetter = inboundDBGetter;
+        _userGetter = userGetter;
     }
 
     public static UserInboundState[] GetAllStates()
@@ -38,10 +49,10 @@ public class UserProcessInboundState : IUserState
 
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        long chatId = Utils.Utils.GetIDfromUpdate(update);
-        if (Utils.Utils.CheckNonZeroID(chatId)) return;
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
+        if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (!TelegramBot.userStates.TryGetValue(chatId, out IUserState? value))
+        if (!TGBot.userStates.TryGetValue(chatId, out IUserState? value))
         {
             return;
         }
@@ -54,36 +65,43 @@ public class UserProcessInboundState : IUserState
                 if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("user_show_inbounds_invite:"))
                 {
                     string userId = update.CallbackQuery.Data.Split(':')[1];
-                    await Utils.Utils.SendMessage(botClient, update, InBoundKB.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
+                    await CommonUtilities.SendMessage(botClient, update, InBoundKB.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
                                                 cancellationToken, Config.GetResourceString("SelectAction"));
                     userState.currentState = UserInboundState.ProcessAction;
                     return;
                 }
-                TelegramBot.userStates.Remove(chatId);
+                TGBot.userStates.Remove(chatId);
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                 break;
 
             case UserInboundState.ProcessAction:
                 if (update.Message != null && update.Message.Text != null)
                 {
-                    TelegramBot.userStates.Remove(chatId);
+                    TGBot.userStates.Remove(chatId);
                     await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                     return;
                 }
                 else if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("view_inbound_invite_links"))
                 {
-                    await CallbackQueryMenuUtils.ViewInboundInviteLinks(botClient, update, chatId);
+                    await CallbackQueryMenuUtils.ViewInboundInviteLinks(
+                        botClient,
+                        update,
+                        chatId,
+                        _contactSetterRepository,
+                        _contactRemoverRepository,
+                        _inboundDBGetter,
+                        _userGetter);
                     return;
                 }
                 string userID = update.CallbackQuery!.Data!.Split(':')[1];
                 if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("user_accept_inbounds_invite:"))
                 {
-                    await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_accept_invite:{userID}", $"decline_accept_invite:{userID}"),
+                    await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_accept_invite:{userID}", $"decline_accept_invite:{userID}"),
                     cancellationToken, Config.GetResourceString("WaitAcceptInboundInvite"));
                 }
                 else if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("user_decline_inbounds_invite:"))
                 {
-                    await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_decline_invite:{userID}", $"decline_decline_invite:{userID}"), 
+                    await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_decline_invite:{userID}", $"decline_decline_invite:{userID}"), 
                     cancellationToken, Config.GetResourceString("WaitDeclineInboundInvite"));
                 }
 
@@ -93,21 +111,21 @@ public class UserProcessInboundState : IUserState
             case UserInboundState.Finish:
                 if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("accept_accept_invite:"))
                 {
-                    await CallbackQueryMenuUtils.AcceptInboundInvite(update);
+                    await CallbackQueryMenuUtils.AcceptInboundInvite(update, _contactSetterRepository);
                 }
                 else if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("accept_decline_invite:"))
                 {
-                    await CallbackQueryMenuUtils.DeclineInboundInvite(update);
+                    await CallbackQueryMenuUtils.DeclineInboundInvite(update, _contactRemoverRepository, _userGetter);
                 }
                 else if (update.CallbackQuery != null && !update.CallbackQuery.Data!.StartsWith("main_menu"))
                 {
                     string userId = update.CallbackQuery.Data.Split(':')[1];
-                    await Utils.Utils.SendMessage(botClient, update, InBoundKB.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
+                    await CommonUtilities.SendMessage(botClient, update, InBoundKB.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
                                                 cancellationToken, Config.GetResourceString("SelectAction"));
                     userState.currentState = UserInboundState.ProcessAction;
                     return;
                 }
-                TelegramBot.userStates.Remove(chatId);
+                TGBot.userStates.Remove(chatId);
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                 break;
         }

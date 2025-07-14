@@ -9,13 +9,11 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
-using DataBase;
-using TelegramMediaRelayBot;
+using TelegramMediaRelayBot.Database.Interfaces;
 
 
-namespace MediaTelegramBot.Utils;
+namespace TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 public static class InBoundKB
 {
@@ -39,9 +37,9 @@ public static class InBoundKB
         return inlineKeyboard;
     }
 
-    public static InlineKeyboardMarkup GetInboundsKeyboardMarkup(Update update)
+    public static InlineKeyboardMarkup GetInboundsKeyboardMarkup(Update update, IInboundDBGetter inboundDBGetter, IUserGetter userGetter)
     {
-        var buttonDataList = DBforInbounds.GetInboundsButtonData(DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id));
+        var buttonDataList = inboundDBGetter.GetInboundsButtonData(userGetter.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id));
 
         var inlineKeyboardButtons = new List<InlineKeyboardButton[]>();
 

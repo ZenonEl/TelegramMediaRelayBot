@@ -9,70 +9,87 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Telegram.Bot;
-using Telegram.Bot.Types;
-using MediaTelegramBot.Utils;
-using DataBase;
-using TelegramMediaRelayBot;
 
-namespace MediaTelegramBot.Menu;
+using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
+
+namespace TelegramMediaRelayBot.TelegramBot.Menu;
 
 public class Contacts
 {
-    public static CancellationToken cancellationToken = TelegramBot.cancellationToken;
+    public static CancellationToken cancellationToken = TGBot.cancellationToken;
 
-    public static async Task AddContact(ITelegramBotClient botClient, Update update, long chatId)
+    public static async Task AddContact(ITelegramBotClient botClient, Update update, long chatId, IContactAdder contactRepository, IContactGetter contactGetter, IUserGetter userGetter, IPrivacySettingsGetter privacySettingsGetter)
     {
-        TelegramBot.userStates[chatId] = new ProcessContactState();
-        await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, Config.GetResourceString("SpecifyContactLink"));
+        TGBot.userStates[chatId] = new ProcessContactState(contactRepository, contactGetter, userGetter, privacySettingsGetter);
+        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, Config.GetResourceString("SpecifyContactLink"));
     }
 
-    public static async Task DeleteContact(ITelegramBotClient botClient, Update update, long chatId)
+    public static async Task DeleteContact(ITelegramBotClient botClient, Update update, long chatId, IContactRemover contactRemoverRepository, IContactGetter contactGetterRepository, IUserGetter userGetter)
     {
-        Message statusMessage = await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, "Укажите айди контактов для удаления:", cancellationToken: cancellationToken);
-        TelegramBot.userStates[chatId] = new ProcessRemoveUser(statusMessage);
+        Message statusMessage = await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Config.GetResourceString("InputContactId"), cancellationToken: cancellationToken);
+        TGBot.userStates[chatId] = new ProcessRemoveUser(statusMessage, contactRemoverRepository, contactGetterRepository, userGetter);
     }
 
-    public static async Task MuteUserContact(ITelegramBotClient botClient, Update update, long chatId)
+    public static async Task MuteUserContact(
+        ITelegramBotClient botClient,
+        Update update,
+        long chatId,
+        IContactAdder contactAdderRepository,
+        IContactGetter contactGetterRepository,
+        IUserGetter userGetter)
     {
         await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Config.GetResourceString("MuteUserInstructions"), cancellationToken: cancellationToken);
-        TelegramBot.userStates[chatId] = new ProcessUserMuteState();
+        TGBot.userStates[chatId] = new ProcessUserMuteState(contactAdderRepository, contactGetterRepository, userGetter);
     }
 
-    public static async Task UnMuteUserContact(ITelegramBotClient botClient, Update update, long chatId)
+    public static async Task UnMuteUserContact(
+        ITelegramBotClient botClient,
+        Update update,
+        long chatId,
+        IContactRemover contactRemoverRepository,
+        IContactGetter contactGetter,
+        IUserGetter userGetter)
     {
         await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Config.GetResourceString("UnmuteUserInstructions"), cancellationToken: cancellationToken);
-        TelegramBot.userStates[chatId] = new ProcessUserUnMuteState();
+        TGBot.userStates[chatId] = new ProcessUserUnMuteState(contactRemoverRepository, contactGetter, userGetter);
     }
 
-    public static async Task ViewContacts(ITelegramBotClient botClient, Update update)
+    public static async Task ViewContacts(ITelegramBotClient botClient, Update update, IContactGetter contactGetterRepository, IUserGetter userGetter)
     {
-        List<long> contactUserTGIds = await CoreDB.GetAllContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id));
+        List<long> contactUserTGIds = await contactGetterRepository.GetAllContactUserTGIds(userGetter.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id));
         List<string> contactUsersInfo = new List<string>();
 
         foreach (var contactUserId in contactUserTGIds)
         {
-            int id = DBforGetters.GetUserIDbyTelegramID(contactUserId);
-            string username = DBforGetters.GetUserNameByTelegramID(contactUserId);
-            string link = DBforGetters.GetSelfLink(contactUserId);
+            int id = userGetter.GetUserIDbyTelegramID(contactUserId);
+            string username = userGetter.GetUserNameByTelegramID(contactUserId);
+            string link = userGetter.GetUserSelfLink(contactUserId);
 
             contactUsersInfo.Add(string.Format(Config.GetResourceString("ContactInfo"), id, username, link));
         }
 
-        await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), cancellationToken, $"{Config.GetResourceString("YourContacts")}\n{string.Join("\n", contactUsersInfo)}");
+        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), cancellationToken, $"{Config.GetResourceString("YourContacts")}\n{string.Join("\n", contactUsersInfo)}");
     }
 
-    public static async Task EditContactGroup(ITelegramBotClient botClient, Update update, long chatId)
+    public static async Task EditContactGroup(
+        ITelegramBotClient botClient,
+        Update update,
+        long chatId,
+        IContactGroupRepository contactGroupRepository,
+        IUserGetter userGetter,
+        IGroupGetter groupGetter)
     {
-        TelegramBot.userStates[chatId] = new ProcessContactGroupState();
+        TGBot.userStates[chatId] = new ProcessContactGroupState(contactGroupRepository, userGetter, groupGetter);
 
-        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
-        List<string> groupInfos = UsersGroup.GetUserGroupInfoByUserId(userId);
+        int userId = userGetter.GetUserIDbyTelegramID(chatId);
+        List<string> groupInfos = await UsersGroup.GetUserGroupInfoByUserId(userId, groupGetter);
 
         string messageText = groupInfos.Any() 
             ? $"{Config.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
             : Config.GetResourceString("AltYourGroupsText");
 
-        await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(Config.GetResourceString("ContactGroupInfoText"), messageText));
+        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(Config.GetResourceString("ContactGroupInfoText"), messageText));
     }
 }

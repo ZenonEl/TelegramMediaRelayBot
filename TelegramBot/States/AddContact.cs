@@ -9,23 +9,36 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using DataBase;
-using Telegram.Bot;
-using Telegram.Bot.Types;
-using MediaTelegramBot.Utils;
-using TelegramMediaRelayBot;
 
 
-namespace MediaTelegramBot;
+using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot.Utils;
+
+
+namespace TelegramMediaRelayBot;
 
 public class ProcessContactState : IUserState
 {
     private string link;
+    private readonly IContactAdder _contactAdder;
+    private readonly IContactGetter _contactGetter;
+    private readonly IUserGetter _userGetter;
+    private readonly IPrivacySettingsGetter _privacySettingsGetter;
+
     public ContactState currentState;
 
-    public ProcessContactState()
+    public ProcessContactState(
+        IContactAdder contactAdder,
+        IContactGetter contactGetter,
+        IUserGetter userGetter,
+        IPrivacySettingsGetter privacySettingsGetter)
     {
         currentState = ContactState.WaitingForLink;
+        _contactAdder = contactAdder;
+        _contactGetter = contactGetter; 
+        _userGetter = userGetter;
+        _privacySettingsGetter = privacySettingsGetter;
     }
 
     public static ContactState[] GetAllStates()
@@ -40,8 +53,8 @@ public class ProcessContactState : IUserState
 
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        long chatId = Utils.Utils.GetIDfromUpdate(update);
-        if (Utils.Utils.CheckNonZeroID(chatId)) return;
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
+        if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
         switch (currentState)
         {
@@ -50,16 +63,39 @@ public class ProcessContactState : IUserState
                 {
                     await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
                     await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-                    TelegramBot.userStates.Remove(chatId);
+                    TGBot.userStates.Remove(chatId);
                     return;
                 }
 
                 link = update.Message!.Text!;
+                int contactId = _contactGetter.GetContactIDByLink(link);
 
-                if (DBforGetters.GetContactIDByLink(link) == -1)
+                if (contactId == -1)
                 {
-                    await Utils.Utils.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByLink"));
+                    await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByLink"));
                     return;
+                }
+
+                string privacyRuleValue = await _privacySettingsGetter.GetPrivacyRuleValue(contactId, PrivacyRuleType.WHO_CAN_FIND_ME_BY_LINK);
+                if (privacyRuleValue == PrivacyRuleAction.NOBODY_CAN_FIND_ME_BY_LINK)
+                {
+                    await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByLink"));
+                    return;
+                }
+
+                else if (privacyRuleValue == PrivacyRuleAction.GENERAL_CAN_FIND_ME_BY_LINK)
+                {
+                    int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+                    List<int> contacts1 = await _contactGetter.GetAllContactUserIds(userId);
+                    List<int> contacts2 = await _contactGetter.GetAllContactUserIds(contactId);
+
+                    HashSet<int> contactsSet = new HashSet<int>(contacts1);
+                    bool hasCommon = contacts2.Any(contactsSet.Contains);
+                    if (!hasCommon)
+                    {
+                        await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByLink"));
+                        return;
+                    }
                 }
 
                 await botClient.SendMessage(chatId, Config.GetResourceString("UserFoundByLink"), cancellationToken: cancellationToken,
@@ -69,7 +105,7 @@ public class ProcessContactState : IUserState
                 break;
 
             case ContactState.WaitingForName:
-                string text_data = $"{Config.GetResourceString("LinkText")}: {link} \n{Config.GetResourceString("NameText")}: {DBforGetters.GetUserNameByID(DBforGetters.GetContactIDByLink(link))}";
+                string text_data = $"{Config.GetResourceString("LinkText")}: {link} \n{Config.GetResourceString("NameText")}: {_userGetter.GetUserNameByID(_contactGetter.GetContactIDByLink(link))}";
 
                 await botClient.SendMessage(chatId, Config.GetResourceString("ConfirmAdditionText") + text_data, cancellationToken: cancellationToken,
                                             replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.GetResourceString("NextButtonText")));
@@ -78,9 +114,9 @@ public class ProcessContactState : IUserState
                 break;
 
             case ContactState.WaitingForConfirmation:
-                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId)) return;
+                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId)) return;
 
-                CoreDB.AddContact(chatId, link);
+                _contactAdder.AddContact(chatId, link);
 
                 await SendNotification(botClient, chatId, cancellationToken);
                 await botClient.SendMessage(chatId, Config.GetResourceString("WaitForContactConfirmation"),
@@ -95,15 +131,15 @@ public class ProcessContactState : IUserState
                 await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
 
-                TelegramBot.userStates.Remove(chatId);
+                TGBot.userStates.Remove(chatId);
                 break;
         }
     }
 
     public async Task SendNotification(ITelegramBotClient botClient, long chatId, CancellationToken cancellationToken)
     {
-        await botClient.SendMessage(DBforGetters.GetTelegramIDbyUserID(DBforGetters.GetContactIDByLink(link)), 
-                                    string.Format(Config.GetResourceString("UserWantsToAddYou"), DBforGetters.GetUserNameByTelegramID(chatId)), 
+        await botClient.SendMessage(_userGetter.GetTelegramIDbyUserID(_contactGetter.GetContactIDByLink(link)), 
+                                    string.Format(Config.GetResourceString("UserWantsToAddYou"), _userGetter.GetUserNameByTelegramID(chatId)), 
                                     cancellationToken: cancellationToken);
     }
 }

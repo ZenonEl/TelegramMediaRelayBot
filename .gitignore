@@ -30,9 +30,15 @@
 *.exe
 *.out
 *.app
+
 /.vscode
 /bin
 /Downloads
 /obj
 appsettings.json
 Logo.jpg~
+gallery-dl.bin
+TikTokMediaRelayBot.db
+.db
+hosts
+todo

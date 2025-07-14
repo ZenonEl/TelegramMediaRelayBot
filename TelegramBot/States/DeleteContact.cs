@@ -9,28 +9,37 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Telegram.Bot;
-using MediaTelegramBot.Utils;
-using Telegram.Bot.Types;
+
 using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot.Types.Enums;
-using TelegramMediaRelayBot;
-using DataBase;
+using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.Database.Interfaces;
 
 
-namespace MediaTelegramBot;
+namespace TelegramMediaRelayBot;
 
 public class ProcessRemoveUser : IUserState
 {
-    public UsersStandartState currentState;
+    public UsersStandardState currentState;
     private List<int> preparedTargetUserIds = new List<int>();
-    private Message statusMessage;
+    private readonly Message statusMessage;
+    private readonly IContactRemover _contactRemoverRepository;
+    private readonly IContactGetter _contactGetterRepository;
+    private readonly IUserGetter _userGetter;
     bool isDeleteSuccessful = false;
 
-    public ProcessRemoveUser(Message statusMessage)
+    public ProcessRemoveUser(
+        Message statusMessage,
+        IContactRemover contactRemoverRepository,
+        IContactGetter contactGetterRepository,
+        IUserGetter userGetter
+        )
     {
         this.statusMessage = statusMessage;
-        currentState = UsersStandartState.ProcessAction;
+        currentState = UsersStandardState.ProcessAction;
+        _contactRemoverRepository = contactRemoverRepository;
+        _contactGetterRepository = contactGetterRepository;
+        _userGetter = userGetter;
     }
 
     public string GetCurrentState()
@@ -40,13 +49,13 @@ public class ProcessRemoveUser : IUserState
 
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        long chatId = Utils.Utils.GetIDfromUpdate(update);
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
 
         switch (currentState)
         {
-            case UsersStandartState.ProcessAction:
-                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
-                if (update.Message != null)
+            case UsersStandardState.ProcessAction:
+                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
+                if (update.Message != null && update.Message.Text != null)
                 {
                     string input = update.Message.Text;
                     if (string.IsNullOrWhiteSpace(input))
@@ -60,17 +69,17 @@ public class ProcessRemoveUser : IUserState
                     {
                         preparedTargetUserIds = ids.Select(int.Parse).ToList();
                         bool isSuccessful = await RetrieveAndDisplayUserInfo(botClient, update, chatId, cancellationToken);
-                        if (isSuccessful) currentState = UsersStandartState.ProcessData;
+                        if (isSuccessful) currentState = UsersStandardState.ProcessData;
                     }
                     else
                     {
-                        await botClient.SendMessage(chatId, Config.GetResourceString("InvalidInputNumbers"), cancellationToken: cancellationToken);
+                        await botClient.SendMessage(chatId, Config.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
                     }
                 }
                 break;
 
-            case UsersStandartState.ProcessData:
-                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
+            case UsersStandardState.ProcessData:
+                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
                 
                 if (update.CallbackQuery != null)
                 {
@@ -83,12 +92,12 @@ public class ProcessRemoveUser : IUserState
                         string text = isDeleteSuccessful ? Config.GetResourceString("SuccessActionResult") : Config.GetResourceString("ErrorActionResult");
                         await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, text);
                         
-                        TelegramBot.userStates.Remove(chatId);
+                        TGBot.userStates.Remove(chatId);
                     }
                     else if (callbackData == "cancel_removal")
                     {
                         await botClient.EditMessageText(chatId, statusMessage.MessageId, Config.GetResourceString("PleaseEnterContactIDs"), replyMarkup: KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken);
-                        currentState = UsersStandartState.ProcessAction;
+                        currentState = UsersStandardState.ProcessAction;
                     }
                 }
                 break;
@@ -97,17 +106,17 @@ public class ProcessRemoveUser : IUserState
 
     private async Task<bool> RetrieveAndDisplayUserInfo(ITelegramBotClient botClient, Update update, long chatId, CancellationToken cancellationToken)
     {
-        List<long> contactUserTGIds = await CoreDB.GetAllContactUserTGIds(DBforGetters.GetUserIDbyTelegramID(chatId));
-        List<long> preparedTargetUserTGIds = preparedTargetUserIds.Select(id => DBforGetters.GetTelegramIDbyUserID(id)).ToList();
+        List<long> contactUserTGIds = await _contactGetterRepository.GetAllContactUserTGIds(_userGetter.GetUserIDbyTelegramID(chatId));
+        List<long> preparedTargetUserTGIds = preparedTargetUserIds.Select(id => _userGetter.GetTelegramIDbyUserID(id)).ToList();
 
         contactUserTGIds = contactUserTGIds.Intersect(preparedTargetUserTGIds).ToList();
         List<string> contactUsersInfo = new List<string>();
 
         foreach (var contactUserId in contactUserTGIds)
         {
-            int id = DBforGetters.GetUserIDbyTelegramID(contactUserId);
-            string username = DBforGetters.GetUserNameByTelegramID(contactUserId);
-            string link = DBforGetters.GetSelfLink(contactUserId);
+            int id = _userGetter.GetUserIDbyTelegramID(contactUserId);
+            string username = _userGetter.GetUserNameByTelegramID(contactUserId);
+            string link = _userGetter.GetUserSelfLink(contactUserId);
 
             contactUsersInfo.Add(string.Format(Config.GetResourceString("ContactInfo"), id, username, link));
         }
@@ -115,7 +124,7 @@ public class ProcessRemoveUser : IUserState
         if (contactUsersInfo.Any())
         {
             string messageText = $"{Config.GetResourceString("ConfirmRemovalMessage")}\n\n{string.Join("\n", contactUsersInfo)}";
-            InlineKeyboardMarkup keyboard = Utils.KeyboardUtils.GetConfirmForActionKeyboardMarkup("confirm_removal", "cancel_removal");
+            InlineKeyboardMarkup keyboard = KeyboardUtils.GetConfirmForActionKeyboardMarkup("confirm_removal", "cancel_removal");
 
             await botClient.EditMessageText(chatId, statusMessage.MessageId, messageText, replyMarkup: keyboard, cancellationToken: cancellationToken, parseMode: ParseMode.Html);
             return true;
@@ -129,10 +138,7 @@ public class ProcessRemoveUser : IUserState
 
     private void RemoveUsersFromContacts(ITelegramBotClient botClient, long chatId, CancellationToken cancellationToken)
     {
-        foreach (int contactId in preparedTargetUserIds)
-        {
-            int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
-            isDeleteSuccessful = CoreDB.RemoveUserFromContacts(userId, contactId);
-        }
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        isDeleteSuccessful = _contactRemoverRepository.RemoveUsersFromContacts(userId, preparedTargetUserIds);
     }
 }

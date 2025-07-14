@@ -9,35 +9,53 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Telegram.Bot;
-using Telegram.Bot.Types;
-using DataBase;
-using MediaTelegramBot.Utils;
-using TelegramMediaRelayBot;
+
+using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 using Telegram.Bot.Types.Enums;
-using DataBase.Types;
+using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.TelegramBot;
+using TelegramMediaRelayBot.Database.Interfaces;
 
 
-namespace MediaTelegramBot;
+namespace TelegramMediaRelayBot;
 
 public class ProcessVideoDC : IUserState
 {
-    public UsersStandartState currentState;
+    public UsersStandardState currentState;
     public string link { get; set; }
     public Message statusMessage { get; set; }
     public string text { get; set; }
     public CancellationTokenSource timeoutCTS { get; }
+    public Queue<(string Link, string Text, int MessageId)> linkQueue = new Queue<(string Link, string Text, int MessageId)>();
     private string action = "";
     private List<long> targetUserIds = new List<long>();
     private List<long> preparedTargetUserIds = new List<long>();
+    private readonly TGBot _tgBot;
+    private readonly IContactGetter _contactGetterRepository;
+    private readonly IUserGetter _userGetter;
+    private readonly IGroupGetter _groupGetter;
 
-    public ProcessVideoDC(string Link, Message StatusMessage, string Text, CancellationTokenSource cts)
+    public ProcessVideoDC(
+        string Link,
+        Message StatusMessage,
+        string Text,
+        CancellationTokenSource cts,
+        TGBot tgBot,
+        IContactGetter contactGetterRepository,
+        IUserGetter userGetter,
+        IGroupGetter groupGetter
+        )
     {
         link = Link;
         statusMessage = StatusMessage;
         text = Text;
-        currentState = UsersStandartState.ProcessAction;
+        currentState = UsersStandardState.ProcessAction;
         timeoutCTS = cts;
+        _tgBot = tgBot;
+        _contactGetterRepository = contactGetterRepository;
+        _userGetter = userGetter;
+        _groupGetter = groupGetter;
     }
 
     public string GetCurrentState()
@@ -47,14 +65,14 @@ public class ProcessVideoDC : IUserState
 
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        long chatId = Utils.Utils.GetIDfromUpdate(update);
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
 
         switch (currentState)
         {
-            case UsersStandartState.ProcessAction:
+            case UsersStandardState.ProcessAction:
                 if (update.CallbackQuery != null)
                 {
-                    if (TelegramBot.userStates.TryGetValue(chatId, out var state) && state is ProcessVideoDC videoState)
+                    if (TGBot.userStates.TryGetValue(chatId, out var state) && state is ProcessVideoDC videoState)
                     {
                         videoState.timeoutCTS.Cancel();
                     }
@@ -75,7 +93,7 @@ public class ProcessVideoDC : IUserState
 
                         case UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS:
                             action = UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS;
-                            List<string> groupInfos = UsersGroup.GetUserGroupInfoByUserId(DBforGetters.GetUserIDbyTelegramID(chatId));
+                            List<string> groupInfos = await UsersGroup.GetUserGroupInfoByUserId(_userGetter.GetUserIDbyTelegramID(chatId), _groupGetter);
 
                             string messageText = groupInfos.Any() 
                                 ? $"{Config.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
@@ -83,33 +101,64 @@ public class ProcessVideoDC : IUserState
                             string text = $"{messageText}\n{Config.GetResourceString("PleaseEnterContactIDs")}";
 
                             await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, text, replyMarkup: KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken, parseMode: ParseMode.Html);
-                            currentState = UsersStandartState.ProcessData;
+                            currentState = UsersStandardState.ProcessData;
                             break;
 
                         case UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS:
                             action = UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS;
                             await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
-                            currentState = UsersStandartState.ProcessData;
+                            currentState = UsersStandardState.ProcessData;
                             break;
 
                         case UsersAction.SEND_MEDIA_ONLY_TO_ME:
                             action = UsersAction.SEND_MEDIA_ONLY_TO_ME;
                             await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
-                            currentState = UsersStandartState.Finish;
+                            currentState = UsersStandardState.Finish;
                             break;
 
                         case "main_menu":
-                            await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false);
+                            await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false);
                             break;
+                    }
+                }
+                else if (update.Message != null && update.Message.Text != null)
+                {
+                    string messageText = update.Message.Text;
+                    string newLink;
+                    string newText = "";
+
+                    int newLineIndex = messageText.IndexOf('\n');
+                    if (newLineIndex != -1)
+                    {
+                        newLink = messageText[..newLineIndex].Trim();
+                        newText = messageText[(newLineIndex + 1)..].Trim();
+                    }
+                    else
+                    {
+                        newLink = messageText.Trim();
+                    }
+
+                    if (CommonUtilities.IsLink(newLink))
+                    {
+
+                        int replyToMessageId = update.Message.MessageId;
+                        statusMessage = await botClient.SendMessage(
+                            chatId, 
+                            Config.GetResourceString("VideoDistributionQuestion"), 
+                            replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), 
+                            replyParameters: new ReplyParameters { MessageId = replyToMessageId }, 
+                            cancellationToken: cancellationToken
+                        );
+                        linkQueue.Enqueue((newLink, newText, statusMessage.MessageId));
                     }
                 }
                 break;
 
-            case UsersStandartState.ProcessData:
+            case UsersStandardState.ProcessData:
                 if (update.CallbackQuery != null && update.CallbackQuery.Data == "main_menu")
                 {
                     await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("VideoDistributionQuestion"), replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), cancellationToken: cancellationToken);
-                    currentState = UsersStandartState.ProcessAction;
+                    currentState = UsersStandardState.ProcessAction;
                     return;
                 }
                 else if (update.Message != null)
@@ -126,7 +175,7 @@ public class ProcessVideoDC : IUserState
                         }
                         else
                         {
-                            await botClient.SendMessage(chatId, Config.GetResourceString("InvalidInputNumbers"), cancellationToken: cancellationToken);
+                            await botClient.SendMessage(chatId, Config.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
                         }
                     }
                     else
@@ -139,47 +188,77 @@ public class ProcessVideoDC : IUserState
                         }
                         else
                         {
-                            await botClient.SendMessage(chatId, Config.GetResourceString("InvalidInputNumbers"), cancellationToken: cancellationToken);
+                            await botClient.SendMessage(chatId, Config.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
                         }
                     }
                 }
                 break;
 
-            case UsersStandartState.Finish:
+            case UsersStandardState.Finish:
                 if (update.CallbackQuery != null && update.CallbackQuery.Data == "main_menu" ||
                     update.Message != null)
                 {
                     await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("VideoDistributionQuestion"), replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), cancellationToken: cancellationToken);
-                    currentState = UsersStandartState.ProcessAction;
+                    currentState = UsersStandardState.ProcessAction;
                     return;
                 }
 
                 await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, Config.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
-                TelegramBot.userStates.Remove(chatId);
-                _ = TelegramBot.HandleVideoRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
+                _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
+
+                if (linkQueue.Count > 0)
+                {
+                    var nextLink = linkQueue.Dequeue();
+                    link = nextLink.Link;
+                    text = nextLink.Text;
+                    int replyToMessageId = nextLink.MessageId;
+                    currentState = UsersStandardState.ProcessAction;
+
+                    statusMessage = await botClient.SendMessage(
+                        chatId, 
+                        Config.GetResourceString("WaitDownloadingVideo"),
+                        replyParameters: new ReplyParameters { MessageId = replyToMessageId }, 
+                        cancellationToken: cancellationToken
+                    );
+
+                    await botClient.EditMessageText(
+                        statusMessage.Chat.Id, 
+                        statusMessage.MessageId, 
+                        Config.GetResourceString("VideoDistributionQuestion"), 
+                        replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), 
+                        cancellationToken: cancellationToken
+                    );
+
+                    await ProcessState(botClient, update, cancellationToken);
+                }
+                else
+                {
+                    TGBot.userStates.Remove(chatId);
+                }
+
                 break;
         }
     }
 
     private async Task PrepareTargetUserIds(long chatId)
     {
-        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
-        List<long> mutedByUserIds = DBforGetters.GetUsersIdForMuteContactId(userId);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        List<long> mutedByUserIds = _userGetter.GetUsersIdForMuteContactId(userId);
         List<long> contactUserTGIds = new List<long>();
 
         switch (action)
         {
             case UsersAction.SEND_MEDIA_TO_ALL_CONTACTS:
-                contactUserTGIds = await CoreDB.GetAllContactUserTGIds(userId);
+                contactUserTGIds = await _contactGetterRepository.GetAllContactUserTGIds(userId);
                 targetUserIds = contactUserTGIds.Except(mutedByUserIds).ToList();
                 break;
 
             case UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS:
-                List<int> defaultGroupContactIDs = DBforGroups.GetAllUsersInDefaultEnabledGroups(userId);
+                List<int> defaultGroupContactIDs = await _groupGetter.GetAllUsersInDefaultEnabledGroups(userId);
 
                 targetUserIds = defaultGroupContactIDs
-                    .Where(contactId => !mutedByUserIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
-                    .Select(DBforGetters.GetTelegramIDbyUserID)
+                    .Where(contactId => !mutedByUserIds.Contains(_userGetter.GetTelegramIDbyUserID(contactId)))
+                    .Select(_userGetter.GetTelegramIDbyUserID)
                     .ToList();
                 break;
 
@@ -187,26 +266,26 @@ public class ProcessVideoDC : IUserState
                 List<int> contactUserIds = new List<int>();
                 foreach (int groupId in preparedTargetUserIds)
                 {
-                    contactUserIds.AddRange(DBforGroups.GetAllUsersInGroup(groupId, userId));
+                    contactUserIds.AddRange(await _groupGetter.GetAllUsersInGroup(groupId, userId));
                 }
 
                 targetUserIds = contactUserIds
-                    .Where(contactId => !mutedByUserIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
-                    .Select(DBforGetters.GetTelegramIDbyUserID)
+                    .Where(contactId => !mutedByUserIds.Contains(_userGetter.GetTelegramIDbyUserID(contactId)))
+                    .Select(_userGetter.GetTelegramIDbyUserID)
                     .ToList();
                     break;
 
             case UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS:
                 foreach (int contactId in preparedTargetUserIds)
                 {
-                    contactUserTGIds.Add(DBforGetters.GetTelegramIDbyUserID(contactId));
+                    contactUserTGIds.Add(_userGetter.GetTelegramIDbyUserID(contactId));
                 }
-                List<long> allContactUserTGIds = await CoreDB.GetAllContactUserTGIds(userId);
+                List<long> allContactUserTGIds = await _contactGetterRepository.GetAllContactUserTGIds(userId);
                 List<long> filteredContactUserTGIds = contactUserTGIds.Except(allContactUserTGIds).ToList();
                 targetUserIds = contactUserTGIds.Except(mutedByUserIds).ToList();
                 break;
         }
 
-        currentState = UsersStandartState.Finish;
+        currentState = UsersStandardState.Finish;
     }
 }

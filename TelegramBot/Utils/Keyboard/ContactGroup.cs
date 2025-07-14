@@ -10,10 +10,9 @@
 // (по вашему выбору) любой более поздней версии.
 
 using Telegram.Bot.Types.ReplyMarkups;
-using TelegramMediaRelayBot;
 
 
-namespace MediaTelegramBot.Utils;
+namespace TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 public static class ContactGroup
 {

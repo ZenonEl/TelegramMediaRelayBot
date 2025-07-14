@@ -9,11 +9,10 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Telegram.Bot;
-using Telegram.Bot.Types;
 
 
-namespace MediaTelegramBot;
+
+namespace TelegramMediaRelayBot;
 
 
 public interface IUserState
@@ -59,7 +58,7 @@ public enum UserInboundState
     Finish
 }
 
-public enum UsersStandartState
+public enum UsersStandardState
 {
     ProcessAction,
     ProcessData,

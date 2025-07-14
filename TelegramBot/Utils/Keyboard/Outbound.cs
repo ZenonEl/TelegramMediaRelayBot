@@ -10,17 +10,16 @@
 // (по вашему выбору) любой более поздней версии.
 
 using Telegram.Bot.Types.ReplyMarkups;
-using DataBase;
-using TelegramMediaRelayBot;
+using TelegramMediaRelayBot.Database.Interfaces;
 
 
-namespace MediaTelegramBot.Utils;
+namespace TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
-public static class OutBoundKB
+public class OutBoundKB
 {
-    public static InlineKeyboardMarkup GetOutboundKeyboardMarkup(long userId)
+    public static InlineKeyboardMarkup GetOutboundKeyboardMarkup(long userId, IOutboundDBGetter outboundDBGetter, IUserGetter userGetter)
     {
-        var buttonDataList = DBforOutbound.GetOutboundButtonData(DBforGetters.GetUserIDbyTelegramID(userId));
+        var buttonDataList = outboundDBGetter.GetOutboundButtonData(userGetter.GetUserIDbyTelegramID(userId));
 
         var inlineKeyboardButtons = new List<InlineKeyboardButton[]>();
 

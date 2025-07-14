@@ -9,18 +9,18 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Telegram.Bot;
-using Telegram.Bot.Types;
-using DataBase;
-using MediaTelegramBot.Utils;
-using TelegramMediaRelayBot;
+
+using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot;
+using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 
-namespace MediaTelegramBot;
+namespace TelegramMediaRelayBot;
 
 public class ProcessContactGroupState : IUserState
 {
-    public UsersStandartState currentState;
+    public UsersStandardState currentState;
 
     public string groupInfo = "";
 
@@ -29,10 +29,20 @@ public class ProcessContactGroupState : IUserState
     private List<int> contactIDs = [];
     private int groupId = 0;
     private List<bool> isDBActionSuccessful = [];
+    private IContactGroupRepository _contactGroupRepository;
+    private readonly IUserGetter _userGetter;
+    private readonly IGroupGetter _groupGetter;
 
-    public ProcessContactGroupState()
+    public ProcessContactGroupState(
+        IContactGroupRepository contactGroupRepository,
+        IUserGetter userGetter,
+        IGroupGetter groupGetter
+        )
     {
-        currentState = UsersStandartState.ProcessAction;
+        currentState = UsersStandardState.ProcessAction;
+        _contactGroupRepository = contactGroupRepository;
+        _userGetter = userGetter;
+        _groupGetter = groupGetter;
     }
 
     public string GetCurrentState()
@@ -42,10 +52,10 @@ public class ProcessContactGroupState : IUserState
 
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        long chatId = Utils.Utils.GetIDfromUpdate(update);
-        if (Utils.Utils.CheckNonZeroID(chatId)) return;
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
+        if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (!TelegramBot.userStates.TryGetValue(chatId, out IUserState? value))
+        if (!TGBot.userStates.TryGetValue(chatId, out IUserState? value))
         {
             return;
         }
@@ -54,17 +64,17 @@ public class ProcessContactGroupState : IUserState
 
         switch (userState.currentState)
         {
-            case UsersStandartState.ProcessAction:
-                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
+            case UsersStandardState.ProcessAction:
+                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
 
                 bool? isUpdateSuccessful = await ProcessUpdate(botClient, update, cancellationToken);
                 if (isUpdateSuccessful == true)
                 {
-                    userState.currentState = UsersStandartState.ProcessData;
+                    userState.currentState = UsersStandardState.ProcessData;
                 }
                 else if (isUpdateSuccessful == null)
                 {
-                    await Utils.Utils.SendMessage(
+                    await CommonUtilities.SendMessage(
                         botClient,
                         update,
                         KeyboardUtils.GetReturnButtonMarkup(),
@@ -74,12 +84,12 @@ public class ProcessContactGroupState : IUserState
 
                 break;
 
-            case UsersStandartState.ProcessData:
-                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
+            case UsersStandardState.ProcessData:
+                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
                 if (update.CallbackQuery != null && update.CallbackQuery.Data == backCallback)
                 {
-                    userState.currentState = UsersStandartState.ProcessAction;
-                    await Utils.Utils.SendMessage(
+                    userState.currentState = UsersStandardState.ProcessAction;
+                    await CommonUtilities.SendMessage(
                         botClient,
                         update,
                         UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
@@ -92,7 +102,7 @@ public class ProcessContactGroupState : IUserState
 
                 if (isActionSuccessful == true) 
                 {
-                    userState.currentState = UsersStandartState.Finish;
+                    userState.currentState = UsersStandardState.Finish;
                     return;
                 }
                 else if (isActionSuccessful == null)
@@ -102,12 +112,12 @@ public class ProcessContactGroupState : IUserState
                 }
                 break;
 
-            case UsersStandartState.Finish:
-                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
+            case UsersStandardState.Finish:
+                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
                 if (update.CallbackQuery != null && update.CallbackQuery.Data == backCallback)
                 {
-                    userState.currentState = UsersStandartState.ProcessAction;
-                    await Utils.Utils.SendMessage(
+                    userState.currentState = UsersStandardState.ProcessAction;
+                    await CommonUtilities.SendMessage(
                         botClient,
                         update,
                         UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
@@ -124,7 +134,7 @@ public class ProcessContactGroupState : IUserState
                     ProcessFinish(chatId);
                     string text = !isDBActionSuccessful.Contains(false) ? Config.GetResourceString("SuccessActionResult") : Config.GetResourceString("ErrorActionResult");
                     await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, text);
-                    TelegramBot.userStates.Remove(chatId);
+                    TGBot.userStates.Remove(chatId);
                     return;
                 }
                 await botClient.SendMessage(chatId, Config.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
@@ -139,27 +149,27 @@ public class ProcessContactGroupState : IUserState
             callbackAction = update.CallbackQuery!.Data!;
         }
 
-        int userId = DBforGetters.GetUserIDbyTelegramID(Utils.Utils.GetIDfromUpdate(update));
+        int userId = _userGetter.GetUserIDbyTelegramID(CommonUtilities.GetIDfromUpdate(update));
         switch (callbackAction)
         {
             case "edit_contact_group":
-                if (int.TryParse(update.Message!.Text!, out groupId) && DBforGroups.CheckGroupOwnership(groupId, userId))
+                if (int.TryParse(update.Message!.Text!, out groupId) && await _groupGetter.GetGroupOwnership(groupId, userId))
                 {
-                    groupInfo = UsersGroup.GetUserGroupInfoByGroupId(groupId);
+                    groupInfo = await UsersGroup.GetUserGroupInfoByGroupId(groupId, _groupGetter);
 
-                    List<int> allContactsIds = DBforGroups.GetAllUsersIdsInGroup(groupId);
+                    IEnumerable<int> allContactsIds = await _groupGetter.GetAllUsersIdsInGroup(groupId);
                     List<string> allContactsNames = [];
 
                     foreach (int contactId in allContactsIds)
                     {
-                        allContactsNames.Add(DBforGetters.GetUserNameByID(contactId) + $" (ID: {contactId})");
+                        allContactsNames.Add(_userGetter.GetUserNameByID(contactId) + $" (ID: {contactId})");
                     }
 
                     string allContactsText;
                     allContactsText = $"{Config.GetResourceString("AllContactsText")} {string.Join("\n", allContactsNames)}";
                     
                     string messageText = $"{groupInfo}\n{allContactsText}\n{Config.GetResourceString("ChooseOptionText")}";
-                    await Utils.Utils.SendMessage(
+                    await CommonUtilities.SendMessage(
                         botClient,
                         update,
                         ContactGroup.GetContactGroupEditActionsKeyboardMarkup(groupId),
@@ -172,7 +182,7 @@ public class ProcessContactGroupState : IUserState
                 if (callbackAction.StartsWith("user_add_contact_to_group:"))
                 {
                     groupId = int.Parse(callbackAction.Split(':')[1]);
-                    await Utils.Utils.SendMessage(
+                    await CommonUtilities.SendMessage(
                         botClient,
                         update,
                         KeyboardUtils.GetReturnButton(),
@@ -184,7 +194,7 @@ public class ProcessContactGroupState : IUserState
                 {
                     groupId = int.Parse(callbackAction.Split(':')[1]);
                     await botClient.SendMessage(
-                        Utils.Utils.GetIDfromUpdate(update),
+                        CommonUtilities.GetIDfromUpdate(update),
                         Config.GetResourceString("InputContactIDsText"),
                         replyMarkup: KeyboardUtils.GetReturnButtonMarkup(),
                         cancellationToken: cancellationToken);
@@ -196,8 +206,8 @@ public class ProcessContactGroupState : IUserState
 
     public async Task<bool?> ProcessAction(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        long chatId = Utils.Utils.GetIDfromUpdate(update);
-        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
 
         try
         {
@@ -206,15 +216,14 @@ public class ProcessContactGroupState : IUserState
                 groupId = int.Parse(callbackAction.Split(':')[1]);
                 contactIDs = update.Message!.Text!.Split(" ").Select(x => int.Parse(x)).ToList();
                 List<int> allowedIds = [];
-
                 foreach (int contactId in contactIDs)
                 {
-                    bool status = DBforContactGroups.CheckUserAndContactConnect(userId, contactId);
+                    bool status = _contactGroupRepository.CheckUserAndContactConnect(userId, contactId);
                     if (status) allowedIds.Add(contactId);
                 }
 
                 if (allowedIds.Count == 0) return null;
-                await Utils.Utils.SendMessage(
+                await CommonUtilities.SendMessage(
                     botClient,
                     update,
                     KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_add_contact_to_group"),
@@ -227,7 +236,7 @@ public class ProcessContactGroupState : IUserState
             {
                 groupId = int.Parse(callbackAction.Split(':')[1]);
                 contactIDs = update.Message!.Text!.Split(" ").Select(x => int.Parse(x)).ToList();
-                await Utils.Utils.SendMessage(
+                await CommonUtilities.SendMessage(
                     botClient,
                     update,
                     KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_delete_contact_from_group"),
@@ -245,20 +254,20 @@ public class ProcessContactGroupState : IUserState
 
     public void ProcessFinish(long chatId)
     {
-        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
 
         if (callbackAction.StartsWith("accept_add_contact_to_group"))
         {
             foreach (var contactId in contactIDs)
             {
-                isDBActionSuccessful.Add(DBforContactGroups.AddContactToGroup(userId, contactId, groupId));
+                isDBActionSuccessful.Add(_contactGroupRepository.AddContactToGroup(userId, contactId, groupId));
             }
         }
         else if (callbackAction.StartsWith("accept_delete_contact_from_group"))
         {
             foreach (var contactId in contactIDs)
             {
-                isDBActionSuccessful.Add(DBforContactGroups.RemoveContactFromGroup(userId, contactId, groupId));
+                isDBActionSuccessful.Add(_contactGroupRepository.RemoveContactFromGroup(userId, contactId, groupId));
             }
         }
     }

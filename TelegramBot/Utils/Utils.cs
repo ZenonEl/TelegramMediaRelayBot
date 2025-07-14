@@ -9,19 +9,17 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Serilog;
-using Telegram.Bot;
-using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
-using TelegramMediaRelayBot;
+using System.Text.RegularExpressions;
 
 
-namespace MediaTelegramBot.Utils;
+namespace TelegramMediaRelayBot.TelegramBot.Utils;
 
-public static class Utils
+public static class CommonUtilities
 {
-    public static CancellationToken cancellationToken = TelegramBot.cancellationToken;
+
+    public static CancellationToken cancellationToken = TGBot.cancellationToken;
     public static Task ErrorHandler(ITelegramBotClient _, Exception exception, CancellationToken __)
     {
         Log.Error($"Error occurred: {exception.Message}");
@@ -100,7 +98,7 @@ public static class Utils
     {
         await botClient.SendMessage(chatId, text, cancellationToken: cancellationToken);
         await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-        TelegramBot.userStates.Remove(chatId);
+        TGBot.userStates.Remove(chatId);
     }
 
     public static async Task<bool> HandleStateBreakCommand(ITelegramBotClient botClient,
@@ -115,7 +113,7 @@ public static class Utils
         {
             if (removeReplyMarkup) await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
             await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-            TelegramBot.userStates.Remove(chatId);
+            TGBot.userStates.Remove(chatId);
             return true;
         }
         return false;
@@ -128,6 +126,13 @@ public static class Utils
 
         return Uri.TryCreate(input, UriKind.Absolute, out Uri? uriResult)
                             && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+    }
+
+    public static string ExtractDomain(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            return string.Empty;
+        return uri.Host.ToLower();
     }
 
     public static string ParseStartCommand(string message)
@@ -148,6 +153,51 @@ public static class Utils
         else
         {
             return "";
+        }
+    }
+
+    public static MediaFileType DetermineFileType(byte[] bytes)
+    {
+        if (bytes == null || bytes.Length < 4)
+            return MediaFileType.Document;
+
+        string start = BitConverter.ToString(bytes.Take(4).ToArray()).Replace("-", "");
+        
+        var patterns = new Dictionary<MediaFileType, string>
+        {
+            { MediaFileType.Video, @"^(424242|00000018|0000001C|00000020|57415645)" },
+            { MediaFileType.Photo, @"^(FFD8FF|89504E47|52494646|424D|49492A|4D4D2A)" },
+            { MediaFileType.Audio, @"^(49443304)" } // MP3
+        };
+
+        foreach (var pattern in patterns)
+        {
+            Log.Verbose($"File bytes start: {start}");
+            if (Regex.IsMatch(start, pattern.Value, RegexOptions.IgnoreCase))
+                return pattern.Key;
+        }
+
+        return MediaFileType.Document;
+    }
+
+    public static IEnumerable<IAlbumInputMedia> CreateMediaGroup(List<byte[]> files)
+    {
+        return files.Select(CreateMedia);
+    }
+
+    private static IAlbumInputMedia CreateMedia(byte[] file)
+    {
+        MediaFileType fileType = DetermineFileType(file);
+        switch (fileType)
+        {
+            case MediaFileType.Photo:
+                return new InputMediaPhoto(new MemoryStream(file));
+            case MediaFileType.Video:
+                return new InputMediaVideo(new MemoryStream(file));
+            case MediaFileType.Audio:
+                return new InputMediaAudio(new MemoryStream(file));
+            default:
+                return new InputMediaDocument(new MemoryStream(file));
         }
     }
 }

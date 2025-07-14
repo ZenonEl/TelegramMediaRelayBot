@@ -9,40 +9,47 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using DataBase.Types;
 using MySql.Data.MySqlClient;
+using TelegramMediaRelayBot.Database.Interfaces;
 
-namespace DataBase;
 
+namespace TelegramMediaRelayBot.Database.Repositories.MySql;
 
-public class DBforInbounds
+public class MySqlOutboundDBGetter : IOutboundDBGetter
 {
-    public static List<ButtonData> GetInboundsButtonData(int userId)
+    private readonly string _connectionString;
+
+    public MySqlOutboundDBGetter(string connectionString)
+    {
+        _connectionString = connectionString;
+    }
+
+    public List<ButtonData> GetOutboundButtonData(int userId)
     {
         var buttonDataList = new List<ButtonData>();
         var contactUserIds = GetContactUserIds(userId);
 
         foreach (var contactUserId in contactUserIds)
         {
-            var userData = GetUserDataByContactId(contactUserId);
+            var userData = GetUserDataByUserId(contactUserId);
             if (userData != null)
             {
-                buttonDataList.Add(new ButtonData { ButtonText = userData.Item1, CallbackData = "user_show_inbounds_invite:" + userData.Item2 });
+                buttonDataList.Add(new ButtonData { ButtonText = userData.Item1, CallbackData = "user_show_outbound_invite:" + userData.Item2 });
             }
         }
 
         return buttonDataList;
     }
 
-    private static List<int> GetContactUserIds(int userId)
+    private List<int> GetContactUserIds(int userId)
     {
         var contactUserIds = new List<int>();
         string queryContacts = @"
-            SELECT UserId
+            SELECT ContactId
             FROM Contacts
-            WHERE ContactId = @UserId AND status = 'waiting_for_accept'";
+            WHERE UserId = @UserId AND status = 'waiting_for_accept'";
 
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        using (MySqlConnection connection = new MySqlConnection(_connectionString))
         {
             MySqlCommand commandContacts = new MySqlCommand(queryContacts, connection);
             commandContacts.Parameters.AddWithValue("@UserId", userId);
@@ -52,7 +59,7 @@ public class DBforInbounds
             {
                 while (readerContacts.Read())
                 {
-                    int contactUserId = readerContacts.GetInt32("UserId");
+                    int contactUserId = readerContacts.GetInt32("ContactId");
                     contactUserIds.Add(contactUserId);
                 }
             }
@@ -61,17 +68,17 @@ public class DBforInbounds
         return contactUserIds;
     }
 
-    private static Tuple<string, string>? GetUserDataByContactId(int contactId)
+    private Tuple<string, string>? GetUserDataByUserId(int userId)
     {
         string queryUsers = @"
             SELECT Name, TelegramID
             FROM Users
-            WHERE ID = @contactId";
+            WHERE ID = @userId";
 
-        using (MySqlConnection connection = new MySqlConnection(CoreDB.connectionString))
+        using (MySqlConnection connection = new MySqlConnection(_connectionString))
         {
             MySqlCommand commandUsers = new MySqlCommand(queryUsers, connection);
-            commandUsers.Parameters.AddWithValue("@contactId", contactId);
+            commandUsers.Parameters.AddWithValue("@userId", userId);
             connection.Open();
 
             using (MySqlDataReader readerUsers = commandUsers.ExecuteReader())

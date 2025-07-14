@@ -9,13 +9,10 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Telegram.Bot;
-using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
-using TelegramMediaRelayBot;
 
 
-namespace MediaTelegramBot.Utils;
+namespace TelegramMediaRelayBot.TelegramBot.Utils;
 
 public static class KeyboardUtils
 {
@@ -113,7 +110,7 @@ public static class KeyboardUtils
                             InlineKeyboardButton.WithCallbackData(Config.GetResourceString("BehindTheScenesButtonText"), "whos_the_genius")
                         }
                     });
-        return Utils.SendMessage(botClient, update, inlineKeyboard, cancellationToken, text);
+        return CommonUtilities.SendMessage(botClient, update, inlineKeyboard, cancellationToken, text);
     }
 
     public static InlineKeyboardMarkup GetVideoDistributionKeyboardMarkup()

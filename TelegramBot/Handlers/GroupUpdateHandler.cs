@@ -9,21 +9,25 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Serilog;
-using Telegram.Bot;
-using Telegram.Bot.Types;
-using TelegramMediaRelayBot;
+using TelegramMediaRelayBot.TelegramBot.Utils;
 
-namespace MediaTelegramBot;
+namespace TelegramMediaRelayBot.TelegramBot.Handlers;
 
 public class GroupUpdateHandler
 {
-    public static async Task HandleGroupUpdate(Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
+    private TGBot _tgBot;
+
+    public GroupUpdateHandler(
+        TGBot tgBot)
+    {
+        _tgBot = tgBot;
+    }
+
+    public async Task HandleGroupUpdate(Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
         string messageText = update.Message!.Text!;
         if (messageText.Contains("/link"))
         {
-            Log.Information(messageText);
             string link;
             string text = "";
 
@@ -41,10 +45,10 @@ public class GroupUpdateHandler
                 link = trimmedMessage.Trim();
             }
 
-            if (Utils.Utils.IsLink(link))
+            if (CommonUtilities.IsLink(link))
             {
                 Message statusMessage = await botClient.SendMessage(update.Message.Chat.Id, Config.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
-                _ = TelegramBot.HandleVideoRequest(botClient, link, update.Message.Chat.Id, statusMessage: statusMessage, groupChat: true, caption: text);
+                _ = _tgBot.HandleMediaRequest(botClient, link, update.Message.Chat.Id, statusMessage: statusMessage, groupChat: true, caption: text);
             }
             else
             {

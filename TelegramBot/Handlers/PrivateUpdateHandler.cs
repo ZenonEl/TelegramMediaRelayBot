@@ -9,21 +9,41 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Telegram.Bot;
-using Telegram.Bot.Types;
-using MediaTelegramBot.Menu;
-using MediaTelegramBot.Utils;
-using TelegramMediaRelayBot;
-using DataBase;
-using DataBase.Types;
+
+using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 
 
-namespace MediaTelegramBot;
+namespace TelegramMediaRelayBot.TelegramBot.Handlers;
 
 public class PrivateUpdateHandler
 {
+    private readonly TGBot _tgBot;
+    private readonly CallbackQueryHandlersFactory _handlersFactory;
+    private readonly IContactGetter _contactGetterRepository;
+    private readonly IDefaultActionGetter _defaultActionGetter;
+    private readonly IUserGetter _userGetter;
+    private readonly IGroupGetter _groupGetter;
 
-    public static async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
+    public PrivateUpdateHandler(
+        TGBot tgBot,
+        CallbackQueryHandlersFactory handlersFactory,
+        IContactGetter contactGetterRepository,
+        IDefaultActionGetter defaultActionGetter,
+        IUserGetter userGetter,
+        IGroupGetter groupGetter
+        )
+    {
+        _tgBot = tgBot;
+        _handlersFactory = handlersFactory;
+        _contactGetterRepository = contactGetterRepository;
+        _defaultActionGetter = defaultActionGetter;
+        _userGetter = userGetter;
+        _groupGetter = groupGetter;
+    }
+
+    public async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
     {
         string messageText = update.Message!.Text!;
         string link;
@@ -41,85 +61,39 @@ public class PrivateUpdateHandler
             link = messageText.Trim();
         }
 
-        if (Utils.Utils.IsLink(link))
+        if (CommonUtilities.IsLink(link))
         {
             int replyToMessageId = update.Message.MessageId;
             Message statusMessage = await botClient.SendMessage(
-                chatId, 
+                chatId,
                 Config.GetResourceString("WaitDownloadingVideo"),
-                replyParameters: new ReplyParameters { MessageId = replyToMessageId }, 
+                replyParameters: new ReplyParameters { MessageId = replyToMessageId },
                 cancellationToken: cancellationToken
             );
 
             await botClient.EditMessageText(
-                statusMessage.Chat.Id, 
-                statusMessage.MessageId, 
-                Config.GetResourceString("VideoDistributionQuestion"), 
-                replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), 
+                statusMessage.Chat.Id,
+                statusMessage.MessageId,
+                Config.GetResourceString("VideoDistributionQuestion"),
+                replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(),
                 cancellationToken: cancellationToken
             );
 
-            int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
-            string defaultActionData = DBforGetters.GetDefaultActionByUserIDAndType(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+            int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+            string defaultActionData = _defaultActionGetter.GetDefaultActionByUserIDAndType(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
 
             CancellationTokenSource timeoutCTS = new CancellationTokenSource();
-            TelegramBot.userStates[chatId] = new ProcessVideoDC(link, statusMessage, text, timeoutCTS);
+            TGBot.userStates[chatId] = new ProcessVideoDC(link, statusMessage, text, timeoutCTS, _tgBot, _contactGetterRepository, _userGetter, _groupGetter);
 
             if (defaultActionData == UsersAction.NO_VALUE) return;
 
             string defaultAction = defaultActionData.Split(';')[0];
             int defaultCondition = int.Parse(defaultActionData.Split(';')[1]);
 
-            List<string> excludedActions = new List<string>
-                                            {
-                                                UsersAction.OFF,
-                                                UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS,
-                                                UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS,
-                                            };
-
-            if (excludedActions.Contains(defaultAction)) return;
-
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(defaultCondition), timeoutCTS.Token);
-
-                    List<long> targetUserIds = new List<long>();
-                    List<long> mutedByUserIds = new List<long>();
-
-                    if (defaultAction == UsersAction.SEND_MEDIA_TO_ALL_CONTACTS)
-                    {
-                        mutedByUserIds = DBforGetters.GetUsersIdForMuteContactId(userId);
-                        List<long> contactUserTGIds = await CoreDB.GetAllContactUserTGIds(userId);
-                        targetUserIds = contactUserTGIds.Except(mutedByUserIds).ToList();
-                    }
-                    else if (defaultAction == UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS)
-                    {
-                        List<int> defaultGroupContactIDs = DBforGroups.GetAllUsersInDefaultEnabledGroups(userId);
-
-                        targetUserIds = defaultGroupContactIDs
-                            .Where(contactId => !mutedByUserIds.Contains(DBforGetters.GetTelegramIDbyUserID(contactId)))
-                            .Select(DBforGetters.GetTelegramIDbyUserID)
-                            .ToList();
-                    }
-
-                    if (TelegramBot.userStates.TryGetValue(chatId, out var state) && state is ProcessVideoDC)
-                    {
-                        await botClient.EditMessageText(
-                            statusMessage.Chat.Id,
-                            statusMessage.MessageId,
-                            Config.GetResourceString("DefaultActionTimeoutMessage"),
-                            cancellationToken: cancellationToken
-                        );
-
-                        _ = TelegramBot.HandleVideoRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
-                        
-                        TelegramBot.userStates.Remove(chatId, out _);
-                    }
-                }
-                catch (TaskCanceledException) {}
-            }, cancellationToken);
+            if (defaultAction == UsersAction.OFF) return;
+            var privateUtils = new PrivateUtils(_tgBot, _contactGetterRepository, _defaultActionGetter, _userGetter, _groupGetter);
+            privateUtils.ProcessDefaultSendAction(botClient, chatId, statusMessage, defaultAction, cancellationToken,
+                                                                userId, defaultCondition, timeoutCTS, link, text);
         }
         else if (update.Message.Text == "/start")
         {
@@ -128,7 +102,7 @@ public class PrivateUpdateHandler
         else if (update.Message.Text == "/help")
         {
             string helpText = Config.GetResourceString("HelpText");
-            await Utils.Utils.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken, helpText);
+            await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken, helpText);
         }
         else
         {
@@ -136,120 +110,16 @@ public class PrivateUpdateHandler
         }
     }
 
-    public static async Task ProcessCallbackQuery(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
+    public async Task ProcessCallbackQuery(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         var callbackQuery = update.CallbackQuery;
 
-        switch (callbackQuery!.Data)
-        {
-            case "main_menu":
-                await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-                break;
-            case "add_contact":
-                await Contacts.AddContact(botClient, update, chatId);
-                break;
-            case "get_self_link":
-                await CallbackQueryMenuUtils.GetSelfLink(botClient, update);
-                break;
-            case "view_inbound_invite_links":
-                await CallbackQueryMenuUtils.ViewInboundInviteLinks(botClient, update, chatId);
-                break;
-            case "view_outbound_invite_links":
-                await CallbackQueryMenuUtils.ViewOutboundInviteLinks(botClient, update);
-                break;
-            case "view_contacts":
-                await Contacts.ViewContacts(botClient, update);
-                break;
-            case "show_groups":
-                await Groups.ViewGroups(botClient, update, cancellationToken);
-                break;
-            case "mute_contact":
-                await Contacts.MuteUserContact(botClient, update, chatId);
-                break;
-            case "unmute_contact":
-                await Contacts.UnMuteUserContact(botClient, update, chatId);
-                break;
-            case "edit_contact_group":
-                await Contacts.EditContactGroup(botClient, update, chatId);
-                break;
-            case "delete_contact":
-                await Contacts.DeleteContact(botClient, update, chatId);
-                break;
+        string data = callbackQuery!.Data!;
+        int colonIndex = data.IndexOf(':');
+        string commandName = colonIndex >= 0 ? data[..(colonIndex + 1)] : data;
 
-            case "show_settings":
-                await Users.ViewSettings(botClient, update);
-                break;
-            case "default_actions_menu":
-                await Users.ViewDefaultActionsMenu(botClient, update);
-                break;
-            case "user_set_auto_send_video_time":
-                await Users.ViewAutoSendVideoTimeMenu(botClient, update);
-                break;
-            case "video_default_actions_menu":
-                await Users.ViewVideoDefaultActionsMenu(botClient, update);
-                break;
-            case "user_set_video_send_users":
-                await Users.ViewUsersVideoSentUsersActionsMenu(botClient, update);
-                break;
-
-            case "whos_the_genius":
-                await CallbackQueryMenuUtils.WhosTheGenius(botClient, update);
-                break;
-
-            default:
-                if (callbackQuery.Data!.StartsWith("user_show_outbound_invite:"))
-                {
-                    await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId);
-                }
-                else if (callbackQuery.Data!.StartsWith("user_set_auto_send_video_time_to:"))
-                {
-                    string time = callbackQuery.Data.Split(':')[1];
-                    bool result = Users.SetAutoSendVideoTimeToUser(chatId, time);
-
-                    if (result)
-                    {
-                        await Utils.Utils.SendMessage(
-                            botClient,
-                            update,
-                            KeyboardUtils.GetReturnButtonMarkup("user_set_auto_send_video_time"),
-                            cancellationToken,
-                            Config.GetResourceString("AutoSendTimeChangedMessage") + time
-                        );
-                        return;
-                    }
-                    await Utils.Utils.SendMessage(
-                        botClient,
-                        update,
-                        KeyboardUtils.GetReturnButtonMarkup("user_set_auto_send_video_time"),
-                        cancellationToken,
-                        Config.GetResourceString("AutoSendTimeNotChangedMessage")
-                    );
-                }
-                else if (callbackQuery.Data!.StartsWith("user_set_video_send_users:"))
-                {
-                    string action = callbackQuery.Data.Split(':')[1];
-                    bool result = Users.SetDefaultActionToUser(chatId, action);
-
-                    if (result)
-                    {
-                        await Utils.Utils.SendMessage(
-                            botClient,
-                            update,
-                            KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
-                            cancellationToken,
-                            Config.GetResourceString("DefaultActionChangedMessage")
-                        );
-                        return;
-                    }
-                    await Utils.Utils.SendMessage(
-                        botClient,
-                        update,
-                        KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
-                        cancellationToken,
-                        Config.GetResourceString("DefaultActionNotChangedMessage")
-                    );
-                }
-                break;
-        }
+        var command = _handlersFactory.GetCommand(commandName);
+        
+        await command.ExecuteAsync(update, botClient, cancellationToken);
     }
 }

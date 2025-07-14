@@ -9,25 +9,21 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Telegram.Bot;
-using Telegram.Bot.Types;
-using MediaTelegramBot.Utils;
-using DataBase;
-using DataBase.Types;
-using TelegramMediaRelayBot;
 
-namespace MediaTelegramBot.Menu;
+using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
+
+namespace TelegramMediaRelayBot.TelegramBot.Menu;
 
 public class Users
 {
-    public static CancellationToken cancellationToken = TelegramBot.cancellationToken;
+    public static CancellationToken cancellationToken = TGBot.cancellationToken;
 
     public static async Task ViewSettings(ITelegramBotClient botClient, Update update)
     {
-        long chatId = update.CallbackQuery!.Message!.Chat.Id;
-        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
-
-        await Utils.Utils.SendMessage(
+        await CommonUtilities.SendMessage(
             botClient,
             update,
             UsersKB.GetSettingsKeyboardMarkup(),
@@ -38,21 +34,76 @@ public class Users
 
     public static async Task ViewDefaultActionsMenu(ITelegramBotClient botClient, Update update)
     {
-        await Utils.Utils.SendMessage(
+        await CommonUtilities.SendMessage(
             botClient,
             update,
-            UsersKB.GetDefaultActionsMenuKeyboardMarkup(),
+            UsersDefaultActionsMenuKB.GetDefaultActionsMenuKeyboardMarkup(),
             cancellationToken,
             Config.GetResourceString("DefaultActionsMenuText")
         );
     }
 
-    public static async Task ViewVideoDefaultActionsMenu(ITelegramBotClient botClient, Update update)
+    public static async Task ViewPrivacyMenu(ITelegramBotClient botClient, Update update, string statusMessage = "")
     {
-        await Utils.Utils.SendMessage(
+        await CommonUtilities.SendMessage(
             botClient,
             update,
-            UsersKB.GetDefaultVideoDistributionKeyboardMarkup(),
+            UsersPrivacyMenuKB.GetPrivacyMenuKeyboardMarkup(),
+            cancellationToken,
+            Config.GetResourceString("ChosePrivacyOptionMenuText") + "\n\n" + statusMessage
+        );
+    }
+
+    public static async Task ViewLinkPrivacyMenu(ITelegramBotClient botClient, Update update)
+    {
+        await CommonUtilities.SendMessage(
+            botClient,
+            update,
+            UsersPrivacyMenuKB.GetUpdateSelfLinkKeyboardMarkup(),
+            cancellationToken,
+            Config.GetResourceString("SelfLinkRefreshMenuText")
+        );
+    }
+
+    public static async Task ViewWhoCanFindMeByLinkMenu(ITelegramBotClient botClient, Update update)
+    {
+        await CommonUtilities.SendMessage(
+            botClient,
+            update,
+            UsersPrivacyMenuKB.GetWhoCanFindMeByLinkKeyboardMarkup(),
+            cancellationToken,
+            Config.GetResourceString("SearchPrivacyText")
+        );
+    }
+
+    public static async Task ViewPermanentContentSpoilerMenu(ITelegramBotClient botClient, Update update)
+    {
+        await CommonUtilities.SendMessage(
+            botClient,
+            update,
+            UsersPrivacyMenuKB.GetPermanentContentSpoilerKeyboardMarkup(),
+            cancellationToken,
+            Config.GetResourceString("AllowForwardContentRuleText")
+        );
+    }
+
+    public static async Task ProcessViewPermanentContentSpoilerAction(ITelegramBotClient botClient, Update update)
+    {
+        await CommonUtilities.SendMessage(
+            botClient,
+            update,
+            UsersPrivacyMenuKB.GetPermanentContentSpoilerKeyboardMarkup(),
+            cancellationToken,
+            Config.GetResourceString("AllowForwardContentRuleText")
+        );
+    }
+
+    public static async Task ViewVideoDefaultActionsMenu(ITelegramBotClient botClient, Update update)
+    {
+        await CommonUtilities.SendMessage(
+            botClient,
+            update,
+            UsersDefaultActionsMenuKB.GetDefaultVideoDistributionKeyboardMarkup(),
             cancellationToken,
             Config.GetResourceString("VideoDefaultActionsMenuText")
         );
@@ -60,10 +111,10 @@ public class Users
 
     public static async Task ViewUsersVideoSentUsersActionsMenu(ITelegramBotClient botClient, Update update)
     {
-        await Utils.Utils.SendMessage(
+        await CommonUtilities.SendMessage(
             botClient,
             update,
-            UsersKB.GetUsersVideoSentUsersKeyboardMarkup(),
+            UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
             cancellationToken,
             Config.GetResourceString("UsersVideoSentUsersMenuText")
         );
@@ -71,24 +122,83 @@ public class Users
 
     public static async Task ViewAutoSendVideoTimeMenu(ITelegramBotClient botClient, Update update)
     {
-        await Utils.Utils.SendMessage(
+        await CommonUtilities.SendMessage(
             botClient,
             update,
-            UsersKB.GetUsersAutoSendVideoTimeKeyboardMarkup(),
+            UsersDefaultActionsMenuKB.GetUsersAutoSendVideoTimeKeyboardMarkup(),
             cancellationToken,
             Config.GetResourceString("AutoSendVideoTimeMenuText")
         );
     }
 
-    public static bool SetAutoSendVideoTimeToUser(long chatId, string time)
+    public static bool SetAutoSendVideoTimeToUser(long chatId, string time, IDefaultActionSetter defaultActionSetter, IUserGetter userGetter)
     {
-        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
-        return CoreDB.SetAutoSendVideoConditionToUser(userId, time, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+        int userId = userGetter.GetUserIDbyTelegramID(chatId);
+        return defaultActionSetter.SetAutoSendVideoConditionToUser(userId, time, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
     }
 
-    public static bool SetDefaultActionToUser(long chatId, string action)
+    public static bool SetDefaultActionToUser(long chatId, string action, IDefaultActionSetter defaultActionSetter, IUserGetter userGetter)
     {
-        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
-        return CoreDB.SetAutoSendVideoActionToUser(userId, action, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+        int userId = userGetter.GetUserIDbyTelegramID(chatId);
+        return defaultActionSetter.SetAutoSendVideoActionToUser(userId, action, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+    }
+
+    public static async Task ViewSiteFilterMenu(ITelegramBotClient botClient, Update update)
+    {
+        await CommonUtilities.SendMessage(
+            botClient,
+            update,
+            UsersPrivacyMenuKB.GetSiteFilterKeyboardMarkup(),
+            cancellationToken,
+            Config.GetResourceString("SiteFilterMenuText")
+        );
+    }
+
+    public static async Task ViewSiteFilterSettingsMenu(ITelegramBotClient botClient, Update update)
+    {
+        await CommonUtilities.SendMessage(
+            botClient,
+            update,
+            UsersPrivacyMenuKB.GetSiteFilterSettingsKeyboardMarkup(),
+            cancellationToken,
+            Config.GetResourceString("SiteFilterMenuText")
+        );
+    }
+}
+
+public class UsersDB
+{
+    public static void UpdateSelfLinkWithKeepSelectedContacts(
+        Update update,
+        IContactRemover contactRemoverRepository,
+        IContactGetter contactGetterRepository,
+        IUserRepository userRepository,
+        IUserGetter userGetter)
+    {
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
+        TGBot.userStates[chatId] = new ProcessContactLinksState(false, contactRemoverRepository, contactGetterRepository, userRepository, userGetter);
+    }
+
+    public static void UpdateSelfLinkWithDeleteSelectedContacts(Update update,
+        IContactRemover contactRemoverRepository,
+        IContactGetter contactGetterRepository,
+        IUserRepository userRepository,
+        IUserGetter userGetter)
+    {
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
+        TGBot.userStates[chatId] = new ProcessContactLinksState(true, contactRemoverRepository, contactGetterRepository, userRepository, userGetter);
+    }
+
+    public static bool UpdateSelfLinkWithContacts(Update update, IUserRepository userRepository, IUserGetter userGetter)
+    {
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
+        return userRepository.ReCreateUserSelfLink(userGetter.GetUserIDbyTelegramID(chatId));
+    }
+
+    public static void UpdateSelfLinkWithNewContacts(Update update, IContactRemover contactRemover, IUserRepository userRepository, IUserGetter userGetter)
+    {
+        int userId = userGetter.GetUserIDbyTelegramID(CommonUtilities.GetIDfromUpdate(update));
+        userRepository.ReCreateUserSelfLink(userId);
+        contactRemover.RemoveAllContacts(userId);
     }
 }

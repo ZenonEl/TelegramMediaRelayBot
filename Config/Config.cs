@@ -1,25 +1,39 @@
+// Copyright (C) 2024-2025 ZenonEl
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Эта программа является свободным программным обеспечением: вы можете распространять и/или изменять
+// её на условиях Стандартной общественной лицензии GNU Affero, опубликованной
+// Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
+// (по вашему выбору) любой более поздней версии.
+
 using System.Resources;
 using Serilog.Events;
 using Microsoft.Extensions.Configuration;
-using DataBase;
+using TelegramMediaRelayBot.Database.Interfaces;
+
 
 namespace TelegramMediaRelayBot
 {
     class Config
     {
         public static string? telegramBotToken;
-        public static string? sqlConnectionString;
+        public static string sqlConnectionString;
         public static string databaseName = "TelegramMediaRelayBot";
+        public static string dbType = "mysql";
         public static string? language;
         public static string proxy = "";
         public static int userUnMuteCheckInterval = 20; // Seconds
+        public static bool isUseGalleryDl = false;
+        public static string accessDeniedMessageContact = " ";
 
         public static int videoGetDelay = 1000;
         public static int contactSendDelay = 1000;
 
         public static LogEventLevel logLevel = LogEventLevel.Information;
         public static bool showVideoDownloadProgress = false;
-        public static bool showVideoUploadProgress = false;
 
         public static bool torEnabled = false;
         public static string? torControlPassword;
@@ -41,7 +55,12 @@ namespace TelegramMediaRelayBot
         {
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
+                
+                .AddJsonFile("appsettings.example.json", optional: true, reloadOnChange: true)
+                
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                
+                .AddEnvironmentVariables()
                 .Build();
 
             telegramBotToken = configuration["AppSettings:TelegramBotToken"]!;
@@ -49,13 +68,15 @@ namespace TelegramMediaRelayBot
             databaseName = configuration["AppSettings:DatabaseName"]!;
             language = configuration["AppSettings:Language"]!;
             proxy = configuration["AppSettings:Proxy"]!;
+            dbType = configuration.GetValue("AppSettings:DatabaseType", "sqlite");
+            isUseGalleryDl = bool.Parse(configuration["AppSettings:UseGalleryDl"]!);
+            accessDeniedMessageContact = configuration.GetValue("AppSettings:AccessDeniedMessageContact", " ");
 
             videoGetDelay = int.Parse(configuration["MessageDelaySettings:VideoGetDelay"]!);
             contactSendDelay = int.Parse(configuration["MessageDelaySettings:ContactSendDelay"]!);
 
             logLevel = Enum.Parse<LogEventLevel>(configuration["ConsoleOutputSettings:LogLevel"]!, true);
             showVideoDownloadProgress = bool.Parse(configuration["ConsoleOutputSettings:ShowVideoDownloadProgress"]!);
-            showVideoUploadProgress = bool.Parse(configuration["ConsoleOutputSettings:ShowVideoUploadProgress"]!);
 
             torEnabled = bool.Parse(configuration["Tor:Enabled"]!);
             torControlPassword = configuration["Tor:TorControlPassword"];
@@ -77,11 +98,11 @@ namespace TelegramMediaRelayBot
             return resourceManager.GetString(key)!;
         }
 
-        public static bool CanUserStartUsingBot(string referrerLink)
+        public static bool CanUserStartUsingBot(string referrerLink, IUserGetter userGetter)
         {
             if (!isAccessPolicyEnabled) return true;
 
-            long referrerUserId = DBforGetters.GetTelegramIdByLink(referrerLink);
+            long referrerUserId = userGetter.GetUserTelegramIdByLink(referrerLink);
             if (referrerUserId == -1) return false;
 
             bool isReferrerBlacklisted = blacklistedReferrerIds?.Contains(referrerUserId) ?? false;

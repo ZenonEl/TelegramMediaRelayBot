@@ -9,11 +9,10 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
 
 
-namespace MediaTelegramBot.Utils;
+namespace TelegramMediaRelayBot.TelegramBot.Utils;
 
 public static class ReplyKeyboardUtils
 {
@@ -32,7 +31,7 @@ public static class ReplyKeyboardUtils
 
     public async static Task RemoveReplyMarkup(ITelegramBotClient botClient, long chatId, CancellationToken cancellationToken)
     {
-        var sentMessage = await botClient.SendMessage(chatId, "ㅤ", cancellationToken: cancellationToken, replyMarkup: new ReplyKeyboardRemove()); 
+        var sentMessage = await botClient.SendMessage(chatId, "ㅤ", cancellationToken: cancellationToken, replyMarkup: new ReplyKeyboardRemove());
         await botClient.DeleteMessage(chatId, sentMessage.MessageId, cancellationToken);
     }
 }

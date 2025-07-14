@@ -169,6 +169,9 @@ Please specify the group ID for work:</value>
     <data name="RemoveContactsButtonText" xml:space="preserve">
         <value>Remove member(s)</value>
     </data>
+    <data name="InputContactId" xml:space="preserve">
+        <value>Specify the contact ID to delete:</value>
+    </data>
 
     <!-- Mutes and unmutes -->
     <data name="MuteUserInstructions" xml:space="preserve">
@@ -220,8 +223,8 @@ Are you sure you want to unmute them? If not, type /start</value>
     <data name="PleaseEnterContactIDs" xml:space="preserve">
         <value>Please enter one or more contact IDs separated by spaces.</value>
     </data>
-    <data name="InvalidInputNumbers" xml:space="preserve">
-        <value>Invalid input. Please enter numbers separated by spaces.</value>
+    <data name="InvalidInputValues" xml:space="preserve">
+        <value>Invalid input. Please enter value separated by spaces.</value>
     </data>
     <data name="ConfirmRemovalMessage" xml:space="preserve">
         <value>Are you sure you want to remove the following users from your contacts?</value>
@@ -380,6 +383,10 @@ Are you sure you want to unmute them? If not, type /start</value>
     <data name="SixtyMinutesButtonText" xml:space="preserve">
         <value>60 Minutes</value>
     </data>
+    <data name="SearchPrivacyText" xml:space="preserve">
+        <value>Choose who can search for/add you to their contacts</value>
+    </data>
+
 
     <!-- Text for Group Management Buttons -->
     <data name="CreateGroupButtonText" xml:space="preserve">
@@ -426,6 +433,47 @@ Are you sure you want to unmute them? If not, type /start</value>
         </value>
     </data>
 
+    <!-- Site filtering main menu buttons -->
+    <data name="SocialFilterButton" xml:space="preserve">
+        <value>Social media filter</value>
+    </data>
+    <data name="NSFWFilterButton" xml:space="preserve">
+        <value>NSFW filter</value>
+    </data>
+    <data name="UnifiedFilterButton" xml:space="preserve">
+        <value>General filter</value>
+    </data>
+    <data name="DomainFilterButton" xml:space="preserve">
+        <value>Domain filter</value>
+    </data>
+    <data name="ConfigureDomainsButton" xml:space="preserve">
+        <value>Configure domains</value>
+    </data>
+
+    <!-- Domain settings menu buttons -->
+    <data name="AddDomainButton" xml:space="preserve">
+        <value>Add domain</value>
+    </data>
+    <data name="RemoveDomainButton" xml:space="preserve">
+        <value>Remove domain</value>
+    </data>
+
+    <!-- Domain filter error messages -->
+    <data name="DomainFilterNotEnabledError" xml:space="preserve">
+        <value>You need to enable domain filtering at least once first</value>
+    </data>
+    <data name="NoDomainsAddedError" xml:space="preserve">
+        <value>You need to add at least one domain first</value>
+    </data>
+
+    <!-- Domain input prompts -->
+    <data name="EnterDomainsToAddPrompt" xml:space="preserve">
+        <value>Enter domains you want to add</value>
+    </data>
+    <data name="EnterDomainsToRemovePrompt" xml:space="preserve">
+        <value>Enter domains you want to remove</value>
+    </data>
+
     <!-- Informational messages -->
     <data name="HelpText" xml:space="preserve">
         <value>
@@ -433,22 +481,24 @@ Are you sure you want to unmute them? If not, type /start</value>
 As connect members of your media circle:
 
 1. 🔄 &lt;b&gt;Initiate communication&lt;/b&gt;
-Send the `/start` command and click the "Add contact" button in the menu. 
-→ The bot will request a unique link from a user like:
-`1234ab56-cde-78fg-01hi-2j34k56790` 
+    Send the `/start` command and click the "Add contact" button in the menu. 
+    → The bot will request a unique link from a user like:
+    `1234ab56-cde-78fg-01hi-2j34k56790` 
 
 2. &lt;b&gt;🔗 Exchange of identifiers&lt;/b&gt;
-- Your link can be found in the "My link" section. 
-- Pass it on to future contacts, for example, via a QR code or a private message. 
+    - Your link can be found in the "My link" section. 
+    - Pass it on to future contacts, for example, via a QR code or a private message. 
 
 3. &lt;b&gt;🤝 Contact confirmation&lt;/b&gt; 
-- Paste the received link into the input field and send it to the bot. 
-- If everything is correct, you will see a short user profile. 
+    - Click the "Add Contact" button.
+    - Paste the received link into the input field and send it to the bot.
+    - If everything is correct - you'll see a brief user profile.
+    - You can return to the main menu and continue using the bot normally.
 
 4. &lt;b&gt; ⏳ Waiting for a response&lt;/b&gt; 
-- Your request will be sent to the recipient, he will receive a notification. 
-- When he accepts the invitation (through the "Review incoming applications" section), you can start sharing content with each other. 
-&lt;b&gt;And don't be afraid to use groups: Contacts can and should be grouped into different groups: `Colleagues', `Friends', `Society of Lovers birds 🐦️' — for point distribution to multiple contacts at once.&lt;/b&gt;
+    - Your request will be sent to the recipient, he will receive a notification. 
+    - When he accepts the invitation (through the "Review incoming applications" section), you can start sharing content with each other. 
+    &lt;b&gt;And don't be afraid to use groups: Contacts can and should be grouped into different groups: `Colleagues', `Friends', `Society of Lovers birds 🐦️' — for point distribution to multiple contacts at once.&lt;/b&gt;
 
 ---
 
@@ -482,12 +532,14 @@ Take a look at this cosmic dance of the northern lights!
 
 ✨ &lt;b&gt;The project is constantly evolving:&lt;/b&gt; New features are popping up like mushrooms after the rain! 🍄 
 To keep up to date with all updates and not Skip anything important:
-- &lt;b&gt;Subscribe to my account&lt;/b&gt; in &lt;a href="https://mastodon.ml/@ZenonEl "&gt;Mastodon&lt;/a&gt;. 
+- &lt;b&gt;Subscribe to my account&lt;/b&gt; in &lt;a href="https://fosstodon.org/@ZenonEl "&gt;Mastodon&lt;/a&gt;. 
 - Or just ask for news from the one who invited you to this fascinating digital media cycle! 😉 
 
 🔗 Supported platforms can be found here 
 The bot works with 1000+ sources thanks to the integration of &lt;b&gt;yt-dlp&lt;/b&gt; — full list &lt;a href="https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md"&gt;here&lt;/a&gt;. 
-&lt;b&gt;Maybe in the future:&lt;/b&gt; Integration with &lt;b&gt;Gallery-dl&lt;/b&gt; for downloading entire galleries and archives!
+
+P.S.
+&lt;b&gt;Don't be shy&lt;/b&gt; - message me on Mastodon!
         </value>
     </data>
     <data name="GroupHelpText" xml:space="preserve">
@@ -502,7 +554,9 @@ PS: The square brackets are not needed :)</value>
 The idea for this bot came to me when, once again, my friends had to manually send me TikTok videos (which I don't use) by downloading them, sending them, and then deleting them from their phones... So, I thought it would be great to simplify all these monotonous actions for them and decided to create this bot. Now, thanks to it, I can run a simple bot on my PC, set up a list of contacts from whom I want to receive videos, and that's it—making life easier for both myself and my friends. Convenient! Enjoy using it!</value>
     </data>
     <data name="AccessDeniedMessage" xml:space="preserve">
-        <value>At the moment, new users have limited access to the bot.</value>
+        <value>Currently, access to the bot is restricted for new users.
+If you'd like to get access, you can contact &lt;a href="{0}"&gt;me here&lt;/a&gt;
+    </value>
     </data>
     <data name="InputErrorMessage" xml:space="preserve">
         <value>An error occurred, please make sure you entered valid data</value>
@@ -512,5 +566,14 @@ The idea for this bot came to me when, once again, my friends had to manually se
     </data>
     <data name="ErrorActionResult" xml:space="preserve">
         <value>The action was (fully/partially) not completed</value>
+    </data>
+    <data name="ProcessIDsList" xml:space="preserve">
+        <value>Specified IDs:\n{0}\n\n Continue?</value>
+    </data>
+    <data name="SuccessMessageProcessIDsList" xml:space="preserve">
+        <value>Successfully processed: {0}</value>
+    </data>
+    <data name="MessageProcessMediaSend" xml:space="preserve">
+        <value>The mailing list is over. Sent {0}/{1}</value>
     </data>
 </root>

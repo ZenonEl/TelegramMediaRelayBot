@@ -9,32 +9,44 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using DataBase;
 using DotNetTor.SocksPort;
-using Serilog;
+using TelegramMediaRelayBot.Database.Interfaces;
 
-namespace TelegramMediaRelayBot.Scheduler;
+
+namespace TelegramMediaRelayBot.TelegramBot;
 
 class Scheduler
 {
-    private static Timer? _unMuteTimer;
-    private static Timer? _torChangingChainTimer;
+    private Timer? _unMuteTimer;
+    private Timer? _torChangingChainTimer;
+    private readonly IUserRepository _userRepository;
+    private readonly IUserGetter _userGetter;
 
-    public static void Init()
+    public Scheduler(
+        IUserRepository userRepository,
+        IUserGetter userGetter
+    )
+    {
+        _userRepository = userRepository;
+        _userGetter = userGetter;
+    }
+
+    public void Init()
     {
         _unMuteTimer = new Timer(async _ => await CheckForUnmuteContacts(), null, TimeSpan.Zero, TimeSpan.FromSeconds(Config.userUnMuteCheckInterval));
         if (Config.torEnabled) _torChangingChainTimer = new Timer(async _ => await TorChangingChain(), null, TimeSpan.Zero, TimeSpan.FromMinutes(Config.torChangingChainInterval));
         Log.Information("Scheduler started");
     }
-    private static Task CheckForUnmuteContacts()
+
+    private Task CheckForUnmuteContacts()
     {
         try
         {
-            List<int> expiredMutes = DBforGetters.GetExpiredMutes();
+            List<int> expiredMutes = _userGetter.GetExpiredUsersMutes();
 
             foreach (var muteUserId in expiredMutes)
             {
-                CoreDB.UnMuteByMuteId(muteUserId);
+                _userRepository.UnMuteUserByMuteId(muteUserId);
             }
         }
         catch (Exception ex)

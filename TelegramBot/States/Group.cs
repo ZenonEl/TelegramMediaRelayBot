@@ -9,18 +9,17 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Telegram.Bot;
-using Telegram.Bot.Types;
-using DataBase;
-using MediaTelegramBot.Utils;
-using TelegramMediaRelayBot;
+
+using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 
-namespace MediaTelegramBot;
+namespace TelegramMediaRelayBot;
 
 public class ProcessUsersGroupState : IUserState
 {
-    public UsersStandartState currentState;
+    public UsersStandardState currentState;
 
     public string groupInfo = "";
 
@@ -30,10 +29,20 @@ public class ProcessUsersGroupState : IUserState
     private string description = "";
     private int groupId = 0;
     private bool isDBActionSuccessful = false;
+    private readonly IUserGetter _userGetter;
+    private readonly IGroupGetter _groupGetter;
+    private readonly IGroupSetter _groupSetter;
 
-    public ProcessUsersGroupState()
+    public ProcessUsersGroupState(
+        IUserGetter userGetter,
+        IGroupGetter groupGetter,
+        IGroupSetter groupSetter
+    )
     {
-        currentState = UsersStandartState.ProcessAction;
+        currentState = UsersStandardState.ProcessAction;
+        _userGetter = userGetter;
+        _groupGetter = groupGetter;
+        _groupSetter = groupSetter;
     }
 
     public string GetCurrentState()
@@ -43,10 +52,10 @@ public class ProcessUsersGroupState : IUserState
 
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        long chatId = Utils.Utils.GetIDfromUpdate(update);
-        if (Utils.Utils.CheckNonZeroID(chatId)) return;
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
+        if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (!TelegramBot.userStates.TryGetValue(chatId, out IUserState? value))
+        if (!TGBot.userStates.TryGetValue(chatId, out IUserState? value))
         {
             return;
         }
@@ -55,18 +64,18 @@ public class ProcessUsersGroupState : IUserState
 
         switch (userState.currentState)
         {
-            case UsersStandartState.ProcessAction:
-                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
-                groupInfo = UsersGroup.GetUserGroupInfoByGroupId(groupId);
+            case UsersStandardState.ProcessAction:
+                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
+                groupInfo = await UsersGroup.GetUserGroupInfoByGroupId(groupId, _groupGetter);
 
                 bool? isCallbackSuccessful = await ProcessCallbackData(botClient, update, cancellationToken);
                 if (isCallbackSuccessful == true)
                 {
-                    userState.currentState = UsersStandartState.ProcessData;
+                    userState.currentState = UsersStandardState.ProcessData;
                 }
                 else if (isCallbackSuccessful == null)
                 {
-                    await Utils.Utils.SendMessage(
+                    await CommonUtilities.SendMessage(
                         botClient,
                         update,
                         KeyboardUtils.GetReturnButtonMarkup(),
@@ -76,12 +85,12 @@ public class ProcessUsersGroupState : IUserState
 
                 break;
 
-            case UsersStandartState.ProcessData:
-                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
+            case UsersStandardState.ProcessData:
+                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
                 if (update.CallbackQuery != null && update.CallbackQuery.Data == backCallback)
                 {
-                    userState.currentState = UsersStandartState.ProcessAction;
-                    await Utils.Utils.SendMessage(
+                    userState.currentState = UsersStandardState.ProcessAction;
+                    await CommonUtilities.SendMessage(
                         botClient,
                         update,
                         UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
@@ -92,7 +101,7 @@ public class ProcessUsersGroupState : IUserState
                 bool? isActionSuccessful = await ProcessAction(botClient, update, cancellationToken);
                 if (isActionSuccessful == true) 
                 {
-                    userState.currentState = UsersStandartState.Finish;
+                    userState.currentState = UsersStandardState.Finish;
                     return;
                 }
                 else if (isActionSuccessful == null)
@@ -100,15 +109,15 @@ public class ProcessUsersGroupState : IUserState
                     await botClient.SendMessage(chatId, Config.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
                     return;
                 }
-                userState.currentState = UsersStandartState.ProcessAction;
+                userState.currentState = UsersStandardState.ProcessAction;
                 break;
 
-            case UsersStandartState.Finish:
-                if (await Utils.Utils.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
+            case UsersStandardState.Finish:
+                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
                 if (update.CallbackQuery != null && update.CallbackQuery.Data == backCallback)
                 {
-                    userState.currentState = UsersStandartState.ProcessAction;
-                    await Utils.Utils.SendMessage(
+                    userState.currentState = UsersStandardState.ProcessAction;
+                    await CommonUtilities.SendMessage(
                         botClient,
                         update,
                         UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
@@ -116,10 +125,10 @@ public class ProcessUsersGroupState : IUserState
                         $"{groupInfo}\n{Config.GetResourceString("ChooseOptionText")}");
                     return;
                 }
-                ProcessFinish(chatId);
+                await ProcessFinish(chatId);
                 string text = isDBActionSuccessful ? Config.GetResourceString("SuccessActionResult") : Config.GetResourceString("ErrorActionResult");
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, text);
-                TelegramBot.userStates.Remove(chatId);
+                TGBot.userStates.Remove(chatId);
                 break;
         }
     }
@@ -131,7 +140,7 @@ public class ProcessUsersGroupState : IUserState
         switch (action)
         {
             case "user_create_group":
-                await Utils.Utils.SendMessage(botClient,
+                await CommonUtilities.SendMessage(botClient,
                                                 update,
                                                 KeyboardUtils.GetReturnButtonMarkup(),
                                                 cancellationToken,
@@ -152,7 +161,7 @@ public class ProcessUsersGroupState : IUserState
                 if (action.StartsWith("user_change_group_name:"))
                 {
                     groupId = int.Parse(action.Split(':')[1]);
-                    await Utils.Utils.SendMessage(botClient,
+                    await CommonUtilities.SendMessage(botClient,
                                                     update,
                                                     KeyboardUtils.GetReturnButtonMarkup(backCallback),
                                                     cancellationToken,
@@ -161,7 +170,7 @@ public class ProcessUsersGroupState : IUserState
                 else if (action.StartsWith("user_change_group_description:"))
                 {
                     groupId = int.Parse(action.Split(':')[1]);
-                    await Utils.Utils.SendMessage(botClient,
+                    await CommonUtilities.SendMessage(botClient,
                                                     update,
                                                     KeyboardUtils.GetReturnButtonMarkup(backCallback),
                                                     cancellationToken,
@@ -170,10 +179,10 @@ public class ProcessUsersGroupState : IUserState
                 else if (action.StartsWith("user_change_is_default:"))
                 {
                     groupId = int.Parse(action.Split(':')[1]);
-                    isDBActionSuccessful = DBforGroups.SetIsDefaultGroup(groupId);
+                    isDBActionSuccessful = await _groupSetter.SetIsDefaultGroup(groupId);
 
-                    groupInfo = UsersGroup.GetUserGroupInfoByGroupId(groupId);
-                    await Utils.Utils.SendMessage(botClient, update, UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId), cancellationToken, groupInfo);
+                    groupInfo = await UsersGroup.GetUserGroupInfoByGroupId(groupId, _groupGetter);
+                    await CommonUtilities.SendMessage(botClient, update, UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId), cancellationToken, groupInfo);
                     return false;
                 }
                 return true;
@@ -182,13 +191,13 @@ public class ProcessUsersGroupState : IUserState
 
     public async Task<bool?> ProcessAction(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        long chatId = Utils.Utils.GetIDfromUpdate(update);
-        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
         switch (action)
         {
             case "user_create_group":
                 groupName = update.Message!.Text!;
-                await Utils.Utils.SendMessage(
+                await CommonUtilities.SendMessage(
                     botClient,
                     update,
                     KeyboardUtils.GetConfirmForActionKeyboardMarkup(),
@@ -196,9 +205,9 @@ public class ProcessUsersGroupState : IUserState
                     Config.GetResourceString("ConfirmDecision"));
                 return true;
             case "user_edit_group":
-                if (int.TryParse(update.Message!.Text!, out groupId) && DBforGroups.CheckGroupOwnership(groupId, userId))
+                if (int.TryParse(update.Message!.Text!, out groupId) && await _groupGetter.GetGroupOwnership(groupId, userId))
                 {
-                    await Utils.Utils.SendMessage(
+                    await CommonUtilities.SendMessage(
                         botClient,
                         update,
                         UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
@@ -208,11 +217,11 @@ public class ProcessUsersGroupState : IUserState
                 }
                 return null;
             case "user_delete_group":
-                if (int.TryParse(update.Message!.Text!, out groupId) && DBforGroups.CheckGroupOwnership(groupId, userId))
+                if (int.TryParse(update.Message!.Text!, out groupId) && await _groupGetter.GetGroupOwnership(groupId, userId))
                 {
-                    groupInfo = UsersGroup.GetUserGroupInfoByGroupId(groupId);
+                    groupInfo = await UsersGroup.GetUserGroupInfoByGroupId(groupId, _groupGetter);
 
-                    await Utils.Utils.SendMessage(
+                    await CommonUtilities.SendMessage(
                         botClient,
                         update,
                         KeyboardUtils.GetConfirmForActionKeyboardMarkup(),
@@ -226,7 +235,7 @@ public class ProcessUsersGroupState : IUserState
                 {
                     groupId = int.Parse(action.Split(':')[1]);
                     groupName = update.Message!.Text!;
-                    await Utils.Utils.SendMessage(
+                    await CommonUtilities.SendMessage(
                         botClient,
                         update,
                         KeyboardUtils.GetConfirmForActionKeyboardMarkup(denyCallback: backCallback),
@@ -238,7 +247,7 @@ public class ProcessUsersGroupState : IUserState
                 {
                     groupId = int.Parse(action.Split(':')[1]);
                     description = update.Message!.Text!;
-                    await Utils.Utils.SendMessage(
+                    await CommonUtilities.SendMessage(
                         botClient,
                         update,
                         KeyboardUtils.GetConfirmForActionKeyboardMarkup(denyCallback: backCallback),
@@ -250,25 +259,25 @@ public class ProcessUsersGroupState : IUserState
         }
     }
 
-    public void ProcessFinish(long chatId)
+    public async Task ProcessFinish(long chatId)
     {
-        int userId = DBforGetters.GetUserIDbyTelegramID(chatId);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
         switch (action)
         {
             case "user_create_group":
-                isDBActionSuccessful = DBforGroups.AddGroup(userId, groupName, "");
+                isDBActionSuccessful = await _groupSetter.SetNewGroup(userId, groupName, "");
                 break;
             case "user_delete_group":
-                isDBActionSuccessful = DBforGroups.DeleteGroup(groupId);
+                isDBActionSuccessful = await _groupSetter.SetDeleteGroup(groupId);
                 break;
             default:
                 if (action.StartsWith("user_change_group_name:"))
                 {
-                    isDBActionSuccessful = DBforGroups.SetGroupName(groupId, groupName);
+                    isDBActionSuccessful = await _groupSetter.SetGroupName(groupId, groupName);
                 }
                 else if (action.StartsWith("user_change_group_description:"))
                 {
-                    isDBActionSuccessful = DBforGroups.UpdateGroupDescription(groupId, description);
+                    isDBActionSuccessful = await _groupSetter.SetGroupDescription(groupId, description);
                 }
                 break;
         }
