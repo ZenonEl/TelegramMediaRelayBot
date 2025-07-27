@@ -40,4 +40,4 @@ jobs:
 
     - name: Run bot (2 minutes)
       run: |
-        timeout 120 dotnet run --configuration Release --project TelegramMediaRelayBot.csproj
+        dotnet run --configuration Release --project TelegramMediaRelayBot.csproj

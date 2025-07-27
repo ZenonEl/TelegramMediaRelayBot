@@ -72,7 +72,9 @@ namespace TelegramMediaRelayBot
                 await tgBot.Start();
                 if (Environment.GetEnvironmentVariable("CI") == "true")
                 {
-                    await Task.Delay(119000); // 1.59 minutes
+                    await Task.Delay(118000); // 1 минута 58 секунд
+                    Log.Information("CI build: exiting gracefully after test delay.");
+                    Environment.Exit(0);
                 }
                 else
                 {
