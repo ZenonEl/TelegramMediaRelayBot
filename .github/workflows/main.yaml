@@ -12,7 +12,9 @@ jobs:
 
     env:
       AppSettings__TelegramBotToken: ${{ secrets.BOT_TOKEN }}
-      AppSettings__SqlConnectionString: "Data Source=:memory:"
+      AppSettings__SqlConnectionString: "Data Source=sqlite.db"
+      AppSettings__DatabaseName: "TikTokMediaRelayBot"
+      AppSettings__DatabaseType: "SQLite"
 
     steps:
     - name: Checkout code
