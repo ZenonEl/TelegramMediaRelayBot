@@ -55,11 +55,10 @@ namespace TelegramMediaRelayBot
         {
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
-                
+
                 .AddJsonFile("appsettings.example.json", optional: true, reloadOnChange: true)
-                
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+
                 .AddEnvironmentVariables()
                 .Build();
 
