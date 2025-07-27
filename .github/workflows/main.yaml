@@ -15,6 +15,7 @@ jobs:
       AppSettings__SqlConnectionString: "Data Source=sqlite.db"
       AppSettings__DatabaseName: "TikTokMediaRelayBot"
       AppSettings__DatabaseType: "SQLite"
+      AppSettings__UseGalleryDl: true
 
     steps:
     - name: Checkout code
