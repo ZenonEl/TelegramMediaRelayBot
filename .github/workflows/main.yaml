@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      CI: true
       AppSettings__TelegramBotToken: ${{ secrets.BOT_TOKEN }}
       AppSettings__SqlConnectionString: "Data Source=sqlite.db"
       AppSettings__DatabaseName: "TikTokMediaRelayBot"

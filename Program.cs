@@ -70,7 +70,14 @@ namespace TelegramMediaRelayBot
                 scheduler.Init();
 
                 await tgBot.Start();
-                await Task.Delay(-1);
+                if (Environment.GetEnvironmentVariable("CI") == "true")
+                {
+                    await Task.Delay(119000); // 1.59 minutes
+                }
+                else
+                {
+                    await Task.Delay(-1);
+                }
             }
             catch (Exception ex)
             {
