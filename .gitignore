@@ -42,3 +42,4 @@ TikTokMediaRelayBot.db
 .db
 hosts
 todo
+*.db

@@ -147,6 +147,10 @@ public class FluentDBMigrator
                     new SqlitePrivacySettingsSetter(Config.sqlConnectionString!));
                 builder.Services.AddSingleton<IPrivacySettingsGetter>(_ =>
                     new SqlitePrivacySettingsGetter(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IPrivacySettingsTargetsSetter>(_ =>
+                    new SqlitePrivacySettingsTargetsSetter(Config.sqlConnectionString!));
+                builder.Services.AddSingleton<IPrivacySettingsTargetsGetter>(_ =>
+                    new SqlitePrivacySettingsTargetsGetter(Config.sqlConnectionString!));
 
                 builder.Services.AddSingleton<IDefaultAction>(_ =>
                     new SqliteDefaultAction(Config.sqlConnectionString!));
