@@ -68,7 +68,7 @@ namespace TelegramMediaRelayBot
             language = configuration["AppSettings:Language"]!;
             proxy = configuration["AppSettings:Proxy"]!;
             dbType = configuration.GetValue("AppSettings:DatabaseType", "sqlite");
-            isUseGalleryDl = bool.Parse(configuration["AppSettings:UseGalleryDl"]!);
+            isUseGalleryDl = configuration.GetValue<bool>("AppSettings:UseGalleryDl", false);
             accessDeniedMessageContact = configuration.GetValue("AppSettings:AccessDeniedMessageContact", " ");
 
             videoGetDelay = int.Parse(configuration["MessageDelaySettings:VideoGetDelay"]!);
