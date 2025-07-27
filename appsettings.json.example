@@ -3,10 +3,12 @@
         "TelegramBotToken": "1234:abcd",
         "SqlConnectionString": "Server=IPAddress;Database=DatabaseName;User ID=UserName;Password=UserPassword;",
         "DatabaseName": "TelegramMediaRelayBot",
+        "DatabaseType": "MySql",
         "Language": "en-US",
         "Proxy": "socks5://127.0.0.1:9050",
         "UserUnMuteCheckInterval": 20,
-        "UseGalleryDl": true
+        "UseGalleryDl": true,
+        "AccessDeniedMessageContact": ""
     },
     "Tor": {
         "Enabled": true,
@@ -26,15 +28,15 @@
         "ShowVideoUploadProgress": false
     },
     "AccessPolicy": {
-        "Enabled": true,
+        "Enabled": false,
 
         "NewUsersPolicy": {
-            "Enabled": true,
+            "Enabled": false,
             "ShowAccessDeniedMessage": false,
 
             "AllowNewUsers": true,
             "AllowRules": {
-                "AllowAll": false,
+                "AllowAll": true,
                 "WhitelistedReferrerIds": [],
                 "BlacklistedReferrerIds": []
             }
