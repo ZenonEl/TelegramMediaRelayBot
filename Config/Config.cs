@@ -34,6 +34,7 @@ namespace TelegramMediaRelayBot
 
         public static LogEventLevel logLevel = LogEventLevel.Information;
         public static bool showVideoDownloadProgress = false;
+        public static bool showVideoUploadProgress = false;
 
         public static bool torEnabled = false;
         public static string? torControlPassword;
@@ -68,28 +69,31 @@ namespace TelegramMediaRelayBot
             language = configuration["AppSettings:Language"]!;
             proxy = configuration["AppSettings:Proxy"]!;
             dbType = configuration.GetValue("AppSettings:DatabaseType", "sqlite");
-            isUseGalleryDl = configuration.GetValue<bool>("AppSettings:UseGalleryDl", false);
+            isUseGalleryDl = configuration.GetValue("AppSettings:UseGalleryDl", false);
             accessDeniedMessageContact = configuration.GetValue("AppSettings:AccessDeniedMessageContact", " ");
 
-            videoGetDelay = int.Parse(configuration["MessageDelaySettings:VideoGetDelay"]!);
-            contactSendDelay = int.Parse(configuration["MessageDelaySettings:ContactSendDelay"]!);
+            videoGetDelay = configuration.GetValue("MessageDelaySettings:VideoGetDelay", 1000);
+            contactSendDelay = configuration.GetValue("MessageDelaySettings:ContactSendDelay", 1000);
 
-            logLevel = Enum.Parse<LogEventLevel>(configuration["ConsoleOutputSettings:LogLevel"]!, true);
-            showVideoDownloadProgress = bool.Parse(configuration["ConsoleOutputSettings:ShowVideoDownloadProgress"]!);
+            logLevel = configuration.GetValue("ConsoleOutputSettings:LogLevel", LogEventLevel.Information);
+            showVideoDownloadProgress = configuration.GetValue("ConsoleOutputSettings:ShowVideoDownloadProgress", false);
+            showVideoUploadProgress = configuration.GetValue("ConsoleOutputSettings:ShowVideoUploadProgress", false);
 
-            torEnabled = bool.Parse(configuration["Tor:Enabled"]!);
-            torControlPassword = configuration["Tor:TorControlPassword"];
-            torSocksHost = configuration["Tor:TorSocksHost"];
-            torSocksPort = int.Parse(configuration["Tor:TorSocksPort"]!);
-            torControlPort = int.Parse(configuration["Tor:TorControlPort"]!);
+            torEnabled = configuration.GetValue("Tor:Enabled", false);
+            torControlPassword = configuration.GetValue("Tor:TorControlPassword", "");
+            torSocksHost = configuration.GetValue("Tor:TorSocksHost", "127.0.0.1");
+            torSocksPort = configuration.GetValue("Tor:TorSocksPort", 9050);
+            torControlPort = configuration.GetValue("Tor:TorControlPort", 9051);
+            torChangingChainInterval = configuration.GetValue("Tor:TorChangingChainInterval", 5);
 
-            isAccessPolicyEnabled = bool.Parse(configuration["AccessPolicy:Enabled"]!);
-            isAccessNewUsersEnabled = bool.Parse(configuration["AccessPolicy:NewUsersPolicy:Enabled"]!);
-            showAccessDeniedMessage = bool.Parse(configuration["AccessPolicy:NewUsersPolicy:ShowAccessDeniedMessage"]!);
-            isAllowNewUsers = bool.Parse(configuration["AccessPolicy:NewUsersPolicy:AllowNewUsers"]!);
-            isAllowAll = bool.Parse(configuration["AccessPolicy:NewUsersPolicy:AllowRules:AllowAll"]!);
-            whitelistedReferrerIds = configuration.GetSection("AccessPolicy:NewUsersPolicy:AllowRules:WhitelistedReferrerIds").Get<List<long>>();
-            blacklistedReferrerIds = configuration.GetSection("AccessPolicy:NewUsersPolicy:AllowRules:BlacklistedReferrerIds").Get<List<long>>();
+            isAccessPolicyEnabled = configuration.GetValue("AccessPolicy:Enabled", false);
+            isAccessNewUsersEnabled = configuration.GetValue("AccessPolicy:NewUsersPolicy:Enabled", false);
+            showAccessDeniedMessage = configuration.GetValue("AccessPolicy:NewUsersPolicy:ShowAccessDeniedMessage", false);
+            isAllowNewUsers = configuration.GetValue("AccessPolicy:NewUsersPolicy:AllowNewUsers", true);
+            isAllowAll = configuration.GetValue("AccessPolicy:NewUsersPolicy:AllowRules:AllowAll", true);
+
+            whitelistedReferrerIds = configuration.GetSection("AccessPolicy:NewUsersPolicy:AllowRules:WhitelistedReferrerIds").Get<List<long>>() ?? new List<long>();
+            blacklistedReferrerIds = configuration.GetSection("AccessPolicy:NewUsersPolicy:AllowRules:BlacklistedReferrerIds").Get<List<long>>() ?? new List<long>();
         }
 
         public static string GetResourceString(string key)
