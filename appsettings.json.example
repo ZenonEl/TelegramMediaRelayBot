@@ -8,7 +8,13 @@
         "Proxy": "socks5://127.0.0.1:9050",
         "UserUnMuteCheckInterval": 20,
         "UseGalleryDl": true,
-        "AccessDeniedMessageContact": ""
+        "AccessDeniedMessageContact": "",
+        "DownloaderSettings": {
+            "ConfigFilePath": "./downloader-config.json",
+            "AutoLearningEnabled": true,
+            "MaxFrequentDomains": 20,
+            "CacheTimeout": "00:30:00"
+        }
     },
     "Tor": {
         "Enabled": true,

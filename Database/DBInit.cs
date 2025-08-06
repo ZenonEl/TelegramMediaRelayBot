@@ -11,6 +11,7 @@
 
 using FluentMigrator.Runner;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database.Repositories.MySql;
@@ -55,6 +56,19 @@ public class FluentDBMigrator
     public static WebApplicationBuilder CreateBuilderByDBType(string[] args, string DBType)
     {
         var builder = WebApplication.CreateBuilder(args);
+        
+        // Добавляем конфигурацию загрузчиков
+        var downloaderConfigPath = builder.Configuration.GetValue<string>("AppSettings:DownloaderSettings:ConfigFilePath");
+        if (!string.IsNullOrEmpty(downloaderConfigPath) && System.IO.File.Exists(downloaderConfigPath))
+        {
+            builder.Configuration.AddJsonFile(downloaderConfigPath, optional: false, reloadOnChange: true);
+            Log.Information("Loaded downloader config from: {Path}", downloaderConfigPath);
+        }
+        else
+        {
+            Log.Warning("Downloader config not found at: {Path}", downloaderConfigPath);
+        }
+        
         builder.Services.AddSingleton<ITelegramBotClient>(_ =>
             new TelegramBotClient(Config.telegramBotToken!));
 
@@ -65,12 +79,27 @@ public class FluentDBMigrator
         builder.Services.AddSingleton<TGBot>();
         builder.Services.AddSingleton<Scheduler>();
 
+        // Регистрация загрузчиков
+        builder.Services.AddScoped<TelegramMediaRelayBot.Domain.Interfaces.IMediaDownloaderFactory, TelegramMediaRelayBot.Infrastructure.Factories.MediaDownloaderFactory>();
+        builder.Services.AddScoped<TelegramMediaRelayBot.MediaDownloaderService>();
+
+        // Автоматическая регистрация всех загрузчиков
         builder.Services.Scan(scan => scan
             .FromAssemblyOf<IBotCallbackQueryHandlers>()
             .AddClasses(classes => classes.AssignableTo<IBotCallbackQueryHandlers>())
             .AsImplementedInterfaces()
             .WithTransientLifetime()
-            );
+        );
+
+        // Автоматическая регистрация загрузчиков
+        builder.Services.Scan(scan => scan
+            .FromAssemblyOf<TelegramMediaRelayBot.Domain.Interfaces.IMediaDownloader>()
+            .AddClasses(classes => classes.AssignableTo<TelegramMediaRelayBot.Domain.Interfaces.IMediaDownloader>())
+            .AsImplementedInterfaces()
+            .WithScopedLifetime()
+        );
+
+
 
         switch (DBType.ToLower())
         {

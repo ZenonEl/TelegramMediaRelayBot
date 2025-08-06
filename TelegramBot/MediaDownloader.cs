@@ -31,6 +31,7 @@ public partial class TGBot
     private readonly IPrivacySettingsGetter _privacySettingsGetter;
     private readonly ILinkCategorizer _categorizer;
     private readonly IUserFilterService _userFilter;
+    private readonly MediaDownloaderService _mediaDownloaderService;
     public static Dictionary<long, IUserState> userStates = [];
     public static CancellationToken cancellationToken;
 
@@ -42,7 +43,8 @@ public partial class TGBot
         IDefaultActionGetter defaultActionGetter,
         IPrivacySettingsGetter privacySettingsGetter,
         IGroupGetter groupGetter,
-        ILinkCategorizer categorizer
+        ILinkCategorizer categorizer,
+        MediaDownloaderService mediaDownloaderService
         )
     {
         _userRepo = userRepo;
@@ -59,6 +61,7 @@ public partial class TGBot
         _privacySettingsGetter = privacySettingsGetter;
         _categorizer = categorizer;
         _userFilter = new DefaultUserFilterService(_userGetter, _privacySettingsGetter);
+        _mediaDownloaderService = mediaDownloaderService;
     }
 
     public async Task Start()
@@ -153,7 +156,8 @@ public partial class TGBot
     public async Task HandleMediaRequest(ITelegramBotClient botClient, string contentUrl, long chatId, Message statusMessage,
                                                 List<long>? targetUserIds = null, bool groupChat = false, string caption = "")
     {
-        List<byte[]>? mediaFiles = await MediaGet.DownloadMedia(botClient, contentUrl, statusMessage, cancellationToken);
+        List<byte[]>? mediaFiles = await _mediaDownloaderService.DownloadMedia(botClient, contentUrl, statusMessage, cancellationToken);
+        
         if (mediaFiles?.Count > 0)
         {
             Log.Debug($"Downloaded {mediaFiles.Count} files");

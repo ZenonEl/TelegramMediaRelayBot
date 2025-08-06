@@ -1,0 +1,93 @@
+{
+    "Downloaders": {
+        "YtDlp": {
+            "Type": "Executable",
+            "Enabled": true,
+            "Priority": 100,
+            "Path": "yt-dlp",
+            "SupportedMediaTypes": "Video,Audio",
+            "CheckCommands": [
+                "--dry-run",
+                "--list-formats",
+                "--print filename"
+            ],
+            "DefaultArguments": [
+                "--proxy", "{Proxy}",
+                "-v",
+                "-f", "mp4",
+                "--output", "{OutputPath}/video.%(ext)s"
+            ],
+            "ProxySettings": {
+                "UseGlobalProxy": true,
+                "CustomProxy": null,
+                "RequireProxy": false
+            },
+            "Timeout": "00:10:00",
+            "MaxRetries": 3,
+            "UrlPatterns": [
+                "youtube\\.com/watch\\?v=",
+                "youtu\\.be/[a-zA-Z0-9_-]+",
+                "vimeo\\.com/[0-9]+",
+                "pinterest\\.com/pin/",
+                "pinterest\\.com/",
+                "ru\\.pinterest\\.com/"
+            ],
+            "OutputPattern": "\\[download\\] Destination: (.+)",
+            "ProgressPattern": "\\[download\\]"
+        },
+        "GalleryDl": {
+            "Type": "Executable",
+            "Enabled": true,
+            "Priority": 90,
+            "Path": "gallery-dl",
+            "AlternativePaths": ["gallery-dl.bin"],
+            "SupportedMediaTypes": "Image",
+            "CheckCommands": [
+                "--list-urls",
+                "--print filename"
+            ],
+            "DefaultArguments": [
+                "--proxy", "{Proxy}",
+                "-d", "{OutputPath}",
+                "-D", "{OutputPath}",
+                "--verbose"
+            ],
+            "ProxySettings": {
+                "UseGlobalProxy": true,
+                "CustomProxy": null,
+                "RequireProxy": false
+            },
+            "Timeout": "00:05:00",
+            "MaxRetries": 2,
+            "UrlPatterns": [
+                "instagram\\.com/p/",
+                "twitter\\.com/[^/]+/status/",
+                "pinterest\\.com/pin/",
+                "pinterest\\.com/",
+                "ru\\.pinterest\\.com/"
+            ],
+            "ProgressPattern": "\\[download\\]"
+        }
+    },
+    "GlobalSettings": {
+        "DefaultTimeout": "00:10:00",
+        "MaxConcurrentDownloads": 3,
+        "RetryDelay": "00:00:05",
+        "GlobalProxy": {
+            "Enabled": false,
+            "Url": "socks5://127.0.0.1:9050",
+            "Type": "Socks5"
+        },
+        "CacheSettings": {
+            "Enabled": true,
+            "MaxCacheSize": "1GB",
+            "CacheTimeout": "24:00:00"
+        },
+        "ProgressSettings": {
+            "ShowProgress": true,
+            "UpdateDelay": 1000,
+            "ShowDownloadProgress": false,
+            "ShowUploadProgress": false
+        }
+    }
+} 
