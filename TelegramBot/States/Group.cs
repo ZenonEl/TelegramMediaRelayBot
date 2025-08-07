@@ -32,17 +32,20 @@ public class ProcessUsersGroupState : IUserState
     private readonly IUserGetter _userGetter;
     private readonly IGroupGetter _groupGetter;
     private readonly IGroupSetter _groupSetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public ProcessUsersGroupState(
         IUserGetter userGetter,
         IGroupGetter groupGetter,
-        IGroupSetter groupSetter
+        IGroupSetter groupSetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService
     )
     {
         currentState = UsersStandardState.ProcessAction;
         _userGetter = userGetter;
         _groupGetter = groupGetter;
         _groupSetter = groupSetter;
+        _resourceService = resourceService;
     }
 
     public string GetCurrentState()
@@ -80,7 +83,7 @@ public class ProcessUsersGroupState : IUserState
                         update,
                         KeyboardUtils.GetReturnButtonMarkup(),
                         cancellationToken,
-                        LegacyConfig.GetResourceString("InputErrorMessage"));
+                        _resourceService.GetResourceString("InputErrorMessage"));
                 }
 
                 break;
@@ -95,7 +98,7 @@ public class ProcessUsersGroupState : IUserState
                         update,
                         UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
                         cancellationToken,
-                        $"{groupInfo}\n{LegacyConfig.GetResourceString("ChooseOptionText")}");
+                        $"{groupInfo}\n{_resourceService.GetResourceString("ChooseOptionText")}");
                     return;
                 }
                 bool? isActionSuccessful = await ProcessAction(botClient, update, cancellationToken);
@@ -106,7 +109,7 @@ public class ProcessUsersGroupState : IUserState
                 }
                 else if (isActionSuccessful == null)
                 {
-                    await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
+                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
                     return;
                 }
                 userState.currentState = UsersStandardState.ProcessAction;
@@ -122,11 +125,11 @@ public class ProcessUsersGroupState : IUserState
                         update,
                         UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
                         cancellationToken,
-                        $"{groupInfo}\n{LegacyConfig.GetResourceString("ChooseOptionText")}");
+                        $"{groupInfo}\n{_resourceService.GetResourceString("ChooseOptionText")}");
                     return;
                 }
                 await ProcessFinish(chatId);
-                string text = isDBActionSuccessful ? LegacyConfig.GetResourceString("SuccessActionResult") : LegacyConfig.GetResourceString("ErrorActionResult");
+                string text = isDBActionSuccessful ? _resourceService.GetResourceString("SuccessActionResult") : _resourceService.GetResourceString("ErrorActionResult");
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, text);
                 TGBot.userStates.Remove(chatId);
                 break;
@@ -144,17 +147,17 @@ public class ProcessUsersGroupState : IUserState
                                                 update,
                                                 KeyboardUtils.GetReturnButtonMarkup(),
                                                 cancellationToken,
-                                                LegacyConfig.GetResourceString("NewGroupText"));
+                                                _resourceService.GetResourceString("NewGroupText"));
                 return true;
             case "user_edit_group":
                 backCallback = action;
                 await botClient.SendMessage(update.CallbackQuery.Message!.Chat.Id,
-                                            LegacyConfig.GetResourceString("EditInputText"),
+                                            _resourceService.GetResourceString("EditInputText"),
                                             cancellationToken: cancellationToken);
                 return true;
             case "user_delete_group":
                 await botClient.SendMessage(update.CallbackQuery.Message!.Chat.Id,
-                                            LegacyConfig.GetResourceString("DeleteInputText"),
+                                            _resourceService.GetResourceString("DeleteInputText"),
                                             cancellationToken: cancellationToken);
                 return true;
             default:
@@ -165,7 +168,7 @@ public class ProcessUsersGroupState : IUserState
                                                     update,
                                                     KeyboardUtils.GetReturnButtonMarkup(backCallback),
                                                     cancellationToken,
-                                                    LegacyConfig.GetResourceString("NewGroupNameText"));
+                                                    _resourceService.GetResourceString("NewGroupNameText"));
                 }
                 else if (action.StartsWith("user_change_group_description:"))
                 {
@@ -174,7 +177,7 @@ public class ProcessUsersGroupState : IUserState
                                                     update,
                                                     KeyboardUtils.GetReturnButtonMarkup(backCallback),
                                                     cancellationToken,
-                                                    LegacyConfig.GetResourceString("NewGroupDescriptionText"));
+                                                    _resourceService.GetResourceString("NewGroupDescriptionText"));
                 }
                 else if (action.StartsWith("user_change_is_default:"))
                 {
@@ -202,7 +205,7 @@ public class ProcessUsersGroupState : IUserState
                     update,
                     KeyboardUtils.GetConfirmForActionKeyboardMarkup(),
                     cancellationToken,
-                    LegacyConfig.GetResourceString("ConfirmDecision"));
+                    _resourceService.GetResourceString("ConfirmDecision"));
                 return true;
             case "user_edit_group":
                 if (int.TryParse(update.Message!.Text!, out groupId) && await _groupGetter.GetGroupOwnership(groupId, userId))
@@ -212,7 +215,7 @@ public class ProcessUsersGroupState : IUserState
                         update,
                         UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
                         cancellationToken,
-                        LegacyConfig.GetResourceString("ChooseOptionText"));
+                        _resourceService.GetResourceString("ChooseOptionText"));
                     return false;
                 }
                 return null;
@@ -226,7 +229,7 @@ public class ProcessUsersGroupState : IUserState
                         update,
                         KeyboardUtils.GetConfirmForActionKeyboardMarkup(),
                         cancellationToken,
-                        $"{groupInfo}\n{LegacyConfig.GetResourceString("ConfirmDecision")}");
+                        $"{groupInfo}\n{_resourceService.GetResourceString("ConfirmDecision")}");
                     return true;
                 }
                 return null;
@@ -240,7 +243,7 @@ public class ProcessUsersGroupState : IUserState
                         update,
                         KeyboardUtils.GetConfirmForActionKeyboardMarkup(denyCallback: backCallback),
                         cancellationToken,
-                        LegacyConfig.GetResourceString("ConfirmDecision"));
+                        _resourceService.GetResourceString("ConfirmDecision"));
                     return true;
                 }
                 else if (action.StartsWith("user_change_group_description:"))
@@ -252,7 +255,7 @@ public class ProcessUsersGroupState : IUserState
                         update,
                         KeyboardUtils.GetConfirmForActionKeyboardMarkup(denyCallback: backCallback),
                         cancellationToken,
-                        LegacyConfig.GetResourceString("ConfirmDecision"));
+                        _resourceService.GetResourceString("ConfirmDecision"));
                     return true;
                 }
                 return null;

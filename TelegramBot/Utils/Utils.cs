@@ -18,8 +18,15 @@ namespace TelegramMediaRelayBot.TelegramBot.Utils;
 
 public static class CommonUtilities
 {
-
+    private static readonly System.Resources.ResourceManager _resourceManager = 
+        new System.Resources.ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
+    
     public static CancellationToken cancellationToken = TGBot.cancellationToken;
+    
+    public static string GetResourceString(string key)
+    {
+        return _resourceManager.GetString(key) ?? key;
+    }
     public static Task ErrorHandler(ITelegramBotClient _, Exception exception, CancellationToken __)
     {
         Log.Error($"Error occurred: {exception.Message}");
@@ -64,7 +71,7 @@ public static class CommonUtilities
     public static Task SendMessage(ITelegramBotClient botClient, Update update, InlineKeyboardMarkup replyMarkup,
                                     CancellationToken cancellationToken, string? text = null)
     {
-        text ??= LegacyConfig.GetResourceString("ChooseOptionText");
+        text ??= GetResourceString("ChooseOptionText");
 
         long chatId = GetIDfromUpdate(update);
 

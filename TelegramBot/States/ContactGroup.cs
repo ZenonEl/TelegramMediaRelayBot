@@ -32,17 +32,20 @@ public class ProcessContactGroupState : IUserState
     private IContactGroupRepository _contactGroupRepository;
     private readonly IUserGetter _userGetter;
     private readonly IGroupGetter _groupGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public ProcessContactGroupState(
         IContactGroupRepository contactGroupRepository,
         IUserGetter userGetter,
-        IGroupGetter groupGetter
+        IGroupGetter groupGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService
         )
     {
         currentState = UsersStandardState.ProcessAction;
         _contactGroupRepository = contactGroupRepository;
         _userGetter = userGetter;
         _groupGetter = groupGetter;
+        _resourceService = resourceService;
     }
 
     public string GetCurrentState()
@@ -79,7 +82,7 @@ public class ProcessContactGroupState : IUserState
                         update,
                         KeyboardUtils.GetReturnButtonMarkup(),
                         cancellationToken,
-                        LegacyConfig.GetResourceString("InputErrorMessage"));
+                        _resourceService.GetResourceString("InputErrorMessage"));
                 }
 
                 break;
@@ -94,7 +97,7 @@ public class ProcessContactGroupState : IUserState
                         update,
                         UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
                         cancellationToken,
-                        $"{groupInfo}\n{LegacyConfig.GetResourceString("ChooseOptionText")}");
+                        $"{groupInfo}\n{_resourceService.GetResourceString("ChooseOptionText")}");
                     return;
                 }
 
@@ -107,7 +110,7 @@ public class ProcessContactGroupState : IUserState
                 }
                 else if (isActionSuccessful == null)
                 {
-                    await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
+                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
                     return;
                 }
                 break;
@@ -122,7 +125,7 @@ public class ProcessContactGroupState : IUserState
                         update,
                         UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
                         cancellationToken,
-                        $"{groupInfo}\n{LegacyConfig.GetResourceString("ChooseOptionText")}");
+                        $"{groupInfo}\n{_resourceService.GetResourceString("ChooseOptionText")}");
                     return;
                 }
                 bool? isMessage = null;
@@ -132,12 +135,12 @@ public class ProcessContactGroupState : IUserState
                 {
                     callbackAction = update.CallbackQuery!.Data!;
                     ProcessFinish(chatId);
-                    string text = !isDBActionSuccessful.Contains(false) ? LegacyConfig.GetResourceString("SuccessActionResult") : LegacyConfig.GetResourceString("ErrorActionResult");
+                    string text = !isDBActionSuccessful.Contains(false) ? _resourceService.GetResourceString("SuccessActionResult") : _resourceService.GetResourceString("ErrorActionResult");
                     await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, text);
                     TGBot.userStates.Remove(chatId);
                     return;
                 }
-                await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
+                await botClient.SendMessage(chatId, _resourceService.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
                 break;
         }
     }
@@ -166,9 +169,9 @@ public class ProcessContactGroupState : IUserState
                     }
 
                     string allContactsText;
-                    allContactsText = $"{LegacyConfig.GetResourceString("AllContactsText")} {string.Join("\n", allContactsNames)}";
+                    allContactsText = $"{_resourceService.GetResourceString("AllContactsText")} {string.Join("\n", allContactsNames)}";
                     
-                    string messageText = $"{groupInfo}\n{allContactsText}\n{LegacyConfig.GetResourceString("ChooseOptionText")}";
+                    string messageText = $"{groupInfo}\n{allContactsText}\n{_resourceService.GetResourceString("ChooseOptionText")}";
                     await CommonUtilities.SendMessage(
                         botClient,
                         update,
@@ -187,7 +190,7 @@ public class ProcessContactGroupState : IUserState
                         update,
                         KeyboardUtils.GetReturnButton(),
                         cancellationToken,
-                        LegacyConfig.GetResourceString("InputContactIDsText"));
+                        _resourceService.GetResourceString("InputContactIDsText"));
                     return true;
                 }
                 else if (callbackAction.StartsWith("user_remove_contact_from_group:"))
@@ -195,7 +198,7 @@ public class ProcessContactGroupState : IUserState
                     groupId = int.Parse(callbackAction.Split(':')[1]);
                     await botClient.SendMessage(
                         CommonUtilities.GetIDfromUpdate(update),
-                        LegacyConfig.GetResourceString("InputContactIDsText"),
+                        _resourceService.GetResourceString("InputContactIDsText"),
                         replyMarkup: KeyboardUtils.GetReturnButtonMarkup(),
                         cancellationToken: cancellationToken);
                     return true;
@@ -228,7 +231,7 @@ public class ProcessContactGroupState : IUserState
                     update,
                     KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_add_contact_to_group"),
                     cancellationToken,
-                    LegacyConfig.GetResourceString("ConfirmAddContactsToGroupText"));
+                    _resourceService.GetResourceString("ConfirmAddContactsToGroupText"));
                 contactIDs = allowedIds;
                 return true;
             }
@@ -241,7 +244,7 @@ public class ProcessContactGroupState : IUserState
                     update,
                     KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_delete_contact_from_group"),
                     cancellationToken,
-                    LegacyConfig.GetResourceString("ConfirmDeleteContactsFromGroupText"));
+                    _resourceService.GetResourceString("ConfirmDeleteContactsFromGroupText"));
                 return true;
             }
             return null;

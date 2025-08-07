@@ -143,17 +143,20 @@ public class UserUpdateSelfLinkWithKeepSelectedContactsCommand : IBotCallbackQue
     private readonly IContactGetter _contactGetterRepository;
     private readonly IUserRepository _userRepository;
     private readonly IUserGetter _userGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public UserUpdateSelfLinkWithKeepSelectedContactsCommand(
         IContactRemover contactRemoverRepository,
         IContactGetter contactGetterRepository,
         IUserRepository userRepository,
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         _contactRemoverRepository = contactRemoverRepository;
         _contactGetterRepository = contactGetterRepository;
         _userRepository = userRepository;
         _userGetter = userGetter;
+        _resourceService = resourceService;
     }
 
     public string Name => "user_update_self_link_with_keep_selected_contacts";
@@ -166,7 +169,7 @@ public class UserUpdateSelfLinkWithKeepSelectedContactsCommand : IBotCallbackQue
             KeyboardUtils.GetReturnButtonMarkup("user_update_self_link"),
             ct,
             LegacyConfig.GetResourceString("EnterContactIdsPrompt"));
-        UsersDB.UpdateSelfLinkWithKeepSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository, _userRepository, _userGetter);
+        UsersDB.UpdateSelfLinkWithKeepSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository, _userRepository, _userGetter, _resourceService);
     }
 }
 
@@ -176,17 +179,20 @@ public class UserUpdateSelfLinkWithDeleteSelectedContactsCommand : IBotCallbackQ
     private readonly IContactGetter _contactGetterRepository;    
     private readonly IUserRepository _userRepository;
     private readonly IUserGetter _userGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public UserUpdateSelfLinkWithDeleteSelectedContactsCommand(
         IContactRemover contactRemoverRepository,
         IContactGetter contactGetterRepository,
         IUserRepository userRepository,
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         _contactRemoverRepository = contactRemoverRepository;
         _contactGetterRepository = contactGetterRepository;
         _userRepository = userRepository;
         _userGetter = userGetter;
+        _resourceService = resourceService;
     }
 
     public string Name => "user_update_self_link_with_delete_selected_contacts";
@@ -199,7 +205,7 @@ public class UserUpdateSelfLinkWithDeleteSelectedContactsCommand : IBotCallbackQ
             KeyboardUtils.GetReturnButtonMarkup("user_update_self_link"),
             ct,
             LegacyConfig.GetResourceString("EnterContactIdsPrompt"));
-        UsersDB.UpdateSelfLinkWithDeleteSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository, _userRepository, _userGetter);
+        UsersDB.UpdateSelfLinkWithDeleteSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository, _userRepository, _userGetter, _resourceService);
     }
 }
 

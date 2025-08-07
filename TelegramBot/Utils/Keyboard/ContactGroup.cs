@@ -16,6 +16,13 @@ namespace TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 public static class ContactGroup
 {
+    private static readonly System.Resources.ResourceManager _resourceManager = 
+        new System.Resources.ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
+    
+    private static string GetResourceString(string key)
+    {
+        return _resourceManager.GetString(key) ?? key;
+    }
 
     public static InlineKeyboardMarkup GetContactGroupEditActionsKeyboardMarkup(int groupId)
     {
@@ -23,11 +30,11 @@ public static class ContactGroup
                 {
                     new[]
                     {
-                        InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("AddContactsButtonText"), $"user_add_contact_to_group:{groupId}"),
+                        InlineKeyboardButton.WithCallbackData(GetResourceString("AddContactsButtonText"), $"user_add_contact_to_group:{groupId}"),
                     },
                     new[]
                     {
-                        InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("RemoveContactsButtonText"), $"user_remove_contact_from_group:{groupId}"),
+                        InlineKeyboardButton.WithCallbackData(GetResourceString("RemoveContactsButtonText"), $"user_remove_contact_from_group:{groupId}"),
                     },
                     new[]
                     {

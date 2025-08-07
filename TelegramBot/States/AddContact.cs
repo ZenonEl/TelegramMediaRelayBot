@@ -25,6 +25,7 @@ public class ProcessContactState : IUserState
     private readonly IContactGetter _contactGetter;
     private readonly IUserGetter _userGetter;
     private readonly IPrivacySettingsGetter _privacySettingsGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public ContactState currentState;
 
@@ -32,13 +33,15 @@ public class ProcessContactState : IUserState
         IContactAdder contactAdder,
         IContactGetter contactGetter,
         IUserGetter userGetter,
-        IPrivacySettingsGetter privacySettingsGetter)
+        IPrivacySettingsGetter privacySettingsGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         currentState = ContactState.WaitingForLink;
         _contactAdder = contactAdder;
         _contactGetter = contactGetter; 
         _userGetter = userGetter;
         _privacySettingsGetter = privacySettingsGetter;
+        _resourceService = resourceService;
     }
 
     public static ContactState[] GetAllStates()
@@ -72,14 +75,14 @@ public class ProcessContactState : IUserState
 
                 if (contactId == -1)
                 {
-                    await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, LegacyConfig.GetResourceString("NoUserFoundByLink"));
+                    await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, _resourceService.GetResourceString("NoUserFoundByLink"));
                     return;
                 }
 
                 string privacyRuleValue = await _privacySettingsGetter.GetPrivacyRuleValue(contactId, PrivacyRuleType.WHO_CAN_FIND_ME_BY_LINK);
                 if (privacyRuleValue == PrivacyRuleAction.NOBODY_CAN_FIND_ME_BY_LINK)
                 {
-                    await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, LegacyConfig.GetResourceString("NoUserFoundByLink"));
+                    await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, _resourceService.GetResourceString("NoUserFoundByLink"));
                     return;
                 }
 
@@ -93,22 +96,22 @@ public class ProcessContactState : IUserState
                     bool hasCommon = contacts2.Any(contactsSet.Contains);
                     if (!hasCommon)
                     {
-                        await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, LegacyConfig.GetResourceString("NoUserFoundByLink"));
+                        await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, _resourceService.GetResourceString("NoUserFoundByLink"));
                         return;
                     }
                 }
 
-                await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("UserFoundByLink"), cancellationToken: cancellationToken,
-                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(LegacyConfig.GetResourceString("NextButtonText")));
+                await botClient.SendMessage(chatId, _resourceService.GetResourceString("UserFoundByLink"), cancellationToken: cancellationToken,
+                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(_resourceService.GetResourceString("NextButtonText")));
 
                 currentState = ContactState.WaitingForName;
                 break;
 
             case ContactState.WaitingForName:
-                string text_data = $"{LegacyConfig.GetResourceString("LinkText")}: {link} \n{LegacyConfig.GetResourceString("NameText")}: {_userGetter.GetUserNameByID(_contactGetter.GetContactIDByLink(link))}";
+                string text_data = $"{_resourceService.GetResourceString("LinkText")}: {link} \n{_resourceService.GetResourceString("NameText")}: {_userGetter.GetUserNameByID(_contactGetter.GetContactIDByLink(link))}";
 
-                await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("ConfirmAdditionText") + text_data, cancellationToken: cancellationToken,
-                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(LegacyConfig.GetResourceString("NextButtonText")));
+                await botClient.SendMessage(chatId, _resourceService.GetResourceString("ConfirmAdditionText") + text_data, cancellationToken: cancellationToken,
+                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(_resourceService.GetResourceString("NextButtonText")));
 
                 currentState = ContactState.WaitingForConfirmation;
                 break;
@@ -119,9 +122,9 @@ public class ProcessContactState : IUserState
                 _contactAdder.AddContact(chatId, link);
 
                 await SendNotification(botClient, chatId, cancellationToken);
-                await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("WaitForContactConfirmation"),
+                await botClient.SendMessage(chatId, _resourceService.GetResourceString("WaitForContactConfirmation"),
                                             cancellationToken: cancellationToken,
-                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(LegacyConfig.GetResourceString("NextButtonText")));
+                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(_resourceService.GetResourceString("NextButtonText")));
 
                 currentState = ContactState.FinishAddContact;
 
@@ -139,7 +142,7 @@ public class ProcessContactState : IUserState
     public async Task SendNotification(ITelegramBotClient botClient, long chatId, CancellationToken cancellationToken)
     {
         await botClient.SendMessage(_userGetter.GetTelegramIDbyUserID(_contactGetter.GetContactIDByLink(link)), 
-                                    string.Format(LegacyConfig.GetResourceString("UserWantsToAddYou"), _userGetter.GetUserNameByTelegramID(chatId)), 
+                                    string.Format(_resourceService.GetResourceString("UserWantsToAddYou"), _userGetter.GetUserNameByTelegramID(chatId)), 
                                     cancellationToken: cancellationToken);
     }
 }

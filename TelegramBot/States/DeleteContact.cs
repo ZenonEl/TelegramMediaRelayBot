@@ -26,13 +26,15 @@ public class ProcessRemoveUser : IUserState
     private readonly IContactRemover _contactRemoverRepository;
     private readonly IContactGetter _contactGetterRepository;
     private readonly IUserGetter _userGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
     bool isDeleteSuccessful = false;
 
     public ProcessRemoveUser(
         Message statusMessage,
         IContactRemover contactRemoverRepository,
         IContactGetter contactGetterRepository,
-        IUserGetter userGetter
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService
         )
     {
         this.statusMessage = statusMessage;
@@ -40,6 +42,7 @@ public class ProcessRemoveUser : IUserState
         _contactRemoverRepository = contactRemoverRepository;
         _contactGetterRepository = contactGetterRepository;
         _userGetter = userGetter;
+        _resourceService = resourceService;
     }
 
     public string GetCurrentState()
@@ -60,7 +63,7 @@ public class ProcessRemoveUser : IUserState
                     string input = update.Message.Text;
                     if (string.IsNullOrWhiteSpace(input))
                     {
-                        await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
+                        await botClient.SendMessage(chatId, _resourceService.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
                         return;
                     }
 
@@ -73,7 +76,7 @@ public class ProcessRemoveUser : IUserState
                     }
                     else
                     {
-                        await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                        await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
                     }
                 }
                 break;
@@ -87,16 +90,16 @@ public class ProcessRemoveUser : IUserState
                     if (callbackData == "confirm_removal")
                     {
                         RemoveUsersFromContacts(botClient, chatId, cancellationToken);
-                        await botClient.EditMessageText(chatId, statusMessage.MessageId, LegacyConfig.GetResourceString("RemovalProcessCompleted"), cancellationToken: cancellationToken);
+                        await botClient.EditMessageText(chatId, statusMessage.MessageId, _resourceService.GetResourceString("RemovalProcessCompleted"), cancellationToken: cancellationToken);
                         
-                        string text = isDeleteSuccessful ? LegacyConfig.GetResourceString("SuccessActionResult") : LegacyConfig.GetResourceString("ErrorActionResult");
+                        string text = isDeleteSuccessful ? _resourceService.GetResourceString("SuccessActionResult") : _resourceService.GetResourceString("ErrorActionResult");
                         await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, text);
                         
                         TGBot.userStates.Remove(chatId);
                     }
                     else if (callbackData == "cancel_removal")
                     {
-                        await botClient.EditMessageText(chatId, statusMessage.MessageId, LegacyConfig.GetResourceString("PleaseEnterContactIDs"), replyMarkup: KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken);
+                        await botClient.EditMessageText(chatId, statusMessage.MessageId, _resourceService.GetResourceString("PleaseEnterContactIDs"), replyMarkup: KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken);
                         currentState = UsersStandardState.ProcessAction;
                     }
                 }
@@ -118,12 +121,12 @@ public class ProcessRemoveUser : IUserState
             string username = _userGetter.GetUserNameByTelegramID(contactUserId);
             string link = _userGetter.GetUserSelfLink(contactUserId);
 
-            contactUsersInfo.Add(string.Format(LegacyConfig.GetResourceString("ContactInfo"), id, username, link));
+            contactUsersInfo.Add(string.Format(_resourceService.GetResourceString("ContactInfo"), id, username, link));
         }
 
         if (contactUsersInfo.Any())
         {
-            string messageText = $"{LegacyConfig.GetResourceString("ConfirmRemovalMessage")}\n\n{string.Join("\n", contactUsersInfo)}";
+            string messageText = $"{_resourceService.GetResourceString("ConfirmRemovalMessage")}\n\n{string.Join("\n", contactUsersInfo)}";
             InlineKeyboardMarkup keyboard = KeyboardUtils.GetConfirmForActionKeyboardMarkup("confirm_removal", "cancel_removal");
 
             await botClient.EditMessageText(chatId, statusMessage.MessageId, messageText, replyMarkup: keyboard, cancellationToken: cancellationToken, parseMode: ParseMode.Html);
@@ -131,7 +134,7 @@ public class ProcessRemoveUser : IUserState
         }
         else
         {
-            await botClient.EditMessageText(chatId, statusMessage.MessageId, LegacyConfig.GetResourceString("NoUsersFound"), cancellationToken: cancellationToken);
+            await botClient.EditMessageText(chatId, statusMessage.MessageId, _resourceService.GetResourceString("NoUsersFound"), cancellationToken: cancellationToken);
         }
         return false;
     }

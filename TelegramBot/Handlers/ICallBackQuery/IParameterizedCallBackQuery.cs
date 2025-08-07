@@ -24,15 +24,18 @@ public class ShowOutboundInviteCommand : IBotCallbackQueryHandlers
     private readonly IContactRemover _contactRepository;
     private readonly IOutboundDBGetter _outboundDBGetter;
     private readonly IUserGetter _userGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public ShowOutboundInviteCommand(
         IContactRemover contactRepository,
         IOutboundDBGetter outboundDBGetter,
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         _contactRepository = contactRepository;
         _outboundDBGetter = outboundDBGetter;
         _userGetter = userGetter;
+        _resourceService = resourceService;
     }
 
     public string Name => "user_show_outbound_invite:";
@@ -40,7 +43,7 @@ public class ShowOutboundInviteCommand : IBotCallbackQueryHandlers
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         var chatId = update.CallbackQuery!.Message!.Chat.Id;
-        await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId, _contactRepository, _outboundDBGetter, _userGetter);
+        await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId, _contactRepository, _outboundDBGetter, _userGetter, _resourceService);
     }
 }
 
@@ -87,6 +90,7 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
     private readonly IUserGetter _userGetter;
     private readonly IGroupGetter _groupGetter;
     private readonly IDefaultActionGetter _defaultActionGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public SetVideoSendUsersCommand(
         IContactGetter contactGetterRepository,
@@ -94,7 +98,8 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
         IDefaultActionSetter defaultActionSetter,
         IUserGetter userGetter,
         IGroupGetter groupGetter,
-        IDefaultActionGetter defaultActionGetter
+        IDefaultActionGetter defaultActionGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService
         )
     {
         _contactGetterRepository = contactGetterRepository;
@@ -104,6 +109,7 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
         _userGetter = userGetter;
         _groupGetter = groupGetter;
         _defaultActionGetter = defaultActionGetter;
+        _resourceService = resourceService;
     }
 
     public string Name => "user_set_video_send_users:";
@@ -139,7 +145,8 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
                 _defaultAction,
                 _defaultActionGetter,
                 _userGetter,
-                _groupGetter);
+                _groupGetter,
+                _resourceService);
             return;
         }
 
@@ -153,7 +160,7 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
                 update,
                 KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
                 cancellationToken,
-                LegacyConfig.GetResourceString("DefaultActionChangedMessage")
+                _resourceService.GetResourceString("DefaultActionChangedMessage")
             );
             return;
         }
@@ -162,7 +169,7 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
             update,
             KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
             cancellationToken,
-            LegacyConfig.GetResourceString("DefaultActionNotChangedMessage")
+            _resourceService.GetResourceString("DefaultActionNotChangedMessage")
         );
     }
 }
@@ -174,21 +181,24 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
     private readonly IPrivacySettingsTargetsSetter _privacySettingsTargetsSetter;
     private readonly IPrivacySettingsTargetsGetter _privacySettingsTargetsGetter;
     private readonly IUserGetter _userGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
     private bool isActive = false;
 
-    public SetPrivacySiteFilterCommand(
+        public SetPrivacySiteFilterCommand(
         IPrivacySettingsSetter privacySettingsSetter,
         IPrivacySettingsGetter privacySettingsGetter,
         IPrivacySettingsTargetsSetter privacySettingsTargetsSetter,
         IPrivacySettingsTargetsGetter privacySettingsTargetsGetter,
-        IUserGetter userGetter
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService
     )
     {
-        _privacySettingsSetter = privacySettingsSetter; 
+        _privacySettingsSetter = privacySettingsSetter;
         _privacySettingsGetter = privacySettingsGetter;
         _privacySettingsTargetsSetter = privacySettingsTargetsSetter;
         _privacySettingsTargetsGetter = privacySettingsTargetsGetter;
         _userGetter = userGetter;
+        _resourceService = resourceService;
     }
 
     public string Name => "user_set_site_stop_list:";
@@ -222,8 +232,8 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
                 return;
         }
 
-        string text = switchResult ? LegacyConfig.GetResourceString("SuccessActionResult") : LegacyConfig.GetResourceString("ErrorActionResult");
-        string actionText = !isActive ? LegacyConfig.GetResourceString("Enable") : LegacyConfig.GetResourceString("Disable");
+        string text = switchResult ? _resourceService.GetResourceString("SuccessActionResult") : _resourceService.GetResourceString("ErrorActionResult");
+        string actionText = !isActive ? _resourceService.GetResourceString("Enable") : _resourceService.GetResourceString("Disable");
 
         await CommonUtilities.SendMessage(
             botClient,
@@ -269,14 +279,14 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
                 update,
                 KeyboardUtils.GetReturnButtonMarkup("user_update_site_stop_list"),
                 ct,
-                LegacyConfig.GetResourceString("DomainFilterNotEnabledError")
+                _resourceService.GetResourceString("DomainFilterNotEnabledError")
             );
             return;
         }
 
         await botClient.SendMessage(
             chatId, 
-            LegacyConfig.GetResourceString("EnterDomainsToAddPrompt"), 
+            _resourceService.GetResourceString("EnterDomainsToAddPrompt"), 
             cancellationToken: ct
         );
 
@@ -284,7 +294,8 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
                 privacyRuleId,
                 _privacySettingsTargetsSetter,
                 userId,
-                false
+                false,
+                _resourceService
             );
     }
 
@@ -299,7 +310,7 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
                 update,
                 KeyboardUtils.GetReturnButtonMarkup("user_update_site_stop_list"),
                 ct,
-                LegacyConfig.GetResourceString("NoDomainsAddedError")
+                _resourceService.GetResourceString("NoDomainsAddedError")
             );
             return;
         }
@@ -307,7 +318,7 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
         int privacyRuleId = await _privacySettingsGetter.GetPrivacyRuleId(userId, PrivacyRuleType.SITES_BY_DOMAIN_FILTER);
         await botClient.SendMessage(
             chatId, 
-            LegacyConfig.GetResourceString("EnterDomainsToRemovePrompt"), 
+            _resourceService.GetResourceString("EnterDomainsToRemovePrompt"), 
             cancellationToken: ct
         );
 
@@ -315,7 +326,8 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
                 privacyRuleId,
                 _privacySettingsTargetsSetter,
                 userId,
-                true
+                true,
+                _resourceService
             );
     }
 }

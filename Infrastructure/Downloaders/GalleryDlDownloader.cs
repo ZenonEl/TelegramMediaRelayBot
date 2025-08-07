@@ -41,8 +41,6 @@ public class GalleryDlDownloader : BaseMediaDownloader
         _timeout = TimeSpan.Parse(_configuration.GetValue($"Downloaders:{Name}:Timeout", "00:05:00")!);
         _maxRetries = _configuration.GetValue($"Downloaders:{Name}:MaxRetries", 2);
         _progressPattern = _configuration.GetValue($"Downloaders:{Name}:ProgressPattern", "\\[download\\]")!;
-        
-        Log.Debug("GalleryDl loaded config - Path: {Path}, Args: {Args}", _executablePath, string.Join(", ", _defaultArguments));
     }
     
     protected override async Task<DownloadCapability> CheckCapabilityInternalAsync(string url, CancellationToken ct)

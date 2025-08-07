@@ -23,18 +23,21 @@ public class UserProcessInboundState : IUserState
     private readonly IContactRemover _contactRemoverRepository;
     private readonly IInboundDBGetter _inboundDBGetter;
     private readonly IUserGetter _userGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public UserProcessInboundState(
         IContactSetter contactSetterRepository, 
         IContactRemover contactRemoverRepository,
         IInboundDBGetter inboundDBGetter,
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         currentState = UserInboundState.SelectInvite;
         _contactSetterRepository = contactSetterRepository;
         _contactRemoverRepository = contactRemoverRepository;
         _inboundDBGetter = inboundDBGetter;
         _userGetter = userGetter;
+        _resourceService = resourceService;
     }
 
     public static UserInboundState[] GetAllStates()
@@ -66,7 +69,7 @@ public class UserProcessInboundState : IUserState
                 {
                     string userId = update.CallbackQuery.Data.Split(':')[1];
                     await CommonUtilities.SendMessage(botClient, update, InBoundKB.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
-                                                cancellationToken, LegacyConfig.GetResourceString("SelectAction"));
+                                                cancellationToken, _resourceService.GetResourceString("SelectAction"));
                     userState.currentState = UserInboundState.ProcessAction;
                     return;
                 }
@@ -90,19 +93,20 @@ public class UserProcessInboundState : IUserState
                         _contactSetterRepository,
                         _contactRemoverRepository,
                         _inboundDBGetter,
-                        _userGetter);
+                        _userGetter,
+                        _resourceService);
                     return;
                 }
                 string userID = update.CallbackQuery!.Data!.Split(':')[1];
                 if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("user_accept_inbounds_invite:"))
                 {
                     await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_accept_invite:{userID}", $"decline_accept_invite:{userID}"),
-                    cancellationToken, LegacyConfig.GetResourceString("WaitAcceptInboundInvite"));
+                    cancellationToken, _resourceService.GetResourceString("WaitAcceptInboundInvite"));
                 }
                 else if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("user_decline_inbounds_invite:"))
                 {
                     await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_decline_invite:{userID}", $"decline_decline_invite:{userID}"), 
-                    cancellationToken, LegacyConfig.GetResourceString("WaitDeclineInboundInvite"));
+                    cancellationToken, _resourceService.GetResourceString("WaitDeclineInboundInvite"));
                 }
 
                 userState.currentState = UserInboundState.Finish;
@@ -121,7 +125,7 @@ public class UserProcessInboundState : IUserState
                 {
                     string userId = update.CallbackQuery.Data.Split(':')[1];
                     await CommonUtilities.SendMessage(botClient, update, InBoundKB.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
-                                                cancellationToken, LegacyConfig.GetResourceString("SelectAction"));
+                                                cancellationToken, _resourceService.GetResourceString("SelectAction"));
                     userState.currentState = UserInboundState.ProcessAction;
                     return;
                 }

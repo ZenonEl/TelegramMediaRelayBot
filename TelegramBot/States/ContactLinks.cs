@@ -28,13 +28,15 @@ public class ProcessContactLinksState : IUserState
     private readonly IContactGetter _contactGetterRepository;
     private readonly IUserRepository _userRepository;
     private readonly IUserGetter _userGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public ProcessContactLinksState(
         bool isDelete,
         IContactRemover contactRemoverRepository,
         IContactGetter contactGetterRepository,
         IUserRepository userRepository,
-        IUserGetter userGetter
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService
         )
     {
         currentState = UsersStandardState.ProcessAction;
@@ -43,6 +45,7 @@ public class ProcessContactLinksState : IUserState
         _contactGetterRepository = contactGetterRepository;
         _userRepository = userRepository;
         _userGetter = userGetter;
+        _resourceService = resourceService;
     }
 
     public string GetCurrentState() => currentState.ToString();
@@ -76,7 +79,7 @@ public class ProcessContactLinksState : IUserState
     {
         if (update.CallbackQuery != null)
         {
-            await FinishState(botClient, update, chatId, cancellationToken);
+            await FinishState(botClient, update, chatId, cancellationToken, _resourceService);
             return;
         }
         string? messageText = update.Message?.Text;
@@ -134,7 +137,7 @@ public class ProcessContactLinksState : IUserState
         }
         else
         {
-            await FinishState(botClient, update, chatId, cancellationToken);
+            await FinishState(botClient, update, chatId, cancellationToken, _resourceService);
         }
     }
 
@@ -154,21 +157,21 @@ public class ProcessContactLinksState : IUserState
         TGBot.userStates.Remove(chatId);
 
         string statusMessage = actionStatus 
-            ? LegacyConfig.GetResourceString("SuccessActionResult") 
-            : LegacyConfig.GetResourceString("ErrorActionResult");
+            ? _resourceService.GetResourceString("SuccessActionResult") 
+            : _resourceService.GetResourceString("ErrorActionResult");
 
         await CommonUtilities.SendMessage(
             botClient,
             update,
             UsersPrivacyMenuKB.GetUpdateSelfLinkKeyboardMarkup(),
             cancellationToken,
-            LegacyConfig.GetResourceString("SelfLinkRefreshMenuText") + "\n\n" + statusMessage
+            _resourceService.GetResourceString("SelfLinkRefreshMenuText") + "\n\n" + statusMessage
         );
         _userRepository.ReCreateUserSelfLink(userState.actingUserId);
 
     }
 
-    private static async Task FinishState(ITelegramBotClient botClient, Update update, long chatId, CancellationToken cancellationToken)
+    private static async Task FinishState(ITelegramBotClient botClient, Update update, long chatId, CancellationToken cancellationToken, TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         TGBot.userStates.Remove(chatId);
         await CommonUtilities.SendMessage(
@@ -176,7 +179,7 @@ public class ProcessContactLinksState : IUserState
             update,
             UsersPrivacyMenuKB.GetUpdateSelfLinkKeyboardMarkup(),
             cancellationToken,
-            LegacyConfig.GetResourceString("SelfLinkRefreshMenuText")
+            resourceService.GetResourceString("SelfLinkRefreshMenuText")
         );
     }
 

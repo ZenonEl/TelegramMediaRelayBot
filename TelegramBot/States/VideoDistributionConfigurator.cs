@@ -35,6 +35,7 @@ public class ProcessVideoDC : IUserState
     private readonly IContactGetter _contactGetterRepository;
     private readonly IUserGetter _userGetter;
     private readonly IGroupGetter _groupGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public ProcessVideoDC(
         string Link,
@@ -44,7 +45,8 @@ public class ProcessVideoDC : IUserState
         TGBot tgBot,
         IContactGetter contactGetterRepository,
         IUserGetter userGetter,
-        IGroupGetter groupGetter
+        IGroupGetter groupGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService
         )
     {
         link = Link;
@@ -56,6 +58,7 @@ public class ProcessVideoDC : IUserState
         _contactGetterRepository = contactGetterRepository;
         _userGetter = userGetter;
         _groupGetter = groupGetter;
+        _resourceService = resourceService;
     }
 
     public string GetCurrentState()
@@ -82,13 +85,13 @@ public class ProcessVideoDC : IUserState
                         case UsersAction.SEND_MEDIA_TO_ALL_CONTACTS:
                             action = UsersAction.SEND_MEDIA_TO_ALL_CONTACTS;
                             await PrepareTargetUserIds(chatId);
-                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, LegacyConfig.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
+                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
                             break;
 
                         case UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS:
                             action = UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS;
                             await PrepareTargetUserIds(chatId);
-                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, LegacyConfig.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
+                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
                             break;
 
                         case UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS:
@@ -96,9 +99,9 @@ public class ProcessVideoDC : IUserState
                             List<string> groupInfos = await UsersGroup.GetUserGroupInfoByUserId(_userGetter.GetUserIDbyTelegramID(chatId), _groupGetter);
 
                             string messageText = groupInfos.Any() 
-                                ? $"{LegacyConfig.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
-                                : LegacyConfig.GetResourceString("AltYourGroupsText");
-                            string text = $"{messageText}\n{LegacyConfig.GetResourceString("PleaseEnterContactIDs")}";
+                                ? $"{_resourceService.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
+                                : _resourceService.GetResourceString("AltYourGroupsText");
+                            string text = $"{messageText}\n{_resourceService.GetResourceString("PleaseEnterContactIDs")}";
 
                             await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, text, replyMarkup: KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken, parseMode: ParseMode.Html);
                             currentState = UsersStandardState.ProcessData;
@@ -106,13 +109,13 @@ public class ProcessVideoDC : IUserState
 
                         case UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS:
                             action = UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS;
-                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, LegacyConfig.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
+                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
                             currentState = UsersStandardState.ProcessData;
                             break;
 
                         case UsersAction.SEND_MEDIA_ONLY_TO_ME:
                             action = UsersAction.SEND_MEDIA_ONLY_TO_ME;
-                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, LegacyConfig.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
+                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
                             currentState = UsersStandardState.Finish;
                             break;
 
@@ -144,7 +147,7 @@ public class ProcessVideoDC : IUserState
                         int replyToMessageId = update.Message.MessageId;
                         statusMessage = await botClient.SendMessage(
                             chatId, 
-                            LegacyConfig.GetResourceString("VideoDistributionQuestion"), 
+                            _resourceService.GetResourceString("VideoDistributionQuestion"), 
                             replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), 
                             replyParameters: new ReplyParameters { MessageId = replyToMessageId }, 
                             cancellationToken: cancellationToken
@@ -157,7 +160,7 @@ public class ProcessVideoDC : IUserState
             case UsersStandardState.ProcessData:
                 if (update.CallbackQuery != null && update.CallbackQuery.Data == "main_menu")
                 {
-                    await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, LegacyConfig.GetResourceString("VideoDistributionQuestion"), replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), cancellationToken: cancellationToken);
+                    await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("VideoDistributionQuestion"), replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), cancellationToken: cancellationToken);
                     currentState = UsersStandardState.ProcessAction;
                     return;
                 }
@@ -171,11 +174,11 @@ public class ProcessVideoDC : IUserState
                         {
                             preparedTargetUserIds = ids.Select(long.Parse).ToList();
                             await PrepareTargetUserIds(chatId);
-                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, LegacyConfig.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
+                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
                         }
                         else
                         {
-                            await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                            await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
                         }
                     }
                     else
@@ -184,11 +187,11 @@ public class ProcessVideoDC : IUserState
                         {
                             preparedTargetUserIds.Add(id);
                             await PrepareTargetUserIds(chatId);
-                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, LegacyConfig.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
+                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
                         }
                         else
                         {
-                            await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                            await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
                         }
                     }
                 }
@@ -198,12 +201,12 @@ public class ProcessVideoDC : IUserState
                 if (update.CallbackQuery != null && update.CallbackQuery.Data == "main_menu" ||
                     update.Message != null)
                 {
-                    await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, LegacyConfig.GetResourceString("VideoDistributionQuestion"), replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), cancellationToken: cancellationToken);
+                    await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("VideoDistributionQuestion"), replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), cancellationToken: cancellationToken);
                     currentState = UsersStandardState.ProcessAction;
                     return;
                 }
 
-                await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, LegacyConfig.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
+                await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
                 _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
 
                 if (linkQueue.Count > 0)
@@ -216,7 +219,7 @@ public class ProcessVideoDC : IUserState
 
                     statusMessage = await botClient.SendMessage(
                         chatId, 
-                        LegacyConfig.GetResourceString("WaitDownloadingVideo"),
+                        _resourceService.GetResourceString("WaitDownloadingVideo"),
                         replyParameters: new ReplyParameters { MessageId = replyToMessageId }, 
                         cancellationToken: cancellationToken
                     );
@@ -224,7 +227,7 @@ public class ProcessVideoDC : IUserState
                     await botClient.EditMessageText(
                         statusMessage.Chat.Id, 
                         statusMessage.MessageId, 
-                        LegacyConfig.GetResourceString("VideoDistributionQuestion"), 
+                        _resourceService.GetResourceString("VideoDistributionQuestion"), 
                         replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), 
                         cancellationToken: cancellationToken
                     );

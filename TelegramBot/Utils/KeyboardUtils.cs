@@ -16,9 +16,17 @@ namespace TelegramMediaRelayBot.TelegramBot.Utils;
 
 public static class KeyboardUtils
 {
+    private static readonly System.Resources.ResourceManager _resourceManager = 
+        new System.Resources.ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
+    
+    private static string GetResourceString(string key)
+    {
+        return _resourceManager.GetString(key) ?? key;
+    }
+    
     public static InlineKeyboardButton GetReturnButton(string callback = "main_menu", string? text = null)
     {
-        text ??= LegacyConfig.GetResourceString("BackButtonText");
+        text ??= GetResourceString("BackButtonText");
         return InlineKeyboardButton.WithCallbackData(text, callback);
     }
 
@@ -40,7 +48,7 @@ public static class KeyboardUtils
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("YesButtonText"), acceptCallback),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("YesButtonText"), acceptCallback),
                         },
                         new[]
                         {
@@ -56,17 +64,17 @@ public static class KeyboardUtils
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("MuteUserButtonText"), "mute_contact"),
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("UnmuteUserButtonText"), "unmute_contact"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("MuteUserButtonText"), "mute_contact"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("UnmuteUserButtonText"), "unmute_contact"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("EditContactNameButtonText"), "edit_contact_name"),
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("EditContactGroupButtonText"), "edit_contact_group"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("EditContactNameButtonText"), "edit_contact_name"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("EditContactGroupButtonText"), "edit_contact_group"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("DeleteContactButtonText"), "delete_contact"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("DeleteContactButtonText"), "delete_contact"),
                         },
                         new[]
                         {
@@ -82,32 +90,32 @@ public static class KeyboardUtils
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("AddContactButtonText"), "add_contact"),
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("MyLinkButtonText"), "get_self_link"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("AddContactButtonText"), "add_contact"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("MyLinkButtonText"), "get_self_link"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("ViewInboundInvitesButtonText"), "view_inbound_invite_links"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("ViewInboundInvitesButtonText"), "view_inbound_invite_links"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("ViewOutboundInvitesButtonText"), "view_outbound_invite_links"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("ViewOutboundInvitesButtonText"), "view_outbound_invite_links"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("ViewAllContactsButtonText"), "view_contacts"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("ViewAllContactsButtonText"), "view_contacts"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("UsersGroupButtonText"), "show_groups"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("UsersGroupButtonText"), "show_groups"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("SettingsButtonText"), "show_settings"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("SettingsButtonText"), "show_settings"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("BehindTheScenesButtonText"), "whos_the_genius")
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("BehindTheScenesButtonText"), "whos_the_genius")
                         }
                     });
         return CommonUtilities.SendMessage(botClient, update, inlineKeyboard, cancellationToken, text);
@@ -119,17 +127,17 @@ public static class KeyboardUtils
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("SendToAllContactsButtonText"), "send_to_all_contacts"),
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("SendToDefaultGroupsButtonText"), "send_to_default_groups"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("SendToAllContactsButtonText"), "send_to_all_contacts"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("SendToDefaultGroupsButtonText"), "send_to_default_groups"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("SendToSpecifiedGroupsButtonText"), "send_to_specified_groups"),
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("SendToSpecifiedUsersButtonText"), "send_to_specified_users"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("SendToSpecifiedGroupsButtonText"), "send_to_specified_groups"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("SendToSpecifiedUsersButtonText"), "send_to_specified_users"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("SendOnlyToMeButtonText"), "send_only_to_me"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("SendOnlyToMeButtonText"), "send_only_to_me"),
                         },
                         new[]
                         {

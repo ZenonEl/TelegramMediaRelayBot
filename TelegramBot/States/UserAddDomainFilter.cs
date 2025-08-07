@@ -25,12 +25,14 @@ namespace TelegramMediaRelayBot
         private readonly int _userId;
         private List<string> _checkedDomains;
         private bool _isRemoveDomains;
+        private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
         public ProcessUserAddDomainFilterState(
             int privacyRuleId,
             IPrivacySettingsTargetsSetter privacySettingsTargetsSetter,
             int userId,
-            bool isRemoveDomains
+            bool isRemoveDomains,
+            TelegramMediaRelayBot.Config.Services.IResourceService resourceService
             )
         {
             currentState = UsersStandardState.ProcessAction;
@@ -38,6 +40,7 @@ namespace TelegramMediaRelayBot
             _privacyRuleId = privacyRuleId;
             _userId = userId;
             _isRemoveDomains = isRemoveDomains;
+            _resourceService = resourceService;
         }
 
         public string GetCurrentState() => currentState.ToString();
@@ -77,14 +80,14 @@ namespace TelegramMediaRelayBot
                     update,
                     UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
                     cancellationToken,
-                    LegacyConfig.GetResourceString("UsersVideoSentUsersMenuText")
+                    _resourceService.GetResourceString("UsersVideoSentUsersMenuText")
                 );
                 return;
             }
             var messageText = update.Message?.Text;
             if (string.IsNullOrEmpty(messageText))
             {
-                await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
                 return;
             }
 
@@ -92,7 +95,7 @@ namespace TelegramMediaRelayBot
 
             if (inputDomains.Count == 0)
             {
-                await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
                 return;
             }
 
@@ -100,12 +103,12 @@ namespace TelegramMediaRelayBot
 
             if (_checkedDomains.Count == 0)
             {
-                await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, _resourceService.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken);
                 return;
             }
 
             var domains = string.Join(", ", _checkedDomains);
-            var message = $"{LegacyConfig.GetResourceString("ConfirmDecision")}:\n\n{domains}";
+            var message = $"{_resourceService.GetResourceString("ConfirmDecision")}:\n\n{domains}";
             
             await botClient.SendMessage(
                 chatId,
@@ -137,7 +140,7 @@ namespace TelegramMediaRelayBot
                     update,
                     UsersPrivacyMenuKB.GetSiteFilterKeyboardMarkup(),
                     cancellationToken,
-                    LegacyConfig.GetResourceString("SettingsMenuText")
+                    _resourceService.GetResourceString("SettingsMenuText")
                 );
             }
         }
@@ -163,7 +166,7 @@ namespace TelegramMediaRelayBot
                 update,
                 UsersPrivacyMenuKB.GetSiteFilterKeyboardMarkup(),
                 cancellationToken,
-                LegacyConfig.GetResourceString("SuccessActionResult")
+                _resourceService.GetResourceString("SuccessActionResult")
             );
         }
 

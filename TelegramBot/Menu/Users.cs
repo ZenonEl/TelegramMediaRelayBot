@@ -19,7 +19,15 @@ namespace TelegramMediaRelayBot.TelegramBot.Menu;
 
 public class Users
 {
+    private static readonly System.Resources.ResourceManager _resourceManager = 
+        new System.Resources.ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
+    
     public static CancellationToken cancellationToken = TGBot.cancellationToken;
+    
+    private static string GetResourceString(string key)
+    {
+        return _resourceManager.GetString(key) ?? key;
+    }
 
     public static async Task ViewSettings(ITelegramBotClient botClient, Update update)
     {
@@ -28,7 +36,7 @@ public class Users
             update,
             UsersKB.GetSettingsKeyboardMarkup(),
             cancellationToken,
-            LegacyConfig.GetResourceString("SettingsMenuText")
+            GetResourceString("SettingsMenuText")
         );
     }
 
@@ -39,7 +47,7 @@ public class Users
             update,
             UsersDefaultActionsMenuKB.GetDefaultActionsMenuKeyboardMarkup(),
             cancellationToken,
-            LegacyConfig.GetResourceString("DefaultActionsMenuText")
+            GetResourceString("DefaultActionsMenuText")
         );
     }
 
@@ -50,7 +58,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetPrivacyMenuKeyboardMarkup(),
             cancellationToken,
-            LegacyConfig.GetResourceString("ChosePrivacyOptionMenuText") + "\n\n" + statusMessage
+            GetResourceString("ChosePrivacyOptionMenuText") + "\n\n" + statusMessage
         );
     }
 
@@ -61,7 +69,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetUpdateSelfLinkKeyboardMarkup(),
             cancellationToken,
-            LegacyConfig.GetResourceString("SelfLinkRefreshMenuText")
+            GetResourceString("SelfLinkRefreshMenuText")
         );
     }
 
@@ -72,7 +80,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetWhoCanFindMeByLinkKeyboardMarkup(),
             cancellationToken,
-            LegacyConfig.GetResourceString("SearchPrivacyText")
+            GetResourceString("SearchPrivacyText")
         );
     }
 
@@ -83,7 +91,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetPermanentContentSpoilerKeyboardMarkup(),
             cancellationToken,
-            LegacyConfig.GetResourceString("AllowForwardContentRuleText")
+            GetResourceString("AllowForwardContentRuleText")
         );
     }
 
@@ -94,7 +102,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetPermanentContentSpoilerKeyboardMarkup(),
             cancellationToken,
-            LegacyConfig.GetResourceString("AllowForwardContentRuleText")
+            GetResourceString("AllowForwardContentRuleText")
         );
     }
 
@@ -105,7 +113,7 @@ public class Users
             update,
             UsersDefaultActionsMenuKB.GetDefaultVideoDistributionKeyboardMarkup(),
             cancellationToken,
-            LegacyConfig.GetResourceString("VideoDefaultActionsMenuText")
+            GetResourceString("VideoDefaultActionsMenuText")
         );
     }
 
@@ -116,7 +124,7 @@ public class Users
             update,
             UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
             cancellationToken,
-            LegacyConfig.GetResourceString("UsersVideoSentUsersMenuText")
+            GetResourceString("UsersVideoSentUsersMenuText")
         );
     }
 
@@ -127,7 +135,7 @@ public class Users
             update,
             UsersDefaultActionsMenuKB.GetUsersAutoSendVideoTimeKeyboardMarkup(),
             cancellationToken,
-            LegacyConfig.GetResourceString("AutoSendVideoTimeMenuText")
+            GetResourceString("AutoSendVideoTimeMenuText")
         );
     }
 
@@ -150,7 +158,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetSiteFilterKeyboardMarkup(),
             cancellationToken,
-            LegacyConfig.GetResourceString("SiteFilterMenuText")
+            GetResourceString("SiteFilterMenuText")
         );
     }
 
@@ -161,7 +169,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetSiteFilterSettingsKeyboardMarkup(),
             cancellationToken,
-            LegacyConfig.GetResourceString("SiteFilterMenuText")
+            GetResourceString("SiteFilterMenuText")
         );
     }
 }
@@ -173,20 +181,22 @@ public class UsersDB
         IContactRemover contactRemoverRepository,
         IContactGetter contactGetterRepository,
         IUserRepository userRepository,
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
-        TGBot.userStates[chatId] = new ProcessContactLinksState(false, contactRemoverRepository, contactGetterRepository, userRepository, userGetter);
+        TGBot.userStates[chatId] = new ProcessContactLinksState(false, contactRemoverRepository, contactGetterRepository, userRepository, userGetter, resourceService);
     }
 
     public static void UpdateSelfLinkWithDeleteSelectedContacts(Update update,
         IContactRemover contactRemoverRepository,
         IContactGetter contactGetterRepository,
         IUserRepository userRepository,
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
-        TGBot.userStates[chatId] = new ProcessContactLinksState(true, contactRemoverRepository, contactGetterRepository, userRepository, userGetter);
+        TGBot.userStates[chatId] = new ProcessContactLinksState(true, contactRemoverRepository, contactGetterRepository, userRepository, userGetter, resourceService);
     }
 
     public static bool UpdateSelfLinkWithContacts(Update update, IUserRepository userRepository, IUserGetter userGetter)

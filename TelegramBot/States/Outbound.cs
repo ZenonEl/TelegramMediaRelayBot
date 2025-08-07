@@ -22,17 +22,20 @@ public class UserProcessOutboundState : IUserState
     private IContactRemover _contactRepository;
     private IOutboundDBGetter _outboundDBGetter;
     private IUserGetter _userGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
     public UserOutboundState currentState;
 
     public UserProcessOutboundState(
         IContactRemover contactRepository,
         IOutboundDBGetter outboundDBGetter,
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         currentState = UserOutboundState.ProcessAction;
         _contactRepository = contactRepository;
         _outboundDBGetter = outboundDBGetter;
         _userGetter = userGetter;
+        _resourceService = resourceService;
     }
 
     public static UserOutboundState[] GetAllStates()
@@ -64,7 +67,7 @@ public class UserProcessOutboundState : IUserState
                 {
                     string userId = update.CallbackQuery.Data.Split(':')[1];
                     await CommonUtilities.SendMessage(botClient, update, OutBoundKB.GetOutBoundActionsKeyboardMarkup(userId, "user_show_outbound_invite:" + chatId),
-                                                cancellationToken, LegacyConfig.GetResourceString("DeclineOutBound"));
+                                                cancellationToken, _resourceService.GetResourceString("DeclineOutBound"));
                     userState.currentState = UserOutboundState.Finish;
                     return;
                 }
@@ -78,7 +81,7 @@ public class UserProcessOutboundState : IUserState
                     if (update.CallbackQuery.Data!.StartsWith("user_show_outbound_invite:"))
                     {
                         TGBot.userStates.Remove(chatId);
-                        await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId, _contactRepository, _outboundDBGetter, _userGetter);
+                        await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId, _contactRepository, _outboundDBGetter, _userGetter, _resourceService);
                         return;
                     }
                     else if (update.CallbackQuery.Data!.StartsWith("user_accept_revoke_outbound_invite:"))

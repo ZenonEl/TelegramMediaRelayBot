@@ -28,6 +28,7 @@ namespace TelegramMediaRelayBot
         private readonly IDefaultActionGetter _defaultActionGetter;
         private readonly IUserGetter _userGetter;
         private readonly IGroupGetter _groupGetter;
+        private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
         public ProcessUserSetDCSendState(
             bool isGroup,
@@ -35,7 +36,8 @@ namespace TelegramMediaRelayBot
             IDefaultAction defaultAction,
             IDefaultActionGetter defaultActionGetter,
             IUserGetter userGetter,
-            IGroupGetter groupGetter
+            IGroupGetter groupGetter,
+            TelegramMediaRelayBot.Config.Services.IResourceService resourceService
             )
         {
             currentState = UsersStandardState.ProcessAction;
@@ -45,6 +47,7 @@ namespace TelegramMediaRelayBot
             _defaultActionGetter = defaultActionGetter;
             _userGetter = userGetter;
             _groupGetter = groupGetter;
+            _resourceService = resourceService;
         }
 
         public string GetCurrentState() => currentState.ToString();
@@ -84,14 +87,14 @@ namespace TelegramMediaRelayBot
                     update,
                     UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
                     cancellationToken,
-                    LegacyConfig.GetResourceString("UsersVideoSentUsersMenuText")
+                    _resourceService.GetResourceString("UsersVideoSentUsersMenuText")
                 );
                 return;
             }
             var messageText = update.Message?.Text;
             if (string.IsNullOrEmpty(messageText))
             {
-                await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
                 return;
             }
 
@@ -102,7 +105,7 @@ namespace TelegramMediaRelayBot
 
             if (inputIds.Count == 0)
             {
-                await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, _resourceService.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
                 return;
             }
 
@@ -114,12 +117,12 @@ namespace TelegramMediaRelayBot
 
             if (userState._targetIds.Count == 0)
             {
-                await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("NoUsersFound"), cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, _resourceService.GetResourceString("NoUsersFound"), cancellationToken: cancellationToken);
                 return;
             }
 
             var idsList = string.Join(", ", userState._targetIds);
-            var message = string.Format(LegacyConfig.GetResourceString("ProcessIDsList"), idsList);
+            var message = string.Format(_resourceService.GetResourceString("ProcessIDsList"), idsList);
             
             await botClient.SendMessage(
                 chatId,
@@ -151,7 +154,7 @@ namespace TelegramMediaRelayBot
                     update,
                     UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
                     cancellationToken,
-                    LegacyConfig.GetResourceString("UsersVideoSentUsersMenuText")
+                    _resourceService.GetResourceString("UsersVideoSentUsersMenuText")
                 );
             }
         }
@@ -189,7 +192,7 @@ namespace TelegramMediaRelayBot
                 update,
                 UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
                 cancellationToken,
-                string.Format(LegacyConfig.GetResourceString("SuccessMessageProcessIDsList"), userState._targetIds.Count)
+                string.Format(_resourceService.GetResourceString("SuccessMessageProcessIDsList"), userState._targetIds.Count)
             );
         }
 

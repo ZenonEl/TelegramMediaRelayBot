@@ -23,24 +23,27 @@ public class AddContactCommand : IBotCallbackQueryHandlers
     private readonly IContactGetter _contactGetter;
     private readonly IUserGetter _userGetter;
     private readonly IPrivacySettingsGetter _privacySettingsGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public AddContactCommand(
         IContactAdder contactRepository,
         IContactGetter contactGetter,
         IUserGetter userGetter,
-        IPrivacySettingsGetter privacySettingsGetter)
+        IPrivacySettingsGetter privacySettingsGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         _contactRepository = contactRepository;
         _contactGetter = contactGetter;
         _userGetter = userGetter;
         _privacySettingsGetter = privacySettingsGetter;
+        _resourceService = resourceService;
     }
 
     public string Name => "add_contact";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        await Contacts.AddContact(botClient, update, update.CallbackQuery!.Message!.Chat.Id, _contactRepository, _contactGetter, _userGetter, _privacySettingsGetter);
+        await Contacts.AddContact(botClient, update, update.CallbackQuery!.Message!.Chat.Id, _contactRepository, _contactGetter, _userGetter, _privacySettingsGetter, _resourceService);
     }
 }
 
@@ -51,17 +54,20 @@ public class ViewInboundInviteLinksCommand : IBotCallbackQueryHandlers
     private readonly IContactRemover _contactRepository;
     private readonly IInboundDBGetter _inboundDBGetter;
     private readonly IUserGetter _userGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public ViewInboundInviteLinksCommand(
         IContactSetter contactSetterRepository, 
         IContactRemover contactRepository,
         IInboundDBGetter inboundDBGetter,
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         _contactSetterRepository = contactSetterRepository;
         _contactRepository = contactRepository;
         _inboundDBGetter = inboundDBGetter;
         _userGetter = userGetter;
+        _resourceService = resourceService;
     }
 
     public string Name => "view_inbound_invite_links";
@@ -76,7 +82,8 @@ public class ViewInboundInviteLinksCommand : IBotCallbackQueryHandlers
             _contactSetterRepository,
             _contactRepository,
             _inboundDBGetter,
-            _userGetter);
+            _userGetter,
+            _resourceService);
     }
 }
 
@@ -105,21 +112,24 @@ public class ShowGroupsCommand : IBotCallbackQueryHandlers
     private readonly IUserGetter _userGetter;
     private readonly IGroupGetter _groupGetter;
     private readonly IGroupSetter _groupSetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
     public string Name => "show_groups";
 
     public ShowGroupsCommand(
         IUserGetter userGetter,
         IGroupGetter groupGetter,
-        IGroupSetter groupSetter)
+        IGroupSetter groupSetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         _userGetter = userGetter;
         _groupGetter = groupGetter;
         _groupSetter = groupSetter;
+        _resourceService = resourceService;
     }
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        await Groups.ViewGroups(botClient, update, ct, _userGetter, _groupGetter, _groupSetter);
+        await Groups.ViewGroups(botClient, update, ct, _userGetter, _groupGetter, _groupSetter, _resourceService);
     }
 }
 
@@ -129,15 +139,18 @@ public class EditContactGroupCommand : IBotCallbackQueryHandlers
     private readonly IContactGroupRepository _contactGroupRepository;
     private readonly IUserGetter _userGetter;
     private readonly IGroupGetter _groupGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public EditContactGroupCommand(
         IContactGroupRepository contactGroupRepository,
         IUserGetter userGetter,
-        IGroupGetter groupGetter)
+        IGroupGetter groupGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         _contactGroupRepository = contactGroupRepository;
         _userGetter = userGetter;
         _groupGetter = groupGetter;
+        _resourceService = resourceService;
     }
 
     public string Name => "edit_contact_group";
@@ -145,7 +158,7 @@ public class EditContactGroupCommand : IBotCallbackQueryHandlers
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
-        await Contacts.EditContactGroup(botClient, update, chatId, _contactGroupRepository, _userGetter, _groupGetter);
+        await Contacts.EditContactGroup(botClient, update, chatId, _contactGroupRepository, _userGetter, _groupGetter, _resourceService);
     }
 }
 
@@ -175,15 +188,18 @@ public class MuteContactCommand : IBotCallbackQueryHandlers
     private readonly IContactAdder _contactAdderRepository;
     private readonly IContactGetter _contactGetterRepository;
     private readonly IUserGetter _userGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public MuteContactCommand(
         IContactAdder contactAdderRepository,
         IContactGetter contactGetterRepository,
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         _contactAdderRepository = contactAdderRepository;
         _contactGetterRepository = contactGetterRepository;
         _userGetter = userGetter;
+        _resourceService = resourceService;
     }
 
     public string Name => "mute_contact";
@@ -191,7 +207,7 @@ public class MuteContactCommand : IBotCallbackQueryHandlers
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
-        await Contacts.MuteUserContact(botClient, update, chatId, _contactAdderRepository, _contactGetterRepository, _userGetter);
+        await Contacts.MuteUserContact(botClient, update, chatId, _contactAdderRepository, _contactGetterRepository, _userGetter, _resourceService);
     }
 }
 
@@ -200,15 +216,18 @@ public class UnmuteContactCommand : IBotCallbackQueryHandlers
     private readonly IContactRemover _contactRemoverRepository;
     private readonly IContactGetter _contactGetterRepository;
     private readonly IUserGetter _userGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public UnmuteContactCommand(
         IContactRemover contactRepository,
         IContactGetter contactGetterRepository,
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         _contactRemoverRepository = contactRepository;
         _contactGetterRepository = contactGetterRepository;
         _userGetter = userGetter;
+        _resourceService = resourceService;
     }
 
     public string Name => "unmute_contact";
@@ -216,7 +235,7 @@ public class UnmuteContactCommand : IBotCallbackQueryHandlers
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
-        await Contacts.UnMuteUserContact(botClient, update, chatId, _contactRemoverRepository, _contactGetterRepository, _userGetter);
+        await Contacts.UnMuteUserContact(botClient, update, chatId, _contactRemoverRepository, _contactGetterRepository, _userGetter, _resourceService);
     }
 }
 
@@ -225,15 +244,18 @@ public class DeleteContactCommand : IBotCallbackQueryHandlers
     private readonly IContactRemover _contactRemoverRepository;
     private readonly IContactGetter _contactGetterRepository;
     private readonly IUserGetter _userGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public DeleteContactCommand(
         IContactRemover contactRemoverRepository,
         IContactGetter contactGetterRepository,
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         _contactRemoverRepository = contactRemoverRepository;
         _contactGetterRepository = contactGetterRepository;
         _userGetter = userGetter;
+        _resourceService = resourceService;
     }
 
     public string Name => "delete_contact";
@@ -241,6 +263,6 @@ public class DeleteContactCommand : IBotCallbackQueryHandlers
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
-        await Contacts.DeleteContact(botClient, update, chatId, _contactRemoverRepository, _contactGetterRepository, _userGetter);
+        await Contacts.DeleteContact(botClient, update, chatId, _contactRemoverRepository, _contactGetterRepository, _userGetter, _resourceService);
     }
 }

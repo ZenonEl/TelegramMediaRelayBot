@@ -17,6 +17,14 @@ namespace TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 public class OutBoundKB
 {
+    private static readonly System.Resources.ResourceManager _resourceManager = 
+        new System.Resources.ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
+    
+    private static string GetResourceString(string key)
+    {
+        return _resourceManager.GetString(key) ?? key;
+    }
+    
     public static InlineKeyboardMarkup GetOutboundKeyboardMarkup(long userId, IOutboundDBGetter outboundDBGetter, IUserGetter userGetter)
     {
         var buttonDataList = outboundDBGetter.GetOutboundButtonData(userGetter.GetUserIDbyTelegramID(userId));
@@ -38,7 +46,7 @@ public class OutBoundKB
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("DeclineButtonText"), $"revoke_outbound_invite:{userId}"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("DeclineButtonText"), $"revoke_outbound_invite:{userId}"),
                         },
                         new[]
                         {
@@ -54,7 +62,7 @@ public class OutBoundKB
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("YesButtonText"), $"user_accept_revoke_outbound_invite:{userId}"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("YesButtonText"), $"user_accept_revoke_outbound_invite:{userId}"),
                         },
                         new[]
                         {

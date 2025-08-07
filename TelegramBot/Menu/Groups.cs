@@ -19,23 +19,32 @@ namespace TelegramMediaRelayBot.TelegramBot.Menu;
 
 public class Groups
 {
+    private static readonly System.Resources.ResourceManager _resourceManager = 
+        new System.Resources.ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
+    
+    private static string GetResourceString(string key)
+    {
+        return _resourceManager.GetString(key) ?? key;
+    }
+    
     public static async Task ViewGroups(
         ITelegramBotClient botClient,
         Update update,
         CancellationToken cancellationToken,
         IUserGetter userGetter,
         IGroupGetter groupGetter,
-        IGroupSetter groupSetter)
+        IGroupSetter groupSetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
         int userId = userGetter.GetUserIDbyTelegramID(chatId);
 
-        TGBot.userStates[chatId] = new ProcessUsersGroupState(userGetter, groupGetter, groupSetter);
+        TGBot.userStates[chatId] = new ProcessUsersGroupState(userGetter, groupGetter, groupSetter, resourceService);
         List<string> groupInfos = await UsersGroup.GetUserGroupInfoByUserId(userId, groupGetter);
 
         string messageText = groupInfos.Any() 
-            ? $"{LegacyConfig.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
-            : LegacyConfig.GetResourceString("AltYourGroupsText");
+            ? $"{GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
+            : GetResourceString("AltYourGroupsText");
 
         await CommonUtilities.SendMessage(
             botClient,

@@ -18,14 +18,22 @@ namespace TelegramMediaRelayBot.TelegramBot.Utils;
 
 public static class CallbackQueryMenuUtils
 {
+    private static readonly System.Resources.ResourceManager _resourceManager = 
+        new System.Resources.ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
+    
     public static CancellationToken cancellationToken = TGBot.cancellationToken;
+    
+    private static string GetResourceString(string key)
+    {
+        return _resourceManager.GetString(key) ?? key;
+    }
 
     public static async Task GetSelfLink(ITelegramBotClient botClient, Update update, IUserGetter userGetter)
     {
         string link = userGetter.GetUserSelfLink(update.CallbackQuery!.Message!.Chat.Id);
         User me = await botClient.GetMe();
         string startLink = $"\nhttps://t.me/{me.Username}?start={link}";
-        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(LegacyConfig.GetResourceString("YourLink") + startLink, link));
+        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(GetResourceString("YourLink") + startLink, link));
     }
 
     public static async Task ViewInboundInviteLinks(
@@ -35,16 +43,17 @@ public static class CallbackQueryMenuUtils
         IContactSetter contactSetterRepository,
         IContactRemover contactRemoverRepository,
         IInboundDBGetter inboundDBGetter,
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
-        string text = LegacyConfig.GetResourceString("YourInboundInvitations");
+        string text = GetResourceString("YourInboundInvitations");
         await CommonUtilities.SendMessage(botClient, update, InBoundKB.GetInboundsKeyboardMarkup(update, inboundDBGetter, userGetter), cancellationToken, text);
-        TGBot.userStates[chatId] = new UserProcessInboundState(contactSetterRepository, contactRemoverRepository, inboundDBGetter, userGetter);
+        TGBot.userStates[chatId] = new UserProcessInboundState(contactSetterRepository, contactRemoverRepository, inboundDBGetter, userGetter, resourceService);
     }
 
     public static async Task ViewOutboundInviteLinks(ITelegramBotClient botClient, Update update, IOutboundDBGetter outboundDBGetter, IUserGetter userGetter)
     {
-        string text = LegacyConfig.GetResourceString("YourOutboundInvitations");
+        string text = GetResourceString("YourOutboundInvitations");
         await CommonUtilities.SendMessage(botClient, update, OutBoundKB.GetOutboundKeyboardMarkup(CommonUtilities.GetIDfromUpdate(update), outboundDBGetter, userGetter), cancellationToken, text);
     }
 
@@ -54,11 +63,12 @@ public static class CallbackQueryMenuUtils
         long chatId,
         IContactRemover contactRepository,
         IOutboundDBGetter outboundDBGetter,
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         string userId = update.CallbackQuery!.Data!.Split(':')[1];
-        await CommonUtilities.SendMessage(botClient, update, OutBoundKB.GetOutboundActionsKeyboardMarkup(userId), cancellationToken, LegacyConfig.GetResourceString("OutboundInviteMenu"));
-        TGBot.userStates[chatId] = new UserProcessOutboundState(contactRepository, outboundDBGetter, userGetter);
+        await CommonUtilities.SendMessage(botClient, update, OutBoundKB.GetOutboundActionsKeyboardMarkup(userId), cancellationToken, GetResourceString("OutboundInviteMenu"));
+        TGBot.userStates[chatId] = new UserProcessOutboundState(contactRepository, outboundDBGetter, userGetter, resourceService);
     }
 
     public static Task AcceptInboundInvite(Update update, IContactSetter contactSetter)
@@ -78,7 +88,7 @@ public static class CallbackQueryMenuUtils
 
     public static Task WhosTheGenius(ITelegramBotClient botClient, Update update)
     {
-        string text = LegacyConfig.GetResourceString("WhosTheGeniusText");
+        string text = GetResourceString("WhosTheGeniusText");
         return CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, text);
     }
 }
