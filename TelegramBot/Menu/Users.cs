@@ -28,7 +28,7 @@ public class Users
             update,
             UsersKB.GetSettingsKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("SettingsMenuText")
+            LegacyConfig.GetResourceString("SettingsMenuText")
         );
     }
 
@@ -39,7 +39,7 @@ public class Users
             update,
             UsersDefaultActionsMenuKB.GetDefaultActionsMenuKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("DefaultActionsMenuText")
+            LegacyConfig.GetResourceString("DefaultActionsMenuText")
         );
     }
 
@@ -50,7 +50,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetPrivacyMenuKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("ChosePrivacyOptionMenuText") + "\n\n" + statusMessage
+            LegacyConfig.GetResourceString("ChosePrivacyOptionMenuText") + "\n\n" + statusMessage
         );
     }
 
@@ -61,7 +61,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetUpdateSelfLinkKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("SelfLinkRefreshMenuText")
+            LegacyConfig.GetResourceString("SelfLinkRefreshMenuText")
         );
     }
 
@@ -72,7 +72,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetWhoCanFindMeByLinkKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("SearchPrivacyText")
+            LegacyConfig.GetResourceString("SearchPrivacyText")
         );
     }
 
@@ -83,7 +83,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetPermanentContentSpoilerKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("AllowForwardContentRuleText")
+            LegacyConfig.GetResourceString("AllowForwardContentRuleText")
         );
     }
 
@@ -94,7 +94,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetPermanentContentSpoilerKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("AllowForwardContentRuleText")
+            LegacyConfig.GetResourceString("AllowForwardContentRuleText")
         );
     }
 
@@ -105,7 +105,7 @@ public class Users
             update,
             UsersDefaultActionsMenuKB.GetDefaultVideoDistributionKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("VideoDefaultActionsMenuText")
+            LegacyConfig.GetResourceString("VideoDefaultActionsMenuText")
         );
     }
 
@@ -116,7 +116,7 @@ public class Users
             update,
             UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("UsersVideoSentUsersMenuText")
+            LegacyConfig.GetResourceString("UsersVideoSentUsersMenuText")
         );
     }
 
@@ -127,7 +127,7 @@ public class Users
             update,
             UsersDefaultActionsMenuKB.GetUsersAutoSendVideoTimeKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("AutoSendVideoTimeMenuText")
+            LegacyConfig.GetResourceString("AutoSendVideoTimeMenuText")
         );
     }
 
@@ -150,7 +150,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetSiteFilterKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("SiteFilterMenuText")
+            LegacyConfig.GetResourceString("SiteFilterMenuText")
         );
     }
 
@@ -161,7 +161,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetSiteFilterSettingsKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("SiteFilterMenuText")
+            LegacyConfig.GetResourceString("SiteFilterMenuText")
         );
     }
 }

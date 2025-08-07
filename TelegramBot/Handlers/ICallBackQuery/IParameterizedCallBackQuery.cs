@@ -66,8 +66,8 @@ public class SetAutoSendTimeCommand : IBotCallbackQueryHandlers
         bool result = Users.SetAutoSendVideoTimeToUser(chatId, callbackQueryData, _defaultActionSetter, _userGetter);
 
         var message = result 
-            ? Config.GetResourceString("AutoSendTimeChangedMessage") + callbackQueryData
-            : Config.GetResourceString("AutoSendTimeNotChangedMessage");
+            ? LegacyConfig.GetResourceString("AutoSendTimeChangedMessage") + callbackQueryData
+            : LegacyConfig.GetResourceString("AutoSendTimeNotChangedMessage");
 
         await CommonUtilities.SendMessage(
             botClient,
@@ -126,7 +126,7 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
                 update,
                 KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
                 cancellationToken,
-                Config.GetResourceString("DefaultActionGetGroupOrUserIDs")
+                LegacyConfig.GetResourceString("DefaultActionGetGroupOrUserIDs")
             );
 
             bool isGroup = false;
@@ -153,7 +153,7 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
                 update,
                 KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
                 cancellationToken,
-                Config.GetResourceString("DefaultActionChangedMessage")
+                LegacyConfig.GetResourceString("DefaultActionChangedMessage")
             );
             return;
         }
@@ -162,7 +162,7 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
             update,
             KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
             cancellationToken,
-            Config.GetResourceString("DefaultActionNotChangedMessage")
+            LegacyConfig.GetResourceString("DefaultActionNotChangedMessage")
         );
     }
 }
@@ -222,8 +222,8 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
                 return;
         }
 
-        string text = switchResult ? Config.GetResourceString("SuccessActionResult") : Config.GetResourceString("ErrorActionResult");
-        string actionText = !isActive ? Config.GetResourceString("Enable") : Config.GetResourceString("Disable");
+        string text = switchResult ? LegacyConfig.GetResourceString("SuccessActionResult") : LegacyConfig.GetResourceString("ErrorActionResult");
+        string actionText = !isActive ? LegacyConfig.GetResourceString("Enable") : LegacyConfig.GetResourceString("Disable");
 
         await CommonUtilities.SendMessage(
             botClient,
@@ -269,14 +269,14 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
                 update,
                 KeyboardUtils.GetReturnButtonMarkup("user_update_site_stop_list"),
                 ct,
-                Config.GetResourceString("DomainFilterNotEnabledError")
+                LegacyConfig.GetResourceString("DomainFilterNotEnabledError")
             );
             return;
         }
 
         await botClient.SendMessage(
             chatId, 
-            Config.GetResourceString("EnterDomainsToAddPrompt"), 
+            LegacyConfig.GetResourceString("EnterDomainsToAddPrompt"), 
             cancellationToken: ct
         );
 
@@ -299,7 +299,7 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
                 update,
                 KeyboardUtils.GetReturnButtonMarkup("user_update_site_stop_list"),
                 ct,
-                Config.GetResourceString("NoDomainsAddedError")
+                LegacyConfig.GetResourceString("NoDomainsAddedError")
             );
             return;
         }
@@ -307,7 +307,7 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
         int privacyRuleId = await _privacySettingsGetter.GetPrivacyRuleId(userId, PrivacyRuleType.SITES_BY_DOMAIN_FILTER);
         await botClient.SendMessage(
             chatId, 
-            Config.GetResourceString("EnterDomainsToRemovePrompt"), 
+            LegacyConfig.GetResourceString("EnterDomainsToRemovePrompt"), 
             cancellationToken: ct
         );
 

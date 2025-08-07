@@ -18,6 +18,9 @@ using TelegramMediaRelayBot.TelegramBot.Handlers;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot.SiteFilter;
+using TelegramMediaRelayBot.Config.Services;
+using TelegramMediaRelayBot.Config;
+using Microsoft.Extensions.Options;
 
 
 namespace TelegramMediaRelayBot;
@@ -32,6 +35,10 @@ public partial class TGBot
     private readonly ILinkCategorizer _categorizer;
     private readonly IUserFilterService _userFilter;
     private readonly MediaDownloaderService _mediaDownloaderService;
+    private readonly TelegramMediaRelayBot.Config.Services.IConfigurationService _configService;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
+    private readonly IOptions<BotConfiguration> _botConfig;
+    private readonly IOptions<MessageDelayConfiguration> _delayConfig;
     public static Dictionary<long, IUserState> userStates = [];
     public static CancellationToken cancellationToken;
 
@@ -44,29 +51,40 @@ public partial class TGBot
         IPrivacySettingsGetter privacySettingsGetter,
         IGroupGetter groupGetter,
         ILinkCategorizer categorizer,
-        MediaDownloaderService mediaDownloaderService
+        MediaDownloaderService mediaDownloaderService,
+        TelegramMediaRelayBot.Config.Services.IConfigurationService configService,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService,
+        IOptions<BotConfiguration> botConfig,
+        IOptions<MessageDelayConfiguration> delayConfig
         )
     {
         _userRepo = userRepo;
         _userGetter = userGetters;
         _handlersFactory = handlersFactory;
+        _configService = configService;
+        _resourceService = resourceService;
+        _privacySettingsGetter = privacySettingsGetter;
+        _categorizer = categorizer;
+        _userFilter = new DefaultUserFilterService(_userGetter, _privacySettingsGetter);
+        _mediaDownloaderService = mediaDownloaderService;
+        _botConfig = botConfig;
+        _delayConfig = delayConfig;
+        
         _updateHandler = new PrivateUpdateHandler(
             this,
             _handlersFactory,
             contactGetterRepository,
             defaultActionGetter,
             _userGetter,
-            groupGetter
+            groupGetter,
+            _configService,
+            resourceService
             );
-        _privacySettingsGetter = privacySettingsGetter;
-        _categorizer = categorizer;
-        _userFilter = new DefaultUserFilterService(_userGetter, _privacySettingsGetter);
-        _mediaDownloaderService = mediaDownloaderService;
     }
 
     public async Task Start()
     {
-        string telegramBotToken = Config.telegramBotToken!;
+        string telegramBotToken = _botConfig.Value.TelegramBotToken;
         ITelegramBotClient _botClient = new TelegramBotClient(telegramBotToken);
 
         var me = await _botClient.GetMe();
@@ -121,16 +139,16 @@ public partial class TGBot
                 {
                     int usersCount = await _userGetter.GetAllUsersCount();
                     string startParameter = CommonUtilities.ParseStartCommand(update.Message.Text);
-                    if ((usersCount == 0 || !string.IsNullOrEmpty(startParameter)) && Config.CanUserStartUsingBot(startParameter, _userGetter))
+                    if ((usersCount == 0 || !string.IsNullOrEmpty(startParameter)) && _configService.CanUserStartUsingBot(startParameter, _userGetter))
                     {
                         _userRepo.AddUser(update.Message.Chat.FirstName!, chatId, hasAccess);
                         update.Message.Text = "/start";
                         hasAccess = true;
                     }
-                    else if (Config.showAccessDeniedMessage)
-                    {
-                        await botClient.SendMessage(chatId, string.Format(Config.GetResourceString("AccessDeniedMessage"), Config.accessDeniedMessageContact), cancellationToken: cancellationToken, parseMode: ParseMode.Html);
-                    }
+                            else if (_botConfig.Value.AccessDeniedMessageContact != " ")
+        {
+            await botClient.SendMessage(chatId, string.Format(_resourceService.GetResourceString("AccessDeniedMessage"), _botConfig.Value.AccessDeniedMessageContact), cancellationToken: cancellationToken, parseMode: ParseMode.Html);
+        }
                 }
 
                 if (hasAccess)
@@ -165,7 +183,7 @@ public partial class TGBot
             return;
         }
 
-        await botClient.SendMessage(chatId, Config.GetResourceString("FailedToProcessLink"));
+                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("FailedToProcessLink"));
     }
 
         private async Task SendMediaToTelegram(ITelegramBotClient botClient, long chatId, List<byte[]> mediaFiles,
@@ -267,7 +285,7 @@ public partial class TGBot
 
         DateTime now = DateTime.Now;
         string name = _userGetter.GetUserNameByTelegramID(telegramId);
-        string text = string.Format(Config.GetResourceString("ContactSentVideo"), 
+                    string text = string.Format(_resourceService.GetResourceString("ContactSentVideo"), 
                                     name, now.ToString("yyyy_MM_dd_HH_mm_ss"), MyRegex().Replace(name, "_"), caption);
         int sentCount = 0;
 
@@ -305,19 +323,19 @@ public partial class TGBot
                     Log.Debug(ex, "Error editing message.");
                 }
                 Log.Information($"Sent video to user {contactUserTgId}. Total sent: {sentCount}/{filteredContactUserTGIds.Count}");
-                await Task.Delay(Config.contactSendDelay, cancellationToken);
+                await Task.Delay(_delayConfig.Value.ContactSendDelay, cancellationToken);
             }
             catch (Exception ex)
             {
                 Log.Error($"Failed to send video to user {contactUserTgId}: {ex.Message}");
-                await Task.Delay(Config.contactSendDelay, cancellationToken);
+                await Task.Delay(_delayConfig.Value.ContactSendDelay, cancellationToken);
             }
         }
 
         if (filteredContactUserTGIds.Count > 0)
         {
             await botClient.SendMessage(telegramId, 
-                                            string.Format(Config.GetResourceString("VideoSentToContacts"), 
+                                            string.Format(_resourceService.GetResourceString("VideoSentToContacts"), 
                                             $"{sentCount}/{filteredContactUserTGIds.Count}", now.ToString("yyyy_MM_dd_HH_mm_ss"),
                                             MyRegex().Replace(name, "_")),
                                             replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
@@ -327,12 +345,12 @@ public partial class TGBot
         if (mutedByUserIds.Count > 0)
         {
             await botClient.SendMessage(telegramId, 
-                                            string.Format(Config.GetResourceString("MutedByContacts"), mutedByUserIds.Count),
+                                            string.Format(_resourceService.GetResourceString("MutedByContacts"), mutedByUserIds.Count),
                                             replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId });
         }
 
         await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId,
-            string.Format(Config.GetResourceString("MessageProcessMediaSend"), sentCount, filteredContactUserTGIds.Count),
+                            string.Format(_resourceService.GetResourceString("MessageProcessMediaSend"), sentCount, filteredContactUserTGIds.Count),
             cancellationToken: cancellationToken);
     }
 

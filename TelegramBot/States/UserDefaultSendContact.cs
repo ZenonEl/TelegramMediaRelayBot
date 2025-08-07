@@ -84,14 +84,14 @@ namespace TelegramMediaRelayBot
                     update,
                     UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
                     cancellationToken,
-                    Config.GetResourceString("UsersVideoSentUsersMenuText")
+                    LegacyConfig.GetResourceString("UsersVideoSentUsersMenuText")
                 );
                 return;
             }
             var messageText = update.Message?.Text;
             if (string.IsNullOrEmpty(messageText))
             {
-                await botClient.SendMessage(chatId, Config.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
                 return;
             }
 
@@ -102,7 +102,7 @@ namespace TelegramMediaRelayBot
 
             if (inputIds.Count == 0)
             {
-                await botClient.SendMessage(chatId, Config.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
                 return;
             }
 
@@ -114,12 +114,12 @@ namespace TelegramMediaRelayBot
 
             if (userState._targetIds.Count == 0)
             {
-                await botClient.SendMessage(chatId, Config.GetResourceString("NoUsersFound"), cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("NoUsersFound"), cancellationToken: cancellationToken);
                 return;
             }
 
             var idsList = string.Join(", ", userState._targetIds);
-            var message = string.Format(Config.GetResourceString("ProcessIDsList"), idsList);
+            var message = string.Format(LegacyConfig.GetResourceString("ProcessIDsList"), idsList);
             
             await botClient.SendMessage(
                 chatId,
@@ -151,7 +151,7 @@ namespace TelegramMediaRelayBot
                     update,
                     UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
                     cancellationToken,
-                    Config.GetResourceString("UsersVideoSentUsersMenuText")
+                    LegacyConfig.GetResourceString("UsersVideoSentUsersMenuText")
                 );
             }
         }
@@ -189,7 +189,7 @@ namespace TelegramMediaRelayBot
                 update,
                 UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
                 cancellationToken,
-                string.Format(Config.GetResourceString("SuccessMessageProcessIDsList"), userState._targetIds.Count)
+                string.Format(LegacyConfig.GetResourceString("SuccessMessageProcessIDsList"), userState._targetIds.Count)
             );
         }
 

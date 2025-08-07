@@ -27,7 +27,7 @@ public class MySQLDBMigration : BaseDBMigration
 
     protected override void CreateSpecificConstraints()
     {
-        if (Config.dbType != "mysql") return;
+        // MySQL поддерживает foreign keys, создаем их
 
         // ========== Contacts ==========
 

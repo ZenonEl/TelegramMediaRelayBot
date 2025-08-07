@@ -64,7 +64,7 @@ public class UserProcessOutboundState : IUserState
                 {
                     string userId = update.CallbackQuery.Data.Split(':')[1];
                     await CommonUtilities.SendMessage(botClient, update, OutBoundKB.GetOutBoundActionsKeyboardMarkup(userId, "user_show_outbound_invite:" + chatId),
-                                                cancellationToken, Config.GetResourceString("DeclineOutBound"));
+                                                cancellationToken, LegacyConfig.GetResourceString("DeclineOutBound"));
                     userState.currentState = UserOutboundState.Finish;
                     return;
                 }

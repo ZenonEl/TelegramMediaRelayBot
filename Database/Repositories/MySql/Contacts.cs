@@ -399,7 +399,7 @@ public class MySqlContactGetter(string connectionString) : IContactGetter
                 new { contactID });
 
             return expirationDate?.ToString("yyyy-MM-dd HH:mm:ss") 
-                ?? Config.GetResourceString("NoActiveMute");
+                ?? LegacyConfig.GetResourceString("NoActiveMute");
         }
         catch (Exception ex)
         {

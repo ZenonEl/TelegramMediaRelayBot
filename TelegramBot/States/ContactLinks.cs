@@ -154,15 +154,15 @@ public class ProcessContactLinksState : IUserState
         TGBot.userStates.Remove(chatId);
 
         string statusMessage = actionStatus 
-            ? Config.GetResourceString("SuccessActionResult") 
-            : Config.GetResourceString("ErrorActionResult");
+            ? LegacyConfig.GetResourceString("SuccessActionResult") 
+            : LegacyConfig.GetResourceString("ErrorActionResult");
 
         await CommonUtilities.SendMessage(
             botClient,
             update,
             UsersPrivacyMenuKB.GetUpdateSelfLinkKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("SelfLinkRefreshMenuText") + "\n\n" + statusMessage
+            LegacyConfig.GetResourceString("SelfLinkRefreshMenuText") + "\n\n" + statusMessage
         );
         _userRepository.ReCreateUserSelfLink(userState.actingUserId);
 
@@ -176,7 +176,7 @@ public class ProcessContactLinksState : IUserState
             update,
             UsersPrivacyMenuKB.GetUpdateSelfLinkKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("SelfLinkRefreshMenuText")
+            LegacyConfig.GetResourceString("SelfLinkRefreshMenuText")
         );
     }
 

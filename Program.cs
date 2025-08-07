@@ -15,8 +15,11 @@ global using Telegram.Bot.Types;
 using System.Globalization;
 using FluentMigrator.Runner;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot;
+using TelegramMediaRelayBot.Config;
 
 
 namespace TelegramMediaRelayBot
@@ -35,27 +38,41 @@ namespace TelegramMediaRelayBot
             Console.WriteLine("Source code: https://github.com/ZenonEl/TelegramMediaRelayBot");
             Console.WriteLine("============================================\n");
 
-            Config.LoadConfig();
+            // Создаем временную конфигурацию для инициализации
+            var tempConfig = new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddJsonFile("appsettings.example.json", optional: true, reloadOnChange: true)
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .Build();
+
+            // Configuration is now handled through DI and IOptions pattern
+            
+            // Получаем настройки языка
+            var language = tempConfig["AppSettings:Language"];
             CultureInfo currentCulture = CultureInfo.CurrentUICulture;
 
-            if (Config.language != null)
+            if (!string.IsNullOrEmpty(language))
             {
-                currentCulture = new CultureInfo(Config.language);
+                currentCulture = new CultureInfo(language);
             }
 
             Thread.CurrentThread.CurrentUICulture = currentCulture;
             Thread.CurrentThread.CurrentCulture = currentCulture;
 
+            // Получаем уровень логирования
+            var logLevel = tempConfig.GetValue<Serilog.Events.LogEventLevel>("ConsoleOutputSettings:LogLevel", Serilog.Events.LogEventLevel.Information);
+            
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Is(Config.logLevel)
+                .MinimumLevel.Is(logLevel)
                 .Enrich.FromLogContext()
                 .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss} [{Level}] {Message} {Exception}{NewLine}").CreateLogger();
 
             try
             {
-                var builder = FluentDBMigrator.CreateBuilderByDBType(args, Config.dbType);
+                var builder = FluentDBMigrator.CreateBuilderByDBType(args, tempConfig["AppSettings:DatabaseType"] ?? "sqlite");
 
-                ServiceProvider serviceProvider = FluentDBMigrator.GetCurrentServiceProvider(Config.dbType);
+                ServiceProvider serviceProvider = FluentDBMigrator.GetCurrentServiceProvider(tempConfig["AppSettings:DatabaseType"] ?? "sqlite", tempConfig);
                 using (var scope = serviceProvider.CreateScope())
                 {
                     var migrator = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
@@ -66,7 +83,7 @@ namespace TelegramMediaRelayBot
                 TGBot tgBot = app.Services.GetRequiredService<TGBot>();
                 Scheduler scheduler = app.Services.GetRequiredService<Scheduler>();
 
-                Log.Information($"Log level: {Config.logLevel}");
+                Log.Information($"Log level: {logLevel}");
                 scheduler.Init();
 
                 await tgBot.Start();

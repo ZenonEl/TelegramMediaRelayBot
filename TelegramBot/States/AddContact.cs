@@ -72,14 +72,14 @@ public class ProcessContactState : IUserState
 
                 if (contactId == -1)
                 {
-                    await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByLink"));
+                    await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, LegacyConfig.GetResourceString("NoUserFoundByLink"));
                     return;
                 }
 
                 string privacyRuleValue = await _privacySettingsGetter.GetPrivacyRuleValue(contactId, PrivacyRuleType.WHO_CAN_FIND_ME_BY_LINK);
                 if (privacyRuleValue == PrivacyRuleAction.NOBODY_CAN_FIND_ME_BY_LINK)
                 {
-                    await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByLink"));
+                    await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, LegacyConfig.GetResourceString("NoUserFoundByLink"));
                     return;
                 }
 
@@ -93,22 +93,22 @@ public class ProcessContactState : IUserState
                     bool hasCommon = contacts2.Any(contactsSet.Contains);
                     if (!hasCommon)
                     {
-                        await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByLink"));
+                        await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, LegacyConfig.GetResourceString("NoUserFoundByLink"));
                         return;
                     }
                 }
 
-                await botClient.SendMessage(chatId, Config.GetResourceString("UserFoundByLink"), cancellationToken: cancellationToken,
-                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.GetResourceString("NextButtonText")));
+                await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("UserFoundByLink"), cancellationToken: cancellationToken,
+                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(LegacyConfig.GetResourceString("NextButtonText")));
 
                 currentState = ContactState.WaitingForName;
                 break;
 
             case ContactState.WaitingForName:
-                string text_data = $"{Config.GetResourceString("LinkText")}: {link} \n{Config.GetResourceString("NameText")}: {_userGetter.GetUserNameByID(_contactGetter.GetContactIDByLink(link))}";
+                string text_data = $"{LegacyConfig.GetResourceString("LinkText")}: {link} \n{LegacyConfig.GetResourceString("NameText")}: {_userGetter.GetUserNameByID(_contactGetter.GetContactIDByLink(link))}";
 
-                await botClient.SendMessage(chatId, Config.GetResourceString("ConfirmAdditionText") + text_data, cancellationToken: cancellationToken,
-                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.GetResourceString("NextButtonText")));
+                await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("ConfirmAdditionText") + text_data, cancellationToken: cancellationToken,
+                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(LegacyConfig.GetResourceString("NextButtonText")));
 
                 currentState = ContactState.WaitingForConfirmation;
                 break;
@@ -119,9 +119,9 @@ public class ProcessContactState : IUserState
                 _contactAdder.AddContact(chatId, link);
 
                 await SendNotification(botClient, chatId, cancellationToken);
-                await botClient.SendMessage(chatId, Config.GetResourceString("WaitForContactConfirmation"),
+                await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("WaitForContactConfirmation"),
                                             cancellationToken: cancellationToken,
-                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.GetResourceString("NextButtonText")));
+                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(LegacyConfig.GetResourceString("NextButtonText")));
 
                 currentState = ContactState.FinishAddContact;
 
@@ -139,7 +139,7 @@ public class ProcessContactState : IUserState
     public async Task SendNotification(ITelegramBotClient botClient, long chatId, CancellationToken cancellationToken)
     {
         await botClient.SendMessage(_userGetter.GetTelegramIDbyUserID(_contactGetter.GetContactIDByLink(link)), 
-                                    string.Format(Config.GetResourceString("UserWantsToAddYou"), _userGetter.GetUserNameByTelegramID(chatId)), 
+                                    string.Format(LegacyConfig.GetResourceString("UserWantsToAddYou"), _userGetter.GetUserNameByTelegramID(chatId)), 
                                     cancellationToken: cancellationToken);
     }
 }

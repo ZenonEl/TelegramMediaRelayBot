@@ -13,6 +13,7 @@
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.Config.Services;
 
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers;
@@ -25,6 +26,8 @@ public class PrivateUpdateHandler
     private readonly IDefaultActionGetter _defaultActionGetter;
     private readonly IUserGetter _userGetter;
     private readonly IGroupGetter _groupGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IConfigurationService _configService;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public PrivateUpdateHandler(
         TGBot tgBot,
@@ -32,7 +35,9 @@ public class PrivateUpdateHandler
         IContactGetter contactGetterRepository,
         IDefaultActionGetter defaultActionGetter,
         IUserGetter userGetter,
-        IGroupGetter groupGetter
+        IGroupGetter groupGetter,
+        TelegramMediaRelayBot.Config.Services.IConfigurationService configService,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService
         )
     {
         _tgBot = tgBot;
@@ -41,6 +46,8 @@ public class PrivateUpdateHandler
         _defaultActionGetter = defaultActionGetter;
         _userGetter = userGetter;
         _groupGetter = groupGetter;
+        _configService = configService;
+        _resourceService = resourceService;
     }
 
     public async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
@@ -64,9 +71,10 @@ public class PrivateUpdateHandler
         if (CommonUtilities.IsLink(link))
         {
             int replyToMessageId = update.Message.MessageId;
+            
             Message statusMessage = await botClient.SendMessage(
                 chatId,
-                Config.GetResourceString("WaitDownloadingVideo"),
+                _resourceService.GetResourceString("WaitDownloadingVideo"),
                 replyParameters: new ReplyParameters { MessageId = replyToMessageId },
                 cancellationToken: cancellationToken
             );
@@ -74,7 +82,7 @@ public class PrivateUpdateHandler
             await botClient.EditMessageText(
                 statusMessage.Chat.Id,
                 statusMessage.MessageId,
-                Config.GetResourceString("VideoDistributionQuestion"),
+                _resourceService.GetResourceString("VideoDistributionQuestion"),
                 replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(),
                 cancellationToken: cancellationToken
             );
@@ -101,12 +109,12 @@ public class PrivateUpdateHandler
         }
         else if (update.Message.Text == "/help")
         {
-            string helpText = Config.GetResourceString("HelpText");
+            string helpText = _resourceService.GetResourceString("HelpText");
             await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken, helpText);
         }
         else
         {
-            await botClient.SendMessage(update.Message.Chat.Id, Config.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken);
+            await botClient.SendMessage(update.Message.Chat.Id, _resourceService.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken);
         }
     }
 

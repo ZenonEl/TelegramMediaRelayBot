@@ -9,18 +9,28 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Dapper;
-using MySql.Data.MySqlClient;
+namespace TelegramMediaRelayBot.Config.Services;
 
-namespace TelegramMediaRelayBot.Database.Repositories.MySql;
-
-public class MySqlDBCreator()
+/// <summary>
+/// Service for accessing database configuration
+/// </summary>
+public interface IDatabaseConfigurationService
 {
-    public static void CreateDatabase(string connectionString)
-    {
-        string query = $"CREATE DATABASE IF NOT EXISTS {LegacyConfig.databaseName};";
-        using var connection = new MySqlConnection(connectionString);
-        connection.Execute(query);
-    }
-
-}
+    /// <summary>
+    /// Gets the database connection string
+    /// </summary>
+    /// <returns>Connection string</returns>
+    string GetConnectionString();
+    
+    /// <summary>
+    /// Gets the database type (mysql/sqlite)
+    /// </summary>
+    /// <returns>Database type</returns>
+    string GetDatabaseType();
+    
+    /// <summary>
+    /// Gets the database name
+    /// </summary>
+    /// <returns>Database name</returns>
+    string GetDatabaseName();
+} 

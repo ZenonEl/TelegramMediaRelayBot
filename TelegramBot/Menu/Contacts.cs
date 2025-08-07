@@ -23,12 +23,12 @@ public class Contacts
     public static async Task AddContact(ITelegramBotClient botClient, Update update, long chatId, IContactAdder contactRepository, IContactGetter contactGetter, IUserGetter userGetter, IPrivacySettingsGetter privacySettingsGetter)
     {
         TGBot.userStates[chatId] = new ProcessContactState(contactRepository, contactGetter, userGetter, privacySettingsGetter);
-        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, Config.GetResourceString("SpecifyContactLink"));
+        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, LegacyConfig.GetResourceString("SpecifyContactLink"));
     }
 
     public static async Task DeleteContact(ITelegramBotClient botClient, Update update, long chatId, IContactRemover contactRemoverRepository, IContactGetter contactGetterRepository, IUserGetter userGetter)
     {
-        Message statusMessage = await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Config.GetResourceString("InputContactId"), cancellationToken: cancellationToken);
+        Message statusMessage = await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, LegacyConfig.GetResourceString("InputContactId"), cancellationToken: cancellationToken);
         TGBot.userStates[chatId] = new ProcessRemoveUser(statusMessage, contactRemoverRepository, contactGetterRepository, userGetter);
     }
 
@@ -40,7 +40,7 @@ public class Contacts
         IContactGetter contactGetterRepository,
         IUserGetter userGetter)
     {
-        await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Config.GetResourceString("MuteUserInstructions"), cancellationToken: cancellationToken);
+        await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, LegacyConfig.GetResourceString("MuteUserInstructions"), cancellationToken: cancellationToken);
         TGBot.userStates[chatId] = new ProcessUserMuteState(contactAdderRepository, contactGetterRepository, userGetter);
     }
 
@@ -52,7 +52,7 @@ public class Contacts
         IContactGetter contactGetter,
         IUserGetter userGetter)
     {
-        await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Config.GetResourceString("UnmuteUserInstructions"), cancellationToken: cancellationToken);
+        await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, LegacyConfig.GetResourceString("UnmuteUserInstructions"), cancellationToken: cancellationToken);
         TGBot.userStates[chatId] = new ProcessUserUnMuteState(contactRemoverRepository, contactGetter, userGetter);
     }
 
@@ -67,10 +67,10 @@ public class Contacts
             string username = userGetter.GetUserNameByTelegramID(contactUserId);
             string link = userGetter.GetUserSelfLink(contactUserId);
 
-            contactUsersInfo.Add(string.Format(Config.GetResourceString("ContactInfo"), id, username, link));
+            contactUsersInfo.Add(string.Format(LegacyConfig.GetResourceString("ContactInfo"), id, username, link));
         }
 
-        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), cancellationToken, $"{Config.GetResourceString("YourContacts")}\n{string.Join("\n", contactUsersInfo)}");
+        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), cancellationToken, $"{LegacyConfig.GetResourceString("YourContacts")}\n{string.Join("\n", contactUsersInfo)}");
     }
 
     public static async Task EditContactGroup(
@@ -87,9 +87,9 @@ public class Contacts
         List<string> groupInfos = await UsersGroup.GetUserGroupInfoByUserId(userId, groupGetter);
 
         string messageText = groupInfos.Any() 
-            ? $"{Config.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
-            : Config.GetResourceString("AltYourGroupsText");
+            ? $"{LegacyConfig.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
+            : LegacyConfig.GetResourceString("AltYourGroupsText");
 
-        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(Config.GetResourceString("ContactGroupInfoText"), messageText));
+        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(LegacyConfig.GetResourceString("ContactGroupInfoText"), messageText));
     }
 }

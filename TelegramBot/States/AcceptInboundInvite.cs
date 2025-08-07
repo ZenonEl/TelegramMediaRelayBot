@@ -66,7 +66,7 @@ public class UserProcessInboundState : IUserState
                 {
                     string userId = update.CallbackQuery.Data.Split(':')[1];
                     await CommonUtilities.SendMessage(botClient, update, InBoundKB.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
-                                                cancellationToken, Config.GetResourceString("SelectAction"));
+                                                cancellationToken, LegacyConfig.GetResourceString("SelectAction"));
                     userState.currentState = UserInboundState.ProcessAction;
                     return;
                 }
@@ -97,12 +97,12 @@ public class UserProcessInboundState : IUserState
                 if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("user_accept_inbounds_invite:"))
                 {
                     await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_accept_invite:{userID}", $"decline_accept_invite:{userID}"),
-                    cancellationToken, Config.GetResourceString("WaitAcceptInboundInvite"));
+                    cancellationToken, LegacyConfig.GetResourceString("WaitAcceptInboundInvite"));
                 }
                 else if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("user_decline_inbounds_invite:"))
                 {
                     await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_decline_invite:{userID}", $"decline_decline_invite:{userID}"), 
-                    cancellationToken, Config.GetResourceString("WaitDeclineInboundInvite"));
+                    cancellationToken, LegacyConfig.GetResourceString("WaitDeclineInboundInvite"));
                 }
 
                 userState.currentState = UserInboundState.Finish;
@@ -121,7 +121,7 @@ public class UserProcessInboundState : IUserState
                 {
                     string userId = update.CallbackQuery.Data.Split(':')[1];
                     await CommonUtilities.SendMessage(botClient, update, InBoundKB.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
-                                                cancellationToken, Config.GetResourceString("SelectAction"));
+                                                cancellationToken, LegacyConfig.GetResourceString("SelectAction"));
                     userState.currentState = UserInboundState.ProcessAction;
                     return;
                 }

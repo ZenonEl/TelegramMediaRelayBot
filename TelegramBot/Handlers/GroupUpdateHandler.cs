@@ -47,17 +47,17 @@ public class GroupUpdateHandler
 
             if (CommonUtilities.IsLink(link))
             {
-                Message statusMessage = await botClient.SendMessage(update.Message.Chat.Id, Config.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
+                Message statusMessage = await botClient.SendMessage(update.Message.Chat.Id, LegacyConfig.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
                 _ = _tgBot.HandleMediaRequest(botClient, link, update.Message.Chat.Id, statusMessage: statusMessage, groupChat: true, caption: text);
             }
             else
             {
-                await botClient.SendMessage(update.Message.Chat.Id, Config.GetResourceString("InvalidLinkFormat"), cancellationToken: cancellationToken);
+                await botClient.SendMessage(update.Message.Chat.Id, LegacyConfig.GetResourceString("InvalidLinkFormat"), cancellationToken: cancellationToken);
             }
         }
         else if (messageText == "/help")
         {
-            string text = Config.GetResourceString("GroupHelpText");
+            string text = LegacyConfig.GetResourceString("GroupHelpText");
             await botClient.SendMessage(update.Message.Chat.Id, text, cancellationToken: cancellationToken);
         }
     }

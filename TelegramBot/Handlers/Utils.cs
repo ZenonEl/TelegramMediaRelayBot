@@ -101,7 +101,7 @@ class PrivateUtils
                     await botClient.EditMessageText(
                         statusMessage.Chat.Id,
                         statusMessage.MessageId,
-                        Config.GetResourceString("DefaultActionTimeoutMessage"),
+                        LegacyConfig.GetResourceString("DefaultActionTimeoutMessage"),
                         cancellationToken: cancellationToken
                     );
                     _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
@@ -112,7 +112,7 @@ class PrivateUtils
                         statusMessage = await botClient.EditMessageText(
                             chatId,
                             nextLink.MessageId,
-                            Config.GetResourceString("WaitDownloadingVideo"),
+                            LegacyConfig.GetResourceString("WaitDownloadingVideo"),
                             cancellationToken: cancellationToken
                         );
                         ProcessDefaultSendAction(

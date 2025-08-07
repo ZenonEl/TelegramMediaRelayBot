@@ -25,7 +25,7 @@ public static class CallbackQueryMenuUtils
         string link = userGetter.GetUserSelfLink(update.CallbackQuery!.Message!.Chat.Id);
         User me = await botClient.GetMe();
         string startLink = $"\nhttps://t.me/{me.Username}?start={link}";
-        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(Config.GetResourceString("YourLink") + startLink, link));
+        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(LegacyConfig.GetResourceString("YourLink") + startLink, link));
     }
 
     public static async Task ViewInboundInviteLinks(
@@ -37,14 +37,14 @@ public static class CallbackQueryMenuUtils
         IInboundDBGetter inboundDBGetter,
         IUserGetter userGetter)
     {
-        string text = Config.GetResourceString("YourInboundInvitations");
+        string text = LegacyConfig.GetResourceString("YourInboundInvitations");
         await CommonUtilities.SendMessage(botClient, update, InBoundKB.GetInboundsKeyboardMarkup(update, inboundDBGetter, userGetter), cancellationToken, text);
         TGBot.userStates[chatId] = new UserProcessInboundState(contactSetterRepository, contactRemoverRepository, inboundDBGetter, userGetter);
     }
 
     public static async Task ViewOutboundInviteLinks(ITelegramBotClient botClient, Update update, IOutboundDBGetter outboundDBGetter, IUserGetter userGetter)
     {
-        string text = Config.GetResourceString("YourOutboundInvitations");
+        string text = LegacyConfig.GetResourceString("YourOutboundInvitations");
         await CommonUtilities.SendMessage(botClient, update, OutBoundKB.GetOutboundKeyboardMarkup(CommonUtilities.GetIDfromUpdate(update), outboundDBGetter, userGetter), cancellationToken, text);
     }
 
@@ -57,7 +57,7 @@ public static class CallbackQueryMenuUtils
         IUserGetter userGetter)
     {
         string userId = update.CallbackQuery!.Data!.Split(':')[1];
-        await CommonUtilities.SendMessage(botClient, update, OutBoundKB.GetOutboundActionsKeyboardMarkup(userId), cancellationToken, Config.GetResourceString("OutboundInviteMenu"));
+        await CommonUtilities.SendMessage(botClient, update, OutBoundKB.GetOutboundActionsKeyboardMarkup(userId), cancellationToken, LegacyConfig.GetResourceString("OutboundInviteMenu"));
         TGBot.userStates[chatId] = new UserProcessOutboundState(contactRepository, outboundDBGetter, userGetter);
     }
 
@@ -78,7 +78,7 @@ public static class CallbackQueryMenuUtils
 
     public static Task WhosTheGenius(ITelegramBotClient botClient, Update update)
     {
-        string text = Config.GetResourceString("WhosTheGeniusText");
+        string text = LegacyConfig.GetResourceString("WhosTheGeniusText");
         return CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, text);
     }
 }

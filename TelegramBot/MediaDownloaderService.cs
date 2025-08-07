@@ -11,6 +11,8 @@
 
 using TelegramMediaRelayBot.Domain.Interfaces;
 using TelegramMediaRelayBot.Domain.Models;
+using Microsoft.Extensions.Options;
+using TelegramMediaRelayBot.Config;
 
 
 namespace TelegramMediaRelayBot;
@@ -18,10 +20,12 @@ namespace TelegramMediaRelayBot;
 public class MediaDownloaderService
 {
     private readonly IMediaDownloaderFactory _downloaderFactory;
+    private readonly IOptions<BotConfiguration> _botConfig;
     
-    public MediaDownloaderService(IMediaDownloaderFactory downloaderFactory)
+    public MediaDownloaderService(IMediaDownloaderFactory downloaderFactory, IOptions<BotConfiguration> botConfig)
     {
         _downloaderFactory = downloaderFactory;
+        _botConfig = botConfig;
     }
     
     public async Task<List<byte[]>?> DownloadMedia(
@@ -60,7 +64,7 @@ public class MediaDownloaderService
                 
                 var options = new DownloadOptions
                 {
-                    ProxyUrl = Config.proxy,
+                    ProxyUrl = _botConfig.Value.Proxy,
                     Timeout = TimeSpan.FromMinutes(10),
                     MaxRetries = 3,
                     BotClient = botClient,

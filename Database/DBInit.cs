@@ -20,6 +20,8 @@ using TelegramMediaRelayBot.TelegramBot;
 using TelegramMediaRelayBot.TelegramBot.Handlers;
 using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 using TelegramMediaRelayBot.TelegramBot.SiteFilter;
+using TelegramMediaRelayBot.Config;
+using Microsoft.Extensions.Options;
 
 
 namespace TelegramMediaRelayBot.Database;
@@ -27,25 +29,47 @@ namespace TelegramMediaRelayBot.Database;
 
 public class FluentDBMigrator
 {
-    public static ServiceProvider GetCurrentServiceProvider(string DBType)
+    private static string GetConnectionString(string dbType, IConfiguration configuration)
+    {
+        // Get connection string from configuration
+        var connectionString = configuration["AppSettings:SqlConnectionString"];
+        if (!string.IsNullOrEmpty(connectionString))
+        {
+            return connectionString;
+        }
+        
+        // Fallback connection strings
+        switch (dbType.ToLower())
+        {
+            case "mysql":
+                return "Server=localhost;Database=TelegramMediaRelayBot;Uid=root;Pwd=;";
+            default:
+                return "Data Source=TelegramMediaRelayBot.db";
+        }
+    }
+    
+    public static ServiceProvider GetCurrentServiceProvider(string DBType, IConfiguration configuration)
     {
         var serviceCollection = new ServiceCollection()
             .AddFluentMigratorCore()
             .AddLogging(lb => lb.AddFluentMigratorConsole());
 
+        // Get connection string from configuration
+        var connectionString = GetConnectionString(DBType, configuration);
+        
         switch (DBType.ToLower())
         {
             case "mysql":
                 serviceCollection.ConfigureRunner(rb => rb
                     .AddMySql5()
-                    .WithGlobalConnectionString(Config.sqlConnectionString)
+                    .WithGlobalConnectionString(connectionString)
                     .ScanIn(typeof(MySQLDBMigration).Assembly).For.Migrations());
                 break;
                 
             default:
                 serviceCollection.ConfigureRunner(rb => rb
                     .AddSQLite()
-                    .WithGlobalConnectionString(Config.sqlConnectionString)
+                    .WithGlobalConnectionString(connectionString)
                     .ScanIn(typeof(SQLiteDBMigration).Assembly).For.Migrations());
                 break;
         }
@@ -69,8 +93,12 @@ public class FluentDBMigrator
             Log.Warning("Downloader config not found at: {Path}", downloaderConfigPath);
         }
         
-        builder.Services.AddSingleton<ITelegramBotClient>(_ =>
-            new TelegramBotClient(Config.telegramBotToken!));
+        // Регистрируем ITelegramBotClient с токеном из конфигурации
+        builder.Services.AddSingleton<ITelegramBotClient>(provider =>
+        {
+            var botConfig = provider.GetRequiredService<IOptions<BotConfiguration>>();
+            return new TelegramBotClient(botConfig.Value.TelegramBotToken);
+        });
 
         builder.Services.AddSingleton<ILinkCategorizer>(_ =>
                     new HashTableLinkCategorizer(new DomainsLoader()));
@@ -78,7 +106,24 @@ public class FluentDBMigrator
         builder.Services.AddSingleton<CallbackQueryHandlersFactory>();
         builder.Services.AddSingleton<TGBot>();
         builder.Services.AddSingleton<Scheduler>();
-
+        
+        // Configure new configuration services
+        builder.Services.Configure<BotConfiguration>(
+            builder.Configuration.GetSection("AppSettings"));
+        builder.Services.Configure<MessageDelayConfiguration>(
+            builder.Configuration.GetSection("MessageDelaySettings"));
+        builder.Services.Configure<LoggingConfiguration>(
+            builder.Configuration.GetSection("ConsoleOutputSettings"));
+        builder.Services.Configure<TorConfiguration>(
+            builder.Configuration.GetSection("Tor"));
+        builder.Services.Configure<AccessPolicyConfiguration>(
+            builder.Configuration.GetSection("AccessPolicy"));
+        
+        // Register configuration services
+        builder.Services.AddSingleton<TelegramMediaRelayBot.Config.Services.IConfigurationService, TelegramMediaRelayBot.Config.Services.ConfigurationService>();
+        builder.Services.AddSingleton<TelegramMediaRelayBot.Config.Services.IDatabaseConfigurationService, TelegramMediaRelayBot.Config.Services.DatabaseConfigurationService>();
+        builder.Services.AddSingleton<TelegramMediaRelayBot.Config.Services.IResourceService, TelegramMediaRelayBot.Config.Services.ResourceService>();
+        
         // Регистрация загрузчиков
         builder.Services.AddScoped<TelegramMediaRelayBot.Domain.Interfaces.IMediaDownloaderFactory, TelegramMediaRelayBot.Infrastructure.Factories.MediaDownloaderFactory>();
         builder.Services.AddScoped<TelegramMediaRelayBot.MediaDownloaderService>();
@@ -101,97 +146,98 @@ public class FluentDBMigrator
 
 
 
+        var connectionString = GetConnectionString(DBType, builder.Configuration);
+        
         switch (DBType.ToLower())
         {
             case "mysql":
-                MySqlDBCreator.CreateDatabase(Config.sqlConnectionString);
+                MySqlDBCreator.CreateDatabase(connectionString);
                 builder.Services.AddSingleton<IUserRepository>(_ =>
-                    new MySqlUserRepository(Config.sqlConnectionString!));
+                    new MySqlUserRepository(connectionString));
                 builder.Services.AddSingleton<IUserGetter>(_ =>
-                    new MySqlUserGetter(Config.sqlConnectionString!));
+                    new MySqlUserGetter(connectionString));
 
                 builder.Services.AddSingleton<IContactGroupRepository>(_ =>
-                    new MySqlContactGroupRepository(Config.sqlConnectionString!));
+                    new MySqlContactGroupRepository(connectionString));
 
                 builder.Services.AddSingleton<IContactAdder>(_ =>
-                    new MySqlContactAdder(Config.sqlConnectionString!));
+                    new MySqlContactAdder(connectionString));
                 builder.Services.AddSingleton<IContactGetter>(_ =>
-                    new MySqlContactGetter(Config.sqlConnectionString!));
+                    new MySqlContactGetter(connectionString));
                 builder.Services.AddSingleton<IContactSetter>(_ =>
-                    new MySqlContactSetter(Config.sqlConnectionString!));
+                    new MySqlContactSetter(connectionString));
                 builder.Services.AddSingleton<IContactRemover>(_ =>
-                    new MySqlContactRemover(Config.sqlConnectionString!));
+                    new MySqlContactRemover(connectionString));
 
                 builder.Services.AddSingleton<IOutboundDBGetter>(_ =>
-                    new MySqlOutboundDBGetter(Config.sqlConnectionString!));
+                    new MySqlOutboundDBGetter(connectionString));
                 builder.Services.AddSingleton<IInboundDBGetter>(_ =>
-                    new MySqlInboundDBGetter(Config.sqlConnectionString!));
+                    new MySqlInboundDBGetter(connectionString));
 
                 builder.Services.AddSingleton<IPrivacySettingsSetter>(_ =>
-                    new MySqlPrivacySettingsSetter(Config.sqlConnectionString!));
+                    new MySqlPrivacySettingsSetter(connectionString));
                 builder.Services.AddSingleton<IPrivacySettingsGetter>(_ =>
-                    new MySqlPrivacySettingsGetter(Config.sqlConnectionString!));
+                    new MySqlPrivacySettingsGetter(connectionString));
                 builder.Services.AddSingleton<IPrivacySettingsTargetsSetter>(_ =>
-                    new MySqlPrivacySettingsTargetsSetter(Config.sqlConnectionString!));
+                    new MySqlPrivacySettingsTargetsSetter(connectionString));
                 builder.Services.AddSingleton<IPrivacySettingsTargetsGetter>(_ =>
-                    new MySqlPrivacySettingsTargetsGetter(Config.sqlConnectionString!));
+                    new MySqlPrivacySettingsTargetsGetter(connectionString));
 
                 builder.Services.AddSingleton<IDefaultAction>(_ =>
-                    new MySqlDefaultAction(Config.sqlConnectionString!));
+                    new MySqlDefaultAction(connectionString));
                 builder.Services.AddSingleton<IDefaultActionSetter>(_ =>
-                    new MySqlDefaultActionSetter(Config.sqlConnectionString!));
+                    new MySqlDefaultActionSetter(connectionString));
                 builder.Services.AddSingleton<IDefaultActionGetter>(_ =>
-                    new MySqlDefaultActionGetter(Config.sqlConnectionString!));
+                    new MySqlDefaultActionGetter(connectionString));
 
                 builder.Services.AddSingleton<IGroupGetter>(_ =>
-                    new MySqlGroupGetter(Config.sqlConnectionString!));
+                    new MySqlGroupGetter(connectionString));
                 builder.Services.AddSingleton<IGroupSetter>(_ =>
-                    new MySqlGroupSetter(Config.sqlConnectionString!));
+                    new MySqlGroupSetter(connectionString));
 
                 return builder;
             default:
                 builder.Services.AddSingleton<IUserRepository>(_ =>
-                    new SqliteUserRepository(Config.sqlConnectionString!));
+                    new SqliteUserRepository(connectionString));
                 builder.Services.AddSingleton<IUserGetter>(_ =>
-                    new SqliteUserGetter(Config.sqlConnectionString!));
+                    new SqliteUserGetter(connectionString));
 
                 builder.Services.AddSingleton<IContactGroupRepository>(_ =>
-                    new SqliteContactGroupRepository(Config.sqlConnectionString!));
-
+                    new SqliteContactGroupRepository(connectionString));
                 builder.Services.AddSingleton<IContactAdder>(_ =>
-                    new SqliteContactAdder(Config.sqlConnectionString!));
+                    new SqliteContactAdder(connectionString));
                 builder.Services.AddSingleton<IContactGetter>(_ =>
-                    new SqliteContactGetter(Config.sqlConnectionString!));
+                    new SqliteContactGetter(connectionString));
                 builder.Services.AddSingleton<IContactSetter>(_ =>
-                    new SqliteContactSetter(Config.sqlConnectionString!));
+                    new SqliteContactSetter(connectionString));
                 builder.Services.AddSingleton<IContactRemover>(_ =>
-                    new SqliteContactRemover(Config.sqlConnectionString!));
+                    new SqliteContactRemover(connectionString));
 
                 builder.Services.AddSingleton<IOutboundDBGetter>(_ =>
-                    new SqliteOutboundDBGetter(Config.sqlConnectionString!));
+                    new SqliteOutboundDBGetter(connectionString));
                 builder.Services.AddSingleton<IInboundDBGetter>(_ =>
-                    new SqliteInboundDBGetter(Config.sqlConnectionString!));
+                    new SqliteInboundDBGetter(connectionString));
 
                 builder.Services.AddSingleton<IPrivacySettingsSetter>(_ =>
-                    new SqlitePrivacySettingsSetter(Config.sqlConnectionString!));
+                    new SqlitePrivacySettingsSetter(connectionString));
                 builder.Services.AddSingleton<IPrivacySettingsGetter>(_ =>
-                    new SqlitePrivacySettingsGetter(Config.sqlConnectionString!));
+                    new SqlitePrivacySettingsGetter(connectionString));
                 builder.Services.AddSingleton<IPrivacySettingsTargetsSetter>(_ =>
-                    new SqlitePrivacySettingsTargetsSetter(Config.sqlConnectionString!));
+                    new SqlitePrivacySettingsTargetsSetter(connectionString));
                 builder.Services.AddSingleton<IPrivacySettingsTargetsGetter>(_ =>
-                    new SqlitePrivacySettingsTargetsGetter(Config.sqlConnectionString!));
+                    new SqlitePrivacySettingsTargetsGetter(connectionString));
 
                 builder.Services.AddSingleton<IDefaultAction>(_ =>
-                    new SqliteDefaultAction(Config.sqlConnectionString!));
+                    new SqliteDefaultAction(connectionString));
                 builder.Services.AddSingleton<IDefaultActionSetter>(_ =>
-                    new SqliteDefaultActionSetter(Config.sqlConnectionString!));
+                    new SqliteDefaultActionSetter(connectionString));
                 builder.Services.AddSingleton<IDefaultActionGetter>(_ =>
-                    new SqliteDefaultActionGetter(Config.sqlConnectionString!));
+                    new SqliteDefaultActionGetter(connectionString));
 
                 builder.Services.AddSingleton<IGroupGetter>(_ =>
-                    new SqliteGroupGetter(Config.sqlConnectionString!));
+                    new SqliteGroupGetter(connectionString));
                 builder.Services.AddSingleton<IGroupSetter>(_ =>
-                    new SqliteGroupSetter(Config.sqlConnectionString!));
+                    new SqliteGroupSetter(connectionString));
                 return builder;
         }
     }

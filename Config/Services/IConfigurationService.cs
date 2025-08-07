@@ -9,18 +9,20 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Dapper;
-using MySql.Data.MySqlClient;
+using TelegramMediaRelayBot.Database.Interfaces;
 
-namespace TelegramMediaRelayBot.Database.Repositories.MySql;
+namespace TelegramMediaRelayBot.Config.Services;
 
-public class MySqlDBCreator()
+/// <summary>
+/// Service for accessing configuration and access policy
+/// </summary>
+public interface IConfigurationService
 {
-    public static void CreateDatabase(string connectionString)
-    {
-        string query = $"CREATE DATABASE IF NOT EXISTS {LegacyConfig.databaseName};";
-        using var connection = new MySqlConnection(connectionString);
-        connection.Execute(query);
-    }
-
+    /// <summary>
+    /// Determines if a user can start using the bot based on access policy
+    /// </summary>
+    /// <param name="referrerLink">The referrer link used to access the bot</param>
+    /// <param name="userGetter">Service to get user information</param>
+    /// <returns>True if user can start using the bot</returns>
+    bool CanUserStartUsingBot(string referrerLink, IUserGetter userGetter);
 }

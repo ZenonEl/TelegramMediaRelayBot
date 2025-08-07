@@ -24,11 +24,11 @@ public static class UsersKB
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("DefaultActionsButtonText"), "default_actions_menu"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("DefaultActionsButtonText"), "default_actions_menu"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("PrivacyButtonText"), "privacy_menu_and_safety"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("PrivacyButtonText"), "privacy_menu_and_safety"),
             },
             new[]
             {
@@ -47,19 +47,19 @@ public static class UsersPrivacyMenuKB
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SelfLinkRefreshButtonText"), "user_update_self_link"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("SelfLinkRefreshButtonText"), "user_update_self_link"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("WhoCanFindMeByLink"), "user_update_who_can_find_me_by_link"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("WhoCanFindMeByLink"), "user_update_who_can_find_me_by_link"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SiteStopList"), "user_update_site_stop_list"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("SiteStopList"), "user_update_site_stop_list"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("AllowContentForwardingBtn"), "user_update_content_forwarding_rule"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("AllowContentForwardingBtn"), "user_update_content_forwarding_rule"),
             },
             new[]
             {
@@ -99,19 +99,19 @@ public static class UsersPrivacyMenuKB
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SelfLinkRefreshButtonTextOption1"), "user_update_self_link_with_contacts"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("SelfLinkRefreshButtonTextOption1"), "user_update_self_link_with_contacts"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SelfLinkRefreshButtonTextOption2"), "user_update_self_link_with_new_contacts"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("SelfLinkRefreshButtonTextOption2"), "user_update_self_link_with_new_contacts"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SelfLinkRefreshButtonTextOption3"), "user_update_self_link_with_keep_selected_contacts"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("SelfLinkRefreshButtonTextOption3"), "user_update_self_link_with_keep_selected_contacts"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SelfLinkRefreshButtonTextOption4"), "user_update_self_link_with_delete_selected_contacts"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("SelfLinkRefreshButtonTextOption4"), "user_update_self_link_with_delete_selected_contacts"),
             },
             new[]
             {
@@ -127,11 +127,11 @@ public static class UsersPrivacyMenuKB
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("Enable"), "user_allow_content_forwarding"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("Enable"), "user_allow_content_forwarding"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("Disable"), "user_disallow_content_forwarding"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("Disable"), "user_disallow_content_forwarding"),
             },
             new[]
             {
@@ -148,35 +148,35 @@ public static class UsersPrivacyMenuKB
             new[]
             {
                 InlineKeyboardButton.WithCallbackData(
-                    Config.GetResourceString("SocialFilterButton"), 
+                    LegacyConfig.GetResourceString("SocialFilterButton"), 
                     "user_set_site_stop_list:social"
                 ), 
             },
             new[]
             {
                 InlineKeyboardButton.WithCallbackData(
-                    Config.GetResourceString("NSFWFilterButton"),
+                    LegacyConfig.GetResourceString("NSFWFilterButton"),
                     "user_set_site_stop_list:nsfw"
                 ),
             },
             new[]
             {
                 InlineKeyboardButton.WithCallbackData(
-                    Config.GetResourceString("UnifiedFilterButton"),
+                    LegacyConfig.GetResourceString("UnifiedFilterButton"),
                     "user_set_site_stop_list:unified"
                 ),
             },
             new[]
             {
                 InlineKeyboardButton.WithCallbackData(
-                    Config.GetResourceString("DomainFilterButton"),
+                    LegacyConfig.GetResourceString("DomainFilterButton"),
                     "user_set_site_stop_list:domains"
                 ),
             },
             new[]
             {
                 InlineKeyboardButton.WithCallbackData(
-                    Config.GetResourceString("ConfigureDomainsButton"),
+                    LegacyConfig.GetResourceString("ConfigureDomainsButton"),
                     "user_set_site_stop_list_settings"
                 ),
             },
@@ -194,14 +194,14 @@ public static class UsersPrivacyMenuKB
             new[]
             {
                 InlineKeyboardButton.WithCallbackData(
-                    Config.GetResourceString("AddDomainButton"),
+                    LegacyConfig.GetResourceString("AddDomainButton"),
                     "user_set_site_stop_list:add_domains"
                 ),
             },
             new[]
             {
                 InlineKeyboardButton.WithCallbackData(
-                    Config.GetResourceString("RemoveDomainButton"),
+                    LegacyConfig.GetResourceString("RemoveDomainButton"),
                     "user_set_site_stop_list:remove_domains"
                 ),
             },
@@ -221,7 +221,7 @@ public static class UsersDefaultActionsMenuKB
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("DefaultVideoActionsButtonText"), "video_default_actions_menu"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("DefaultVideoActionsButtonText"), "video_default_actions_menu"),
             },
             new[]
             {
@@ -237,11 +237,11 @@ public static class UsersDefaultActionsMenuKB
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("VideoRecipientsButtonText"), "user_set_video_send_users"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("VideoRecipientsButtonText"), "user_set_video_send_users"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("AutoSendTimeButtonText"), "user_set_auto_send_video_time"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("AutoSendTimeButtonText"), "user_set_auto_send_video_time"),
             },
             new[]
             {
@@ -257,21 +257,21 @@ public static class UsersDefaultActionsMenuKB
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("AllContactsButtonText"), $"user_set_video_send_users:{UsersAction.SEND_MEDIA_TO_ALL_CONTACTS}"),
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("DefaultGroupsButtonText"), $"user_set_video_send_users:{UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS}"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("AllContactsButtonText"), $"user_set_video_send_users:{UsersAction.SEND_MEDIA_TO_ALL_CONTACTS}"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("DefaultGroupsButtonText"), $"user_set_video_send_users:{UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS}"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SpecifiedContactsButtonText"), $"user_set_video_send_users:{UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS}"),
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SpecifiedGroupsButtonText"), $"user_set_video_send_users:{UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS}"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("SpecifiedContactsButtonText"), $"user_set_video_send_users:{UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS}"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("SpecifiedGroupsButtonText"), $"user_set_video_send_users:{UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS}"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("OnlyMeButtonText"), $"user_set_video_send_users:{UsersAction.SEND_MEDIA_ONLY_TO_ME}"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("OnlyMeButtonText"), $"user_set_video_send_users:{UsersAction.SEND_MEDIA_ONLY_TO_ME}"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("DisableAutoSendButtonText"), $"user_set_video_send_users:{UsersAction.OFF}"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("DisableAutoSendButtonText"), $"user_set_video_send_users:{UsersAction.OFF}"),
             },
             new[]
             {
@@ -287,18 +287,18 @@ public static class UsersDefaultActionsMenuKB
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("FiveSecondsButtonText"), "user_set_auto_send_video_time_to:5"),
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("TenSecondsButtonText"), "user_set_auto_send_video_time_to:10"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("FiveSecondsButtonText"), "user_set_auto_send_video_time_to:5"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("TenSecondsButtonText"), "user_set_auto_send_video_time_to:10"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("ThirtySecondsButtonText"), "user_set_auto_send_video_time_to:30"),
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("OneMinuteButtonText"), "user_set_auto_send_video_time_to:60"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("ThirtySecondsButtonText"), "user_set_auto_send_video_time_to:30"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("OneMinuteButtonText"), "user_set_auto_send_video_time_to:60"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("TenMinutesButtonText"), "user_set_auto_send_video_time_to:600"),
-                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SixtyMinutesButtonText"), "user_set_auto_send_video_time_to:3600"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("TenMinutesButtonText"), "user_set_auto_send_video_time_to:600"),
+                InlineKeyboardButton.WithCallbackData(LegacyConfig.GetResourceString("SixtyMinutesButtonText"), "user_set_auto_send_video_time_to:3600"),
             },
             new[]
             {

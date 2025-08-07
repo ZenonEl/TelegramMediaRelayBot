@@ -28,9 +28,8 @@ public class SQLiteDBMigration : BaseDBMigration
 
     protected override void CreateSpecificConstraints()
     {
-        if (Config.dbType != "sqlite") return;
-        var builder = new SqliteConnectionStringBuilder(Config.sqlConnectionString);
-        if (System.IO.File.Exists(builder.DataSource)) return;
+        // Для SQLite не создаем foreign keys, только индексы
+        // SQLite не поддерживает foreign keys в FluentMigrator
 
         // Включаем поддержку foreign keys
         Execute.Sql("PRAGMA foreign_keys = ON;");

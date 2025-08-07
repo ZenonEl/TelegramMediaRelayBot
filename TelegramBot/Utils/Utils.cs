@@ -64,7 +64,7 @@ public static class CommonUtilities
     public static Task SendMessage(ITelegramBotClient botClient, Update update, InlineKeyboardMarkup replyMarkup,
                                     CancellationToken cancellationToken, string? text = null)
     {
-        text ??= Config.GetResourceString("ChooseOptionText");
+        text ??= LegacyConfig.GetResourceString("ChooseOptionText");
 
         long chatId = GetIDfromUpdate(update);
 

@@ -9,18 +9,17 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Dapper;
-using MySql.Data.MySqlClient;
+namespace TelegramMediaRelayBot.Config.Services;
 
-namespace TelegramMediaRelayBot.Database.Repositories.MySql;
-
-public class MySqlDBCreator()
+/// <summary>
+/// Service for accessing localized resource strings
+/// </summary>
+public interface IResourceService
 {
-    public static void CreateDatabase(string connectionString)
-    {
-        string query = $"CREATE DATABASE IF NOT EXISTS {LegacyConfig.databaseName};";
-        using var connection = new MySqlConnection(connectionString);
-        connection.Execute(query);
-    }
-
-}
+    /// <summary>
+    /// Gets a localized resource string by key
+    /// </summary>
+    /// <param name="key">Resource key</param>
+    /// <returns>Localized string</returns>
+    string GetResourceString(string key);
+} 

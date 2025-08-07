@@ -11,6 +11,8 @@
 
 using DotNetTor.SocksPort;
 using TelegramMediaRelayBot.Database.Interfaces;
+using Microsoft.Extensions.Options;
+using TelegramMediaRelayBot.Config;
 
 
 namespace TelegramMediaRelayBot.TelegramBot;
@@ -21,20 +23,26 @@ class Scheduler
     private Timer? _torChangingChainTimer;
     private readonly IUserRepository _userRepository;
     private readonly IUserGetter _userGetter;
+    private readonly IOptions<MessageDelayConfiguration> _delayConfig;
+    private readonly IOptions<TorConfiguration> _torConfig;
 
     public Scheduler(
         IUserRepository userRepository,
-        IUserGetter userGetter
+        IUserGetter userGetter,
+        IOptions<MessageDelayConfiguration> delayConfig,
+        IOptions<TorConfiguration> torConfig
     )
     {
         _userRepository = userRepository;
         _userGetter = userGetter;
+        _delayConfig = delayConfig;
+        _torConfig = torConfig;
     }
 
     public void Init()
     {
-        _unMuteTimer = new Timer(async _ => await CheckForUnmuteContacts(), null, TimeSpan.Zero, TimeSpan.FromSeconds(Config.userUnMuteCheckInterval));
-        if (Config.torEnabled) _torChangingChainTimer = new Timer(async _ => await TorChangingChain(), null, TimeSpan.Zero, TimeSpan.FromMinutes(Config.torChangingChainInterval));
+        _unMuteTimer = new Timer(async _ => await CheckForUnmuteContacts(), null, TimeSpan.Zero, TimeSpan.FromSeconds(_delayConfig.Value.UserUnMuteCheckInterval));
+        if (_torConfig.Value.Enabled) _torChangingChainTimer = new Timer(async _ => await TorChangingChain(), null, TimeSpan.Zero, TimeSpan.FromMinutes(_torConfig.Value.TorChangingChainInterval));
         Log.Information("Scheduler started");
     }
 
@@ -57,16 +65,16 @@ class Scheduler
         return Task.CompletedTask;
     }
 
-    private static async Task TorChangingChain()
+    private async Task TorChangingChain()
     {
         try
         {
-            var controlPortClient = new DotNetTor.ControlPort.Client(Config.torSocksHost, controlPort: Config.torControlPort,
-                                                                    password: Config.torControlPassword);
+            var controlPortClient = new DotNetTor.ControlPort.Client(_torConfig.Value.TorSocksHost, controlPort: _torConfig.Value.TorControlPort,
+                                                                    password: _torConfig.Value.TorControlPassword ?? "");
 
             await controlPortClient.ChangeCircuitAsync();
 
-            using (var httpClient = new HttpClient(new SocksPortHandler(Config.torSocksHost, socksPort: Config.torSocksPort)))
+            using (var httpClient = new HttpClient(new SocksPortHandler(_torConfig.Value.TorSocksHost, socksPort: _torConfig.Value.TorSocksPort)))
             {
                 var result = await httpClient.GetStringAsync("https://check.torproject.org/api/ip");
                 Log.Debug("New Tor IP: " + result);

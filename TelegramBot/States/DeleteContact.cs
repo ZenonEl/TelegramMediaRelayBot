@@ -60,7 +60,7 @@ public class ProcessRemoveUser : IUserState
                     string input = update.Message.Text;
                     if (string.IsNullOrWhiteSpace(input))
                     {
-                        await botClient.SendMessage(chatId, Config.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
+                        await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
                         return;
                     }
 
@@ -73,7 +73,7 @@ public class ProcessRemoveUser : IUserState
                     }
                     else
                     {
-                        await botClient.SendMessage(chatId, Config.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                        await botClient.SendMessage(chatId, LegacyConfig.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
                     }
                 }
                 break;
@@ -87,16 +87,16 @@ public class ProcessRemoveUser : IUserState
                     if (callbackData == "confirm_removal")
                     {
                         RemoveUsersFromContacts(botClient, chatId, cancellationToken);
-                        await botClient.EditMessageText(chatId, statusMessage.MessageId, Config.GetResourceString("RemovalProcessCompleted"), cancellationToken: cancellationToken);
+                        await botClient.EditMessageText(chatId, statusMessage.MessageId, LegacyConfig.GetResourceString("RemovalProcessCompleted"), cancellationToken: cancellationToken);
                         
-                        string text = isDeleteSuccessful ? Config.GetResourceString("SuccessActionResult") : Config.GetResourceString("ErrorActionResult");
+                        string text = isDeleteSuccessful ? LegacyConfig.GetResourceString("SuccessActionResult") : LegacyConfig.GetResourceString("ErrorActionResult");
                         await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, text);
                         
                         TGBot.userStates.Remove(chatId);
                     }
                     else if (callbackData == "cancel_removal")
                     {
-                        await botClient.EditMessageText(chatId, statusMessage.MessageId, Config.GetResourceString("PleaseEnterContactIDs"), replyMarkup: KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken);
+                        await botClient.EditMessageText(chatId, statusMessage.MessageId, LegacyConfig.GetResourceString("PleaseEnterContactIDs"), replyMarkup: KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken);
                         currentState = UsersStandardState.ProcessAction;
                     }
                 }
@@ -118,12 +118,12 @@ public class ProcessRemoveUser : IUserState
             string username = _userGetter.GetUserNameByTelegramID(contactUserId);
             string link = _userGetter.GetUserSelfLink(contactUserId);
 
-            contactUsersInfo.Add(string.Format(Config.GetResourceString("ContactInfo"), id, username, link));
+            contactUsersInfo.Add(string.Format(LegacyConfig.GetResourceString("ContactInfo"), id, username, link));
         }
 
         if (contactUsersInfo.Any())
         {
-            string messageText = $"{Config.GetResourceString("ConfirmRemovalMessage")}\n\n{string.Join("\n", contactUsersInfo)}";
+            string messageText = $"{LegacyConfig.GetResourceString("ConfirmRemovalMessage")}\n\n{string.Join("\n", contactUsersInfo)}";
             InlineKeyboardMarkup keyboard = KeyboardUtils.GetConfirmForActionKeyboardMarkup("confirm_removal", "cancel_removal");
 
             await botClient.EditMessageText(chatId, statusMessage.MessageId, messageText, replyMarkup: keyboard, cancellationToken: cancellationToken, parseMode: ParseMode.Html);
@@ -131,7 +131,7 @@ public class ProcessRemoveUser : IUserState
         }
         else
         {
-            await botClient.EditMessageText(chatId, statusMessage.MessageId, Config.GetResourceString("NoUsersFound"), cancellationToken: cancellationToken);
+            await botClient.EditMessageText(chatId, statusMessage.MessageId, LegacyConfig.GetResourceString("NoUsersFound"), cancellationToken: cancellationToken);
         }
         return false;
     }

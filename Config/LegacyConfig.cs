@@ -17,7 +17,7 @@ using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot
 {
-    class Config
+    public class LegacyConfig
     {
         public static string? telegramBotToken;
         public static string sqlConnectionString;
@@ -52,7 +52,7 @@ namespace TelegramMediaRelayBot
         private static List<long>? blacklistedReferrerIds = [];
 
         private static ResourceManager resourceManager = new ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
-        public static void LoadConfig()
+        public static void LoadLegacyConfig()
         {
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)

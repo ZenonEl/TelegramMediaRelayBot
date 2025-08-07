@@ -255,7 +255,7 @@ public class YtDlpDownloader : BaseMediaDownloader
                             progressText,
                             cancellationToken: ct);
                         
-                        await Task.Delay(Config.videoGetDelay, ct);
+                        await Task.Delay(1000, ct); // TODO: Get from new config
                     }
                     catch (Exception ex)
                     {
