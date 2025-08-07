@@ -77,20 +77,54 @@ public class FluentDBMigrator
         return serviceCollection.BuildServiceProvider(false);
     }
 
-    public static WebApplicationBuilder CreateBuilderByDBType(string[] args, string DBType)
+    public static WebApplicationBuilder CreateBuilderByDBType(string[] args, string DBType, IConfiguration configuration)
     {
         var builder = WebApplication.CreateBuilder(args);
-        
-        // Добавляем конфигурацию загрузчиков
-        var downloaderConfigPath = builder.Configuration.GetValue<string>("AppSettings:DownloaderSettings:ConfigFilePath");
-        if (!string.IsNullOrEmpty(downloaderConfigPath) && System.IO.File.Exists(downloaderConfigPath))
+        var downloaderConfigPath = configuration.GetValue<string>("AppSettings:DownloaderSettings:ConfigFilePath");
+
+        if (!string.IsNullOrEmpty(downloaderConfigPath))
         {
-            builder.Configuration.AddJsonFile(downloaderConfigPath, optional: false, reloadOnChange: true);
-            Log.Information("Loaded downloader config from: {Path}", downloaderConfigPath);
+            // Получаем полный путь к файлу конфигурации
+            var fullPath = Path.IsPathRooted(downloaderConfigPath) 
+                ? downloaderConfigPath 
+                : Path.Combine(AppContext.BaseDirectory, downloaderConfigPath);
+            
+            if (System.IO.File.Exists(fullPath))
+            {
+                // Добавляем конфигурацию загрузчиков к переданной конфигурации
+                var configBuilder = new ConfigurationBuilder()
+                    .AddConfiguration(configuration)
+                    .AddJsonFile(fullPath, optional: false, reloadOnChange: true);
+                
+                var finalConfiguration = configBuilder.Build();
+                
+                // Обновляем сервисы с новой конфигурацией
+                builder.Services.Configure<BotConfiguration>(
+                    finalConfiguration.GetSection("AppSettings"));
+                builder.Services.Configure<MessageDelayConfiguration>(
+                    finalConfiguration.GetSection("MessageDelaySettings"));
+                builder.Services.Configure<LoggingConfiguration>(
+                    finalConfiguration.GetSection("ConsoleOutputSettings"));
+                builder.Services.Configure<TorConfiguration>(
+                    finalConfiguration.GetSection("Tor"));
+                builder.Services.Configure<AccessPolicyConfiguration>(
+                    finalConfiguration.GetSection("AccessPolicy"));
+                
+                // Регистрируем финальную конфигурацию для загрузчиков
+                builder.Services.AddSingleton<IConfiguration>(finalConfiguration);
+                
+                Log.Information("Loaded downloader config from: {Path}", fullPath);
+            }
+            else
+            {
+                // Если файл не найден, используем исходную конфигурацию
+                builder.Services.AddSingleton<IConfiguration>(configuration);
+                Log.Warning("Downloader config not found at: {Path}", fullPath);
+            }
         }
         else
         {
-            Log.Warning("Downloader config not found at: {Path}", downloaderConfigPath);
+            Log.Warning("Downloader config path not specified in configuration");
         }
         
         // Регистрируем ITelegramBotClient с токеном из конфигурации
@@ -109,15 +143,15 @@ public class FluentDBMigrator
         
         // Configure new configuration services
         builder.Services.Configure<BotConfiguration>(
-            builder.Configuration.GetSection("AppSettings"));
+            configuration.GetSection("AppSettings"));
         builder.Services.Configure<MessageDelayConfiguration>(
-            builder.Configuration.GetSection("MessageDelaySettings"));
+            configuration.GetSection("MessageDelaySettings"));
         builder.Services.Configure<LoggingConfiguration>(
-            builder.Configuration.GetSection("ConsoleOutputSettings"));
+            configuration.GetSection("ConsoleOutputSettings"));
         builder.Services.Configure<TorConfiguration>(
-            builder.Configuration.GetSection("Tor"));
+            configuration.GetSection("Tor"));
         builder.Services.Configure<AccessPolicyConfiguration>(
-            builder.Configuration.GetSection("AccessPolicy"));
+            configuration.GetSection("AccessPolicy"));
         
         // Register configuration services
         builder.Services.AddSingleton<TelegramMediaRelayBot.Config.Services.IConfigurationService, TelegramMediaRelayBot.Config.Services.ConfigurationService>();

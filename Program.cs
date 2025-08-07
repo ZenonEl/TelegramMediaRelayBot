@@ -38,30 +38,25 @@ namespace TelegramMediaRelayBot
             Console.WriteLine("Source code: https://github.com/ZenonEl/TelegramMediaRelayBot");
             Console.WriteLine("============================================\n");
 
-            // Создаем временную конфигурацию для инициализации
-            var tempConfig = new ConfigurationBuilder()
+            // Создаем единую конфигурацию
+            var configuration = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
                 .AddJsonFile("appsettings.example.json", optional: true, reloadOnChange: true)
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables()
                 .Build();
 
-            // Configuration is now handled through DI and IOptions pattern
-            
             // Получаем настройки языка
-            var language = tempConfig["AppSettings:Language"];
+            var language = configuration.GetValue<string>("AppSettings:Language", "en-US");
             CultureInfo currentCulture = CultureInfo.CurrentUICulture;
 
-            if (!string.IsNullOrEmpty(language))
-            {
-                currentCulture = new CultureInfo(language);
-            }
+            currentCulture = new CultureInfo(language);
 
             Thread.CurrentThread.CurrentUICulture = currentCulture;
             Thread.CurrentThread.CurrentCulture = currentCulture;
 
             // Получаем уровень логирования
-            var logLevel = tempConfig.GetValue<Serilog.Events.LogEventLevel>("ConsoleOutputSettings:LogLevel", Serilog.Events.LogEventLevel.Information);
+            var logLevel = configuration.GetValue<Serilog.Events.LogEventLevel>("ConsoleOutputSettings:LogLevel", Serilog.Events.LogEventLevel.Information);
             
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Is(logLevel)
@@ -70,9 +65,9 @@ namespace TelegramMediaRelayBot
 
             try
             {
-                var builder = FluentDBMigrator.CreateBuilderByDBType(args, tempConfig["AppSettings:DatabaseType"] ?? "sqlite");
+                var builder = FluentDBMigrator.CreateBuilderByDBType(args, configuration.GetValue<string>("AppSettings:DatabaseType", "sqlite"), configuration);
 
-                ServiceProvider serviceProvider = FluentDBMigrator.GetCurrentServiceProvider(tempConfig["AppSettings:DatabaseType"] ?? "sqlite", tempConfig);
+                ServiceProvider serviceProvider = FluentDBMigrator.GetCurrentServiceProvider(configuration.GetValue<string>("AppSettings:DatabaseType", "sqlite"), configuration);
                 using (var scope = serviceProvider.CreateScope())
                 {
                     var migrator = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
