@@ -141,13 +141,36 @@ public class YtDlpDownloader : BaseMediaDownloader
         var arguments = new List<string>();
         
         // Добавляем аргументы по умолчанию
-        foreach (var arg in _defaultArguments)
+        for (int i = 0; i < _defaultArguments.Length; i++)
         {
+            var arg = _defaultArguments[i];
+            
+            // Определяем прокси для конкретного сайта
+            var siteSpecificProxy = GetSiteSpecificProxy(url, options.ProxyUrl);
+            
+            // Пропускаем пару --proxy и его значение, если прокси пустой
+            if (arg == "--proxy" && string.IsNullOrEmpty(siteSpecificProxy))
+            {
+                // Пропускаем текущий аргумент и следующий (значение прокси)
+                i++;
+                Log.Debug("YtDlp skipping proxy argument pair for {Url}", url);
+                continue;
+            }
+            
+            // Обрабатываем User-Agent как единый аргумент
+            if (arg == "--user-agent")
+            {
+                var userAgent = _defaultArguments[i + 1];
+                arguments.Add(arg);
+                arguments.Add($"\"{userAgent}\""); // Оборачиваем в кавычки
+                i++; // Пропускаем следующий аргумент (значение User-Agent)
+                continue;
+            }
+            
             var processedArg = arg
-                .Replace("{Proxy}", options.ProxyUrl ?? "")
+                .Replace("{Proxy}", siteSpecificProxy ?? "")
                 .Replace("{OutputPath}", tempDirPath);
             
-            // Добавляем все аргументы, даже пустые
             arguments.Add(processedArg);
         }
         

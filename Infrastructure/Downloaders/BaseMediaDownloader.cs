@@ -214,4 +214,39 @@ public abstract class BaseMediaDownloader : IMediaDownloader
         
         return metadata;
     }
+    
+    protected string? GetSiteSpecificProxy(string url, string? globalProxy)
+    {
+        try
+        {
+            var uri = new Uri(url);
+            var host = uri.Host.ToLowerInvariant();
+            
+            // Получаем специфичные прокси из конфигурации
+            var siteSpecificProxies = _configuration.GetSection($"Downloaders:{Name}:ProxySettings:SiteSpecificProxies").Get<Dictionary<string, string>>();
+            
+            if (siteSpecificProxies != null && siteSpecificProxies.ContainsKey(host))
+            {
+                var siteProxy = siteSpecificProxies[host];
+                if (!string.IsNullOrEmpty(siteProxy))
+                {
+                    Log.Debug("Using site-specific proxy for {Host}: {Proxy}", host, siteProxy);
+                    return siteProxy;
+                }
+                else
+                {
+                    Log.Debug("Site {Host} configured to use no proxy", host);
+                    return null;
+                }
+            }
+            
+            // Возвращаем глобальный прокси если нет специфичного
+            return globalProxy;
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Error determining site-specific proxy for {Url}", url);
+            return globalProxy;
+        }
+    }
 } 

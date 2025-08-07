@@ -14,13 +14,18 @@
             "DefaultArguments": [
                 "--proxy", "{Proxy}",
                 "-v",
-                "-f", "mp4",
-                "--output", "{OutputPath}/video.%(ext)s"
+                "-f", "best[filesize<50M]/worst[filesize<50M]/best",
+                "--output", "{OutputPath}/video.%(ext)s",
+                "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             ],
             "ProxySettings": {
                 "UseGlobalProxy": true,
                 "CustomProxy": null,
-                "RequireProxy": false
+                "RequireProxy": false,
+                "SiteSpecificProxies": {
+                    "vk.com": null,
+                    "pinterest.com": null
+                }
             },
             "Timeout": "00:10:00",
             "MaxRetries": 3,
@@ -30,7 +35,11 @@
                 "vimeo\\.com/[0-9]+",
                 "pinterest\\.com/pin/",
                 "pinterest\\.com/",
-                "ru\\.pinterest\\.com/"
+                "ru\\.pinterest\\.com/",
+                "vk\\.com/wall-",
+                "vk\\.com/photo",
+                "vk\\.com/video",
+                "vk\\.com/clip-"
             ],
             "OutputPattern": "\\[download\\] Destination: (.+)",
             "ProgressPattern": "\\[download\\]"
@@ -55,7 +64,11 @@
             "ProxySettings": {
                 "UseGlobalProxy": true,
                 "CustomProxy": null,
-                "RequireProxy": false
+                "RequireProxy": false,
+                "SiteSpecificProxies": {
+                    "vk.com": null,
+                    "pinterest.com": null
+                }
             },
             "Timeout": "00:05:00",
             "MaxRetries": 2,
@@ -64,7 +77,11 @@
                 "twitter\\.com/[^/]+/status/",
                 "pinterest\\.com/pin/",
                 "pinterest\\.com/",
-                "ru\\.pinterest\\.com/"
+                "ru\\.pinterest\\.com/",
+                "vk\\.com/wall-",
+                "vk\\.com/photo",
+                "vk\\.com/video",
+                "vk\\.com/clip-"
             ],
             "ProgressPattern": "\\[download\\]"
         }

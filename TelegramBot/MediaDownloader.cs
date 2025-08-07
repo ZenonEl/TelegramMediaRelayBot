@@ -168,10 +168,32 @@ public partial class TGBot
         await botClient.SendMessage(chatId, Config.GetResourceString("FailedToProcessLink"));
     }
 
-    private async Task SendMediaToTelegram(ITelegramBotClient botClient, long chatId, List<byte[]> mediaFiles,
+        private async Task SendMediaToTelegram(ITelegramBotClient botClient, long chatId, List<byte[]> mediaFiles,
                                                         Message statusMessage, List<long>? targetUserIds, string contentUrl, bool groupChat = false,
                                                         string caption = "")
     {
+        // Проверяем размер файлов
+        const long maxFileSize = 50 * 1024 * 1024; // 50MB лимит Telegram
+        var totalSize = mediaFiles.Sum(f => f.Length);
+        var sizeMB = totalSize / (1024.0 * 1024.0);
+        Log.Information("Total file size: {Size:F1}MB", sizeMB);
+        
+        var oversizedFiles = mediaFiles.Where(f => f.Length > maxFileSize).ToList();
+        
+        if (oversizedFiles.Any())
+        {
+            var oversizedSize = oversizedFiles.Sum(f => f.Length);
+            var oversizedSizeMB = oversizedSize / (1024.0 * 1024.0);
+            Log.Warning("Files too large for Telegram ({Size:F1}MB). Max allowed: 50MB", oversizedSizeMB);
+            
+            await botClient.EditMessageText(
+                statusMessage.Chat.Id, 
+                statusMessage.MessageId, 
+                $"❌ Файлы слишком большие ({oversizedSizeMB:F1}MB). Максимум: 50MB",
+                cancellationToken: cancellationToken);
+            return;
+        }
+        
         var groupedFiles = mediaFiles.GroupBy(CommonUtilities.DetermineFileType)
                                     .ToDictionary(g => g.Key, g => g.Reverse().ToList());
 
