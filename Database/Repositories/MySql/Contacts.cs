@@ -23,7 +23,7 @@ public class MySqlContactAdder(string connectionString) : IContactAdder
     {
         const string query = @$"
             INSERT INTO Contacts (UserId, ContactId, Status) VALUES (@userId, @contactId, @status)";
-        MySqlContactGetter contactGetter = new(_connectionString);
+        MySqlContactGetter contactGetter = new(_connectionString, new TelegramMediaRelayBot.Config.Services.ResourceService());
 
         using (var connection = new MySqlConnection(_connectionString))
         {
@@ -303,7 +303,7 @@ public class MySqlContactSetter(string connectionString) : IContactSetter
     {
         const string query = @$"
             UPDATE Contacts SET Status = @Status WHERE UserId = @UserId AND ContactId = @ContactId";
-        MySqlContactGetter contactGetter = new(_connectionString);
+        MySqlContactGetter contactGetter = new(_connectionString, new TelegramMediaRelayBot.Config.Services.ResourceService());
         MySqlUserGetter userGetter = new(_connectionString);
 
         using (var connection = new MySqlConnection(_connectionString))
@@ -325,9 +325,10 @@ public class MySqlContactSetter(string connectionString) : IContactSetter
     }
 }
 
-public class MySqlContactGetter(string connectionString) : IContactGetter
+public class MySqlContactGetter(string connectionString, TelegramMediaRelayBot.Config.Services.IResourceService resourceService) : IContactGetter
 {
     private readonly string _connectionString = connectionString;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService = resourceService;
 
     public async Task<List<long>> GetAllContactUserTGIds(int userId)
     {
@@ -399,7 +400,7 @@ public class MySqlContactGetter(string connectionString) : IContactGetter
                 new { contactID });
 
             return expirationDate?.ToString("yyyy-MM-dd HH:mm:ss") 
-                ?? LegacyConfig.GetResourceString("NoActiveMute");
+                ?? _resourceService.GetResourceString("NoActiveMute");
         }
         catch (Exception ex)
         {

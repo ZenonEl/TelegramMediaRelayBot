@@ -100,8 +100,15 @@ public class UserUpdateSelfLinkCommand : IBotCallbackQueryHandlers
 
 public class UserUpdateSelfLinkWithContactsCommand : IBotCallbackQueryHandlers
 {
-    public string Name => "user_update_self_link_with_contacts";
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
+    public UserUpdateSelfLinkWithContactsCommand(
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
+    {
+        _resourceService = resourceService;
+    }
+
+    public string Name => "user_update_self_link_with_contacts";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
@@ -110,19 +117,22 @@ public class UserUpdateSelfLinkWithContactsCommand : IBotCallbackQueryHandlers
                 $"process_user_update_self_link_with_contacts",
                 $"user_update_self_link"),
             ct,
-            LegacyConfig.GetResourceString("UpdateLinkKeepContactsConfirmation"));
+            _resourceService.GetResourceString("UpdateLinkKeepContactsConfirmation"));
     }
 }
 
 public class UserUpdateSelfLinkWithNewContactsCommand : IBotCallbackQueryHandlers
 {
     private readonly IUserGetter _userGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
     public string Name => "user_update_self_link_with_new_contacts";
 
     public UserUpdateSelfLinkWithNewContactsCommand(
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         _userGetter = userGetter;
+        _resourceService = resourceService;
     }
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
@@ -133,7 +143,7 @@ public class UserUpdateSelfLinkWithNewContactsCommand : IBotCallbackQueryHandler
                 $"process_user_update_self_link_with_new_contacts",
                 $"user_update_self_link"),
             ct,
-            LegacyConfig.GetResourceString("UpdateLinkNewContactsWarning"));
+            _resourceService.GetResourceString("UpdateLinkNewContactsWarning"));
     }
 }
 
@@ -168,7 +178,7 @@ public class UserUpdateSelfLinkWithKeepSelectedContactsCommand : IBotCallbackQue
             update,
             KeyboardUtils.GetReturnButtonMarkup("user_update_self_link"),
             ct,
-            LegacyConfig.GetResourceString("EnterContactIdsPrompt"));
+            _resourceService.GetResourceString("EnterContactIdsPrompt"));
         UsersDB.UpdateSelfLinkWithKeepSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository, _userRepository, _userGetter, _resourceService);
     }
 }
@@ -204,7 +214,7 @@ public class UserUpdateSelfLinkWithDeleteSelectedContactsCommand : IBotCallbackQ
             update,
             KeyboardUtils.GetReturnButtonMarkup("user_update_self_link"),
             ct,
-            LegacyConfig.GetResourceString("EnterContactIdsPrompt"));
+            _resourceService.GetResourceString("EnterContactIdsPrompt"));
         UsersDB.UpdateSelfLinkWithDeleteSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository, _userRepository, _userGetter, _resourceService);
     }
 }
@@ -367,13 +377,16 @@ public class UserDisablePermanentContentSpoilerCommand : IBotCallbackQueryHandle
 {
     private readonly IPrivacySettingsSetter _privacySettingsSetter;
     private readonly IUserGetter _userGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public UserDisablePermanentContentSpoilerCommand(
         IPrivacySettingsSetter privacySettingsSetter,
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         _privacySettingsSetter = privacySettingsSetter;
         _userGetter = userGetter;
+        _resourceService = resourceService;
     }
 
     public string Name => "user_disallow_content_forwarding";
@@ -383,8 +396,8 @@ public class UserDisablePermanentContentSpoilerCommand : IBotCallbackQueryHandle
         int userId = _userGetter.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id);
         bool actionStatus = _privacySettingsSetter.SetPrivacyRuleToDisabled(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING);
         string statusMessage = actionStatus
-            ? LegacyConfig.GetResourceString("SuccessActionResult")
-            : LegacyConfig.GetResourceString("ErrorActionResult");
+            ? _resourceService.GetResourceString("SuccessActionResult")
+            : _resourceService.GetResourceString("ErrorActionResult");
         await Users.ViewPrivacyMenu(botClient, update, statusMessage);
     }
 }
@@ -393,13 +406,16 @@ public class UserEnablePermanentContentSpoilerCommand : IBotCallbackQueryHandler
 {
     private readonly IPrivacySettingsSetter _privacySettingsSetter;
     private readonly IUserGetter _userGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public UserEnablePermanentContentSpoilerCommand(
         IPrivacySettingsSetter privacySettingsSetter,
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         _privacySettingsSetter = privacySettingsSetter;
         _userGetter = userGetter;
+        _resourceService = resourceService;
     }
 
     public string Name => "user_allow_content_forwarding";
@@ -409,8 +425,8 @@ public class UserEnablePermanentContentSpoilerCommand : IBotCallbackQueryHandler
         int userId = _userGetter.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id);
         bool actionStatus = await _privacySettingsSetter.SetPrivacyRule(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING, "disallow_content_forwarding", true, "always");
         string statusMessage = actionStatus
-            ? LegacyConfig.GetResourceString("SuccessActionResult")
-            : LegacyConfig.GetResourceString("ErrorActionResult");
+            ? _resourceService.GetResourceString("SuccessActionResult")
+            : _resourceService.GetResourceString("ErrorActionResult");
         await Users.ViewPrivacyMenu(botClient, update, statusMessage);
     }
 }

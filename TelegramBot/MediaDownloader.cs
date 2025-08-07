@@ -165,7 +165,7 @@ public partial class TGBot
         {
             if (update.Message != null && update.Message.Text != null && update.Message.Text.Contains('/'))
             {
-                GroupUpdateHandler groupUpdateHandler = new GroupUpdateHandler(this);
+                GroupUpdateHandler groupUpdateHandler = new GroupUpdateHandler(this, _resourceService);
                 await groupUpdateHandler.HandleGroupUpdate(update, botClient, cancellationToken);
             }
         }

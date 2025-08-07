@@ -99,7 +99,7 @@ public class PrivateUpdateHandler
             int defaultCondition = int.Parse(defaultActionData.Split(';')[1]);
 
             if (defaultAction == UsersAction.OFF) return;
-            var privateUtils = new PrivateUtils(_tgBot, _contactGetterRepository, _defaultActionGetter, _userGetter, _groupGetter);
+            var privateUtils = new PrivateUtils(_tgBot, _contactGetterRepository, _defaultActionGetter, _userGetter, _groupGetter, _resourceService);
             privateUtils.ProcessDefaultSendAction(botClient, chatId, statusMessage, defaultAction, cancellationToken,
                                                                 userId, defaultCondition, timeoutCTS, link, text);
         }

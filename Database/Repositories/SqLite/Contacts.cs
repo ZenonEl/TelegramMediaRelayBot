@@ -24,7 +24,7 @@ public class SqliteContactAdder(string connectionString) : IContactAdder
         const string query = @"
             INSERT INTO Contacts (UserId, ContactId, Status) 
             VALUES (@userId, @contactId, @status)";
-        SqliteContactGetter contactGetter = new(_connectionString);
+        SqliteContactGetter contactGetter = new(_connectionString, new TelegramMediaRelayBot.Config.Services.ResourceService());
 
         using (var connection = new SqliteConnection(_connectionString))
         {
@@ -303,7 +303,7 @@ public class SqliteContactSetter(string connectionString) : IContactSetter
             SET Status = @Status 
             WHERE UserId = @UserId AND ContactId = @ContactId";
             
-        SqliteContactGetter contactGetter = new(_connectionString);
+        SqliteContactGetter contactGetter = new(_connectionString, new TelegramMediaRelayBot.Config.Services.ResourceService());
         SqliteUserGetter userGetter = new(_connectionString);
 
         using (var connection = new SqliteConnection(_connectionString))
@@ -325,9 +325,10 @@ public class SqliteContactSetter(string connectionString) : IContactSetter
     }
 }
 
-public class SqliteContactGetter(string connectionString) : IContactGetter
+public class SqliteContactGetter(string connectionString, TelegramMediaRelayBot.Config.Services.IResourceService resourceService) : IContactGetter
 {
     private readonly string _connectionString = connectionString;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService = resourceService;
 
     public async Task<List<long>> GetAllContactUserTGIds(int userId)
     {
@@ -399,7 +400,7 @@ public class SqliteContactGetter(string connectionString) : IContactGetter
                 new { contactID });
 
             return expirationDate?.ToString("yyyy-MM-dd HH:mm:ss") 
-                ?? LegacyConfig.GetResourceString("NoActiveMute");
+                ?? _resourceService.GetResourceString("NoActiveMute");
         }
         catch (Exception ex)
         {

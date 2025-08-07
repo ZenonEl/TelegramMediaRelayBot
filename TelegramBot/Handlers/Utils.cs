@@ -23,13 +23,15 @@ class PrivateUtils
     private readonly IDefaultActionGetter _defaultActionGetter;
     private readonly IUserGetter _userGetter;
     private readonly IGroupGetter _groupGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public PrivateUtils(
         TGBot tgBot,
         IContactGetter contactGetterRepository,
         IDefaultActionGetter defaultActionGetter,
         IUserGetter userGetter,
-        IGroupGetter groupGetter
+        IGroupGetter groupGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService
         )
     {
         _tgBot = tgBot;
@@ -37,6 +39,7 @@ class PrivateUtils
         _defaultActionGetter = defaultActionGetter;
         _userGetter = userGetter;
         _groupGetter = groupGetter;
+        _resourceService = resourceService;
     }
 
     public void ProcessDefaultSendAction(ITelegramBotClient botClient, long chatId, Message statusMessage, string defaultAction,
@@ -101,7 +104,7 @@ class PrivateUtils
                     await botClient.EditMessageText(
                         statusMessage.Chat.Id,
                         statusMessage.MessageId,
-                        LegacyConfig.GetResourceString("DefaultActionTimeoutMessage"),
+                        _resourceService.GetResourceString("DefaultActionTimeoutMessage"),
                         cancellationToken: cancellationToken
                     );
                     _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
@@ -112,7 +115,7 @@ class PrivateUtils
                         statusMessage = await botClient.EditMessageText(
                             chatId,
                             nextLink.MessageId,
-                            LegacyConfig.GetResourceString("WaitDownloadingVideo"),
+                            _resourceService.GetResourceString("WaitDownloadingVideo"),
                             cancellationToken: cancellationToken
                         );
                         ProcessDefaultSendAction(

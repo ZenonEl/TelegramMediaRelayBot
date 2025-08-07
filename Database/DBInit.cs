@@ -185,7 +185,8 @@ public class FluentDBMigrator
         switch (DBType.ToLower())
         {
             case "mysql":
-                MySqlDBCreator.CreateDatabase(connectionString);
+                var mysqlDBCreator = new MySqlDBCreator(builder.Services.BuildServiceProvider().GetRequiredService<TelegramMediaRelayBot.Config.Services.IDatabaseConfigurationService>());
+                mysqlDBCreator.CreateDatabase(connectionString);
                 builder.Services.AddSingleton<IUserRepository>(_ =>
                     new MySqlUserRepository(connectionString));
                 builder.Services.AddSingleton<IUserGetter>(_ =>
@@ -197,7 +198,7 @@ public class FluentDBMigrator
                 builder.Services.AddSingleton<IContactAdder>(_ =>
                     new MySqlContactAdder(connectionString));
                 builder.Services.AddSingleton<IContactGetter>(_ =>
-                    new MySqlContactGetter(connectionString));
+                    new MySqlContactGetter(connectionString, _.GetRequiredService<TelegramMediaRelayBot.Config.Services.IResourceService>()));
                 builder.Services.AddSingleton<IContactSetter>(_ =>
                     new MySqlContactSetter(connectionString));
                 builder.Services.AddSingleton<IContactRemover>(_ =>
@@ -241,7 +242,7 @@ public class FluentDBMigrator
                 builder.Services.AddSingleton<IContactAdder>(_ =>
                     new SqliteContactAdder(connectionString));
                 builder.Services.AddSingleton<IContactGetter>(_ =>
-                    new SqliteContactGetter(connectionString));
+                    new SqliteContactGetter(connectionString, _.GetRequiredService<TelegramMediaRelayBot.Config.Services.IResourceService>()));
                 builder.Services.AddSingleton<IContactSetter>(_ =>
                     new SqliteContactSetter(connectionString));
                 builder.Services.AddSingleton<IContactRemover>(_ =>

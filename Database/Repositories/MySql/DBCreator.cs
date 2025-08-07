@@ -14,11 +14,13 @@ using MySql.Data.MySqlClient;
 
 namespace TelegramMediaRelayBot.Database.Repositories.MySql;
 
-public class MySqlDBCreator()
+public class MySqlDBCreator(TelegramMediaRelayBot.Config.Services.IDatabaseConfigurationService databaseConfigurationService)
 {
-    public static void CreateDatabase(string connectionString)
+    private readonly TelegramMediaRelayBot.Config.Services.IDatabaseConfigurationService _databaseConfigurationService = databaseConfigurationService;
+
+    public void CreateDatabase(string connectionString)
     {
-        string query = $"CREATE DATABASE IF NOT EXISTS {LegacyConfig.databaseName};";
+        string query = $"CREATE DATABASE IF NOT EXISTS {_databaseConfigurationService.GetDatabaseName()};";
         using var connection = new MySqlConnection(connectionString);
         connection.Execute(query);
     }

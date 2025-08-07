@@ -16,11 +16,14 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers;
 public class GroupUpdateHandler
 {
     private TGBot _tgBot;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public GroupUpdateHandler(
-        TGBot tgBot)
+        TGBot tgBot,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         _tgBot = tgBot;
+        _resourceService = resourceService;
     }
 
     public async Task HandleGroupUpdate(Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
@@ -47,17 +50,17 @@ public class GroupUpdateHandler
 
             if (CommonUtilities.IsLink(link))
             {
-                Message statusMessage = await botClient.SendMessage(update.Message.Chat.Id, LegacyConfig.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
+                Message statusMessage = await botClient.SendMessage(update.Message.Chat.Id, _resourceService.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
                 _ = _tgBot.HandleMediaRequest(botClient, link, update.Message.Chat.Id, statusMessage: statusMessage, groupChat: true, caption: text);
             }
             else
             {
-                await botClient.SendMessage(update.Message.Chat.Id, LegacyConfig.GetResourceString("InvalidLinkFormat"), cancellationToken: cancellationToken);
+                await botClient.SendMessage(update.Message.Chat.Id, _resourceService.GetResourceString("InvalidLinkFormat"), cancellationToken: cancellationToken);
             }
         }
         else if (messageText == "/help")
         {
-            string text = LegacyConfig.GetResourceString("GroupHelpText");
+            string text = _resourceService.GetResourceString("GroupHelpText");
             await botClient.SendMessage(update.Message.Chat.Id, text, cancellationToken: cancellationToken);
         }
     }

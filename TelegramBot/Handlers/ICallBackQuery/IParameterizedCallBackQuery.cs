@@ -53,13 +53,16 @@ public class SetAutoSendTimeCommand : IBotCallbackQueryHandlers
 
     private readonly IDefaultActionSetter _defaultActionSetter;
     private readonly IUserGetter _userGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public SetAutoSendTimeCommand(
         IUserGetter userGetter,
-        IDefaultActionSetter defaultActionSetter)
+        IDefaultActionSetter defaultActionSetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         _userGetter = userGetter;
         _defaultActionSetter = defaultActionSetter;
+        _resourceService = resourceService;
     }
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
@@ -69,8 +72,8 @@ public class SetAutoSendTimeCommand : IBotCallbackQueryHandlers
         bool result = Users.SetAutoSendVideoTimeToUser(chatId, callbackQueryData, _defaultActionSetter, _userGetter);
 
         var message = result 
-            ? LegacyConfig.GetResourceString("AutoSendTimeChangedMessage") + callbackQueryData
-            : LegacyConfig.GetResourceString("AutoSendTimeNotChangedMessage");
+            ? _resourceService.GetResourceString("AutoSendTimeChangedMessage") + callbackQueryData
+            : _resourceService.GetResourceString("AutoSendTimeNotChangedMessage");
 
         await CommonUtilities.SendMessage(
             botClient,
@@ -132,7 +135,7 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
                 update,
                 KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
                 cancellationToken,
-                LegacyConfig.GetResourceString("DefaultActionGetGroupOrUserIDs")
+                _resourceService.GetResourceString("DefaultActionGetGroupOrUserIDs")
             );
 
             bool isGroup = false;
