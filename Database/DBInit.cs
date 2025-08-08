@@ -190,6 +190,11 @@ public class FluentDBMigrator
             configuration.GetSection("Tor"));
         builder.Services.Configure<AccessPolicyConfiguration>(
             configuration.GetSection("AccessPolicy"));
+
+        // Add configuration validators (fail fast)
+        builder.Services.AddSingleton<IValidateOptions<BotConfiguration>, TelegramMediaRelayBot.Config.Validation.BotConfigurationValidator>();
+        builder.Services.AddSingleton<IValidateOptions<TorConfiguration>, TelegramMediaRelayBot.Config.Validation.TorConfigurationValidator>();
+        builder.Services.AddSingleton<IValidateOptions<DownloaderSettingsConfiguration>, TelegramMediaRelayBot.Config.Validation.DownloaderSettingsConfigurationValidator>();
         
         // Register configuration services
         builder.Services.AddSingleton<TelegramMediaRelayBot.Config.Services.IConfigurationService, TelegramMediaRelayBot.Config.Services.ConfigurationService>();
