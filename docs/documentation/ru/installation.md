@@ -206,3 +206,84 @@ nano ./appsettings.json
     }
 }
 ```
+
+#### 3.1 Порядок источников конфигурации и переменные окружения (ENV)
+
+Конфигурация загружается в следующем порядке (выше — приоритетнее, перезаписывает нижележащие значения):
+1) Переменные окружения (ENV)
+2) `appsettings.json`
+3) `appsettings.example.json`
+
+Для вложенных ключей в ENV используется разделитель `__` (два подчёркивания).
+
+Примеры ключей ENV:
+- `AppSettings__TelegramBotToken`
+- `AppSettings__SqlConnectionString`
+- `AppSettings__DatabaseType`
+- `AppSettings__DownloaderSettings__ConfigFilePath`
+- `Tor__Enabled`
+- `Tor__TorSocksHost`
+- `ConsoleOutputSettings__LogLevel`
+
+Примеры для Linux:
+- bash/zsh:
+  ```bash
+  export AppSettings__TelegramBotToken="1234:abcd"
+  export ConsoleOutputSettings__LogLevel="Debug"
+  export Tor__Enabled="true"
+  ```
+- fish:
+  ```fish
+  set -x AppSettings__TelegramBotToken "1234:abcd"
+  set -x ConsoleOutputSettings__LogLevel "Debug"
+  set -x Tor__Enabled "true"
+  ```
+Для разового запуска можно использовать:
+```bash
+AppSettings__TelegramBotToken="1234:abcd" Tor__Enabled=true dotnet run --project TelegramMediaRelayBot.csproj
+```
+
+> Примечание: значения из ENV имеют приоритет над `appsettings.json`.
+> Важно: переменные окружения не обновляются «на лету». Изменения ENV во время работы процесса не будут применены автоматически — перезапустите бот.
+
+#### 3.2 Обновление параметров без рестарта
+
+Файлы `appsettings.json` и `downloader-config.json` подгружаются с `reloadOnChange: true`. При изменении безопасных параметров бот применяет их автоматически и пишет об этом в логах. Переменные окружения в «обновлении без рестарта» не участвуют.
+
+Применяются на лету:
+- `ConsoleOutputSettings:LogLevel` — уровень логирования
+- `Tor:Enabled`, `Tor:TorChangingChainInterval` — таймеры Tor
+- `Tor:TorSocksHost`, `Tor:TorSocksPort`, `Tor:TorControlPort`, `Tor:TorControlPassword` — используются при следующей смене цепочки
+- `MessageDelaySettings:UserUnMuteCheckInterval` — период проверки размьюта
+- `MessageDelaySettings:ContactSendDelay` — задержка отправки сообщений/контактов
+- `AppSettings:Proxy` — глобальный прокси для загрузчиков
+- `AccessPolicy` — политика доступа для новых пользователей
+- Параметры загрузчиков из `downloader-config.json` (`Downloaders:*`) — включение/приоритет/аргументы/таймауты/паттерны
+
+Требует рестарта:
+- `AppSettings:TelegramBotToken`
+- `AppSettings:DatabaseType`, `AppSettings:SqlConnectionString`, `AppSettings:DatabaseName`
+- Смена пути к файлу `AppSettings:DownloaderSettings:ConfigFilePath` (содержимое самого файла — горячее)
+
+Логи конфигурационных изменений:
+- При каждом применении изменений пишется строка вида: `Applied hot config [...]` и/или `Config changed [...]`.
+
+#### 3.3 Конфиг загрузчиков (downloader-config.json)
+
+- Путь задаётся ключом `AppSettings:DownloaderSettings:ConfigFilePath` (например: `./downloader-config.json`).
+- Содержимое файла подхватывается на лету (`reloadOnChange: true`).
+- Смена самого пути требует рестарта.
+
+Подробнее про структуру и примеры: см. раздел «[Конфигурация загрузчиков](downloader-config.md)».
+
+#### 3.4 Рекомендации по секретам и не-горячим параметрам
+
+- Храните в ENV значения, которые не обновляются без рестарта и/или являются секретами:
+  - `AppSettings:TelegramBotToken`
+  - `AppSettings:SqlConnectionString`
+  - `AppSettings:DatabaseType`
+  - `AppSettings:DownloaderSettings:ConfigFilePath`
+  - Любые будущие секреты (пароли, API-ключи и т.д.)
+
+> Обоснование: ENV имеет более высокий приоритет и не меняется «на лету», что снижает риск случайного изменения в runtime и упрощает безопасное управление секретами.
+

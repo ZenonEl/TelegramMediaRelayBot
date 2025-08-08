@@ -1,3 +1,24 @@
+# Использование
+
+## Быстрые подсказки по конфигу (горячая перезагрузка)
+
+- Меняйте безопасные параметры прямо во время работы:
+  - `ConsoleOutputSettings:LogLevel`
+  - `Tor:*` (Enabled, ChangingChainInterval, Socks/Control)
+  - `MessageDelaySettings:*`
+  - `AppSettings:Proxy`
+  - `AccessPolicy:*`
+  - Параметры загрузчиков в `downloader-config.json`
+
+- Пример через ENV (Linux bash):
+  ```bash
+  export ConsoleOutputSettings__LogLevel=Debug
+  export AppSettings__Proxy="socks5://127.0.0.1:9050"
+  export Tor__Enabled=true
+  ```
+
+- Требует рестарта: `AppSettings:TelegramBotToken`, `AppSettings:DatabaseType/SqlConnectionString/DatabaseName`, смена пути к файлу загрузчиков.
+
 # 💬 Использование
 
 ## 🌐 Добавление контактов — создаём свою мини цифровую сеть
