@@ -66,8 +66,8 @@ To create a hashed password (`HashedControlPassword`), follow these steps:
 
 ---
 
-#### 3. **Configure the Bot**:
-   - In the `appsettings.json` file, add or modify the `Tor` section:
+#### 3. **Configure the Bot**
+   - In the `appsettings.json` file, add or modify the `Tor` section (live update is supported for the parameters below):
      ```json
      "Tor": {
        "Enabled": true,
@@ -78,6 +78,16 @@ To create a hashed password (`HashedControlPassword`), follow these steps:
        "TorChangingChainInterval": 5
      }
      ```
+   - You can also use environment variables (ENV):
+     ```bash
+     export Tor__Enabled=true
+     export Tor__TorChangingChainInterval=5
+     export Tor__TorSocksHost=127.0.0.1
+     export Tor__TorSocksPort=9050
+     export Tor__TorControlPort=9051
+     export Tor__TorControlPassword=Password
+     ```
+     Changes are applied without restart: turning on/off and interval updates will (re)configure the timer automatically.
 
 ---
 
@@ -86,6 +96,10 @@ To create a hashed password (`HashedControlPassword`), follow these steps:
 The bot supports automatic IP address rotation via Tor. This is useful if you want to avoid blocks or maintain anonymity.
 
 - **TorChangingChainInterval**: Specifies the interval (in minutes) at which the bot will change its IP address. For example, a value of `5` means the IP will change every 5 minutes.
+
+> Tip: if you changed `TorChangingChainInterval` and don’t want to wait for the next tick,
+> temporarily disable Tor (`Enabled: false`), save, then enable it back (`Enabled: true`).
+> The timer will restart immediately with the new value.
 
 ---
 

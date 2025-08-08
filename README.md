@@ -63,7 +63,32 @@ The full history of changes can be found in [CHANGELOG.md](CHANGELOG.md).
 Development plans and current goals for the new version are available on the latest release page. You can follow the progress of the tasks right there.
 
 ## Logging
-The bot logs all actions to the console. In the future, logging to a file is planned. Logs can be configured in the settings file.
+The bot logs all actions to the console. In the future, logging to a file is planned. You can change the log level without restart via config:
+- `ConsoleOutputSettings:LogLevel` (or ENV `ConsoleOutputSettings__LogLevel`)
+- Changes are applied immediately; a log entry like `Applied hot config [ConsoleOutputSettings]...` will appear.
+
+## Configuration and ENV (quick)
+- Sources priority: ENV > `appsettings.json` > `appsettings.example.json` (higher overrides lower).
+- Live updates without restart apply only to JSON files (`appsettings.json`, `downloader-config.json`).
+- ENV does NOT live‑reload; changing ENV requires a process restart.
+
+Applied without restart (examples):
+- LogLevel, Tor (Enabled/Interval/ports/host/password), MessageDelay, global Proxy, AccessPolicy, and downloader parameters from `downloader-config.json`.
+
+Requires restart:
+- `AppSettings:TelegramBotToken`, `AppSettings:DatabaseType/SqlConnectionString/DatabaseName`, changing the path `AppSettings:DownloaderSettings:ConfigFilePath` (file content itself live‑reloads).
+
+Secrets and non‑live parameters: keep in ENV (token, DB settings, downloader config path, future secrets).
+
+Downloader config:
+- Path: `AppSettings:DownloaderSettings:ConfigFilePath` (e.g. `./downloader-config.json`).
+- File content reloads on change; path changes require restart.
+
+See docs for details:
+- Installation: `docs/documentation/en/installation.md`
+- Tor control: `docs/documentation/en/torcontrol.md`
+- Downloader config: `docs/documentation/en/downloader-config.md`
+- Access policy: `docs/documentation/en/accesspolicy.md`
 
 
 

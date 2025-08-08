@@ -1,4 +1,23 @@
 # 💬 Usage
+## Quick tips for configuration (live update)
+
+- Change safe parameters while the bot is running:
+  - `ConsoleOutputSettings:LogLevel`
+  - `Tor:*` (Enabled, ChangingChainInterval, Socks/Control)
+  - `MessageDelaySettings:*`
+  - `AppSettings:Proxy`
+  - `AccessPolicy:*`
+  - Downloader parameters in `downloader-config.json`
+
+- Example via ENV (Linux bash):
+  ```bash
+  export ConsoleOutputSettings__LogLevel=Debug
+  export AppSettings__Proxy="socks5://127.0.0.1:9050"
+  export Tor__Enabled=true
+  ```
+
+- Requires restart: `AppSettings:TelegramBotToken`, `AppSettings:DatabaseType/SqlConnectionString/DatabaseName`, changing the path to downloader-config.
+
 
 ## 🌐 Adding Contacts — Create Your Mini Digital Network
 

@@ -204,3 +204,73 @@ Example configuration:
     }
 }
 ```
+
+#### 3.1 Configuration sources order and ENV
+
+The configuration is loaded in the following order (higher overrides lower):
+1) Environment variables (ENV)
+2) `appsettings.json`
+3) `appsettings.example.json`
+
+For nested keys in ENV use double underscore `__` as a separator.
+
+Examples (Linux):
+- bash/zsh:
+  ```bash
+  export AppSettings__TelegramBotToken="1234:abcd"
+  export ConsoleOutputSettings__LogLevel="Debug"
+  export Tor__Enabled="true"
+  ```
+- fish:
+  ```fish
+  set -x AppSettings__TelegramBotToken "1234:abcd"
+  set -x ConsoleOutputSettings__LogLevel "Debug"
+  set -x Tor__Enabled "true"
+  ```
+One‑shot run:
+```bash
+AppSettings__TelegramBotToken="1234:abcd" Tor__Enabled=true dotnet run --project TelegramMediaRelayBot.csproj
+```
+
+> Note: ENV has the highest priority over JSON files.
+> Important: environment variables are NOT reloaded at runtime. Changing ENV while the process is running will not take effect — restart the bot.
+
+#### 3.2 Updating parameters without restart
+
+Files `appsettings.json` and `downloader-config.json` are loaded with `reloadOnChange: true`. When safe parameters change, the bot applies them automatically and logs this.
+Environment variables are not part of this live update.
+
+Applied without restart:
+- `ConsoleOutputSettings:LogLevel`
+- `Tor:Enabled`, `Tor:TorChangingChainInterval`, `Tor:TorSocksHost`, `Tor:TorSocksPort`, `Tor:TorControlPort`, `Tor:TorControlPassword`
+- `MessageDelaySettings:UserUnMuteCheckInterval`, `MessageDelaySettings:ContactSendDelay`
+- `AppSettings:Proxy`
+- `AccessPolicy:*`
+- Downloader parameters from `downloader-config.json` (`Downloaders:*`)
+
+Requires restart:
+- `AppSettings:TelegramBotToken`
+- `AppSettings:DatabaseType`, `AppSettings:SqlConnectionString`, `AppSettings:DatabaseName`
+- Changing the path `AppSettings:DownloaderSettings:ConfigFilePath` (file content itself is live‑reloaded)
+
+Config change logs:
+- On each applied change the bot writes: `Applied hot config [...]` and/or `Config changed [...]`.
+
+#### 3.3 Downloader configuration (downloader-config.json)
+
+- Path is set by `AppSettings:DownloaderSettings:ConfigFilePath` (e.g. `./downloader-config.json`).
+- File content is reloaded on change (`reloadOnChange: true`).
+- Changing the path itself requires restart.
+
+More details and examples: see “[Downloader configuration](downloader-config.md)”.
+
+#### 3.4 Recommendations for secrets and non‑live parameters
+
+Keep in ENV values that are not updated without restart and/or are secrets:
+- `AppSettings:TelegramBotToken`
+- `AppSettings:SqlConnectionString`
+- `AppSettings:DatabaseType`
+- `AppSettings:DownloaderSettings:ConfigFilePath`
+- Any future secrets (passwords, API keys, etc.)
+
+> Reasoning: ENV has higher priority and is not changed “live”, which reduces the risk of accidental runtime changes and simplifies secure secret management.

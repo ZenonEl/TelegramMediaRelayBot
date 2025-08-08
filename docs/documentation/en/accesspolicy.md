@@ -6,7 +6,9 @@
 
 ### 🛠 Configuring Access Policy
 
-To configure the access policy, open the `appsettings.json` file and find the `AccessPolicy` section. Here is an example configuration:
+To configure the access policy, open the `appsettings.json` file and find the `AccessPolicy` section. Changes are applied without restart. You can also set parameters via ENV using the `AccessPolicy__...` format.
+
+Here is an example configuration:
 
 ```json
 "AccessPolicy": {
@@ -58,6 +60,7 @@ To configure the access policy, open the `appsettings.json` file and find the `A
 
 - **User IDs**: Make sure you are using the correct Telegram user IDs.
 - **Testing**: After changing the settings, test the bot to ensure the access policy works as expected.
+- **Live update**: AccessPolicy changes are applied immediately.
 
 ---
 
