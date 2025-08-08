@@ -331,7 +331,7 @@ public partial class TGBot
         int userId = _userGetter.GetUserIDbyTelegramID(telegramId);
         bool isDisallowContentForwarding = _privacySettingsGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING);
 
-        List<long> mutedByUserIds = _userGetter.GetUsersIdForMuteContactId(userId);
+        List<long> mutedByUserIds = await _userGetter.GetUsersIdForMuteContactIdAsync(userId);
         List<long> filteredContactUserTGIds = targetUserIds.Except(mutedByUserIds).ToList();
         List<long> usersAllowedByLink = await _userFilter.FilterUsersByLink(filteredContactUserTGIds, contentUrl, _categorizer);
 

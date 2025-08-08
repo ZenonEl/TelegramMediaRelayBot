@@ -45,9 +45,9 @@ public static class InBoundKB
         return inlineKeyboard;
     }
 
-    public static InlineKeyboardMarkup GetInboundsKeyboardMarkup(Update update, IInboundDBGetter inboundDBGetter, IUserGetter userGetter)
+    public static async Task<InlineKeyboardMarkup> GetInboundsKeyboardMarkup(Update update, IInboundDBGetter inboundDBGetter, IUserGetter userGetter)
     {
-        var buttonDataList = inboundDBGetter.GetInboundsButtonData(userGetter.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id));
+        var buttonDataList = await inboundDBGetter.GetInboundsButtonDataAsync(userGetter.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id));
 
         var inlineKeyboardButtons = new List<InlineKeyboardButton[]>();
 

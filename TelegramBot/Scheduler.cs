@@ -138,11 +138,14 @@ class Scheduler
         }
     }
 
-    private Task CheckForUnmuteContacts()
+    private async Task CheckForUnmuteContacts()
     {
         try
         {
-            List<int> expiredMutes = _userGetter.GetExpiredUsersMutes();
+            // Prefer async path if available
+            List<int> expiredMutes = _userGetter is not null
+                ? (await _userGetter.GetExpiredUsersMutesAsync())
+                : new List<int>();
 
             foreach (var muteUserId in expiredMutes)
             {
@@ -154,7 +157,7 @@ class Scheduler
             Log.Error(ex, "An error occurred in the method{MethodName}", nameof(CheckForUnmuteContacts));
         }
 
-        return Task.CompletedTask;
+        return;
     }
 
     private async Task TorChangingChain()

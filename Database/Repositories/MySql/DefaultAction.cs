@@ -49,10 +49,12 @@ public class MySqlDefaultAction : IDefaultAction
 public class MySqlDefaultActionSetter : IDefaultActionSetter
 {
     private readonly string _connectionString;
+    private readonly TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? _uow;
 
-    public MySqlDefaultActionSetter(string connectionString)
+    public MySqlDefaultActionSetter(string connectionString, TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? unitOfWork = null)
     {
         _connectionString = connectionString;
+        _uow = unitOfWork;
     }
 
     public bool SetAutoSendVideoConditionToUser(int userId, string actionCondition, string type)
@@ -62,8 +64,11 @@ public class MySqlDefaultActionSetter : IDefaultActionSetter
             ON DUPLICATE KEY UPDATE
                 ActionCondition = @actionCondition";
 
-        using var connection = new MySqlConnection(_connectionString);
-        return connection.Execute(query, new { userId, type, actionCondition }) > 0;
+        using var connection = _uow?.Connection as MySqlConnection ?? new MySqlConnection(_connectionString);
+        _uow?.Begin();
+        var ok = connection.Execute(query, new { userId, type, actionCondition }, _uow?.Transaction) > 0;
+        _uow?.Commit();
+        return ok;
     }
 
     public bool SetAutoSendVideoActionToUser(int userId, string action, string type)
@@ -73,8 +78,11 @@ public class MySqlDefaultActionSetter : IDefaultActionSetter
             ON DUPLICATE KEY UPDATE
                 Action = @action";
 
-        using var connection = new MySqlConnection(_connectionString);
-        return connection.Execute(query, new { userId, type, action }) > 0;
+        using var connection = _uow?.Connection as MySqlConnection ?? new MySqlConnection(_connectionString);
+        _uow?.Begin();
+        var ok = connection.Execute(query, new { userId, type, action }, _uow?.Transaction) > 0;
+        _uow?.Commit();
+        return ok;
     }
 }
 
@@ -146,6 +154,60 @@ public class MySqlDefaultActionGetter : IDefaultActionGetter
         catch (Exception ex)
         {
             Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetDefaultActionByUserIDAndType));
+            return "";
+        }
+    }
+
+    public async Task<List<int>> GetAllDefaultUsersActionTargetsAsync(int userId, string targetType, int actionId)
+    {
+        try
+        {
+            using var connection = new MySqlConnection(_connectionString);
+            var result = await connection.QueryAsync<int>(
+                @"SELECT TargetID FROM DefaultUsersActionTargets 
+                WHERE UserId = @userId AND TargetType = @targetType AND ActionID = @actionId",
+                new { userId, targetType, actionId });
+            return result.ToList();
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Error on getting data: {ex.Message}");
+            return new List<int>();
+        }
+    }
+
+    public async Task<int> GetDefaultActionIdAsync(int userId, string type)
+    {
+        const string query = @"SELECT ID FROM DefaultUsersActions WHERE UserId = @userId AND Type = @type;";
+        try
+        {
+            using var connection = new MySqlConnection(_connectionString);
+            return await connection.ExecuteScalarAsync<int>(query, new { userId, type });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error on getting data: {ex.Message}");
+            return 0;
+        }
+    }
+
+    public async Task<string> GetDefaultActionByUserIDAndTypeAsync(int userID, string type)
+    {
+        try
+        {
+            using var connection = new MySqlConnection(_connectionString);
+            var result = await connection.QueryFirstOrDefaultAsync<(string Action, string ActionCondition)>(
+                @"SELECT Action, ActionCondition
+                FROM DefaultUsersActions
+                WHERE UserID = @userID
+                AND Type = @type
+                AND IsActive = 1",
+                new { userID, type });
+            return result != default ? $"{result.Action};{result.ActionCondition}" : UsersAction.NO_VALUE;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetDefaultActionByUserIDAndTypeAsync));
             return "";
         }
     }

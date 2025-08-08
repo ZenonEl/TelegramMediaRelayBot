@@ -24,14 +24,14 @@ public class SqliteOutboundDBGetter : IOutboundDBGetter
         _connectionString = connectionString;
     }
 
-    public List<ButtonData> GetOutboundButtonData(int userId)
+    public async Task<List<ButtonData>> GetOutboundButtonDataAsync(int userId)
     {
         var buttonDataList = new List<ButtonData>();
-        var contactUserIds = GetContactUserIds(userId);
+        var contactUserIds = await GetContactUserIdsAsync(userId);
 
         foreach (var contactUserId in contactUserIds)
         {
-            var userData = GetUserDataByUserId(contactUserId);
+            var userData = await GetUserDataByUserIdAsync(contactUserId);
             if (userData != null)
             {
                 buttonDataList.Add(new ButtonData 
@@ -45,7 +45,7 @@ public class SqliteOutboundDBGetter : IOutboundDBGetter
         return buttonDataList;
     }
 
-    private List<int> GetContactUserIds(int userId)
+    private async Task<List<int>> GetContactUserIdsAsync(int userId)
     {
         var contactUserIds = new List<int>();
         const string queryContacts = @"
@@ -55,15 +55,15 @@ public class SqliteOutboundDBGetter : IOutboundDBGetter
 
         using (var connection = new SqliteConnection(_connectionString))
         {
-            connection.Open();
+            await connection.OpenAsync();
             
             using (var command = new SqliteCommand(queryContacts, connection))
             {
                 command.Parameters.AddWithValue("@UserId", userId);
                 
-                using (var reader = command.ExecuteReader())
+                using (var reader = await command.ExecuteReaderAsync())
                 {
-                    while (reader.Read())
+                    while (await reader.ReadAsync())
                     {
                         contactUserIds.Add(reader.GetInt32(0)); // ContactId
                     }
@@ -74,7 +74,7 @@ public class SqliteOutboundDBGetter : IOutboundDBGetter
         return contactUserIds;
     }
 
-    private Tuple<string, string>? GetUserDataByUserId(int userId)
+    private async Task<Tuple<string, string>?> GetUserDataByUserIdAsync(int userId)
     {
         const string queryUsers = @"
             SELECT Name, TelegramID
@@ -83,15 +83,15 @@ public class SqliteOutboundDBGetter : IOutboundDBGetter
 
         using (var connection = new SqliteConnection(_connectionString))
         {
-            connection.Open();
+            await connection.OpenAsync();
             
             using (var command = new SqliteCommand(queryUsers, connection))
             {
                 command.Parameters.AddWithValue("@userId", userId);
                 
-                using (var reader = command.ExecuteReader())
+                using (var reader = await command.ExecuteReaderAsync())
                 {
-                    if (reader.Read())
+                    if (await reader.ReadAsync())
                     {
                         return new Tuple<string, string>(
                             reader.GetString(0), // Name

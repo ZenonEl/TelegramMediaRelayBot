@@ -82,7 +82,7 @@ public class ProcessUserMuteState : IUserState
                 else
                 {
                     string link = update.Message.Text!;
-                    contactId = _contactGetter.GetContactIDByLink(link);
+                    contactId = await _contactGetter.GetContactIDByLinkAsync(link);
                     List<long> allowedIds = await _contactGetter.GetAllContactUserTGIds(_userGetter.GetUserIDbyTelegramID(update.Message.Chat.Id));
 
                     if (contactId == -1 || !allowedIds.Contains(_userGetter.GetTelegramIDbyUserID(contactId)))

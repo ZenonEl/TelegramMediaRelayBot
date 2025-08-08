@@ -18,10 +18,12 @@ namespace TelegramMediaRelayBot.Database.Repositories.Sqlite;
 public class SqlitePrivacySettingsSetter : IPrivacySettingsSetter
 {
     private readonly string _connectionString;
+    private readonly TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? _uow;
 
-    public SqlitePrivacySettingsSetter(string connectionString)
+    public SqlitePrivacySettingsSetter(string connectionString, TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? unitOfWork = null)
     {
         _connectionString = connectionString;
+        _uow = unitOfWork;
     }
 
     public async Task<bool> SetPrivacyRule(int userId, string type, string action, bool isActive, string actionCondition)
@@ -35,8 +37,11 @@ public class SqlitePrivacySettingsSetter : IPrivacySettingsSetter
                 IsActive = @isActive,
                 ActionCondition = @actionCondition";
 
-        using var connection = new SqliteConnection(_connectionString);
-        return await connection.ExecuteAsync(query, new {userId, type, action, isActive, actionCondition}) > 0;
+        using var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString);
+        _uow?.Begin();
+        var affected = await connection.ExecuteAsync(query, new {userId, type, action, isActive, actionCondition}, _uow?.Transaction) > 0;
+        _uow?.Commit();
+        return affected;
     }
 
     public bool SetPrivacyRuleToDisabled(int userId, string type)
@@ -46,8 +51,19 @@ public class SqlitePrivacySettingsSetter : IPrivacySettingsSetter
             SET IsActive = 0
             WHERE UserId = @userId AND Type = @type";
 
-        using var connection = new SqliteConnection(_connectionString);
-        return connection.Execute(query, new {userId, type}) > 0;
+        using var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString);
+        try
+        {
+            _uow?.Begin();
+            var ok = connection.Execute(query, new {userId, type}, _uow?.Transaction) > 0;
+            _uow?.Commit();
+            return ok;
+        }
+        catch
+        {
+            _uow?.Rollback();
+            throw;
+        }
     }
 }
 

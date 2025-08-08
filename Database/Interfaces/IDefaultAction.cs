@@ -33,4 +33,9 @@ public interface IDefaultActionGetter
 
     public int GetDefaultActionId(int userId, string type);
     public string GetDefaultActionByUserIDAndType(int userID, string type);
+
+    // Async versions
+    public Task<List<int>> GetAllDefaultUsersActionTargetsAsync(int userId, string targetType, int actionId);
+    public Task<int> GetDefaultActionIdAsync(int userId, string type);
+    public Task<string> GetDefaultActionByUserIDAndTypeAsync(int userID, string type);
 }

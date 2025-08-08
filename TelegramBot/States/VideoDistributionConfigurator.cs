@@ -246,7 +246,7 @@ public class ProcessVideoDC : IUserState
     private async Task PrepareTargetUserIds(long chatId)
     {
         int userId = _userGetter.GetUserIDbyTelegramID(chatId);
-        List<long> mutedByUserIds = _userGetter.GetUsersIdForMuteContactId(userId);
+        List<long> mutedByUserIds = await _userGetter.GetUsersIdForMuteContactIdAsync(userId);
         List<long> contactUserTGIds = new List<long>();
 
         switch (action)

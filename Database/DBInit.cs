@@ -232,6 +232,9 @@ public class FluentDBMigrator
             case "mysql":
                 // Ensure database is created via hosted service at startup
                 builder.Services.AddSingleton<MySqlDBCreator>();
+                // Unit of Work
+                builder.Services.AddScoped<TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork>(_ =>
+                    new TelegramMediaRelayBot.Database.UnitOfWork.MySqlUnitOfWork(connectionString));
                 builder.Services.AddScoped<IUserRepository>(_ =>
                     new MySqlUserRepository(connectionString));
                 builder.Services.AddScoped<IUserGetter>(_ =>
@@ -240,43 +243,47 @@ public class FluentDBMigrator
                 builder.Services.AddScoped<IContactGroupRepository>(_ =>
                     new MySqlContactGroupRepository(connectionString));
 
-                builder.Services.AddScoped<IContactAdder>(_ =>
-                    new MySqlContactAdder(connectionString));
+                builder.Services.AddScoped<IContactAdder>(sp =>
+                    new MySqlContactAdder(connectionString, sp.GetRequiredService<TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork>()));
                 builder.Services.AddScoped<IContactGetter>(_ =>
                     new MySqlContactGetter(connectionString, _.GetRequiredService<TelegramMediaRelayBot.Config.Services.IResourceService>()));
-                builder.Services.AddScoped<IContactSetter>(_ =>
-                    new MySqlContactSetter(connectionString));
-                builder.Services.AddScoped<IContactRemover>(_ =>
-                    new MySqlContactRemover(connectionString));
+                builder.Services.AddScoped<IContactSetter>(sp =>
+                    new MySqlContactSetter(connectionString, sp.GetRequiredService<TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork>()));
+                builder.Services.AddScoped<IContactRemover>(sp =>
+                    new MySqlContactRemover(connectionString, sp.GetRequiredService<TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork>()));
 
                 builder.Services.AddScoped<IOutboundDBGetter>(_ =>
                     new MySqlOutboundDBGetter(connectionString));
                 builder.Services.AddScoped<IInboundDBGetter>(_ =>
                     new MySqlInboundDBGetter(connectionString));
 
-                builder.Services.AddScoped<IPrivacySettingsSetter>(_ =>
-                    new MySqlPrivacySettingsSetter(connectionString));
+                builder.Services.AddScoped<IPrivacySettingsSetter>(sp =>
+                    new MySqlPrivacySettingsSetter(connectionString, sp.GetRequiredService<TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork>()));
                 builder.Services.AddScoped<IPrivacySettingsGetter>(_ =>
                     new MySqlPrivacySettingsGetter(connectionString));
-                builder.Services.AddScoped<IPrivacySettingsTargetsSetter>(_ =>
-                    new MySqlPrivacySettingsTargetsSetter(connectionString));
+                builder.Services.AddScoped<IPrivacySettingsTargetsSetter>(sp =>
+                    new MySqlPrivacySettingsTargetsSetter(connectionString, sp.GetRequiredService<TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork>()));
                 builder.Services.AddScoped<IPrivacySettingsTargetsGetter>(_ =>
                     new MySqlPrivacySettingsTargetsGetter(connectionString));
 
                 builder.Services.AddScoped<IDefaultAction>(_ =>
                     new MySqlDefaultAction(connectionString));
-                builder.Services.AddScoped<IDefaultActionSetter>(_ =>
-                    new MySqlDefaultActionSetter(connectionString));
+                builder.Services.AddScoped<IDefaultActionSetter>(sp =>
+                    new MySqlDefaultActionSetter(connectionString, sp.GetRequiredService<TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork>()));
                 builder.Services.AddScoped<IDefaultActionGetter>(_ =>
                     new MySqlDefaultActionGetter(connectionString));
 
                 builder.Services.AddScoped<IGroupGetter>(_ =>
                     new MySqlGroupGetter(connectionString));
-                builder.Services.AddScoped<IGroupSetter>(_ =>
-                    new MySqlGroupSetter(connectionString));
+                builder.Services.AddScoped<IGroupSetter>(sp =>
+                    new MySqlGroupSetter(connectionString, sp.GetRequiredService<TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork>()));
 
                 return builder;
             default:
+                // Unit of Work
+                builder.Services.AddScoped<TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork>(_ =>
+                    new TelegramMediaRelayBot.Database.UnitOfWork.SqliteUnitOfWork(connectionString));
+
                 builder.Services.AddScoped<IUserRepository>(_ =>
                     new SqliteUserRepository(connectionString));
                 builder.Services.AddScoped<IUserGetter>(_ =>
@@ -284,40 +291,40 @@ public class FluentDBMigrator
 
                 builder.Services.AddScoped<IContactGroupRepository>(_ =>
                     new SqliteContactGroupRepository(connectionString));
-                builder.Services.AddScoped<IContactAdder>(_ =>
-                    new SqliteContactAdder(connectionString));
+                builder.Services.AddScoped<IContactAdder>(sp =>
+                    new SqliteContactAdder(connectionString, sp.GetRequiredService<TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork>()));
                 builder.Services.AddScoped<IContactGetter>(_ =>
                     new SqliteContactGetter(connectionString, _.GetRequiredService<TelegramMediaRelayBot.Config.Services.IResourceService>()));
-                builder.Services.AddScoped<IContactSetter>(_ =>
-                    new SqliteContactSetter(connectionString));
-                builder.Services.AddScoped<IContactRemover>(_ =>
-                    new SqliteContactRemover(connectionString));
+                builder.Services.AddScoped<IContactSetter>(sp =>
+                    new SqliteContactSetter(connectionString, sp.GetRequiredService<TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork>()));
+                builder.Services.AddScoped<IContactRemover>(sp =>
+                    new SqliteContactRemover(connectionString, sp.GetRequiredService<TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork>()));
 
                 builder.Services.AddScoped<IOutboundDBGetter>(_ =>
                     new SqliteOutboundDBGetter(connectionString));
                 builder.Services.AddScoped<IInboundDBGetter>(_ =>
                     new SqliteInboundDBGetter(connectionString));
 
-                builder.Services.AddScoped<IPrivacySettingsSetter>(_ =>
-                    new SqlitePrivacySettingsSetter(connectionString));
+                builder.Services.AddScoped<IPrivacySettingsSetter>(sp =>
+                    new SqlitePrivacySettingsSetter(connectionString, sp.GetRequiredService<TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork>()));
                 builder.Services.AddScoped<IPrivacySettingsGetter>(_ =>
                     new SqlitePrivacySettingsGetter(connectionString));
-                builder.Services.AddScoped<IPrivacySettingsTargetsSetter>(_ =>
-                    new SqlitePrivacySettingsTargetsSetter(connectionString));
+                builder.Services.AddScoped<IPrivacySettingsTargetsSetter>(sp =>
+                    new SqlitePrivacySettingsTargetsSetter(connectionString, sp.GetRequiredService<TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork>()));
                 builder.Services.AddScoped<IPrivacySettingsTargetsGetter>(_ =>
                     new SqlitePrivacySettingsTargetsGetter(connectionString));
 
                 builder.Services.AddScoped<IDefaultAction>(_ =>
                     new SqliteDefaultAction(connectionString));
-                builder.Services.AddScoped<IDefaultActionSetter>(_ =>
-                    new SqliteDefaultActionSetter(connectionString));
+                builder.Services.AddScoped<IDefaultActionSetter>(sp =>
+                    new SqliteDefaultActionSetter(connectionString, sp.GetRequiredService<TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork>()));
                 builder.Services.AddScoped<IDefaultActionGetter>(_ =>
                     new SqliteDefaultActionGetter(connectionString));
 
                 builder.Services.AddScoped<IGroupGetter>(_ =>
                     new SqliteGroupGetter(connectionString));
-                builder.Services.AddScoped<IGroupSetter>(_ =>
-                    new SqliteGroupSetter(connectionString));
+                builder.Services.AddScoped<IGroupSetter>(sp =>
+                    new SqliteGroupSetter(connectionString, sp.GetRequiredService<TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork>()));
                 return builder;
         }
     }

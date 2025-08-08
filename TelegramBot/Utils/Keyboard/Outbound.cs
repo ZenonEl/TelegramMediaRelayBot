@@ -25,9 +25,9 @@ public class OutBoundKB
         return _resourceManager.GetString(key) ?? key;
     }
     
-    public static InlineKeyboardMarkup GetOutboundKeyboardMarkup(long userId, IOutboundDBGetter outboundDBGetter, IUserGetter userGetter)
+    public static async Task<InlineKeyboardMarkup> GetOutboundKeyboardMarkup(long userId, IOutboundDBGetter outboundDBGetter, IUserGetter userGetter)
     {
-        var buttonDataList = outboundDBGetter.GetOutboundButtonData(userGetter.GetUserIDbyTelegramID(userId));
+        var buttonDataList = await outboundDBGetter.GetOutboundButtonDataAsync(userGetter.GetUserIDbyTelegramID(userId));
 
         var inlineKeyboardButtons = new List<InlineKeyboardButton[]>();
 

@@ -47,14 +47,14 @@ public static class CallbackQueryMenuUtils
         TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         string text = GetResourceString("YourInboundInvitations");
-        await CommonUtilities.SendMessage(botClient, update, InBoundKB.GetInboundsKeyboardMarkup(update, inboundDBGetter, userGetter), cancellationToken, text);
+        await CommonUtilities.SendMessage(botClient, update, await InBoundKB.GetInboundsKeyboardMarkup(update, inboundDBGetter, userGetter), cancellationToken, text);
         TGBot.StateManager.Set(chatId, new UserProcessInboundState(contactSetterRepository, contactRemoverRepository, inboundDBGetter, userGetter, resourceService));
     }
 
     public static async Task ViewOutboundInviteLinks(ITelegramBotClient botClient, Update update, IOutboundDBGetter outboundDBGetter, IUserGetter userGetter)
     {
         string text = GetResourceString("YourOutboundInvitations");
-        await CommonUtilities.SendMessage(botClient, update, OutBoundKB.GetOutboundKeyboardMarkup(CommonUtilities.GetIDfromUpdate(update), outboundDBGetter, userGetter), cancellationToken, text);
+        await CommonUtilities.SendMessage(botClient, update, await OutBoundKB.GetOutboundKeyboardMarkup(CommonUtilities.GetIDfromUpdate(update), outboundDBGetter, userGetter), cancellationToken, text);
     }
 
     public static async Task ShowOutboundInvite(

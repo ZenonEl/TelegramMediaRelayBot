@@ -18,10 +18,12 @@ namespace TelegramMediaRelayBot.Database.Repositories.Sqlite;
 public class SqlitePrivacySettingsTargetsSetter : IPrivacySettingsTargetsSetter
 {
     private readonly string _connectionString;
+    private readonly TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? _uow;
 
-    public SqlitePrivacySettingsTargetsSetter(string connectionString)
+    public SqlitePrivacySettingsTargetsSetter(string connectionString, TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? unitOfWork = null)
     {
         _connectionString = connectionString;
+        _uow = unitOfWork;
     }
 
     public async Task<bool> SetPrivacyRuleTarget(int userId, int privacySettingId, string targetType, string targetValue)
@@ -32,8 +34,13 @@ public class SqlitePrivacySettingsTargetsSetter : IPrivacySettingsTargetsSetter
             ON CONFLICT(UserId, PrivacySettingId, TargetType) 
             DO UPDATE SET TargetValue = @targetValue";
 
-        using var connection = new SqliteConnection(_connectionString);
-        return await connection.ExecuteAsync(query, new {userId, privacySettingId, targetType, targetValue}) > 0;
+        var external = _uow?.Connection as SqliteConnection;
+        using var owned = external ?? new SqliteConnection(_connectionString);
+        var connection = (SqliteConnection)(external ?? owned);
+        _uow?.Begin();
+        var ok = await connection.ExecuteAsync(query, new {userId, privacySettingId, targetType, targetValue}, _uow?.Transaction) > 0;
+        _uow?.Commit();
+        return ok;
     }
 
     public async Task<bool> SetToRemovePrivacyRuleTarget(int privacySettingId, string targetValue)
@@ -42,8 +49,21 @@ public class SqlitePrivacySettingsTargetsSetter : IPrivacySettingsTargetsSetter
             DELETE FROM PrivacySettingsTargets
             WHERE PrivacySettingId = @privacySettingId AND TargetValue = @targetValue";
 
-        using var connection = new SqliteConnection(_connectionString);
-        return await connection.ExecuteAsync(query, new { privacySettingId, targetValue }) > 0;
+        var external = _uow?.Connection as SqliteConnection;
+        using var owned = external ?? new SqliteConnection(_connectionString);
+        var connection = (SqliteConnection)(external ?? owned);
+        try
+        {
+            _uow?.Begin();
+            var ok = await connection.ExecuteAsync(query, new { privacySettingId, targetValue }, _uow?.Transaction) > 0;
+            _uow?.Commit();
+            return ok;
+        }
+        catch
+        {
+            _uow?.Rollback();
+            throw;
+        }
     }
 }
 

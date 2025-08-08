@@ -19,10 +19,12 @@ namespace TelegramMediaRelayBot.Database.Repositories.MySql;
 public class MySqlPrivacySettingsTargetsSetter : IPrivacySettingsTargetsSetter
 {
     private readonly string _connectionString;
+    private readonly TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? _uow;
 
-    public MySqlPrivacySettingsTargetsSetter(string connectionString)
+    public MySqlPrivacySettingsTargetsSetter(string connectionString, TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? unitOfWork = null)
     {
         _connectionString = connectionString;
+        _uow = unitOfWork;
     }
 
     public async Task<bool> SetPrivacyRuleTarget(int userId, int privacySettingId, string targetType, string targetValue)
@@ -33,8 +35,13 @@ public class MySqlPrivacySettingsTargetsSetter : IPrivacySettingsTargetsSetter
             ON DUPLICATE KEY UPDATE
             TargetValue = @targetValue";
 
-        using var connection = new MySqlConnection(_connectionString);
-        return await connection.ExecuteAsync(query, new {userId, privacySettingId, targetType, targetValue}) > 0;
+        var external = _uow?.Connection as MySqlConnection;
+        using var owned = external ?? new MySqlConnection(_connectionString);
+        var connection = (MySqlConnection)(external ?? owned);
+        _uow?.Begin();
+        var ok = await connection.ExecuteAsync(query, new {userId, privacySettingId, targetType, targetValue}, _uow?.Transaction) > 0;
+        _uow?.Commit();
+        return ok;
     }
 
     public async Task<bool> SetToRemovePrivacyRuleTarget(int privacySettingId, string targetValue)
@@ -43,8 +50,21 @@ public class MySqlPrivacySettingsTargetsSetter : IPrivacySettingsTargetsSetter
             DELETE FROM PrivacySettingsTargets
             WHERE PrivacySettingId = @privacySettingId AND TargetValue = @targetValue";
 
-        using var connection = new MySqlConnection(_connectionString);
-        return await connection.ExecuteAsync(query, new { privacySettingId, targetValue }) > 0;
+        var external = _uow?.Connection as MySqlConnection;
+        using var owned = external ?? new MySqlConnection(_connectionString);
+        var connection = (MySqlConnection)(external ?? owned);
+        try
+        {
+            _uow?.Begin();
+            var ok = await connection.ExecuteAsync(query, new { privacySettingId, targetValue }, _uow?.Transaction) > 0;
+            _uow?.Commit();
+            return ok;
+        }
+        catch
+        {
+            _uow?.Rollback();
+            throw;
+        }
     }
 }
 

@@ -9,17 +9,17 @@
 - [x] **Рефакторинг Config класса** — заменить статический Config на IOptions<T> pattern
 - [x] **Убрать статические состояния** — введён `IUserStateManager` вместо static Dictionary
 - [x] **Исправить Service Locator антипаттерн** — убраны `BuildServiceProvider()` из регистрации, всё через DI
-- [ ] **Переход DB к асинхронной модели** — перевести репозитории на async/await
-- [ ] **Добавить Unit of Work паттерн** для транзакций БД
+ - [x] **Переход DB к асинхронной модели** — репозитории переведены на async/await (остаток: единичные короткие sync Execute в write-методах — опционально)
+- [x] **Добавить Unit of Work паттерн** для транзакций БД (Contacts, Groups, Privacy, DefaultActions — MySQL/SQLite)
 - [x] **Рефакторинг больших методов** — разбиение `UpdateHandler` и `SendMediaToTelegram`
 - [x] **Горячая перезагрузка конфигурации** (безопасные настройки)
   - [x] Перевод потребителей на `IOptionsMonitor<T>` (Tor, задержки, AccessPolicy, Proxy)
   - [x] Использование `OnChange` для Safe-настроек (delays, proxy, Tor) + логирование изменений
   - [x] Горячая смена `ConsoleOutputSettings:LogLevel` через `LoggingLevelSwitch`
-  - [ ] Исключения (рестарт): TelegramBotToken, тип БД/connection string (документация)
+  - [x] Исключения (рестарт): TelegramBotToken, тип БД/connection string (документация)
 
 ### **Базовое Тестирование**
-- [ ] **Unit тесты для ключевой функциональности** (MediaDownloader, Factory, Repositories)
+ - [ ] **Unit тесты для ключевой функциональности** (MediaDownloader, Factory, Repositories) (прогресс: Factory — есть базовые тесты)
 - [ ] **Integration тесты для БД** слоя
 - [ ] **Тесты для критических business сценариев**
 
@@ -191,7 +191,7 @@
 **Цель: Исправить архитектурные проблемы**
 - [x] Config рефакторинг на IOptions<T>
 - [x] Убрать статические состояния (IUserStateManager)
-- [ ] Переход к async/await в DB layer
+ - [x] Переход к async/await в DB layer
 - [ ] Базовые unit тесты для core functionality
 - [x] Исправить Service Locator антипаттерн
 - [x] Горячая перезагрузка конфигурации (IOptionsMonitor<T> + OnChange)
@@ -243,7 +243,7 @@
 - [x] Hot Config (Tor, Delays, Proxy, AccessPolicy, LogLevel) + change logging
 
 ### **В Процессе ⚠️**
-- [ ] Async DB Model (0% - критично)
+ - [x] Async DB Model — core части переведены на async/await (остались единичные короткие sync Execute в write-методах — опционально)
 - [ ] Message Merging (0% - высокий приоритет)
 - [ ] Text Cleanup (0%)
 

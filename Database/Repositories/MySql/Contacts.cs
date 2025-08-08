@@ -15,9 +15,10 @@ using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.Database.Repositories.MySql;
 
-public class MySqlContactAdder(string connectionString) : IContactAdder
+public class MySqlContactAdder(string connectionString, TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? unitOfWork = null) : IContactAdder
 {
     private readonly string _connectionString = connectionString;
+    private readonly TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? _uow = unitOfWork;
 
     public void AddContact(long telegramID, string link)
     {
@@ -25,19 +26,22 @@ public class MySqlContactAdder(string connectionString) : IContactAdder
             INSERT INTO Contacts (UserId, ContactId, Status) VALUES (@userId, @contactId, @status)";
         MySqlContactGetter contactGetter = new(_connectionString, new TelegramMediaRelayBot.Config.Services.ResourceService());
 
-        using (var connection = new MySqlConnection(_connectionString))
+        using (var connection = _uow?.Connection as MySqlConnection ?? new MySqlConnection(_connectionString))
         {
             try
             {
+                _uow?.Begin();
                 connection.Execute(query, new 
                 {
                     userId = contactGetter.GetContactByTelegramID(telegramID),
                     contactId = contactGetter.GetContactIDByLink(link),
                     status = ContactsStatus.WAITING_FOR_ACCEPT
                 });
+                _uow?.Commit();
             }
             catch (Exception ex)
             {
+                _uow?.Rollback();
                 Log.Error("Error editing database: " + ex.Message);
             }
         }
@@ -58,10 +62,11 @@ public class MySqlContactAdder(string connectionString) : IContactAdder
                 ExpirationDate = @expirationDate,
                 IsActive = 1";
 
-        using (var connection = new MySqlConnection(_connectionString))
+        using (var connection = _uow?.Connection as MySqlConnection ?? new MySqlConnection(_connectionString))
         {
             try
             {
+                _uow?.Begin();
                 connection.Execute(query, new 
                 {
                     mutedByUserId,
@@ -69,10 +74,12 @@ public class MySqlContactAdder(string connectionString) : IContactAdder
                     muteDate,
                     expirationDate
                 });
+                _uow?.Commit();
                 return true;
             }
             catch (Exception ex)
             {
+                _uow?.Rollback();
                 Log.Error("Error editing database: " + ex.Message);
                 return false;
             }
@@ -84,10 +91,11 @@ public class MySqlContactAdder(string connectionString) : IContactAdder
 // ----------------------------------------------------------------------------------
 // ----------------------------------------------------------------------------------
 
-public class MySqlContactRemover(string connectionString) : IContactRemover
+public class MySqlContactRemover(string connectionString, TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? unitOfWork = null) : IContactRemover
 {
 
     private readonly string _connectionString = connectionString;
+    private readonly TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? _uow = unitOfWork;
 
     public void RemoveMutedContact(int userId, int contactId)
     {
@@ -96,14 +104,17 @@ public class MySqlContactRemover(string connectionString) : IContactRemover
             SET IsActive = 0
             WHERE MutedByUserId = @userId AND MutedContactId = @contactId";
 
-        using (var connection = new MySqlConnection(_connectionString))
+        using (var connection = _uow?.Connection as MySqlConnection ?? new MySqlConnection(_connectionString))
         {
             try
             {
-                connection.Execute(query, new { userId, contactId });
+                _uow?.Begin();
+                connection.Execute(query, new { userId, contactId }, _uow?.Transaction);
+                _uow?.Commit();
             }
             catch (Exception ex)
             {
+                _uow?.Rollback();
                 Log.Error(ex, "An error occurred in the method{MethodName}", nameof(RemoveMutedContact));
             }
         }
@@ -116,20 +127,23 @@ public class MySqlContactRemover(string connectionString) : IContactRemover
             WHERE (UserId = @senderTelegramID AND ContactId = @accepterTelegramID AND (@status IS NULL OR Status = @status))
             OR (UserId = @accepterTelegramID AND ContactId = @senderTelegramID AND (@status IS NULL OR Status = @status))";
 
-        using (var connection = new MySqlConnection(_connectionString))
+        using (var connection = _uow?.Connection as MySqlConnection ?? new MySqlConnection(_connectionString))
         {
             try
             {
+                _uow?.Begin();
                 connection.Execute(query, new 
                 {
                     senderTelegramID,
                     accepterTelegramID,
                     status
-                });
+                }, _uow?.Transaction);
+                _uow?.Commit();
                 return true;
             }
             catch (Exception ex)
             {
+                _uow?.Rollback();
                 Log.Error("Error editing database: " + ex.Message);
                 return false;
             }
@@ -155,38 +169,26 @@ public class MySqlContactRemover(string connectionString) : IContactRemover
             WHERE (UserId = @userId AND ContactId IN ({contactIdParams}))
             OR (ContactId = @userId AND UserId IN ({contactIdParams}));";
 
-        using (var connection = new MySqlConnection(_connectionString))
+        using (var connection = _uow?.Connection as MySqlConnection ?? new MySqlConnection(_connectionString))
         {
             try
             {
-                connection.Open();
-                using (var transaction = connection.BeginTransaction())
+                _uow?.Begin();
+                var parameters = new DynamicParameters();
+                parameters.Add("userId", userId);
+                for (int i = 0; i < contactIds.Count; i++)
                 {
-                    try
-                    {
-                        var parameters = new DynamicParameters();
-                        parameters.Add("userId", userId);
-                        for (int i = 0; i < contactIds.Count; i++)
-                        {
-                            parameters.Add($"contactId{i}", contactIds[i]);
-                        }
-
-                        connection.Execute(deleteContactsQuery, parameters, transaction);
-                        connection.Execute(deleteGroupMembersQuery, parameters, transaction);
-                        
-                        transaction.Commit();
-                        return true;
-                    }
-                    catch (Exception ex)
-                    {
-                        transaction.Rollback();
-                        Log.Error("Error deleting from database: " + ex.Message);
-                        return false;
-                    }
+                    parameters.Add($"contactId{i}", contactIds[i]);
                 }
+
+                connection.Execute(deleteContactsQuery, parameters, _uow?.Transaction);
+                connection.Execute(deleteGroupMembersQuery, parameters, _uow?.Transaction);
+                _uow?.Commit();
+                return true;
             }
             catch (Exception ex)
             {
+                _uow?.Rollback();
                 Log.Error("Error connecting to database: " + ex.Message);
                 return false;
             }
@@ -212,38 +214,26 @@ public class MySqlContactRemover(string connectionString) : IContactRemover
             WHERE (UserId = @userId AND ContactId NOT IN ({excludeParams}))
             OR (ContactId = @userId AND UserId NOT IN ({excludeParams}));";
 
-        using (var connection = new MySqlConnection(_connectionString))
+        using (var connection = _uow?.Connection as MySqlConnection ?? new MySqlConnection(_connectionString))
         {
             try
             {
-                connection.Open();
-                using (var transaction = connection.BeginTransaction())
+                _uow?.Begin();
+                var parameters = new DynamicParameters();
+                parameters.Add("userId", userId);
+                for (int i = 0; i < excludeIds.Count; i++)
                 {
-                    try
-                    {
-                        var parameters = new DynamicParameters();
-                        parameters.Add("userId", userId);
-                        for (int i = 0; i < excludeIds.Count; i++)
-                        {
-                            parameters.Add($"excludeId{i}", excludeIds[i]);
-                        }
-
-                        connection.Execute(deleteContactsQuery, parameters, transaction);
-                        connection.Execute(deleteGroupMembersQuery, parameters, transaction);
-                        
-                        transaction.Commit();
-                        return true;
-                    }
-                    catch (Exception ex)
-                    {
-                        transaction.Rollback();
-                        Log.Error("Error deleting from database: " + ex.Message);
-                        return false;
-                    }
+                    parameters.Add($"excludeId{i}", excludeIds[i]);
                 }
+
+                connection.Execute(deleteContactsQuery, parameters, _uow?.Transaction);
+                connection.Execute(deleteGroupMembersQuery, parameters, _uow?.Transaction);
+                _uow?.Commit();
+                return true;
             }
             catch (Exception ex)
             {
+                _uow?.Rollback();
                 Log.Error("Error connecting to database: " + ex.Message);
                 return false;
             }
@@ -260,30 +250,19 @@ public class MySqlContactRemover(string connectionString) : IContactRemover
             DELETE FROM GroupMembers
             WHERE UserId = @userId OR ContactId = @userId;";
 
-        using (var connection = new MySqlConnection(_connectionString))
+        using (var connection = _uow?.Connection as MySqlConnection ?? new MySqlConnection(_connectionString))
         {
             try
             {
-                connection.Open();
-                using (var transaction = connection.BeginTransaction())
-                {
-                    try
-                    {
-                        connection.Execute(deleteContactsQuery, new { userId }, transaction);
-                        connection.Execute(deleteGroupMembersQuery, new { userId }, transaction);
-                        transaction.Commit();
-                        return true;
-                    }
-                    catch (Exception ex)
-                    {
-                        transaction.Rollback();
-                        Log.Error("Error deleting from database: " + ex.Message);
-                        return false;
-                    }
-                }
+                _uow?.Begin();
+                connection.Execute(deleteContactsQuery, new { userId }, _uow?.Transaction);
+                connection.Execute(deleteGroupMembersQuery, new { userId }, _uow?.Transaction);
+                _uow?.Commit();
+                return true;
             }
             catch (Exception ex)
             {
+                _uow?.Rollback();
                 Log.Error("Error connecting to database: " + ex.Message);
                 return false;
             }
@@ -295,9 +274,10 @@ public class MySqlContactRemover(string connectionString) : IContactRemover
 // ----------------------------------------------------------------------------------
 // ----------------------------------------------------------------------------------
 
-public class MySqlContactSetter(string connectionString) : IContactSetter
+public class MySqlContactSetter(string connectionString, TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? unitOfWork = null) : IContactSetter
 {
     private readonly string _connectionString = connectionString;
+    private readonly TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? _uow = unitOfWork;
 
     public void SetContactStatus(long SenderTelegramID, long AccepterTelegramID, string status)
     {
@@ -306,19 +286,22 @@ public class MySqlContactSetter(string connectionString) : IContactSetter
         MySqlContactGetter contactGetter = new(_connectionString, new TelegramMediaRelayBot.Config.Services.ResourceService());
         MySqlUserGetter userGetter = new(_connectionString);
 
-        using (var connection = new MySqlConnection(_connectionString))
+        using (var connection = _uow?.Connection as MySqlConnection ?? new MySqlConnection(_connectionString))
         {
             try
             {
+                _uow?.Begin();
                 connection.Execute(query, new 
                 {
                     Status = status,
                     UserId = userGetter.GetUserIDbyTelegramID(SenderTelegramID),
                     ContactId = contactGetter.GetContactByTelegramID(AccepterTelegramID)
-                });
+                }, _uow?.Transaction);
+                _uow?.Commit();
             }
             catch (Exception ex)
             {
+                _uow?.Rollback();
                 Log.Error("Error editing database: " + ex.Message);
             }
         }
@@ -409,6 +392,28 @@ public class MySqlContactGetter(string connectionString, TelegramMediaRelayBot.C
         }
     }
 
+    public async Task<string> GetActiveMuteTimeByContactIDAsync(int contactID)
+    {
+        try
+        {
+            using var connection = new MySqlConnection(_connectionString);
+            var expirationDate = await connection.QueryFirstOrDefaultAsync<DateTime?>(
+                @"SELECT ExpirationDate 
+                FROM MutedContacts 
+                WHERE MutedContactId = @contactID 
+                AND IsActive = 1",
+                new { contactID });
+
+            return expirationDate?.ToString("yyyy-MM-dd HH:mm:ss") 
+                ?? _resourceService.GetResourceString("NoActiveMute");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetActiveMuteTimeByContactIDAsync));
+            return "";
+        }
+    }
+
     public int GetContactIDByLink(string link)
     {
         const string query = "SELECT ID FROM Users WHERE Link = @link";
@@ -425,6 +430,22 @@ public class MySqlContactGetter(string connectionString, TelegramMediaRelayBot.C
         }
     }
 
+    public async Task<int> GetContactIDByLinkAsync(string link)
+    {
+        const string query = "SELECT ID FROM Users WHERE Link = @link";
+        try
+        {
+            using var connection = new MySqlConnection(_connectionString);
+            var result = await connection.QueryFirstOrDefaultAsync<int?>(query, new { link });
+            return result ?? -1;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetContactIDByLinkAsync));
+            return -1;
+        }
+    }
+
     public int GetContactByTelegramID(long telegramID)
     {
         const string query = "SELECT ID FROM Users WHERE TelegramID = @telegramID";
@@ -437,6 +458,22 @@ public class MySqlContactGetter(string connectionString, TelegramMediaRelayBot.C
         catch (Exception ex)
         {
             Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetContactByTelegramID));
+            return -1;
+        }
+    }
+
+    public async Task<int> GetContactByTelegramIDAsync(long telegramID)
+    {
+        const string query = "SELECT ID FROM Users WHERE TelegramID = @telegramID";
+        try
+        {
+            using var connection = new MySqlConnection(_connectionString);
+            var result = await connection.QueryFirstOrDefaultAsync<int?>(query, new { telegramID });
+            return result ?? -1;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetContactByTelegramIDAsync));
             return -1;
         }
     }

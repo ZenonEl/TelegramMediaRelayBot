@@ -121,6 +121,23 @@ public class SqliteUserGetter(string connectionString) : IUserGetter
         return mutedByUserIds.Select(GetTelegramIDbyUserID).ToList();
     }
 
+    public async Task<List<long>> GetUsersIdForMuteContactIdAsync(int contactId)
+    {
+        const string query = @"
+            SELECT MutedByUserId 
+            FROM MutedContacts 
+            WHERE MutedContactId = @ContactId AND IsActive = 1";
+
+        using var connection = new SqliteConnection(_connectionString);
+        var mutedByUserIds = (await connection.QueryAsync<int>(query, new { ContactId = contactId })).ToList();
+        var telegramIds = new List<long>(mutedByUserIds.Count);
+        foreach (var uid in mutedByUserIds)
+        {
+            telegramIds.Add(GetTelegramIDbyUserID(uid));
+        }
+        return telegramIds;
+    }
+
     public long GetUserTelegramIdByLink(string link)
     {
         const string query = "SELECT TelegramID FROM Users WHERE Link = @link";
@@ -133,6 +150,22 @@ public class SqliteUserGetter(string connectionString) : IUserGetter
         catch (Exception ex)
         {
             Log.Error(ex, "An error occurred in method {MethodName}", nameof(GetUserTelegramIdByLink));
+            return -1;
+        }
+    }
+
+    public async Task<long> GetUserTelegramIdByLinkAsync(string link)
+    {
+        const string query = "SELECT TelegramID FROM Users WHERE Link = @link";
+        try
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            var result = await connection.QueryFirstOrDefaultAsync<long?>(query, new { link });
+            return result ?? -1;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred in method {MethodName}", nameof(GetUserTelegramIdByLinkAsync));
             return -1;
         }
     }
@@ -180,6 +213,27 @@ public class SqliteUserGetter(string connectionString) : IUserGetter
         catch (Exception ex)
         {
             Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetExpiredUsersMutes));
+            return new List<int>();
+        }
+    }
+
+    public async Task<List<int>> GetExpiredUsersMutesAsync()
+    {
+        const string query = @"
+            SELECT MutedId 
+            FROM MutedContacts 
+            WHERE ExpirationDate <= datetime('now') 
+            AND IsActive = 1";
+
+        try
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            var expiredMuteIds = (await connection.QueryAsync<int>(query)).ToList();
+            return expiredMuteIds;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetExpiredUsersMutesAsync));
             return new List<int>();
         }
     }

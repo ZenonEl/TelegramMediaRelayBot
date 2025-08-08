@@ -25,14 +25,14 @@ public class MySqlInboundDBGetter : IInboundDBGetter
         _connectionString = connectionString;
     }
 
-    public List<ButtonData> GetInboundsButtonData(int userId)
+    public async Task<List<ButtonData>> GetInboundsButtonDataAsync(int userId)
     {
         var buttonDataList = new List<ButtonData>();
-        var contactUserIds = GetContactUserIds(userId);
+        var contactUserIds = await GetContactUserIdsAsync(userId);
 
         foreach (var contactUserId in contactUserIds)
         {
-            var userData = GetUserDataByContactId(contactUserId);
+            var userData = await GetUserDataByContactIdAsync(contactUserId);
             if (userData != null)
             {
                 buttonDataList.Add(new ButtonData { ButtonText = userData.Item1, CallbackData = "user_show_inbounds_invite:" + userData.Item2 });
@@ -42,7 +42,7 @@ public class MySqlInboundDBGetter : IInboundDBGetter
         return buttonDataList;
     }
 
-    private List<int> GetContactUserIds(int userId)
+    private async Task<List<int>> GetContactUserIdsAsync(int userId)
     {
         var contactUserIds = new List<int>();
         string queryContacts = @"
@@ -54,11 +54,11 @@ public class MySqlInboundDBGetter : IInboundDBGetter
         {
             MySqlCommand commandContacts = new MySqlCommand(queryContacts, connection);
             commandContacts.Parameters.AddWithValue("@UserId", userId);
-            connection.Open();
+            await connection.OpenAsync();
 
-            using (MySqlDataReader readerContacts = commandContacts.ExecuteReader())
+            using (MySqlDataReader readerContacts = (MySqlDataReader)await commandContacts.ExecuteReaderAsync())
             {
-                while (readerContacts.Read())
+                while (await readerContacts.ReadAsync())
                 {
                     int contactUserId = readerContacts.GetInt32("UserId");
                     contactUserIds.Add(contactUserId);
@@ -69,7 +69,7 @@ public class MySqlInboundDBGetter : IInboundDBGetter
         return contactUserIds;
     }
 
-    private Tuple<string, string>? GetUserDataByContactId(int contactId)
+    private async Task<Tuple<string, string>?> GetUserDataByContactIdAsync(int contactId)
     {
         string queryUsers = @"
             SELECT Name, TelegramID
@@ -80,11 +80,11 @@ public class MySqlInboundDBGetter : IInboundDBGetter
         {
             MySqlCommand commandUsers = new MySqlCommand(queryUsers, connection);
             commandUsers.Parameters.AddWithValue("@contactId", contactId);
-            connection.Open();
+            await connection.OpenAsync();
 
-            using (MySqlDataReader readerUsers = commandUsers.ExecuteReader())
+            using (MySqlDataReader readerUsers = (MySqlDataReader)await commandUsers.ExecuteReaderAsync())
             {
-                if (readerUsers.Read())
+                if (await readerUsers.ReadAsync())
                 {
                     string name = readerUsers["Name"].ToString()!;
                     string telegramId = readerUsers["TelegramID"].ToString()!;

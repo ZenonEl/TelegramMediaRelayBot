@@ -85,7 +85,7 @@ public class ProcessUserUnMuteState : IUserState
                 else
                 {
                     string link = update.Message.Text!;
-                    contactId = _contactGetter.GetContactIDByLink(link);
+                    contactId = await _contactGetter.GetContactIDByLinkAsync(link);
                     List<long> allowedIds = await _contactGetter.GetAllContactUserTGIds(_userGetter.GetUserIDbyTelegramID(update.Message.Chat.Id));
 
                     if (contactId == -1 || !allowedIds.Contains(_userGetter.GetTelegramIDbyUserID(contactId)))
@@ -106,7 +106,7 @@ public class ProcessUserUnMuteState : IUserState
             case UserUnMuteState.WaitingForUnMute:
                 if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId)) return;
 
-                string activeMuteTime = _contactGetter.GetActiveMuteTimeByContactID(mutedContactId);
+                string activeMuteTime = await _contactGetter.GetActiveMuteTimeByContactIDAsync(mutedContactId);
                 string text = string.Format(_resourceService.GetResourceString("UserInMute"), activeMuteTime);
                 await botClient.SendMessage(chatId, text, cancellationToken: cancellationToken,
                                             replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(_resourceService.GetResourceString("YesButtonText")));

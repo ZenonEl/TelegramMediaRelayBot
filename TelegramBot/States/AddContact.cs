@@ -71,7 +71,7 @@ public class ProcessContactState : IUserState
                 }
 
                 link = update.Message!.Text!;
-                int contactId = _contactGetter.GetContactIDByLink(link);
+                int contactId = await _contactGetter.GetContactIDByLinkAsync(link);
 
                 if (contactId == -1)
                 {
@@ -108,7 +108,7 @@ public class ProcessContactState : IUserState
                 break;
 
             case ContactState.WaitingForName:
-                string text_data = $"{_resourceService.GetResourceString("LinkText")}: {link} \n{_resourceService.GetResourceString("NameText")}: {_userGetter.GetUserNameByID(_contactGetter.GetContactIDByLink(link))}";
+                string text_data = $"{_resourceService.GetResourceString("LinkText")}: {link} \n{_resourceService.GetResourceString("NameText")}: {_userGetter.GetUserNameByID(await _contactGetter.GetContactIDByLinkAsync(link))}";
 
                 await botClient.SendMessage(chatId, _resourceService.GetResourceString("ConfirmAdditionText") + text_data, cancellationToken: cancellationToken,
                                             replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(_resourceService.GetResourceString("NextButtonText")));
@@ -141,7 +141,7 @@ public class ProcessContactState : IUserState
 
     public async Task SendNotification(ITelegramBotClient botClient, long chatId, CancellationToken cancellationToken)
     {
-        await botClient.SendMessage(_userGetter.GetTelegramIDbyUserID(_contactGetter.GetContactIDByLink(link)), 
+        await botClient.SendMessage(_userGetter.GetTelegramIDbyUserID(await _contactGetter.GetContactIDByLinkAsync(link)), 
                                     string.Format(_resourceService.GetResourceString("UserWantsToAddYou"), _userGetter.GetUserNameByTelegramID(chatId)), 
                                     cancellationToken: cancellationToken);
     }

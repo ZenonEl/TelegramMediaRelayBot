@@ -30,5 +30,10 @@ public interface IUserGetter
     long GetUserTelegramIdByLink(string link);
     string GetUserSelfLink(long telegramId);
     Task<int> GetAllUsersCount();
+
+    // Async versions for high-traffic paths
+    Task<List<int>> GetExpiredUsersMutesAsync();
+    Task<List<long>> GetUsersIdForMuteContactIdAsync(int contactId);
+    Task<long> GetUserTelegramIdByLinkAsync(string link);
 }
 

@@ -13,5 +13,5 @@ namespace TelegramMediaRelayBot.Database.Interfaces;
 
 public interface IOutboundDBGetter
 {
-    List<ButtonData> GetOutboundButtonData(int userId);
+    Task<List<ButtonData>> GetOutboundButtonDataAsync(int userId);
 }

@@ -57,7 +57,7 @@ class PrivateUtils
                 List<int> userIds = new List<int>();
 
                 int actionId = _defaultActionGetter.GetDefaultActionId(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
-                mutedByUserIds = _userGetter.GetUsersIdForMuteContactId(userId);
+        mutedByUserIds = await _userGetter.GetUsersIdForMuteContactIdAsync(userId);
 
                 switch (defaultAction)
                 {

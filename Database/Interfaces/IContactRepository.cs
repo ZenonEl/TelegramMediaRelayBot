@@ -39,4 +39,9 @@ public interface IContactGetter
     string GetActiveMuteTimeByContactID(int contactID);
     int GetContactIDByLink(string link);
     int GetContactByTelegramID(long telegramID);
+
+    // Async counterparts for hot paths
+    Task<string> GetActiveMuteTimeByContactIDAsync(int contactID);
+    Task<int> GetContactIDByLinkAsync(string link);
+    Task<int> GetContactByTelegramIDAsync(long telegramID);
 }

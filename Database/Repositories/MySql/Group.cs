@@ -142,10 +142,12 @@ public class MySqlGroupGetter : IGroupGetter
 public class MySqlGroupSetter : IGroupSetter
 {
     private readonly string _connectionString;
+    private readonly TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? _uow;
 
-    public MySqlGroupSetter(string connection)
+    public MySqlGroupSetter(string connection, TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? unitOfWork = null)
     {
         _connectionString = connection;
+        _uow = unitOfWork;
     }
 
     public async Task<bool> SetNewGroup(int userId, string groupName, string description)
@@ -154,12 +156,14 @@ public class MySqlGroupSetter : IGroupSetter
             INSERT INTO UsersGroups (UserId, GroupName, Description) 
             VALUES (@userId, @groupName, @description)";
 
-        using var connection = new MySqlConnection(_connectionString);
+        using var connection = _uow?.Connection as MySqlConnection ?? new MySqlConnection(_connectionString);
+        _uow?.Begin();
         var rowsAffected = await connection.ExecuteAsync(query, new { 
             userId, 
             groupName, 
             description 
-        });
+        }, _uow?.Transaction);
+        _uow?.Commit();
         return rowsAffected > 0;
     }
 
@@ -170,11 +174,13 @@ public class MySqlGroupSetter : IGroupSetter
             SET GroupName = @groupName 
             WHERE ID = @groupId";
 
-        using var connection = new MySqlConnection(_connectionString);
+        using var connection = _uow?.Connection as MySqlConnection ?? new MySqlConnection(_connectionString);
+        _uow?.Begin();
         var rowsAffected = await connection.ExecuteAsync(query, new { 
             groupId, 
             groupName 
-        });
+        }, _uow?.Transaction);
+        _uow?.Commit();
         return rowsAffected > 0;
     }
 
@@ -185,11 +191,13 @@ public class MySqlGroupSetter : IGroupSetter
             SET Description = @description 
             WHERE ID = @groupId";
 
-        using var connection = new MySqlConnection(_connectionString);
+        using var connection = _uow?.Connection as MySqlConnection ?? new MySqlConnection(_connectionString);
+        _uow?.Begin();
         var rowsAffected = await connection.ExecuteAsync(query, new { 
             groupId, 
             description 
-        });
+        }, _uow?.Transaction);
+        _uow?.Commit();
         return rowsAffected > 0;
     }
 
@@ -200,8 +208,10 @@ public class MySqlGroupSetter : IGroupSetter
             SET IsDefaultEnabled = NOT IsDefaultEnabled 
             WHERE ID = @groupId";
 
-        using var connection = new MySqlConnection(_connectionString);
-        var rowsAffected = await connection.ExecuteAsync(query, new { groupId });
+        using var connection = _uow?.Connection as MySqlConnection ?? new MySqlConnection(_connectionString);
+        _uow?.Begin();
+        var rowsAffected = await connection.ExecuteAsync(query, new { groupId }, _uow?.Transaction);
+        _uow?.Commit();
         return rowsAffected > 0;
     }
 
@@ -211,8 +221,10 @@ public class MySqlGroupSetter : IGroupSetter
             DELETE FROM UsersGroups 
             WHERE ID = @groupId";
 
-        using var connection = new MySqlConnection(_connectionString);
-        var rowsAffected = await connection.ExecuteAsync(query, new { groupId });
+        using var connection = _uow?.Connection as MySqlConnection ?? new MySqlConnection(_connectionString);
+        _uow?.Begin();
+        var rowsAffected = await connection.ExecuteAsync(query, new { groupId }, _uow?.Transaction);
+        _uow?.Commit();
         return rowsAffected > 0;
     }
 }
