@@ -128,6 +128,7 @@ public class FluentDBMigrator
             {
                 // Добавляем конфигурацию загрузчиков к переданной конфигурации
                 var configBuilder = new ConfigurationBuilder()
+                    .SetBasePath(AppContext.BaseDirectory)
                     .AddConfiguration(configuration)
                     .AddJsonFile(fullPath, optional: false, reloadOnChange: true);
                 
@@ -177,7 +178,8 @@ public class FluentDBMigrator
         builder.Services.AddSingleton<Scheduler>();
         builder.Services.AddSingleton<IUserStateManager, InMemoryUserStateManager>();
         builder.Services.AddScoped<IUserFilterService, DefaultUserFilterService>();
-        builder.Services.AddHostedService<DatabaseInitializationHostedService>();
+        // Migrations are executed synchronously in Program.cs before host start
+        builder.Services.AddSingleton<TelegramMediaRelayBot.Config.Services.ConfigurationChangeLogger>();
         
         // Configure new configuration services
         builder.Services.Configure<BotConfiguration>(

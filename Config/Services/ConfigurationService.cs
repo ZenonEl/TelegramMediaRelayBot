@@ -21,9 +21,9 @@ namespace TelegramMediaRelayBot.Config.Services;
 /// </summary>
 public class ConfigurationService : IConfigurationService
 {
-    private readonly IOptions<AccessPolicyConfiguration> _accessPolicyOptions;
+    private readonly IOptionsMonitor<AccessPolicyConfiguration> _accessPolicyOptions;
 
-    public ConfigurationService(IOptions<AccessPolicyConfiguration> accessPolicyOptions)
+    public ConfigurationService(IOptionsMonitor<AccessPolicyConfiguration> accessPolicyOptions)
     {
         _accessPolicyOptions = accessPolicyOptions;
     }
@@ -31,7 +31,7 @@ public class ConfigurationService : IConfigurationService
     /// <inheritdoc />
     public bool CanUserStartUsingBot(string referrerLink, IUserGetter userGetter)
     {
-        var accessPolicy = _accessPolicyOptions.Value;
+        var accessPolicy = _accessPolicyOptions.CurrentValue;
         
         if (!accessPolicy.Enabled) 
             return true;

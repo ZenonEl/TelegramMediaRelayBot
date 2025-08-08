@@ -19,37 +19,28 @@ namespace TelegramMediaRelayBot.Infrastructure.Downloaders;
 
 public class GalleryDlDownloader : BaseMediaDownloader
 {
-    private readonly string _executablePath;
-    private readonly string[] _alternativePaths;
-    private readonly string[] _checkCommands;
-    private readonly string[] _defaultArguments;
-    private readonly TimeSpan _timeout;
-    private readonly int _maxRetries;
-    private readonly string _progressPattern;
+    private string ExecutablePath => _configuration.GetValue($"Downloaders:{Name}:Path", "gallery-dl")!;
+    private string[] AlternativePaths => _configuration.GetSection($"Downloaders:{Name}:AlternativePaths").Get<string[]>() ?? Array.Empty<string>();
+    private string[] CheckCommands => _configuration.GetSection($"Downloaders:{Name}:CheckCommands").Get<string[]>() ?? new[] { "--list-urls" };
+    private string[] DefaultArguments => _configuration.GetSection($"Downloaders:{Name}:DefaultArguments").Get<string[]>() ?? Array.Empty<string>();
+    private TimeSpan Timeout => TimeSpan.Parse(_configuration.GetValue($"Downloaders:{Name}:Timeout", "00:05:00")!);
+    private int MaxRetries => _configuration.GetValue($"Downloaders:{Name}:MaxRetries", 2);
+    private string ProgressPattern => _configuration.GetValue($"Downloaders:{Name}:ProgressPattern", "\\[download\\]")!;
     
     public override string Name => "GalleryDl";
     public override int Priority => _configuration.GetValue($"Downloaders:{Name}:Priority", 90);
     public override MediaType SupportedMediaTypes => MediaType.Image;
     public override bool IsEnabled => _configuration.GetValue($"Downloaders:{Name}:Enabled", true);
     
-    public GalleryDlDownloader(IConfiguration configuration) : base(configuration)
-    {
-        _executablePath = _configuration.GetValue($"Downloaders:{Name}:Path", "gallery-dl")!;
-        _alternativePaths = _configuration.GetSection($"Downloaders:{Name}:AlternativePaths").Get<string[]>() ?? new string[0];
-        _checkCommands = _configuration.GetSection($"Downloaders:{Name}:CheckCommands").Get<string[]>() ?? new[] { "--list-urls" };
-        _defaultArguments = _configuration.GetSection($"Downloaders:{Name}:DefaultArguments").Get<string[]>() ?? new string[0];
-        _timeout = TimeSpan.Parse(_configuration.GetValue($"Downloaders:{Name}:Timeout", "00:05:00")!);
-        _maxRetries = _configuration.GetValue($"Downloaders:{Name}:MaxRetries", 2);
-        _progressPattern = _configuration.GetValue($"Downloaders:{Name}:ProgressPattern", "\\[download\\]")!;
-    }
+    public GalleryDlDownloader(IConfiguration configuration) : base(configuration) { }
     
     protected override async Task<DownloadCapability> CheckCapabilityInternalAsync(string url, CancellationToken ct)
     {
-        foreach (var command in _checkCommands)
+        foreach (var command in CheckCommands)
         {
             try
             {
-                var result = await ExecuteCommandAsync(_executablePath, $"{command} {url}", _timeout, ct);
+                var result = await ExecuteCommandAsync(ExecutablePath, $"{command} {url}", Timeout, ct);
                 if (result.ExitCode == 0)
                 {
                     return new DownloadCapability
@@ -78,12 +69,12 @@ public class GalleryDlDownloader : BaseMediaDownloader
         try
         {
             // Пробуем основной путь
-            var result = await TryDownloadWithPathAsync(_executablePath, url, tempDirPath, options, ct);
+            var result = await TryDownloadWithPathAsync(ExecutablePath, url, tempDirPath, options, ct);
             
             // Если не получилось, пробуем альтернативные пути
-            if (!result.Success && _alternativePaths.Length > 0)
+            if (!result.Success && AlternativePaths.Length > 0)
             {
-                foreach (var alternativePath in _alternativePaths)
+                foreach (var alternativePath in AlternativePaths)
                 {
                     try
                     {
@@ -174,10 +165,11 @@ public class GalleryDlDownloader : BaseMediaDownloader
         var arguments = new List<string>();
         
         // Добавляем аргументы по умолчанию
-        Log.Debug("GalleryDl default arguments: {Args}", string.Join(", ", _defaultArguments));
-        for (int i = 0; i < _defaultArguments.Length; i++)
+        var defaults = DefaultArguments;
+        Log.Debug("GalleryDl default arguments: {Args}", string.Join(", ", defaults));
+        for (int i = 0; i < defaults.Length; i++)
         {
-            var arg = _defaultArguments[i];
+            var arg = defaults[i];
             
             // Определяем прокси для конкретного сайта
             var siteSpecificProxy = GetSiteSpecificProxy(url, options.ProxyUrl);
@@ -194,7 +186,7 @@ public class GalleryDlDownloader : BaseMediaDownloader
             // Обрабатываем User-Agent как единый аргумент
             if (arg == "--user-agent")
             {
-                var userAgent = _defaultArguments[i + 1];
+                var userAgent = defaults[i + 1];
                 arguments.Add(arg);
                 arguments.Add($"\"{userAgent}\""); // Оборачиваем в кавычки
                 i++; // Пропускаем следующий аргумент (значение User-Agent)
@@ -240,7 +232,7 @@ public class GalleryDlDownloader : BaseMediaDownloader
         var readOutputTask = ReadLinesWithProgressAsync(process.StandardOutput, outputLines, options, ct);
         var readErrorTask = ReadLinesAsync(process.StandardError, errorLines, ct);
 
-        var timeoutTask = Task.Delay(_timeout, ct);
+        var timeoutTask = Task.Delay(Timeout, ct);
         var processTask = process.WaitForExitAsync(ct);
 
         var completedTask = await Task.WhenAny(processTask, timeoutTask);
@@ -253,7 +245,7 @@ public class GalleryDlDownloader : BaseMediaDownloader
             }
             catch { }
             
-            throw new TimeoutException($"gallery-dl execution timed out after {_timeout.TotalSeconds} seconds");
+            throw new TimeoutException($"gallery-dl execution timed out after {Timeout.TotalSeconds} seconds");
         }
 
         await Task.WhenAll(readOutputTask, readErrorTask);
@@ -279,7 +271,7 @@ public class GalleryDlDownloader : BaseMediaDownloader
                 
                 // Обновляем прогресс если есть бот клиент
                 if (options.BotClient != null && options.StatusMessage != null && 
-                    Regex.IsMatch(line, _progressPattern))
+                    Regex.IsMatch(line, ProgressPattern))
                 {
                     try
                     {

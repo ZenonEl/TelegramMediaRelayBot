@@ -24,22 +24,7 @@ public class DatabaseInitializationHostedService : IHostedService
         _mysqlCreator = mysqlCreator;
     }
 
-    public Task StartAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            using var scope = _serviceProvider.CreateScope();
-            var migrator = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
-            // Run migrations
-            migrator.MigrateUp();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to run database migrations at startup");
-            throw;
-        }
-        return Task.CompletedTask;
-    }
+    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

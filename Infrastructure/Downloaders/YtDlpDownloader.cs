@@ -19,37 +19,28 @@ namespace TelegramMediaRelayBot.Infrastructure.Downloaders;
 
 public class YtDlpDownloader : BaseMediaDownloader
 {
-    private readonly string _executablePath;
-    private readonly string[] _checkCommands;
-    private readonly string[] _defaultArguments;
-    private readonly TimeSpan _timeout;
-    private readonly int _maxRetries;
-    private readonly string _outputPattern;
-    private readonly string _progressPattern;
+    private string ExecutablePath => _configuration.GetValue($"Downloaders:{Name}:Path", "yt-dlp")!;
+    private string[] CheckCommands => _configuration.GetSection($"Downloaders:{Name}:CheckCommands").Get<string[]>() ?? new[] { "--dry-run" };
+    private string[] DefaultArguments => _configuration.GetSection($"Downloaders:{Name}:DefaultArguments").Get<string[]>() ?? Array.Empty<string>();
+    private TimeSpan Timeout => TimeSpan.Parse(_configuration.GetValue($"Downloaders:{Name}:Timeout", "00:10:00")!);
+    private int MaxRetries => _configuration.GetValue($"Downloaders:{Name}:MaxRetries", 3);
+    private string OutputPattern => _configuration.GetValue($"Downloaders:{Name}:OutputPattern", "\\[download\\] Destination: (.+)")!;
+    private string ProgressPattern => _configuration.GetValue($"Downloaders:{Name}:ProgressPattern", "\\[download\\]")!;
     
     public override string Name => "YtDlp";
     public override int Priority => _configuration.GetValue($"Downloaders:{Name}:Priority", 100);
     public override MediaType SupportedMediaTypes => MediaType.Video | MediaType.Audio;
     public override bool IsEnabled => _configuration.GetValue($"Downloaders:{Name}:Enabled", true);
     
-    public YtDlpDownloader(IConfiguration configuration) : base(configuration)
-    {
-        _executablePath = _configuration.GetValue($"Downloaders:{Name}:Path", "yt-dlp")!;
-        _checkCommands = _configuration.GetSection($"Downloaders:{Name}:CheckCommands").Get<string[]>() ?? new[] { "--dry-run" };
-        _defaultArguments = _configuration.GetSection($"Downloaders:{Name}:DefaultArguments").Get<string[]>() ?? new string[0];
-        _timeout = TimeSpan.Parse(_configuration.GetValue($"Downloaders:{Name}:Timeout", "00:10:00")!);
-        _maxRetries = _configuration.GetValue($"Downloaders:{Name}:MaxRetries", 3);
-        _outputPattern = _configuration.GetValue($"Downloaders:{Name}:OutputPattern", "\\[download\\] Destination: (.+)")!;
-        _progressPattern = _configuration.GetValue($"Downloaders:{Name}:ProgressPattern", "\\[download\\]")!;
-    }
+    public YtDlpDownloader(IConfiguration configuration) : base(configuration) { }
     
     protected override async Task<DownloadCapability> CheckCapabilityInternalAsync(string url, CancellationToken ct)
     {
-        foreach (var command in _checkCommands)
+        foreach (var command in CheckCommands)
         {
             try
             {
-                var result = await ExecuteCommandAsync(_executablePath, $"{command} {url}", _timeout, ct);
+                var result = await ExecuteCommandAsync(ExecutablePath, $"{command} {url}", Timeout, ct);
                 if (result.ExitCode == 0)
                 {
                     return new DownloadCapability
@@ -84,7 +75,7 @@ public class YtDlpDownloader : BaseMediaDownloader
         Log.Debug("YtDlp arguments: {Arguments}", arguments);
         
         // Выполняем команду
-        var result = await ExecuteCommandWithProgressAsync(_executablePath, arguments, options, ct);
+        var result = await ExecuteCommandWithProgressAsync(ExecutablePath, arguments, options, ct);
         
         Log.Debug("YtDlp output: {Output}", result.Output);
         Log.Debug("YtDlp error output: {ErrorOutput}", result.ErrorOutput);
@@ -141,9 +132,10 @@ public class YtDlpDownloader : BaseMediaDownloader
         var arguments = new List<string>();
         
         // Добавляем аргументы по умолчанию
-        for (int i = 0; i < _defaultArguments.Length; i++)
+        var defaults = DefaultArguments;
+        for (int i = 0; i < defaults.Length; i++)
         {
-            var arg = _defaultArguments[i];
+            var arg = defaults[i];
             
             // Определяем прокси для конкретного сайта
             var siteSpecificProxy = GetSiteSpecificProxy(url, options.ProxyUrl);
@@ -160,7 +152,7 @@ public class YtDlpDownloader : BaseMediaDownloader
             // Обрабатываем User-Agent как единый аргумент
             if (arg == "--user-agent")
             {
-                var userAgent = _defaultArguments[i + 1];
+                var userAgent = defaults[i + 1];
                 arguments.Add(arg);
                 arguments.Add($"\"{userAgent}\""); // Оборачиваем в кавычки
                 i++; // Пропускаем следующий аргумент (значение User-Agent)
@@ -205,7 +197,7 @@ public class YtDlpDownloader : BaseMediaDownloader
         var readOutputTask = ReadLinesWithProgressAsync(process.StandardOutput, outputLines, options, ct);
         var readErrorTask = ReadLinesAsync(process.StandardError, errorLines, ct);
 
-        var timeoutTask = Task.Delay(_timeout, ct);
+        var timeoutTask = Task.Delay(Timeout, ct);
         var processTask = process.WaitForExitAsync(ct);
 
         var completedTask = await Task.WhenAny(processTask, timeoutTask);
@@ -218,7 +210,7 @@ public class YtDlpDownloader : BaseMediaDownloader
             }
             catch { }
             
-            throw new TimeoutException($"yt-dlp execution timed out after {_timeout.TotalSeconds} seconds");
+            throw new TimeoutException($"yt-dlp execution timed out after {Timeout.TotalSeconds} seconds");
         }
 
         await Task.WhenAll(readOutputTask, readErrorTask);
@@ -244,7 +236,7 @@ public class YtDlpDownloader : BaseMediaDownloader
                 
                 // Обновляем прогресс если есть бот клиент
                 if (options.BotClient != null && options.StatusMessage != null && 
-                    Regex.IsMatch(line, _progressPattern))
+                    Regex.IsMatch(line, ProgressPattern))
                 {
                     try
                     {
@@ -278,7 +270,7 @@ public class YtDlpDownloader : BaseMediaDownloader
     
     private string? ExtractFilePath(string output)
     {
-        var match = Regex.Match(output, _outputPattern);
+        var match = Regex.Match(output, OutputPattern);
         return match.Success ? match.Groups[1].Value.Trim() : null;
     }
 } 

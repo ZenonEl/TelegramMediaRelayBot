@@ -20,9 +20,9 @@ namespace TelegramMediaRelayBot;
 public class MediaDownloaderService
 {
     private readonly IMediaDownloaderFactory _downloaderFactory;
-    private readonly IOptions<BotConfiguration> _botConfig;
+    private readonly IOptionsMonitor<BotConfiguration> _botConfig;
     
-    public MediaDownloaderService(IMediaDownloaderFactory downloaderFactory, IOptions<BotConfiguration> botConfig)
+    public MediaDownloaderService(IMediaDownloaderFactory downloaderFactory, IOptionsMonitor<BotConfiguration> botConfig)
     {
         _downloaderFactory = downloaderFactory;
         _botConfig = botConfig;
@@ -64,7 +64,7 @@ public class MediaDownloaderService
                 
                 var options = new DownloadOptions
                 {
-                    ProxyUrl = _botConfig.Value.Proxy,
+                    ProxyUrl = _botConfig.CurrentValue.Proxy,
                     Timeout = TimeSpan.FromMinutes(10),
                     MaxRetries = 3,
                     BotClient = botClient,

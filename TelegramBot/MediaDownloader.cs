@@ -38,7 +38,7 @@ public partial class TGBot
     private readonly TelegramMediaRelayBot.Config.Services.IConfigurationService _configService;
     private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
     private readonly IOptions<BotConfiguration> _botConfig;
-    private readonly IOptions<MessageDelayConfiguration> _delayConfig;
+    private readonly IOptionsMonitor<MessageDelayConfiguration> _delayConfig;
     public static IUserStateManager StateManager { get; private set; }
     public static CancellationToken cancellationToken;
 
@@ -55,7 +55,7 @@ public partial class TGBot
         TelegramMediaRelayBot.Config.Services.IConfigurationService configService,
         TelegramMediaRelayBot.Config.Services.IResourceService resourceService,
         IOptions<BotConfiguration> botConfig,
-        IOptions<MessageDelayConfiguration> delayConfig,
+        IOptionsMonitor<MessageDelayConfiguration> delayConfig,
         IUserStateManager userStateManager,
         IUserFilterService userFilterService
         )
@@ -378,12 +378,12 @@ public partial class TGBot
                     Log.Debug(ex, "Error editing message.");
                 }
                 Log.Information($"Sent video to user {contactUserTgId}. Total sent: {sentCount}/{filteredContactUserTGIds.Count}");
-                await Task.Delay(_delayConfig.Value.ContactSendDelay, cancellationToken);
+            await Task.Delay(_delayConfig.CurrentValue.ContactSendDelay, cancellationToken);
             }
             catch (Exception ex)
             {
                 Log.Error($"Failed to send video to user {contactUserTgId}: {ex.Message}");
-                await Task.Delay(_delayConfig.Value.ContactSendDelay, cancellationToken);
+            await Task.Delay(_delayConfig.CurrentValue.ContactSendDelay, cancellationToken);
             }
         }
 

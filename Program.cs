@@ -55,11 +55,11 @@ namespace TelegramMediaRelayBot
             Thread.CurrentThread.CurrentUICulture = currentCulture;
             Thread.CurrentThread.CurrentCulture = currentCulture;
 
-            // Получаем уровень логирования
-            var logLevel = configuration.GetValue<Serilog.Events.LogEventLevel>("ConsoleOutputSettings:LogLevel", Serilog.Events.LogEventLevel.Information);
-            
+            // Получаем уровень логирования (горячо через switch)
+            var initialLevel = configuration.GetValue<Serilog.Events.LogEventLevel>("ConsoleOutputSettings:LogLevel", Serilog.Events.LogEventLevel.Information);
+            var levelSwitch = new Serilog.Core.LoggingLevelSwitch(initialLevel);
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Is(logLevel)
+                .MinimumLevel.ControlledBy(levelSwitch)
                 .Enrich.FromLogContext()
                 .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss} [{Level}] {Message} {Exception}{NewLine}").CreateLogger();
 
@@ -78,10 +78,23 @@ namespace TelegramMediaRelayBot
                 }
 
                 var app = builder.Build();
+                // Подписка на горячую смену уровня логов
+                var loggingMonitor = app.Services.GetRequiredService<IOptionsMonitor<LoggingConfiguration>>();
+                loggingMonitor.OnChange(cfg =>
+                {
+                    if (levelSwitch.MinimumLevel == cfg.LogLevel)
+                    {
+                        return; // avoid duplicate messages on equivalent reloads
+                    }
+                    levelSwitch.MinimumLevel = cfg.LogLevel;
+                    Log.Information("Applied hot config [ConsoleOutputSettings]: LogLevel -> {Level}", cfg.LogLevel);
+                });
+                // ensure our change logger is constructed (subscribes to OnChange in ctor)
+                _ = app.Services.GetRequiredService<TelegramMediaRelayBot.Config.Services.ConfigurationChangeLogger>();
                 TGBot tgBot = app.Services.GetRequiredService<TGBot>();
                 Scheduler scheduler = app.Services.GetRequiredService<Scheduler>();
 
-                Log.Information($"Log level: {logLevel}");
+                Log.Information($"Log level: {initialLevel}");
                 scheduler.Init();
 
                 await tgBot.Start();
