@@ -67,7 +67,10 @@ namespace TelegramMediaRelayBot
             {
                 var builder = FluentDBMigrator.CreateBuilderByDBType(args, configuration.GetValue<string>("AppSettings:DatabaseType", "sqlite"), configuration);
 
-                ServiceProvider serviceProvider = FluentDBMigrator.GetCurrentServiceProvider(configuration.GetValue<string>("AppSettings:DatabaseType", "sqlite"), configuration);
+                // Run DB migrations before starting services
+                ServiceProvider serviceProvider = FluentDBMigrator.GetCurrentServiceProvider(
+                    configuration.GetValue<string>("AppSettings:DatabaseType", "sqlite"), 
+                    configuration);
                 using (var scope = serviceProvider.CreateScope())
                 {
                     var migrator = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();

@@ -16,6 +16,7 @@ using FluentMigrator;
 namespace TelegramMediaRelayBot.Database;
 
 [Migration(20241439)]
+[Tags("mysql")]
 public class MySQLDBMigration : BaseDBMigration
 {
     protected override string DBType => "mysql";

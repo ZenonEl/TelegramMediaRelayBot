@@ -17,6 +17,7 @@ namespace TelegramMediaRelayBot.Database;
 
 // SQLite Implementation
 [Migration(20240428, TransactionBehavior.None)]
+[Tags("sqlite")]
 public class SQLiteDBMigration : BaseDBMigration
 {
     protected override string DBType => "sqlite";

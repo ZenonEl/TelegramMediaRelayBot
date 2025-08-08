@@ -10,6 +10,7 @@
 // (по вашему выбору) любой более поздней версии.
 
 using FluentMigrator.Runner;
+using FluentMigrator.Runner.Initialization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,20 +32,52 @@ public class FluentDBMigrator
 {
     private static string GetConnectionString(string dbType, IConfiguration configuration)
     {
-        // Get connection string from configuration
-        var connectionString = configuration["AppSettings:SqlConnectionString"];
-        if (!string.IsNullOrEmpty(connectionString))
+        static bool LooksLikeMySql(string cs) =>
+            cs.Contains("Server=", StringComparison.OrdinalIgnoreCase) ||
+            cs.Contains("Uid=", StringComparison.OrdinalIgnoreCase) ||
+            cs.Contains("User Id=", StringComparison.OrdinalIgnoreCase);
+
+        static bool LooksLikeSqlite(string cs) =>
+            cs.Contains("Data Source=", StringComparison.OrdinalIgnoreCase) ||
+            cs.Contains("Filename=", StringComparison.OrdinalIgnoreCase) ||
+            cs.Trim().EndsWith(".db", StringComparison.OrdinalIgnoreCase);
+
+        static string EnsureSqliteFormat(string cs)
         {
-            return connectionString;
+            var trimmed = cs.Trim();
+            if (trimmed.Contains("Data Source=", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.Contains("Filename=", StringComparison.OrdinalIgnoreCase))
+            {
+                return trimmed;
+            }
+            // If it's a bare path like "MyBot.db" – convert to Data Source=
+            if (trimmed.EndsWith(".db", StringComparison.OrdinalIgnoreCase))
+            {
+                var fullPath = System.IO.Path.IsPathRooted(trimmed)
+                    ? trimmed
+                    : System.IO.Path.Combine(AppContext.BaseDirectory, trimmed);
+                return $"Data Source={fullPath}";
+            }
+            return trimmed;
         }
-        
-        // Fallback connection strings
-        switch (dbType.ToLower())
+
+        var raw = configuration["AppSettings:SqlConnectionString"] ?? string.Empty;
+        var type = (dbType ?? "sqlite").ToLowerInvariant();
+
+        switch (type)
         {
             case "mysql":
+                if (!string.IsNullOrWhiteSpace(raw) && LooksLikeMySql(raw))
+                {
+                    return raw;
+                }
                 return "Server=localhost;Database=TelegramMediaRelayBot;Uid=root;Pwd=;";
-            default:
-                return "Data Source=TelegramMediaRelayBot.db";
+            default: // sqlite
+                if (!string.IsNullOrWhiteSpace(raw) && LooksLikeSqlite(raw))
+                {
+                    return EnsureSqliteFormat(raw);
+                }
+                return $"Data Source={System.IO.Path.Combine(AppContext.BaseDirectory, "TelegramMediaRelayBot.db")}";
         }
     }
     
@@ -64,6 +97,7 @@ public class FluentDBMigrator
                     .AddMySql5()
                     .WithGlobalConnectionString(connectionString)
                     .ScanIn(typeof(MySQLDBMigration).Assembly).For.Migrations());
+                serviceCollection.Configure<RunnerOptions>(opt => opt.Tags = new[] { "mysql" });
                 break;
                 
             default:
@@ -71,6 +105,7 @@ public class FluentDBMigrator
                     .AddSQLite()
                     .WithGlobalConnectionString(connectionString)
                     .ScanIn(typeof(SQLiteDBMigration).Assembly).For.Migrations());
+                serviceCollection.Configure<RunnerOptions>(opt => opt.Tags = new[] { "sqlite" });
                 break;
         }
 
@@ -142,6 +177,7 @@ public class FluentDBMigrator
         builder.Services.AddSingleton<Scheduler>();
         builder.Services.AddSingleton<IUserStateManager, InMemoryUserStateManager>();
         builder.Services.AddScoped<IUserFilterService, DefaultUserFilterService>();
+        builder.Services.AddHostedService<DatabaseInitializationHostedService>();
         
         // Configure new configuration services
         builder.Services.Configure<BotConfiguration>(
@@ -187,8 +223,8 @@ public class FluentDBMigrator
         switch (DBType.ToLower())
         {
             case "mysql":
-                var mysqlDBCreator = new MySqlDBCreator(builder.Services.BuildServiceProvider().GetRequiredService<TelegramMediaRelayBot.Config.Services.IDatabaseConfigurationService>());
-                mysqlDBCreator.CreateDatabase(connectionString);
+                // Ensure database is created via hosted service at startup
+                builder.Services.AddSingleton<MySqlDBCreator>();
                 builder.Services.AddScoped<IUserRepository>(_ =>
                     new MySqlUserRepository(connectionString));
                 builder.Services.AddScoped<IUserGetter>(_ =>
