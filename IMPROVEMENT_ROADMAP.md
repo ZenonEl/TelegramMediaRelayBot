@@ -6,16 +6,17 @@
 ## 🔥 **КРИТИЧЕСКИЕ ПРИОРИТЕТЫ (Must Do First)**
 
 ### **Архитектурные Исправления**
-- [x] **Рефакторинг Config класса** - заменить статический Config на IOptions<T> pattern
-- [ ] **Убрать статические состояния** - создать IUserStateManager вместо static Dictionary
-- [ ] **Исправить Service Locator антипаттерн** в TGBot и других местах
-- [ ] **Переход DB к асинхронной модели** - все методы БД в async/await
+- [x] **Рефакторинг Config класса** — заменить статический Config на IOptions<T> pattern
+- [x] **Убрать статические состояния** — введён `IUserStateManager` вместо static Dictionary
+- [x] **Исправить Service Locator антипаттерн** — убраны `BuildServiceProvider()` из регистрации, всё через DI
+- [ ] **Переход DB к асинхронной модели** — перевести репозитории на async/await
 - [ ] **Добавить Unit of Work паттерн** для транзакций БД
-- [ ] **Рефакторинг больших методов** (UpdateHandler, SendMediaToTelegram)
-- [ ] **Горячая перезагрузка конфигурации** (безопасные настройки)
-  - [ ] Перевод потребителей на `IOptionsMonitor<T>`
-  - [ ] Использование `OnChange` для Safe-настроек (delays, proxy, Tor)
-  - [ ] Исключения (требуется рестарт): TelegramBotToken, тип БД/connection string
+- [x] **Рефакторинг больших методов** — разбиение `UpdateHandler` и `SendMediaToTelegram`
+- [x] **Горячая перезагрузка конфигурации** (безопасные настройки)
+  - [x] Перевод потребителей на `IOptionsMonitor<T>` (Tor, задержки, AccessPolicy, Proxy)
+  - [x] Использование `OnChange` для Safe-настроек (delays, proxy, Tor) + логирование изменений
+  - [x] Горячая смена `ConsoleOutputSettings:LogLevel` через `LoggingLevelSwitch`
+  - [ ] Исключения (рестарт): TelegramBotToken, тип БД/connection string (документация)
 
 ### **Базовое Тестирование**
 - [ ] **Unit тесты для ключевой функциональности** (MediaDownloader, Factory, Repositories)
@@ -41,7 +42,7 @@
 
 ### **Дополнительные Критические Улучшения**
 - [ ] **Валидация входных данных** через FluentValidation
-- [ ] **Улучшить Dependency Injection lifecycle** - заменить Singleton на Scoped где нужно
+- [x] **Улучшить Dependency Injection lifecycle** — репозитории переведены на Scoped
 - [ ] **Rate Limiting** для защиты от злоупотреблений
 - [ ] **Санитизация URL'ов** для безопасности
 
@@ -67,7 +68,7 @@
 - [ ] **Result Pattern** вместо исключений для business logic
 - [ ] **Кэширование** для часто используемых данных (IMemoryCache)
 - [ ] **Retry механизм** с Polly для внешних вызовов
-- [ ] **Structured Logging** с дополнительным контекстом
+- [x] **Structured Logging** — улучшено логирование конфиг-изменений
 
 ---
 
@@ -98,6 +99,7 @@
 - [ ] **CI/CD Pipeline** с GitHub Actions
 - [ ] **Load Testing** с NBomber
 - [ ] **Security Scanning** статического кода
+- [ ] **Logger** добавить логирование в файл
 
 ---
 
@@ -187,12 +189,12 @@
 
 ### **Sprint 1 (2-3 недели) - Критические исправления**
 **Цель: Исправить архитектурные проблемы**
-- [ ] Config рефакторинг на IOptions<T>
-- [ ] Убрать статические состояния (IUserStateManager)
+- [x] Config рефакторинг на IOptions<T>
+- [x] Убрать статические состояния (IUserStateManager)
 - [ ] Переход к async/await в DB layer
 - [ ] Базовые unit тесты для core functionality
-- [ ] Исправить Service Locator антипаттерн
-- [ ] Горячая перезагрузка конфигурации (IOptionsMonitor<T> + OnChange)
+- [x] Исправить Service Locator антипаттерн
+- [x] Горячая перезагрузка конфигурации (IOptionsMonitor<T> + OnChange)
 
 ### **Sprint 2 (2-3 недели) - Core Features**
 **Цель: Реализовать ключевую функциональность**
@@ -235,6 +237,10 @@
 - [x] Detailed Downloader Parameter Configuration (80%)
 - [x] Download Cancellation (CancellationToken support - 20%)
 - [x] Message Formatting (basic implementation - 30%)
+- [x] Config Refactor to DI + Options
+- [x] Remove Static State (IUserStateManager)
+- [x] DI Hygiene (Scoped repositories, no Service Locator)
+- [x] Hot Config (Tor, Delays, Proxy, AccessPolicy, LogLevel) + change logging
 
 ### **В Процессе ⚠️**
 - [ ] Async DB Model (0% - критично)
