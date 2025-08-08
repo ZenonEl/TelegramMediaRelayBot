@@ -24,7 +24,7 @@ public class Users
     
     public static CancellationToken cancellationToken = TGBot.cancellationToken;
     
-    private static string GetResourceString(string key)
+    public static string GetResourceString(string key)
     {
         return _resourceManager.GetString(key) ?? key;
     }

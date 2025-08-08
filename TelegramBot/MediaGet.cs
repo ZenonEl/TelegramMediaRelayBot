@@ -14,6 +14,8 @@ using DotNetTor.SocksPort;
 
 namespace TelegramMediaRelayBot
 {
+    // Legacy static downloader kept only to avoid accidental references.
+    // It should not be used; MediaDownloaderService handles downloads via DI.
     public class MediaGet
     {
         private static readonly string[] ColonSpaceSeparator = [": "];
@@ -22,7 +24,8 @@ namespace TelegramMediaRelayBot
         {
             try
             {
-                if (Config.isUseGalleryDl)
+                // Disabled legacy path. Keep structure but route through new service when possible.
+                if (false)
                 {
                     Log.Debug("Starting video download via gallery-dl...");
                     List<byte[]>? galleryFiles = await TryDownloadWithGalleryDlAsync(videoUrl, botClient, statusMessage, cancellationToken);
@@ -38,9 +41,9 @@ namespace TelegramMediaRelayBot
                 string tempDirPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
                 Directory.CreateDirectory(tempDirPath);
                 
-                using var httpClient = new HttpClient(new SocksPortHandler(Config.torSocksHost, socksPort: Config.torSocksPort));
+                using var httpClient = new HttpClient(new SocksPortHandler("127.0.0.1", socksPort: 9050));
 
-                if (Config.torEnabled)
+                if (false)
                 {
                     var result = await httpClient.GetStringAsync("https://check.torproject.org/api/ip");
                     Log.Debug("Tor IP: " + result);
@@ -49,7 +52,7 @@ namespace TelegramMediaRelayBot
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = "yt-dlp",
-                    Arguments = $"--proxy \"{Config.proxy}\" -v -f mp4 --output \"{tempDirPath}/video.%(ext)s\" {videoUrl}",
+                    Arguments = $"-v -f mp4 --output \"{tempDirPath}/video.%(ext)s\" {videoUrl}",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -173,7 +176,7 @@ namespace TelegramMediaRelayBot
             var startInfo = new ProcessStartInfo
             {
                 FileName = galleryDlPath,
-                Arguments = $"--proxy \"{Config.proxy}\" -d \"{tempDir}\" -D \"{tempDir}\" --verbose \"{url}\"",
+                Arguments = $"-d \"{tempDir}\" -D \"{tempDir}\" --verbose \"{url}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -229,14 +232,14 @@ namespace TelegramMediaRelayBot
                                 await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, 
                                 RemoveUntilDownload(line),
                                 cancellationToken: cancellationToken);
-                                await Task.Delay(Config.videoGetDelay, cancellationToken);
+                                await Task.Delay(1000, cancellationToken);
                             }
                         }
                         catch (Exception ex)
                         {
                             Log.Debug(ex, "Error editing message.");
                         }
-                        if (Config.showVideoDownloadProgress) Log.Debug($"Video download progress: {line}");
+                        // Progress logging disabled in legacy class
                     }
                     lines.Add(line);
                 }

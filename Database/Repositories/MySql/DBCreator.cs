@@ -11,18 +11,24 @@
 
 using Dapper;
 using MySql.Data.MySqlClient;
+using TelegramMediaRelayBot.Config.Services;
 
 namespace TelegramMediaRelayBot.Database.Repositories.MySql;
 
-public class MySqlDBCreator(TelegramMediaRelayBot.Config.Services.IDatabaseConfigurationService databaseConfigurationService)
+public class MySqlDBCreator
 {
-    private readonly TelegramMediaRelayBot.Config.Services.IDatabaseConfigurationService _databaseConfigurationService = databaseConfigurationService;
+    private readonly IDatabaseConfigurationService _databaseConfigurationService;
+
+    public MySqlDBCreator(IDatabaseConfigurationService databaseConfigurationService)
+    {
+        _databaseConfigurationService = databaseConfigurationService;
+    }
 
     public void CreateDatabase(string connectionString)
     {
-        string query = $"CREATE DATABASE IF NOT EXISTS {_databaseConfigurationService.GetDatabaseName()};";
+        string databaseName = _databaseConfigurationService.GetDatabaseName();
+        string query = $"CREATE DATABASE IF NOT EXISTS `{databaseName}`;";
         using var connection = new MySqlConnection(connectionString);
         connection.Execute(query);
     }
-
 }
