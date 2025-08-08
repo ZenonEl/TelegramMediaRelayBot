@@ -56,7 +56,8 @@ public partial class TGBot
         TelegramMediaRelayBot.Config.Services.IResourceService resourceService,
         IOptions<BotConfiguration> botConfig,
         IOptions<MessageDelayConfiguration> delayConfig,
-        IUserStateManager userStateManager
+        IUserStateManager userStateManager,
+        IUserFilterService userFilterService
         )
     {
         _userRepo = userRepo;
@@ -66,7 +67,7 @@ public partial class TGBot
         _resourceService = resourceService;
         _privacySettingsGetter = privacySettingsGetter;
         _categorizer = categorizer;
-        _userFilter = new DefaultUserFilterService(_userGetter, _privacySettingsGetter);
+        _userFilter = userFilterService;
         _mediaDownloaderService = mediaDownloaderService;
         _botConfig = botConfig;
         _delayConfig = delayConfig;
