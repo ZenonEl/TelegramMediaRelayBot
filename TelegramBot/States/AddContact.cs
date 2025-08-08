@@ -66,7 +66,7 @@ public class ProcessContactState : IUserState
                 {
                     await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
                     await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-                    TGBot.userStates.Remove(chatId);
+        TGBot.StateManager.Remove(chatId);
                     return;
                 }
 
@@ -134,7 +134,7 @@ public class ProcessContactState : IUserState
                 await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
 
-                TGBot.userStates.Remove(chatId);
+        TGBot.StateManager.Remove(chatId);
                 break;
         }
     }

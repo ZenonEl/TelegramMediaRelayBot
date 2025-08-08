@@ -99,7 +99,7 @@ class PrivateUtils
                         break;
                 }
 
-                if (TGBot.userStates.TryGetValue(chatId, out var state) && state is ProcessVideoDC videoState)
+        if (TGBot.StateManager.TryGet(chatId, out var state) && state is ProcessVideoDC videoState)
                 {
                     await botClient.EditMessageText(
                         statusMessage.Chat.Id,
@@ -133,7 +133,7 @@ class PrivateUtils
                     }
                     else
                     {
-                        TGBot.userStates.Remove(chatId, out _);
+        TGBot.StateManager.Remove(chatId);
                     }
                 }
             }

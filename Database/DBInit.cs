@@ -140,6 +140,7 @@ public class FluentDBMigrator
         builder.Services.AddSingleton<CallbackQueryHandlersFactory>();
         builder.Services.AddSingleton<TGBot>();
         builder.Services.AddSingleton<Scheduler>();
+        builder.Services.AddSingleton<IUserStateManager, InMemoryUserStateManager>();
         
         // Configure new configuration services
         builder.Services.Configure<BotConfiguration>(

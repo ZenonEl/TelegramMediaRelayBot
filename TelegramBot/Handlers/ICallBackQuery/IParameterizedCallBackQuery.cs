@@ -142,14 +142,14 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
             if (action == UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS) isGroup = true;
 
             Users.SetDefaultActionToUser(chatId, action, _defaultActionSetter, _userGetter);
-            TGBot.userStates[chatId] = new ProcessUserSetDCSendState(
+            TGBot.StateManager.Set(chatId, new ProcessUserSetDCSendState(
                 isGroup,
                 _contactGetterRepository,
                 _defaultAction,
                 _defaultActionGetter,
                 _userGetter,
                 _groupGetter,
-                _resourceService);
+                _resourceService));
             return;
         }
 
@@ -293,13 +293,13 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
             cancellationToken: ct
         );
 
-        TGBot.userStates[chatId] = new ProcessUserAddDomainFilterState(
+        TGBot.StateManager.Set(chatId, new ProcessUserAddDomainFilterState(
                 privacyRuleId,
                 _privacySettingsTargetsSetter,
                 userId,
                 false,
                 _resourceService
-            );
+            ));
     }
 
     private async Task RemoveDomains(long chatId, int userId, Update update, ITelegramBotClient botClient, CancellationToken ct)
@@ -325,12 +325,12 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
             cancellationToken: ct
         );
 
-        TGBot.userStates[chatId] = new ProcessUserAddDomainFilterState(
+        TGBot.StateManager.Set(chatId, new ProcessUserAddDomainFilterState(
                 privacyRuleId,
                 _privacySettingsTargetsSetter,
                 userId,
                 true,
                 _resourceService
-            );
+            ));
     }
 }

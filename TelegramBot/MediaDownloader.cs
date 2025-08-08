@@ -39,7 +39,7 @@ public partial class TGBot
     private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
     private readonly IOptions<BotConfiguration> _botConfig;
     private readonly IOptions<MessageDelayConfiguration> _delayConfig;
-    public static Dictionary<long, IUserState> userStates = [];
+    public static IUserStateManager StateManager { get; private set; }
     public static CancellationToken cancellationToken;
 
     public TGBot(
@@ -55,7 +55,8 @@ public partial class TGBot
         TelegramMediaRelayBot.Config.Services.IConfigurationService configService,
         TelegramMediaRelayBot.Config.Services.IResourceService resourceService,
         IOptions<BotConfiguration> botConfig,
-        IOptions<MessageDelayConfiguration> delayConfig
+        IOptions<MessageDelayConfiguration> delayConfig,
+        IUserStateManager userStateManager
         )
     {
         _userRepo = userRepo;
@@ -80,6 +81,8 @@ public partial class TGBot
             _configService,
             resourceService
             );
+
+        StateManager = userStateManager;
     }
 
     public async Task Start()
@@ -110,7 +113,7 @@ public partial class TGBot
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (userStates[chatId] is IUserState userState)
+        if (StateManager.TryGet(chatId, out var userState) && userState is not null)
         {
             await userState.ProcessState(botClient, update, cancellationToken);
         }
@@ -125,7 +128,7 @@ public partial class TGBot
 
         if (CommonUtilities.CheckPrivateChatType(update))
         {
-            if (userStates.ContainsKey(chatId))
+            if (StateManager.Contains(chatId))
             {
                 await ProcessState(botClient, update);
                 return;
@@ -390,7 +393,7 @@ public partial class TGBot
             return;
         }
 
-        if (userStates.TryGetValue(chatId, out IUserState? value))
+        if (StateManager.TryGet(chatId, out IUserState? value))
         {
             IUserState userState = value;
             currentUserStatus = userState.GetCurrentState();

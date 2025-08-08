@@ -48,7 +48,7 @@ public static class CallbackQueryMenuUtils
     {
         string text = GetResourceString("YourInboundInvitations");
         await CommonUtilities.SendMessage(botClient, update, InBoundKB.GetInboundsKeyboardMarkup(update, inboundDBGetter, userGetter), cancellationToken, text);
-        TGBot.userStates[chatId] = new UserProcessInboundState(contactSetterRepository, contactRemoverRepository, inboundDBGetter, userGetter, resourceService);
+        TGBot.StateManager.Set(chatId, new UserProcessInboundState(contactSetterRepository, contactRemoverRepository, inboundDBGetter, userGetter, resourceService));
     }
 
     public static async Task ViewOutboundInviteLinks(ITelegramBotClient botClient, Update update, IOutboundDBGetter outboundDBGetter, IUserGetter userGetter)
@@ -68,7 +68,7 @@ public static class CallbackQueryMenuUtils
     {
         string userId = update.CallbackQuery!.Data!.Split(':')[1];
         await CommonUtilities.SendMessage(botClient, update, OutBoundKB.GetOutboundActionsKeyboardMarkup(userId), cancellationToken, GetResourceString("OutboundInviteMenu"));
-        TGBot.userStates[chatId] = new UserProcessOutboundState(contactRepository, outboundDBGetter, userGetter, resourceService);
+        TGBot.StateManager.Set(chatId, new UserProcessOutboundState(contactRepository, outboundDBGetter, userGetter, resourceService));
     }
 
     public static Task AcceptInboundInvite(Update update, IContactSetter contactSetter)

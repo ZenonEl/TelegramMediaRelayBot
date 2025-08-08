@@ -50,7 +50,7 @@ namespace TelegramMediaRelayBot
             long chatId = CommonUtilities.GetIDfromUpdate(update);
             if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-            if (!TGBot.userStates.TryGetValue(chatId, out IUserState? value) || value is not ProcessUserAddDomainFilterState userState)
+        if (!TGBot.StateManager.TryGet(chatId, out IUserState? value) || value is not ProcessUserAddDomainFilterState userState)
                 return;
 
             switch (userState.currentState)
@@ -74,7 +74,7 @@ namespace TelegramMediaRelayBot
         {
             if (update.CallbackQuery != null)
             {
-                TGBot.userStates.Remove(chatId);
+        TGBot.StateManager.Remove(chatId);
                 await CommonUtilities.SendMessage(
                     botClient,
                     update,
@@ -134,7 +134,7 @@ namespace TelegramMediaRelayBot
             }
             else
             {
-                TGBot.userStates.Remove(chatId);
+        TGBot.StateManager.Remove(chatId);
                 await CommonUtilities.SendMessage(
                     botClient,
                     update,
@@ -160,7 +160,7 @@ namespace TelegramMediaRelayBot
                     await _privacySettingsTargetsSetter.SetToRemovePrivacyRuleTarget(_privacyRuleId, domain);
                 }
 
-            TGBot.userStates.Remove(chatId);
+        TGBot.StateManager.Remove(chatId);
             await CommonUtilities.SendMessage(
                 botClient,
                 update,

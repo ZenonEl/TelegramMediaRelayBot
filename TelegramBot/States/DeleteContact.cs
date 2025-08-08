@@ -95,7 +95,7 @@ public class ProcessRemoveUser : IUserState
                         string text = isDeleteSuccessful ? _resourceService.GetResourceString("SuccessActionResult") : _resourceService.GetResourceString("ErrorActionResult");
                         await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, text);
                         
-                        TGBot.userStates.Remove(chatId);
+        TGBot.StateManager.Remove(chatId);
                     }
                     else if (callbackData == "cancel_removal")
                     {

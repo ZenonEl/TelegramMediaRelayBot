@@ -57,7 +57,7 @@ namespace TelegramMediaRelayBot
             long chatId = CommonUtilities.GetIDfromUpdate(update);
             if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-            if (!TGBot.userStates.TryGetValue(chatId, out IUserState? value) || value is not ProcessUserSetDCSendState userState)
+        if (!TGBot.StateManager.TryGet(chatId, out IUserState? value) || value is not ProcessUserSetDCSendState userState)
                 return;
 
             switch (userState.currentState)
@@ -81,7 +81,7 @@ namespace TelegramMediaRelayBot
         {
             if (update.CallbackQuery != null)
             {
-                TGBot.userStates.Remove(chatId);
+        TGBot.StateManager.Remove(chatId);
                 await CommonUtilities.SendMessage(
                     botClient,
                     update,
@@ -148,7 +148,7 @@ namespace TelegramMediaRelayBot
             }
             else
             {
-                TGBot.userStates.Remove(chatId);
+        TGBot.StateManager.Remove(chatId);
                 await CommonUtilities.SendMessage(
                     botClient,
                     update,
@@ -186,7 +186,7 @@ namespace TelegramMediaRelayBot
                 }
             }
 
-            TGBot.userStates.Remove(chatId);
+        TGBot.StateManager.Remove(chatId);
             await CommonUtilities.SendMessage(
                 botClient,
                 update,

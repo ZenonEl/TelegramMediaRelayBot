@@ -185,7 +185,7 @@ public class UsersDB
         TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
-        TGBot.userStates[chatId] = new ProcessContactLinksState(false, contactRemoverRepository, contactGetterRepository, userRepository, userGetter, resourceService);
+        TGBot.StateManager.Set(chatId, new ProcessContactLinksState(false, contactRemoverRepository, contactGetterRepository, userRepository, userGetter, resourceService));
     }
 
     public static void UpdateSelfLinkWithDeleteSelectedContacts(Update update,
@@ -196,7 +196,7 @@ public class UsersDB
         TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
-        TGBot.userStates[chatId] = new ProcessContactLinksState(true, contactRemoverRepository, contactGetterRepository, userRepository, userGetter, resourceService);
+        TGBot.StateManager.Set(chatId, new ProcessContactLinksState(true, contactRemoverRepository, contactGetterRepository, userRepository, userGetter, resourceService));
     }
 
     public static bool UpdateSelfLinkWithContacts(Update update, IUserRepository userRepository, IUserGetter userGetter)
