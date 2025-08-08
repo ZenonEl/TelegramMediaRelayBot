@@ -129,49 +129,78 @@ public partial class TGBot
 
         if (CommonUtilities.CheckPrivateChatType(update))
         {
-            if (StateManager.Contains(chatId))
+            if (await TryProcessState(botClient, update)) return;
+            await HandlePrivateMessageOrCallback(botClient, update, chatId, cancellationToken);
+            return;
+        }
+
+        await HandleGroupMessage(botClient, update, cancellationToken);
+    }
+
+    private async Task<bool> TryProcessState(ITelegramBotClient botClient, Update update)
+    {
+        long chatId = CommonUtilities.GetIDfromUpdate(update);
+        if (StateManager.Contains(chatId))
+        {
+            await ProcessState(botClient, update);
+            return true;
+        }
+        return false;
+    }
+
+    private async Task HandlePrivateMessageOrCallback(ITelegramBotClient botClient, Update update, long chatId, CancellationToken cancellationToken)
+    {
+        if (update.Message != null && update.Message.Text != null)
+        {
+            if (!await EnsureUserHasAccessOrRegister(botClient, update, chatId, cancellationToken))
             {
-                await ProcessState(botClient, update);
                 return;
             }
 
-            if (update.Message != null && update.Message.Text != null)
-            {
-                bool hasAccess = _userRepo.CheckUserExists(chatId);
-
-                if (!hasAccess)
-                {
-                    int usersCount = await _userGetter.GetAllUsersCount();
-                    string startParameter = CommonUtilities.ParseStartCommand(update.Message.Text);
-                    if ((usersCount == 0 || !string.IsNullOrEmpty(startParameter)) && _configService.CanUserStartUsingBot(startParameter, _userGetter))
-                    {
-                        _userRepo.AddUser(update.Message.Chat.FirstName!, chatId, hasAccess);
-                        update.Message.Text = "/start";
-                        hasAccess = true;
-                    }
-                            else if (_botConfig.Value.AccessDeniedMessageContact != " ")
-        {
-            await botClient.SendMessage(chatId, string.Format(_resourceService.GetResourceString("AccessDeniedMessage"), _botConfig.Value.AccessDeniedMessageContact), cancellationToken: cancellationToken, parseMode: ParseMode.Html);
+            await _updateHandler.ProcessMessage(botClient, update, cancellationToken, chatId);
+            return;
         }
-                }
 
-                if (hasAccess)
-                {
-                    await _updateHandler.ProcessMessage(botClient, update, cancellationToken, chatId);
-                }
-            }
-            else if (update.CallbackQuery != null)
-            {
-                await _updateHandler.ProcessCallbackQuery(botClient, update, cancellationToken);
-            }
-        }
-        else 
+        if (update.CallbackQuery != null)
         {
-            if (update.Message != null && update.Message.Text != null && update.Message.Text.Contains('/'))
-            {
-                GroupUpdateHandler groupUpdateHandler = new GroupUpdateHandler(this, _resourceService);
-                await groupUpdateHandler.HandleGroupUpdate(update, botClient, cancellationToken);
-            }
+            await _updateHandler.ProcessCallbackQuery(botClient, update, cancellationToken);
+        }
+    }
+
+    private async Task<bool> EnsureUserHasAccessOrRegister(ITelegramBotClient botClient, Update update, long chatId, CancellationToken cancellationToken)
+    {
+        bool hasAccess = _userRepo.CheckUserExists(chatId);
+        if (hasAccess) return true;
+
+        int usersCount = await _userGetter.GetAllUsersCount();
+        string startParameter = CommonUtilities.ParseStartCommand(update.Message!.Text!);
+        bool canStart = (usersCount == 0 || !string.IsNullOrEmpty(startParameter)) && _configService.CanUserStartUsingBot(startParameter, _userGetter);
+
+        if (canStart)
+        {
+            _userRepo.AddUser(update.Message!.Chat.FirstName!, chatId, hasAccess);
+            update.Message!.Text = "/start";
+            return true;
+        }
+
+        if (_botConfig.Value.AccessDeniedMessageContact != " ")
+        {
+            await botClient.SendMessage(
+                chatId,
+                string.Format(_resourceService.GetResourceString("AccessDeniedMessage"), _botConfig.Value.AccessDeniedMessageContact),
+                cancellationToken: cancellationToken,
+                parseMode: ParseMode.Html);
+        }
+
+        return false;
+    }
+
+    private async Task HandleGroupMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    {
+        if (update.Message != null && update.Message.Text != null && update.Message.Text.Contains('/'))
+        {
+            GroupUpdateHandler groupUpdateHandler = new GroupUpdateHandler(this, _resourceService);
+            await groupUpdateHandler.HandleGroupUpdate(update, botClient, cancellationToken);
         }
     }
 
@@ -194,75 +223,97 @@ public partial class TGBot
                                                         Message statusMessage, List<long>? targetUserIds, string contentUrl, bool groupChat = false,
                                                         string caption = "")
     {
-        // Проверяем размер файлов
-        const long maxFileSize = 50 * 1024 * 1024; // 50MB лимит Telegram
-        var totalSize = mediaFiles.Sum(f => f.Length);
-        var sizeMB = totalSize / (1024.0 * 1024.0);
-        Log.Information("Total file size: {Size:F1}MB", sizeMB);
-        
-        var oversizedFiles = mediaFiles.Where(f => f.Length > maxFileSize).ToList();
-        
-        if (oversizedFiles.Any())
-        {
-            var oversizedSize = oversizedFiles.Sum(f => f.Length);
-            var oversizedSizeMB = oversizedSize / (1024.0 * 1024.0);
-            Log.Warning("Files too large for Telegram ({Size:F1}MB). Max allowed: 50MB", oversizedSizeMB);
-            
-            await botClient.EditMessageText(
-                statusMessage.Chat.Id, 
-                statusMessage.MessageId, 
-                $"❌ Файлы слишком большие ({oversizedSizeMB:F1}MB). Максимум: 50MB",
-                cancellationToken: cancellationToken);
-            return;
-        }
-        
-        var groupedFiles = mediaFiles.GroupBy(CommonUtilities.DetermineFileType)
-                                    .ToDictionary(g => g.Key, g => g.Reverse().ToList());
+        if (!await ValidateMediaFilesOrReport(botClient, statusMessage, mediaFiles)) return;
+
+        var groupedFiles = GroupMediaFiles(mediaFiles);
 
         try
         {
-            string text = string.Empty;
-            bool lastMediaGroup = false;
-
-            foreach (var fileGroup in groupedFiles.Values)
-            {
-                var mediaGroup = CommonUtilities.CreateMediaGroup(fileGroup);
-                
-                for (int i = 0; i < mediaGroup.Count(); i += 10)
-                {
-                    var chunk = mediaGroup.Skip(i).Take(10).ToList();
-                    
-                    Message[] mess = await botClient.SendMediaGroup(
-                        chatId: chatId,
-                        media: chunk,
-                        replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
-                        disableNotification: true,
-                        cancellationToken: cancellationToken
-                    );
-
-                    List<InputMedia> savedMediaGroupIDs = mess.Select<Message, InputMedia>(msg => 
-                                    msg.Photo != null ? new InputMediaPhoto(msg.Photo[0].FileId) :
-                                    msg.Video != null ? new InputMediaVideo(msg.Video.FileId) :
-                                    msg.Audio != null ? new InputMediaAudio(msg.Audio.FileId) :
-                                    new InputMediaDocument(msg.Document!.FileId)).ToList();
-
-                    if (i + 10 >= mediaGroup.Count()) { lastMediaGroup = true; text = caption; }
-
-                    if (!groupChat && targetUserIds != null && targetUserIds.Count > 0) 
-                        await SendVideoToContacts(chatId, botClient, statusMessage, targetUserIds,
-                            savedMediaGroupIDs: savedMediaGroupIDs, contentUrl, caption: text,
-                            lastMediaGroup: lastMediaGroup);
-                    
-                    await Task.Delay(1000, cancellationToken);
-                }
-            }
-
+            await SendGroupedMedia(botClient, chatId, statusMessage, groupedFiles, targetUserIds, contentUrl, groupChat, caption);
             Log.Debug($"Successfully sent {mediaFiles.Count} files");
         }
         catch (Exception ex)
         {
             Log.Error(ex, $"Failed to send media group");
             throw;
+        }
+    }
+
+    private async Task<bool> ValidateMediaFilesOrReport(ITelegramBotClient botClient, Message statusMessage, List<byte[]> mediaFiles)
+    {
+        const long maxFileSize = 50 * 1024 * 1024; // 50MB лимит Telegram
+        var totalSize = mediaFiles.Sum(f => f.Length);
+        var sizeMB = totalSize / (1024.0 * 1024.0);
+        Log.Information("Total file size: {Size:F1}MB", sizeMB);
+
+        var oversizedFiles = mediaFiles.Where(f => f.Length > maxFileSize).ToList();
+        if (!oversizedFiles.Any()) return true;
+
+        var oversizedSize = oversizedFiles.Sum(f => f.Length);
+        var oversizedSizeMB = oversizedSize / (1024.0 * 1024.0);
+        Log.Warning("Files too large for Telegram ({Size:F1}MB). Max allowed: 50MB", oversizedSizeMB);
+
+        await botClient.EditMessageText(
+            statusMessage.Chat.Id,
+            statusMessage.MessageId,
+            $"❌ Файлы слишком большие ({oversizedSizeMB:F1}MB). Максимум: 50MB",
+            cancellationToken: cancellationToken);
+        return false;
+    }
+
+    private Dictionary<TelegramMediaRelayBot.TelegramBot.Utils.MediaFileType, List<byte[]>> GroupMediaFiles(List<byte[]> mediaFiles)
+    {
+        return mediaFiles
+            .GroupBy(CommonUtilities.DetermineFileType)
+            .ToDictionary(g => g.Key, g => g.Reverse().ToList());
+    }
+
+    private async Task SendGroupedMedia(
+        ITelegramBotClient botClient,
+        long chatId,
+        Message statusMessage,
+        Dictionary<TelegramMediaRelayBot.TelegramBot.Utils.MediaFileType, List<byte[]>> groupedFiles,
+        List<long>? targetUserIds,
+        string contentUrl,
+        bool groupChat,
+        string caption)
+    {
+        string text = string.Empty;
+        bool lastMediaGroup = false;
+
+        foreach (var fileGroup in groupedFiles.Values)
+        {
+            var mediaGroup = CommonUtilities.CreateMediaGroup(fileGroup);
+
+            for (int i = 0; i < mediaGroup.Count(); i += 10)
+            {
+                var chunk = mediaGroup.Skip(i).Take(10).ToList();
+
+                Message[] mess = await botClient.SendMediaGroup(
+                    chatId: chatId,
+                    media: chunk,
+                    replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
+                    disableNotification: true,
+                    cancellationToken: cancellationToken
+                );
+
+                List<InputMedia> savedMediaGroupIDs = mess.Select<Message, InputMedia>(msg =>
+                                msg.Photo != null ? new InputMediaPhoto(msg.Photo[0].FileId) :
+                                msg.Video != null ? new InputMediaVideo(msg.Video.FileId) :
+                                msg.Audio != null ? new InputMediaAudio(msg.Audio.FileId) :
+                                new InputMediaDocument(msg.Document!.FileId)).ToList();
+
+                if (i + 10 >= mediaGroup.Count()) { lastMediaGroup = true; text = caption; }
+
+                if (!groupChat && targetUserIds != null && targetUserIds.Count > 0)
+                {
+                    await SendVideoToContacts(chatId, botClient, statusMessage, targetUserIds,
+                        savedMediaGroupIDs: savedMediaGroupIDs, contentUrl, caption: text,
+                        lastMediaGroup: lastMediaGroup);
+                }
+
+                await Task.Delay(1000, cancellationToken);
+            }
         }
     }
 
