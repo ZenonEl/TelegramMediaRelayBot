@@ -6,12 +6,16 @@
 ## 🔥 **КРИТИЧЕСКИЕ ПРИОРИТЕТЫ (Must Do First)**
 
 ### **Архитектурные Исправления**
-- [ ] **Рефакторинг Config класса** - заменить статический Config на IOptions<T> pattern
+- [x] **Рефакторинг Config класса** - заменить статический Config на IOptions<T> pattern
 - [ ] **Убрать статические состояния** - создать IUserStateManager вместо static Dictionary
 - [ ] **Исправить Service Locator антипаттерн** в TGBot и других местах
 - [ ] **Переход DB к асинхронной модели** - все методы БД в async/await
 - [ ] **Добавить Unit of Work паттерн** для транзакций БД
 - [ ] **Рефакторинг больших методов** (UpdateHandler, SendMediaToTelegram)
+- [ ] **Горячая перезагрузка конфигурации** (безопасные настройки)
+  - [ ] Перевод потребителей на `IOptionsMonitor<T>`
+  - [ ] Использование `OnChange` для Safe-настроек (delays, proxy, Tor)
+  - [ ] Исключения (требуется рестарт): TelegramBotToken, тип БД/connection string
 
 ### **Базовое Тестирование**
 - [ ] **Unit тесты для ключевой функциональности** (MediaDownloader, Factory, Repositories)
@@ -107,7 +111,6 @@
   - [ ] Длинные списки параметров
 - [ ] **Naming Conventions** - унифицировать именование
 - [ ] **XML Documentation** для публичных API
-- [ ] **Code Analysis Rules** с StyleCop/FxCop
 
 ### **Performance**
 - [ ] **Async/await best practices** - ConfigureAwait(false)
@@ -189,6 +192,7 @@
 - [ ] Переход к async/await в DB layer
 - [ ] Базовые unit тесты для core functionality
 - [ ] Исправить Service Locator антипаттерн
+- [ ] Горячая перезагрузка конфигурации (IOptionsMonitor<T> + OnChange)
 
 ### **Sprint 2 (2-3 недели) - Core Features**
 **Цель: Реализовать ключевую функциональность**
@@ -261,30 +265,7 @@
 ### **Quality Метрики**
 - [ ] **Zero Critical** security vulnerabilities
 - [ ] **Code Duplication** < 5%
-- [ ] **Documentation Coverage** > 90% для public API
-- [ ] **Build Success Rate** > 99%
-
----
-
-## 📝 **ЗАМЕТКИ ДЛЯ РАЗРАБОТКИ**
-
-### **Приоритизация**
-1. **Сначала архитектура** - без этого остальное будет строиться на шатком фундаменте
-2. **Потом тестирование** - обеспечить качество и регрессии
-3. **Затем новые функции** - добавлять на стабильной основе
-4. **Наконец оптимизация** - когда все работает правильно
-
-### **Технические Заметки**
-- **Config рефакторинг** критичен - влияет на все приложение
-- **Async DB** может потребовать breaking changes в интерфейсах
-- **Testing strategy** должна покрывать integration scenarios
-- **Message merging** нужно продумать UX для пользователя
-
-### **Риски**
-- **Large refactoring** может сломать существующую функциональность
-- **Database migration** требует осторожности с данными пользователей
-- **Performance impact** новых features нужно мониторить
-- **Breaking changes** в API могут потребовать версионирования
+- [ ] **Documentation Coverage** > 90%
 
 ---
 
