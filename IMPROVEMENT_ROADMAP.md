@@ -19,9 +19,9 @@
   - [x] Исключения (рестарт): TelegramBotToken, тип БД/connection string (документация)
 
 ### **Базовое Тестирование**
- - [ ] **Unit тесты для ключевой функциональности** (MediaDownloader, Factory, Repositories) (прогресс: Factory — есть базовые тесты)
-- [ ] **Integration тесты для БД** слоя
-- [ ] **Тесты для критических business сценариев**
+- [x] **Unit тесты для ключевой функциональности** (MediaDownloader, Factory, Repositories)
+- [x] **Integration тесты для БД** слоя (SQLite in-memory: миграции/схемы + CRUD)
+- [x] **Тесты для критических business сценариев** (fallback при скачивании)
 
 ---
 
@@ -192,7 +192,7 @@
 - [x] Config рефакторинг на IOptions<T>
 - [x] Убрать статические состояния (IUserStateManager)
  - [x] Переход к async/await в DB layer
-- [ ] Базовые unit тесты для core functionality
+- [x] Базовые unit тесты для core functionality
 - [x] Исправить Service Locator антипаттерн
 - [x] Горячая перезагрузка конфигурации (IOptionsMonitor<T> + OnChange)
 
@@ -201,7 +201,7 @@
 - [ ] Intelligent Message Merging
 - [ ] Download Cancellation UI
 - [ ] Validation и Rate Limiting
-- [ ] Integration тесты для DB layer
+- [x] Integration тесты для DB layer
 - [ ] Завершить Modular Downloader Architecture
 
 ### **Sprint 3 (2-3 недели) - Quality Improvements**
@@ -210,7 +210,7 @@
 - [ ] Improve Message Formatting (завершить)
 - [ ] Parameter Configuration (завершить)
 - [ ] Performance optimization (async best practices)
-- [ ] Unit of Work pattern
+- [x] Unit of Work pattern
 
 ### **Sprint 4 (2-3 недели) - Advanced Architecture**
 **Цель: Современные архитектурные паттерны**
@@ -241,6 +241,9 @@
 - [x] Remove Static State (IUserStateManager)
 - [x] DI Hygiene (Scoped repositories, no Service Locator)
 - [x] Hot Config (Tor, Delays, Proxy, AccessPolicy, LogLevel) + change logging
+- [x] Async DB Model (core paths)
+- [x] Unit of Work across write repositories (Contacts, Groups, Privacy, DefaultActions)
+- [x] Basic Unit/Integration/Business tests
 
 ### **В Процессе ⚠️**
  - [x] Async DB Model — core части переведены на async/await (остались единичные короткие sync Execute в write-методах — опционально)
