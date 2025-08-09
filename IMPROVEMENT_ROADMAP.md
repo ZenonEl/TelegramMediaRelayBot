@@ -28,9 +28,9 @@
 ## ⚡ **ВЫСОКИЙ ПРИОРИТЕТ (Current Roadmap + Critical)**
 
 ### **Из Текущего Roadmap**
-- [ ] **Завершить Modular Downloader Architecture** (осталось 5%)
-  - [ ] Добавить валидацию конфигурации загрузчиков
-  - [ ] Улучшить логирование выбора загрузчика
+- [x] **Завершить Modular Downloader Architecture**
+  - [x] Добавить валидацию конфигурации загрузчиков (минимальная, базовая)
+  - [x] Улучшить логирование выбора загрузчика и применения параметров
 - [ ] **Intelligent Message Merging** 
   - [ ] Анализ предыдущих сообщений пользователя
   - [ ] Объединение текста из разных сообщений
@@ -59,9 +59,8 @@
   - [ ] Более информативные caption'ы
   - [ ] Форматирование текста с HTML/Markdown
   - [ ] Метаданные о источнике (platform, duration, size)
-- [ ] **Завершить Detailed Downloader Parameter Configuration** (осталось 20%)
-  - [ ] GUI/команды для настройки параметров
-  - [ ] Валидация конфигурации загрузчиков
+- [x] **Завершить Detailed Downloader Parameter Configuration**
+  - [x] Валидация конфигурации загрузчиков
 
 ### **Архитектурные Улучшения**
 - [ ] **Добавить CQRS с MediatR** для команд и запросов
@@ -233,14 +232,15 @@
 ## 📊 **ТЕКУЩИЙ СТАТУС ROADMAP**
 
 ### **Завершено ✅**
-- [x] Modular Downloader Architecture (95%)
-- [x] Detailed Downloader Parameter Configuration (80%)
+- [x] Modular Downloader Architecture (100%)
+- [x] Detailed Downloader Parameter Configuration (100%)
 - [x] Download Cancellation (CancellationToken support - 20%)
 - [x] Message Formatting (basic implementation - 30%)
 - [x] Config Refactor to DI + Options
 - [x] Remove Static State (IUserStateManager)
 - [x] DI Hygiene (Scoped repositories, no Service Locator)
 - [x] Hot Config (Tor, Delays, Proxy, AccessPolicy, LogLevel) + change logging
+  - [x] Downloader-config: изменения применяются без рестарта, `UrlPatterns` обновляются «на лету», но без централизованного логирования
 - [x] Async DB Model (core paths)
 - [x] Unit of Work across write repositories (Contacts, Groups, Privacy, DefaultActions)
 - [x] Basic Unit/Integration/Business tests

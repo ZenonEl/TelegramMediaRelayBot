@@ -1,5 +1,17 @@
 {
     "Downloaders": {
+        "Defaults": {
+            "Enabled": true,
+            "Priority": 10,
+            "MatchAllIfNoPatterns": true,
+            "UrlPatterns": [],
+            "ProxySettings": {
+                "UseGlobalProxy": true,
+                "CustomProxy": null,
+                "RequireProxy": false,
+                "SiteSpecificProxies": {}
+            }
+        },
         "YtDlp": {
             "Type": "Executable",
             "Enabled": true,
@@ -13,8 +25,6 @@
             ],
             "DefaultArguments": [
                 "--proxy", "{Proxy}",
-                "-v",
-                "-f", "best[filesize<50M]/worst[filesize<50M]/best",
                 "--output", "{OutputPath}/video.%(ext)s",
                 "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             ],
@@ -58,8 +68,7 @@
             "DefaultArguments": [
                 "--proxy", "{Proxy}",
                 "-d", "{OutputPath}",
-                "-D", "{OutputPath}",
-                "--verbose"
+                "-D", "{OutputPath}"
             ],
             "ProxySettings": {
                 "UseGlobalProxy": true,

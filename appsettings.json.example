@@ -16,6 +16,18 @@
             "CacheTimeout": "00:30:00"
         }
     },
+    "Downloading": {
+        "TargetUploadLimitMb": 49,
+        "ExternalDownloadMaxSizeMb": 120,
+        "PreflightEnabled": true,
+        "IfTooLarge": "Transcode",
+        "TargetPartSizeMb": 32,
+        "TranscodeProfile": {
+            "MaxResolution": "480p",
+            "VideoBitrateKbps": 1200,
+            "AudioBitrateKbps": 96,
+            "Preset": "veryfast"
+    },
     "Tor": {
         "Enabled": true,
         "TorControlPassword": "Password",

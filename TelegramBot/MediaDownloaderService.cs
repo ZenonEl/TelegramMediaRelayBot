@@ -21,11 +21,16 @@ public class MediaDownloaderService
 {
     private readonly IMediaDownloaderFactory _downloaderFactory;
     private readonly IOptionsMonitor<BotConfiguration> _botConfig;
+    private readonly IOptionsMonitor<TelegramMediaRelayBot.Config.DownloadingConfiguration> _downloadingConfig;
     
-    public MediaDownloaderService(IMediaDownloaderFactory downloaderFactory, IOptionsMonitor<BotConfiguration> botConfig)
+    public MediaDownloaderService(
+        IMediaDownloaderFactory downloaderFactory,
+        IOptionsMonitor<BotConfiguration> botConfig,
+        IOptionsMonitor<TelegramMediaRelayBot.Config.DownloadingConfiguration> downloadingConfig)
     {
         _downloaderFactory = downloaderFactory;
         _botConfig = botConfig;
+        _downloadingConfig = downloadingConfig;
     }
     
     public async Task<List<byte[]>?> DownloadMedia(
@@ -44,6 +49,21 @@ public class MediaDownloaderService
         Message statusMessage, 
         CancellationToken cancellationToken)
     {
+        // Префлайт по размеру (если включено)
+        if (await ShouldSkipByExternalSizeAsync(videoUrl, cancellationToken))
+        {
+            try
+            {
+                await botClient.EditMessageText(
+                    statusMessage.Chat.Id,
+                    statusMessage.MessageId,
+                    $"❌ Файл слишком большой для загрузки источником (>{_downloadingConfig.CurrentValue.ExternalDownloadMaxSizeMb} MB).",
+                    cancellationToken: cancellationToken);
+            }
+            catch { }
+            return null;
+        }
+
         // Получаем все подходящие загрузчики для этого URL
         var downloaders = _downloaderFactory.GetDownloadersForUrl(videoUrl).ToList();
         
@@ -53,7 +73,7 @@ public class MediaDownloaderService
             return null;
         }
         
-        Log.Information("Found {Count} downloaders for {Url}: {Downloaders}", 
+        Log.Information("Found {Count} downloaders for {Url}: {Names}", 
             downloaders.Count, videoUrl, string.Join(", ", downloaders.Select(d => d.Name)));
         
         foreach (var downloader in downloaders)
@@ -93,5 +113,39 @@ public class MediaDownloaderService
         
         Log.Error("All downloaders failed for {Url}", videoUrl);
         return null;
+    }
+
+    private async Task<bool> ShouldSkipByExternalSizeAsync(string url, CancellationToken ct)
+    {
+        var cfg = _downloadingConfig.CurrentValue;
+        if (!cfg.PreflightEnabled || cfg.ExternalDownloadMaxSizeMb <= 0)
+            return false;
+
+        try
+        {
+            using var handler = new HttpClientHandler { AllowAutoRedirect = true, AutomaticDecompression = System.Net.DecompressionMethods.All };
+            using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(10) };
+
+            using var req = new HttpRequestMessage(HttpMethod.Head, url);
+            using var resp = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+            if (!resp.IsSuccessStatusCode) return false;
+
+            if (resp.Content.Headers.ContentLength.HasValue)
+            {
+                var bytes = resp.Content.Headers.ContentLength.Value;
+                var mb = bytes / (1024.0 * 1024.0);
+                if (mb > cfg.ExternalDownloadMaxSizeMb)
+                {
+                    Log.Information("Preflight skip: external size {Size:F1}MB exceeds cap {Cap}MB for {Url}", mb, cfg.ExternalDownloadMaxSizeMb, url);
+                    return true;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Preflight HEAD failed for {Url}", url);
+        }
+
+        return false;
     }
 } 

@@ -14,25 +14,29 @@ public class ConfigurationChangeLogger
     private readonly IOptionsMonitor<LoggingConfiguration> _loggingOptions;
     private readonly IOptionsMonitor<TorConfiguration> _torOptions;
     private readonly IOptionsMonitor<DownloaderSettingsConfiguration> _downloaderOptions;
+    private readonly IOptionsMonitor<DownloadingConfiguration> _downloadingOptions;
 
     private BotConfiguration _lastBot = new();
     private MessageDelayConfiguration _lastDelay = new();
     private LoggingConfiguration _lastLogging = new();
     private TorConfiguration _lastTor = new();
     private DownloaderSettingsConfiguration _lastDownloader = new();
+    private DownloadingConfiguration _lastDownloading = new();
 
     public ConfigurationChangeLogger(
         IOptionsMonitor<BotConfiguration> botOptions,
         IOptionsMonitor<MessageDelayConfiguration> delayOptions,
         IOptionsMonitor<LoggingConfiguration> loggingOptions,
         IOptionsMonitor<TorConfiguration> torOptions,
-        IOptionsMonitor<DownloaderSettingsConfiguration> downloaderOptions)
+        IOptionsMonitor<DownloaderSettingsConfiguration> downloaderOptions,
+        IOptionsMonitor<DownloadingConfiguration> downloadingOptions)
     {
         _botOptions = botOptions;
         _delayOptions = delayOptions;
         _loggingOptions = loggingOptions;
         _torOptions = torOptions;
         _downloaderOptions = downloaderOptions;
+        _downloadingOptions = downloadingOptions;
 
         // Initialize baselines
         _lastBot = DeepClone(_botOptions.CurrentValue);
@@ -46,6 +50,7 @@ public class ConfigurationChangeLogger
         _loggingOptions.OnChange(newVal => LogChanges("ConsoleOutputSettings", ref _lastLogging, newVal));
         _torOptions.OnChange(newVal => LogChanges("Tor", ref _lastTor, newVal));
         _downloaderOptions.OnChange(newVal => LogChanges("AppSettings:DownloaderSettings", ref _lastDownloader, newVal));
+        _downloadingOptions.OnChange(newVal => LogChanges("Downloading", ref _lastDownloading, newVal));
     }
 
     private static T DeepClone<T>(T value)

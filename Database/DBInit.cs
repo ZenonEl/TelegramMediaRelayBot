@@ -130,7 +130,8 @@ public class FluentDBMigrator
                 var configBuilder = new ConfigurationBuilder()
                     .SetBasePath(AppContext.BaseDirectory)
                     .AddConfiguration(configuration)
-                    .AddJsonFile(fullPath, optional: false, reloadOnChange: true);
+                    .AddJsonFile(fullPath, optional: false, reloadOnChange: true)
+                    .AddEnvironmentVariables();
                 
                 var finalConfiguration = configBuilder.Build();
                 
@@ -141,6 +142,8 @@ public class FluentDBMigrator
                     finalConfiguration.GetSection("MessageDelaySettings"));
                 builder.Services.Configure<LoggingConfiguration>(
                     finalConfiguration.GetSection("ConsoleOutputSettings"));
+                builder.Services.Configure<TelegramMediaRelayBot.Config.DownloadingConfiguration>(
+                    finalConfiguration.GetSection("Downloading"));
                 builder.Services.Configure<TorConfiguration>(
                     finalConfiguration.GetSection("Tor"));
                 builder.Services.Configure<AccessPolicyConfiguration>(
@@ -188,6 +191,8 @@ public class FluentDBMigrator
             configuration.GetSection("MessageDelaySettings"));
         builder.Services.Configure<LoggingConfiguration>(
             configuration.GetSection("ConsoleOutputSettings"));
+        builder.Services.Configure<TelegramMediaRelayBot.Config.DownloadingConfiguration>(
+            configuration.GetSection("Downloading"));
         builder.Services.Configure<TorConfiguration>(
             configuration.GetSection("Tor"));
         builder.Services.Configure<AccessPolicyConfiguration>(
@@ -202,6 +207,7 @@ public class FluentDBMigrator
         builder.Services.AddSingleton<TelegramMediaRelayBot.Config.Services.IConfigurationService, TelegramMediaRelayBot.Config.Services.ConfigurationService>();
         builder.Services.AddSingleton<TelegramMediaRelayBot.Config.Services.IDatabaseConfigurationService, TelegramMediaRelayBot.Config.Services.DatabaseConfigurationService>();
         builder.Services.AddSingleton<TelegramMediaRelayBot.Config.Services.IResourceService, TelegramMediaRelayBot.Config.Services.ResourceService>();
+        builder.Services.AddSingleton<TelegramMediaRelayBot.Infrastructure.MediaProcessing.IMediaProcessingService, TelegramMediaRelayBot.Infrastructure.MediaProcessing.FfmpegService>();
         
         // Регистрация загрузчиков
         builder.Services.AddScoped<TelegramMediaRelayBot.Domain.Interfaces.IMediaDownloaderFactory, TelegramMediaRelayBot.Infrastructure.Factories.MediaDownloaderFactory>();

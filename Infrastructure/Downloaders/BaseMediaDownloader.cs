@@ -45,22 +45,49 @@ public abstract class BaseMediaDownloader : IMediaDownloader
             }
         }
     }
+
+    // Позволяет «на лету» обновить паттерны, если downloader-config.json изменился
+    protected void ReloadPatternsIfChanged()
+    {
+        var patterns = _configuration.GetSection($"Downloaders:{Name}:UrlPatterns").Get<string[]>();
+        if (patterns == null) return;
+        // Если размер и содержимое совпадают — считаем, что актуально
+        if (_urlPatterns.Count == patterns.Length &&
+            patterns.Zip(_urlPatterns, (s, r) => (s, r)).All(p => string.Equals(p.s, p.r.ToString(), StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+        _urlPatterns.Clear();
+        foreach (var pattern in patterns)
+        {
+            _urlPatterns.Add(new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase));
+        }
+        Log.Debug("UrlPatterns reloaded for {Downloader}", Name);
+    }
     
     public virtual bool CanHandle(string url)
     {
+        ReloadPatternsIfChanged();
         var uri = new Uri(url);
         var host = uri.Host.ToLowerInvariant();
-        
+
+        // Если явно разрешено матчить всё при пустых паттернах
+        var matchAllIfNoPatterns = _configuration.GetValue($"Downloaders:{Name}:MatchAllIfNoPatterns", true);
+
         // Проверяем известные поддерживаемые домены
         if (_knownSupportedDomains.Contains(host))
             return true;
-            
+
         // Проверяем паттерны URL
         if (_urlPatterns.Any(pattern => pattern.IsMatch(url)))
             return true;
-            
-        // Для неизвестных доменов - возвращаем true для возможности проверки
-        return true;
+
+        // Если нет паттернов и разрешён матч всего — возвращаем true
+        if (!_urlPatterns.Any() && matchAllIfNoPatterns)
+            return true;
+
+        // Иначе — не обрабатываем
+        return false;
     }
     
     public async Task<DownloadCapability> CheckCapabilityAsync(string url, CancellationToken ct)

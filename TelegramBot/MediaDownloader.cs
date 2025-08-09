@@ -35,10 +35,12 @@ public partial class TGBot
     private readonly ILinkCategorizer _categorizer;
     private readonly IUserFilterService _userFilter;
     private readonly MediaDownloaderService _mediaDownloaderService;
+    private readonly TelegramMediaRelayBot.Infrastructure.MediaProcessing.IMediaProcessingService _mediaProcessingService;
     private readonly TelegramMediaRelayBot.Config.Services.IConfigurationService _configService;
     private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
     private readonly IOptions<BotConfiguration> _botConfig;
     private readonly IOptionsMonitor<MessageDelayConfiguration> _delayConfig;
+    private readonly IOptionsMonitor<TelegramMediaRelayBot.Config.DownloadingConfiguration> _downloadingConfig;
     public static IUserStateManager StateManager { get; private set; }
     public static CancellationToken cancellationToken;
 
@@ -52,10 +54,12 @@ public partial class TGBot
         IGroupGetter groupGetter,
         ILinkCategorizer categorizer,
         MediaDownloaderService mediaDownloaderService,
+        TelegramMediaRelayBot.Infrastructure.MediaProcessing.IMediaProcessingService mediaProcessingService,
         TelegramMediaRelayBot.Config.Services.IConfigurationService configService,
         TelegramMediaRelayBot.Config.Services.IResourceService resourceService,
         IOptions<BotConfiguration> botConfig,
         IOptionsMonitor<MessageDelayConfiguration> delayConfig,
+        IOptionsMonitor<TelegramMediaRelayBot.Config.DownloadingConfiguration> downloadingConfig,
         IUserStateManager userStateManager,
         IUserFilterService userFilterService
         )
@@ -69,8 +73,10 @@ public partial class TGBot
         _categorizer = categorizer;
         _userFilter = userFilterService;
         _mediaDownloaderService = mediaDownloaderService;
+        _mediaProcessingService = mediaProcessingService;
         _botConfig = botConfig;
         _delayConfig = delayConfig;
+        _downloadingConfig = downloadingConfig;
         
         _updateHandler = new PrivateUpdateHandler(
             this,
@@ -212,7 +218,19 @@ public partial class TGBot
         if (mediaFiles?.Count > 0)
         {
             Log.Debug($"Downloaded {mediaFiles.Count} files");
-            await SendMediaToTelegram(botClient, chatId, mediaFiles, statusMessage, targetUserIds, contentUrl, groupChat, caption);
+
+            // Применяем политику размера (транскодирование/разбиение) перед отправкой
+            Log.Debug("Applying size policy {Policy} (TargetUploadLimitMb={Limit}, TargetPartSizeMb={Part})",
+                _downloadingConfig.CurrentValue.IfTooLarge,
+                _downloadingConfig.CurrentValue.TargetUploadLimitMb,
+                _downloadingConfig.CurrentValue.TargetPartSizeMb);
+            var processedFiles = await _mediaProcessingService.ApplySizePolicyAsync(
+                mediaFiles,
+                _downloadingConfig.CurrentValue,
+                cancellationToken);
+            Log.Debug("Size policy applied: files before={Before}, after={After}", mediaFiles.Count, processedFiles.Count);
+
+            await SendMediaToTelegram(botClient, chatId, processedFiles, statusMessage, targetUserIds, contentUrl, groupChat, caption);
             return;
         }
 
@@ -232,6 +250,11 @@ public partial class TGBot
             await SendGroupedMedia(botClient, chatId, statusMessage, groupedFiles, targetUserIds, contentUrl, groupChat, caption);
             Log.Debug($"Successfully sent {mediaFiles.Count} files");
         }
+        catch (Telegram.Bot.Exceptions.ApiRequestException apiEx) when (apiEx.ErrorCode == 413)
+        {
+            Log.Warning(apiEx, "Telegram returned 413. Trying to resend as separate messages");
+            await SendIndividually(botClient, chatId, statusMessage, groupedFiles, contentUrl, caption);
+        }
         catch (Exception ex)
         {
             Log.Error(ex, $"Failed to send media group");
@@ -239,26 +262,54 @@ public partial class TGBot
         }
     }
 
+    private async Task SendIndividually(
+        ITelegramBotClient botClient,
+        long chatId,
+        Message statusMessage,
+        Dictionary<TelegramMediaRelayBot.TelegramBot.Utils.MediaFileType, List<byte[]>> groupedFiles,
+        string contentUrl,
+        string caption)
+    {
+        foreach (var kv in groupedFiles)
+        {
+            foreach (var file in kv.Value)
+            {
+                try
+                {
+                    var type = CommonUtilities.DetermineFileType(file);
+                    var stream = new MemoryStream(file);
+                    switch (type)
+                    {
+                        case TelegramMediaRelayBot.TelegramBot.Utils.MediaFileType.Photo:
+                            await botClient.SendPhoto(chatId, new InputFileStream(stream, "photo.jpg"), caption: caption, replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId }, disableNotification: true, cancellationToken: cancellationToken);
+                            break;
+                        case TelegramMediaRelayBot.TelegramBot.Utils.MediaFileType.Video:
+                            await botClient.SendVideo(chatId, new InputFileStream(stream, "video.mp4"), caption: caption, replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId }, disableNotification: true, cancellationToken: cancellationToken);
+                            break;
+                        case TelegramMediaRelayBot.TelegramBot.Utils.MediaFileType.Audio:
+                            await botClient.SendAudio(chatId, new InputFileStream(stream, "audio.mp3"), caption: caption, replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId }, disableNotification: true, cancellationToken: cancellationToken);
+                            break;
+                        default:
+                            await botClient.SendDocument(chatId, new InputFileStream(stream, "file.bin"), caption: caption, replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId }, disableNotification: true, cancellationToken: cancellationToken);
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to send individual media item for {Url}", contentUrl);
+                }
+            }
+        }
+    }
+
     private async Task<bool> ValidateMediaFilesOrReport(ITelegramBotClient botClient, Message statusMessage, List<byte[]> mediaFiles)
     {
-        const long maxFileSize = 50 * 1024 * 1024; // 50MB лимит Telegram
+        // Нет жёсткой отсечки: только информируем общий размер. Ошибку TG перехватываем при отправке
         var totalSize = mediaFiles.Sum(f => f.Length);
         var sizeMB = totalSize / (1024.0 * 1024.0);
-        Log.Information("Total file size: {Size:F1}MB", sizeMB);
-
-        var oversizedFiles = mediaFiles.Where(f => f.Length > maxFileSize).ToList();
-        if (!oversizedFiles.Any()) return true;
-
-        var oversizedSize = oversizedFiles.Sum(f => f.Length);
-        var oversizedSizeMB = oversizedSize / (1024.0 * 1024.0);
-        Log.Warning("Files too large for Telegram ({Size:F1}MB). Max allowed: 50MB", oversizedSizeMB);
-
-        await botClient.EditMessageText(
-            statusMessage.Chat.Id,
-            statusMessage.MessageId,
-            $"❌ Файлы слишком большие ({oversizedSizeMB:F1}MB). Максимум: 50MB",
-            cancellationToken: cancellationToken);
-        return false;
+        Log.Information("Total file size: {Size:F1}MB (TargetUploadLimitMb={TargetLimit}, Policy={Policy})",
+            sizeMB, _downloadingConfig.CurrentValue.TargetUploadLimitMb, _downloadingConfig.CurrentValue.IfTooLarge);
+        return true;
     }
 
     private Dictionary<TelegramMediaRelayBot.TelegramBot.Utils.MediaFileType, List<byte[]>> GroupMediaFiles(List<byte[]> mediaFiles)

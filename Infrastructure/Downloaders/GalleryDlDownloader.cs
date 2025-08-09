@@ -119,8 +119,16 @@ public class GalleryDlDownloader : BaseMediaDownloader
         // Выполняем команду
         var result = await ExecuteCommandWithProgressAsync(executablePath, arguments, options, ct);
         
-        Log.Debug("GalleryDl output: {Output}", result.Output);
-        Log.Debug("GalleryDl error output: {ErrorOutput}", result.ErrorOutput);
+        if (!string.IsNullOrWhiteSpace(result.Output))
+        {
+            var outShort = result.Output.Length > 2000 ? result.Output[^2000..] : result.Output;
+            Log.Debug("GalleryDl output (tail): {Output}", outShort);
+        }
+        if (!string.IsNullOrWhiteSpace(result.ErrorOutput))
+        {
+            var errShort = result.ErrorOutput.Length > 2000 ? result.ErrorOutput[^2000..] : result.ErrorOutput;
+            Log.Debug("GalleryDl error output (tail): {ErrorOutput}", errShort);
+        }
         
         if (result.ExitCode != 0)
         {
