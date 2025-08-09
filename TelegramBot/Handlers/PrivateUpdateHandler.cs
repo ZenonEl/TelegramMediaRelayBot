@@ -88,20 +88,10 @@ public class PrivateUpdateHandler
             );
 
             int userId = _userGetter.GetUserIDbyTelegramID(chatId);
-            string defaultActionData = _defaultActionGetter.GetDefaultActionByUserIDAndType(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
-
-            CancellationTokenSource timeoutCTS = new CancellationTokenSource();
-        TGBot.StateManager.Set(chatId, new ProcessVideoDC(link, statusMessage, text, timeoutCTS, _tgBot, _contactGetterRepository, _userGetter, _groupGetter, _resourceService));
-
-            if (defaultActionData == UsersAction.NO_VALUE) return;
-
-            string defaultAction = defaultActionData.Split(';')[0];
-            int defaultCondition = int.Parse(defaultActionData.Split(';')[1]);
-
-            if (defaultAction == UsersAction.OFF) return;
-            var privateUtils = new PrivateUtils(_tgBot, _contactGetterRepository, _defaultActionGetter, _userGetter, _groupGetter, _resourceService);
-            privateUtils.ProcessDefaultSendAction(botClient, chatId, statusMessage, defaultAction, cancellationToken,
-                                                                userId, defaultCondition, timeoutCTS, link, text);
+            TGBot.StateManager.Set(chatId, new ProcessVideoDC(link, statusMessage, text, _tgBot, _contactGetterRepository, _userGetter, _groupGetter, _defaultActionGetter, _resourceService));
+            // Scheduling of default action moved inside state per-message
+            // It will create its own CTS and handle cancellation on user interaction
+            await Task.Yield();
         }
         else if (update.Message.Text == "/start")
         {

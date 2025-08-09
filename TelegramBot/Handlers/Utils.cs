@@ -99,7 +99,7 @@ class PrivateUtils
                         break;
                 }
 
-        if (TGBot.StateManager.TryGet(chatId, out var state) && state is ProcessVideoDC videoState)
+        if (TGBot.StateManager.TryGet(chatId, out var state) && state is ProcessVideoDC)
                 {
                     await botClient.EditMessageText(
                         statusMessage.Chat.Id,
@@ -108,33 +108,6 @@ class PrivateUtils
                         cancellationToken: cancellationToken
                     );
                     _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
-
-                    if (videoState.linkQueue.Count > 0)
-                    {
-                        var nextLink = videoState.linkQueue.Dequeue();
-                        statusMessage = await botClient.EditMessageText(
-                            chatId,
-                            nextLink.MessageId,
-                            _resourceService.GetResourceString("WaitDownloadingVideo"),
-                            cancellationToken: cancellationToken
-                        );
-                        ProcessDefaultSendAction(
-                            botClient,
-                            chatId,
-                            statusMessage,
-                            defaultAction,
-                            cancellationToken,
-                            userId,
-                            defaultCondition,
-                            timeoutCTS,
-                            nextLink.Link,
-                            nextLink.Text
-                        );
-                    }
-                    else
-                    {
-        TGBot.StateManager.Remove(chatId);
-                    }
                 }
             }
             catch (TaskCanceledException) { }

@@ -85,11 +85,22 @@ public class YtDlpDownloader : BaseMediaDownloader
         if (!string.IsNullOrWhiteSpace(result.ErrorOutput))
         {
             var errShort = result.ErrorOutput.Length > 2000 ? result.ErrorOutput[^2000..] : result.ErrorOutput;
-            Log.Debug("YtDlp error output (tail): {ErrorOutput}", errShort);
+            if (ct.IsCancellationRequested)
+            {
+                Log.Debug("YtDlp canceled, error output (tail) suppressed");
+            }
+            else
+            {
+                Log.Debug("YtDlp error output (tail): {ErrorOutput}", errShort);
+            }
         }
         
         if (result.ExitCode != 0)
         {
+            if (ct.IsCancellationRequested)
+            {
+                return new DownloadResult { Success = false, ErrorMessage = "Canceled" };
+            }
             throw new InvalidOperationException($"yt-dlp failed with exit code {result.ExitCode}: {result.ErrorOutput}");
         }
         
@@ -221,12 +232,19 @@ public class YtDlpDownloader : BaseMediaDownloader
             throw new TimeoutException($"yt-dlp execution timed out after {Timeout.TotalSeconds} seconds");
         }
 
-        await Task.WhenAll(readOutputTask, readErrorTask);
+        try
+        {
+            await Task.WhenAll(readOutputTask, readErrorTask);
+        }
+        catch (OperationCanceledException)
+        {
+            // ignore when canceled
+        }
         stopwatch.Stop();
 
         return new CommandResult
         {
-            ExitCode = process.ExitCode,
+            ExitCode = process.HasExited ? process.ExitCode : -1,
             Output = string.Join("\n", outputLines),
             ErrorOutput = string.Join("\n", errorLines),
             Duration = stopwatch.Elapsed
@@ -242,7 +260,6 @@ public class YtDlpDownloader : BaseMediaDownloader
             {
                 lines.Add(line);
                 
-                // Обновляем прогресс если есть бот клиент
                 if (options.BotClient != null && options.StatusMessage != null && 
                     Regex.IsMatch(line, ProgressPattern))
                 {
@@ -254,8 +271,11 @@ public class YtDlpDownloader : BaseMediaDownloader
                             options.StatusMessage.MessageId, 
                             progressText,
                             cancellationToken: ct);
-                        
-                        await Task.Delay(1000, ct); // TODO: Get from new config
+                        await Task.Delay(1000, ct);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // ignore
                     }
                     catch (Exception ex)
                     {
@@ -263,6 +283,10 @@ public class YtDlpDownloader : BaseMediaDownloader
                     }
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            // expected on cancel
         }
         catch (Exception ex)
         {

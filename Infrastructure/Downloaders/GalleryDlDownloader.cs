@@ -127,11 +127,22 @@ public class GalleryDlDownloader : BaseMediaDownloader
         if (!string.IsNullOrWhiteSpace(result.ErrorOutput))
         {
             var errShort = result.ErrorOutput.Length > 2000 ? result.ErrorOutput[^2000..] : result.ErrorOutput;
-            Log.Debug("GalleryDl error output (tail): {ErrorOutput}", errShort);
+            if (ct.IsCancellationRequested)
+            {
+                Log.Debug("GalleryDl canceled, error output (tail) suppressed");
+            }
+            else
+            {
+                Log.Debug("GalleryDl error output (tail): {ErrorOutput}", errShort);
+            }
         }
         
         if (result.ExitCode != 0)
         {
+            if (ct.IsCancellationRequested)
+            {
+                return new DownloadResult { Success = false, ErrorMessage = "Canceled" };
+            }
             throw new InvalidOperationException($"gallery-dl failed with exit code {result.ExitCode}: {result.ErrorOutput}");
         }
         
@@ -256,12 +267,19 @@ public class GalleryDlDownloader : BaseMediaDownloader
             throw new TimeoutException($"gallery-dl execution timed out after {Timeout.TotalSeconds} seconds");
         }
 
-        await Task.WhenAll(readOutputTask, readErrorTask);
+        try
+        {
+            await Task.WhenAll(readOutputTask, readErrorTask);
+        }
+        catch (OperationCanceledException)
+        {
+            // ignore cancellation during read
+        }
         stopwatch.Stop();
 
         return new CommandResult
         {
-            ExitCode = process.ExitCode,
+            ExitCode = process.HasExited ? process.ExitCode : -1,
             Output = string.Join("\n", outputLines),
             ErrorOutput = string.Join("\n", errorLines),
             Duration = stopwatch.Elapsed
@@ -277,7 +295,6 @@ public class GalleryDlDownloader : BaseMediaDownloader
             {
                 lines.Add(line);
                 
-                // Обновляем прогресс если есть бот клиент
                 if (options.BotClient != null && options.StatusMessage != null && 
                     Regex.IsMatch(line, ProgressPattern))
                 {
@@ -289,8 +306,11 @@ public class GalleryDlDownloader : BaseMediaDownloader
                             options.StatusMessage.MessageId, 
                             progressText,
                             cancellationToken: ct);
-                        
-                        await Task.Delay(1000, ct); // TODO: Get from new config
+                        await Task.Delay(1000, ct);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // ignore
                     }
                     catch (Exception ex)
                     {
@@ -298,6 +318,10 @@ public class GalleryDlDownloader : BaseMediaDownloader
                     }
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            // expected when user cancels
         }
         catch (Exception ex)
         {

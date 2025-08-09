@@ -16,18 +16,22 @@ using Telegram.Bot.Types.Enums;
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot.Handlers;
 
 
 namespace TelegramMediaRelayBot;
 
-public class ProcessVideoDC : IUserState
+    public class ProcessVideoDC : IUserState
 {
     public UsersStandardState currentState;
-    public string link { get; set; }
-    public Message statusMessage { get; set; }
-    public string text { get; set; }
-    public CancellationTokenSource timeoutCTS { get; }
-    public Queue<(string Link, string Text, int MessageId)> linkQueue = new Queue<(string Link, string Text, int MessageId)>();
+        public string link { get; set; }
+        public Message statusMessage { get; set; }
+        public string text { get; set; }
+        // per-message default-action timers
+        private readonly Dictionary<int, CancellationTokenSource> _decisionCtsByMessageId = new();
+        // pending entries per message
+    private readonly Dictionary<int, (string Link, string Text)> _pendingByMessageId = new();
+    private readonly Dictionary<int, CancellationTokenSource> _sessionCtsByMessageId = new();
     private string action = "";
     private List<long> targetUserIds = new List<long>();
     private List<long> preparedTargetUserIds = new List<long>();
@@ -35,17 +39,18 @@ public class ProcessVideoDC : IUserState
     private readonly IContactGetter _contactGetterRepository;
     private readonly IUserGetter _userGetter;
     private readonly IGroupGetter _groupGetter;
+    private readonly IDefaultActionGetter _defaultActionGetter;
     private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
-    public ProcessVideoDC(
-        string Link,
-        Message StatusMessage,
-        string Text,
-        CancellationTokenSource cts,
+        public ProcessVideoDC(
+            string Link,
+            Message StatusMessage,
+            string Text,
         TGBot tgBot,
         IContactGetter contactGetterRepository,
         IUserGetter userGetter,
         IGroupGetter groupGetter,
+            IDefaultActionGetter defaultActionGetter,
         TelegramMediaRelayBot.Config.Services.IResourceService resourceService
         )
     {
@@ -53,12 +58,13 @@ public class ProcessVideoDC : IUserState
         statusMessage = StatusMessage;
         text = Text;
         currentState = UsersStandardState.ProcessAction;
-        timeoutCTS = cts;
         _tgBot = tgBot;
         _contactGetterRepository = contactGetterRepository;
         _userGetter = userGetter;
         _groupGetter = groupGetter;
+            _defaultActionGetter = defaultActionGetter;
         _resourceService = resourceService;
+            _pendingByMessageId[StatusMessage.MessageId] = (Link, Text);
     }
 
     public string GetCurrentState()
@@ -75,9 +81,19 @@ public class ProcessVideoDC : IUserState
             case UsersStandardState.ProcessAction:
                 if (update.CallbackQuery != null)
                 {
-        if (TGBot.StateManager.TryGet(chatId, out var state) && state is ProcessVideoDC videoState)
+                    // pivot to the message which generated the callback
+                    if (update.CallbackQuery.Message != null)
                     {
-                        videoState.timeoutCTS.Cancel();
+                        statusMessage = update.CallbackQuery.Message;
+                        if (_decisionCtsByMessageId.TryGetValue(statusMessage.MessageId, out var cts))
+                        {
+                            try { cts.Cancel(); } catch { }
+                        }
+                        if (_pendingByMessageId.TryGetValue(statusMessage.MessageId, out var entry))
+                        {
+                            link = entry.Link;
+                            text = entry.Text;
+                        }
                     }
                     string callbackData = update.CallbackQuery.Data!;
                     switch (callbackData)
@@ -109,7 +125,7 @@ public class ProcessVideoDC : IUserState
 
                         case UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS:
                             action = UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS;
-                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
+                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
                             currentState = UsersStandardState.ProcessData;
                             break;
 
@@ -118,6 +134,20 @@ public class ProcessVideoDC : IUserState
                             await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
                             currentState = UsersStandardState.Finish;
                             break;
+
+                        case "cancel_download":
+                            // cancel only this message/session
+                            if (_decisionCtsByMessageId.TryGetValue(statusMessage.MessageId, out var cancelCts))
+                            {
+                                try { cancelCts.Cancel(); } catch { }
+                            }
+                            if (_sessionCtsByMessageId.TryGetValue(statusMessage.MessageId, out var sessCts))
+                            {
+                                try { sessCts.Cancel(); } catch { }
+                            }
+                            _pendingByMessageId.Remove(statusMessage.MessageId);
+                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("CanceledByUserMessage"), cancellationToken: cancellationToken);
+                            return;
 
                         case "main_menu":
                             await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false);
@@ -152,7 +182,9 @@ public class ProcessVideoDC : IUserState
                             replyParameters: new ReplyParameters { MessageId = replyToMessageId }, 
                             cancellationToken: cancellationToken
                         );
-                        linkQueue.Enqueue((newLink, newText, statusMessage.MessageId));
+                        _pendingByMessageId[statusMessage.MessageId] = (newLink, newText);
+                        // schedule default action for this message id if configured
+                        await TryScheduleDefaultActionForMessage(botClient, chatId, statusMessage, newLink, newText, cancellationToken);
                     }
                 }
                 break;
@@ -206,41 +238,35 @@ public class ProcessVideoDC : IUserState
                     return;
                 }
 
-                await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
-                _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
-
-                if (linkQueue.Count > 0)
-                {
-                    var nextLink = linkQueue.Dequeue();
-                    link = nextLink.Link;
-                    text = nextLink.Text;
-                    int replyToMessageId = nextLink.MessageId;
-                    currentState = UsersStandardState.ProcessAction;
-
-                    statusMessage = await botClient.SendMessage(
-                        chatId, 
-                        _resourceService.GetResourceString("WaitDownloadingVideo"),
-                        replyParameters: new ReplyParameters { MessageId = replyToMessageId }, 
-                        cancellationToken: cancellationToken
-                    );
-
-                    await botClient.EditMessageText(
-                        statusMessage.Chat.Id, 
-                        statusMessage.MessageId, 
-                        _resourceService.GetResourceString("VideoDistributionQuestion"), 
-                        replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(), 
-                        cancellationToken: cancellationToken
-                    );
-
-                    await ProcessState(botClient, update, cancellationToken);
-                }
-                else
-                {
-        TGBot.StateManager.Remove(chatId);
-                }
+                await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetCancelKeyboardMarkup());
+                // start download/send specifically for this message
+                var sessionCts = new CancellationTokenSource();
+                _sessionCtsByMessageId[statusMessage.MessageId] = sessionCts;
+                _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, groupChat: false, caption: text, sessionToken: sessionCts.Token);
+                _pendingByMessageId.Remove(statusMessage.MessageId);
+                currentState = UsersStandardState.ProcessAction;
 
                 break;
         }
+    }
+
+    private async Task TryScheduleDefaultActionForMessage(ITelegramBotClient botClient, long chatId, Message status, string url, string initialText, CancellationToken cancellationToken)
+    {
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        string defaultActionData = _defaultActionGetter.GetDefaultActionByUserIDAndType(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+        if (defaultActionData == UsersAction.NO_VALUE) return;
+        string defaultAction = defaultActionData.Split(';')[0];
+        int defaultCondition = int.Parse(defaultActionData.Split(';')[1]);
+        if (defaultAction == UsersAction.OFF) return;
+        var cts = new CancellationTokenSource();
+        _decisionCtsByMessageId[status.MessageId] = cts;
+        var privateUtils = new PrivateUtils(_tgBot, _contactGetterRepository, _defaultActionGetter, _userGetter, _groupGetter, _resourceService);
+        privateUtils.ProcessDefaultSendAction(botClient, chatId, status, defaultAction, cancellationToken, userId, defaultCondition, cts, url, initialText);
+    }
+
+    public void RegisterSession(long messageId, CancellationTokenSource sessionCts)
+    {
+        _sessionCtsByMessageId[(int)messageId] = sessionCts;
     }
 
     private async Task PrepareTargetUserIds(long chatId)

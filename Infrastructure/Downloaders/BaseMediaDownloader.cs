@@ -180,12 +180,19 @@ public abstract class BaseMediaDownloader : IMediaDownloader
             throw new TimeoutException($"Command execution timed out after {timeout.TotalSeconds} seconds");
         }
 
-        await Task.WhenAll(readOutputTask, readErrorTask);
+        try
+        {
+            await Task.WhenAll(readOutputTask, readErrorTask);
+        }
+        catch (OperationCanceledException)
+        {
+            // ignore on cancellation
+        }
         stopwatch.Stop();
 
         return new CommandResult
         {
-            ExitCode = process.ExitCode,
+            ExitCode = process.HasExited ? process.ExitCode : -1,
             Output = string.Join("\n", outputLines),
             ErrorOutput = string.Join("\n", errorLines),
             Duration = stopwatch.Elapsed
@@ -201,6 +208,10 @@ public abstract class BaseMediaDownloader : IMediaDownloader
             {
                 lines.Add(line);
             }
+        }
+        catch (OperationCanceledException)
+        {
+            // expected when user cancels
         }
         catch (Exception ex)
         {

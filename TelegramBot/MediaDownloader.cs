@@ -211,9 +211,10 @@ public partial class TGBot
     }
 
     public async Task HandleMediaRequest(ITelegramBotClient botClient, string contentUrl, long chatId, Message statusMessage,
-                                                List<long>? targetUserIds = null, bool groupChat = false, string caption = "")
+                                                List<long>? targetUserIds = null, bool groupChat = false, string caption = "", CancellationToken? sessionToken = null)
     {
-        List<byte[]>? mediaFiles = await _mediaDownloaderService.DownloadMedia(botClient, contentUrl, statusMessage, cancellationToken);
+        var effectiveToken = sessionToken ?? cancellationToken;
+        List<byte[]>? mediaFiles = await _mediaDownloaderService.DownloadMedia(botClient, contentUrl, statusMessage, effectiveToken);
         
         if (mediaFiles?.Count > 0)
         {
@@ -227,33 +228,42 @@ public partial class TGBot
             var processedFiles = await _mediaProcessingService.ApplySizePolicyAsync(
                 mediaFiles,
                 _downloadingConfig.CurrentValue,
-                cancellationToken);
+                effectiveToken);
             Log.Debug("Size policy applied: files before={Before}, after={After}", mediaFiles.Count, processedFiles.Count);
 
-            await SendMediaToTelegram(botClient, chatId, processedFiles, statusMessage, targetUserIds, contentUrl, groupChat, caption);
+            await SendMediaToTelegram(botClient, chatId, processedFiles, statusMessage, targetUserIds, contentUrl, groupChat, caption, effectiveToken);
             return;
         }
 
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("FailedToProcessLink"));
+        // Если задача была отменена пользователем — выходим тихо
+        if (!(effectiveToken.IsCancellationRequested))
+        {
+            try
+            {
+                await botClient.SendMessage(chatId, _resourceService.GetResourceString("FailedToProcessLink"));
+            }
+            catch (OperationCanceledException) { }
+        }
     }
 
         private async Task SendMediaToTelegram(ITelegramBotClient botClient, long chatId, List<byte[]> mediaFiles,
                                                         Message statusMessage, List<long>? targetUserIds, string contentUrl, bool groupChat = false,
-                                                        string caption = "")
+                                                        string caption = "", CancellationToken? sessionToken = null)
     {
+        var effectiveToken = sessionToken ?? cancellationToken;
         if (!await ValidateMediaFilesOrReport(botClient, statusMessage, mediaFiles)) return;
 
         var groupedFiles = GroupMediaFiles(mediaFiles);
 
         try
         {
-            await SendGroupedMedia(botClient, chatId, statusMessage, groupedFiles, targetUserIds, contentUrl, groupChat, caption);
+            await SendGroupedMedia(botClient, chatId, statusMessage, groupedFiles, targetUserIds, contentUrl, groupChat, caption, effectiveToken);
             Log.Debug($"Successfully sent {mediaFiles.Count} files");
         }
         catch (Telegram.Bot.Exceptions.ApiRequestException apiEx) when (apiEx.ErrorCode == 413)
         {
             Log.Warning(apiEx, "Telegram returned 413. Trying to resend as separate messages");
-            await SendIndividually(botClient, chatId, statusMessage, groupedFiles, contentUrl, caption);
+            await SendIndividually(botClient, chatId, statusMessage, groupedFiles, contentUrl, caption, effectiveToken);
         }
         catch (Exception ex)
         {
@@ -268,8 +278,10 @@ public partial class TGBot
         Message statusMessage,
         Dictionary<TelegramMediaRelayBot.TelegramBot.Utils.MediaFileType, List<byte[]>> groupedFiles,
         string contentUrl,
-        string caption)
+        string caption,
+        CancellationToken? sessionToken = null)
     {
+        var effectiveToken = sessionToken ?? cancellationToken;
         foreach (var kv in groupedFiles)
         {
             foreach (var file in kv.Value)
@@ -281,16 +293,16 @@ public partial class TGBot
                     switch (type)
                     {
                         case TelegramMediaRelayBot.TelegramBot.Utils.MediaFileType.Photo:
-                            await botClient.SendPhoto(chatId, new InputFileStream(stream, "photo.jpg"), caption: caption, replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId }, disableNotification: true, cancellationToken: cancellationToken);
+                            await botClient.SendPhoto(chatId, new InputFileStream(stream, "photo.jpg"), caption: caption, replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId }, disableNotification: true, cancellationToken: effectiveToken);
                             break;
                         case TelegramMediaRelayBot.TelegramBot.Utils.MediaFileType.Video:
-                            await botClient.SendVideo(chatId, new InputFileStream(stream, "video.mp4"), caption: caption, replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId }, disableNotification: true, cancellationToken: cancellationToken);
+                            await botClient.SendVideo(chatId, new InputFileStream(stream, "video.mp4"), caption: caption, replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId }, disableNotification: true, cancellationToken: effectiveToken);
                             break;
                         case TelegramMediaRelayBot.TelegramBot.Utils.MediaFileType.Audio:
-                            await botClient.SendAudio(chatId, new InputFileStream(stream, "audio.mp3"), caption: caption, replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId }, disableNotification: true, cancellationToken: cancellationToken);
+                            await botClient.SendAudio(chatId, new InputFileStream(stream, "audio.mp3"), caption: caption, replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId }, disableNotification: true, cancellationToken: effectiveToken);
                             break;
                         default:
-                            await botClient.SendDocument(chatId, new InputFileStream(stream, "file.bin"), caption: caption, replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId }, disableNotification: true, cancellationToken: cancellationToken);
+                            await botClient.SendDocument(chatId, new InputFileStream(stream, "file.bin"), caption: caption, replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId }, disableNotification: true, cancellationToken: effectiveToken);
                             break;
                     }
                 }
@@ -327,8 +339,10 @@ public partial class TGBot
         List<long>? targetUserIds,
         string contentUrl,
         bool groupChat,
-        string caption)
+        string caption,
+        CancellationToken? sessionToken = null)
     {
+        var effectiveToken = sessionToken ?? cancellationToken;
         string text = string.Empty;
         bool lastMediaGroup = false;
 
@@ -345,7 +359,7 @@ public partial class TGBot
                     media: chunk,
                     replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
                     disableNotification: true,
-                    cancellationToken: cancellationToken
+                    cancellationToken: effectiveToken
                 );
 
                 List<InputMedia> savedMediaGroupIDs = mess.Select<Message, InputMedia>(msg =>

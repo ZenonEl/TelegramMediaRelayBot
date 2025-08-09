@@ -49,7 +49,7 @@ public class MediaDownloaderService
         Message statusMessage, 
         CancellationToken cancellationToken)
     {
-        // Префлайт по размеру (если включено)
+        // Префлайт по размеру (если включено). При отмене пользователем не редактируем сообщение
         if (await ShouldSkipByExternalSizeAsync(videoUrl, cancellationToken))
         {
             try
@@ -59,6 +59,10 @@ public class MediaDownloaderService
                     statusMessage.MessageId,
                     $"❌ Файл слишком большой для загрузки источником (>{_downloadingConfig.CurrentValue.ExternalDownloadMaxSizeMb} MB).",
                     cancellationToken: cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                // ignore when canceled
             }
             catch { }
             return null;
@@ -104,6 +108,11 @@ public class MediaDownloaderService
                         downloader.Name, videoUrl, result.ErrorMessage);
                 }
             }
+            catch (OperationCanceledException)
+            {
+                // user canceled: stop fallback chain silently
+                return null;
+            }
             catch (Exception ex)
             {
                 Log.Warning(ex, "Downloader {Downloader} failed for {Url}", downloader.Name, videoUrl);
@@ -140,6 +149,10 @@ public class MediaDownloaderService
                     return true;
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            Log.Debug("Preflight canceled for {Url}", url);
         }
         catch (Exception ex)
         {

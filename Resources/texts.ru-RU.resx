@@ -320,6 +320,9 @@ ID: {0}
     <data name="DefaultActionTimeoutMessage" xml:space="preserve">
         <value>⏳ Время вышло, будет выполнено действие по умолчанию...</value>
     </data>
+  <data name="CanceledByUserMessage" xml:space="preserve">
+    <value>❎ Отменено пользователем</value>
+  </data>
 
     <!-- Текст кнопок управления настройками-->
     <data name="SettingsMenuText" xml:space="preserve">

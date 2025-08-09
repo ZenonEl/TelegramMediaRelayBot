@@ -315,6 +315,9 @@ Are you sure you want to unmute them? If not, type /start</value>
     <data name="DefaultActionTimeoutMessage" xml:space="preserve">
         <value>⏳ Time is up, the default action will be performed...</value>
     </data>
+  <data name="CanceledByUserMessage" xml:space="preserve">
+    <value>❎ Canceled by user</value>
+  </data>
 
     <!-- The text of the settings control buttons -->
     <data name="SettingsMenuText" xml:space="preserve">

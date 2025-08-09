@@ -146,4 +146,33 @@ public static class KeyboardUtils
                     });
         return inlineKeyboard;
 }
+
+    private static string TextOrDefault(string key, string fallback)
+    {
+        var value = GetResourceString(key);
+        if (string.Equals(value, key, StringComparison.Ordinal)) return fallback;
+        return value;
+    }
+
+    public static InlineKeyboardMarkup GetCancelKeyboardMarkup()
+    {
+        var cancelText = TextOrDefault("CancelButtonText", "Отменить");
+        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+                    {
+                        new[] { InlineKeyboardButton.WithCallbackData(cancelText, "cancel_download") }
+                    });
+        return inlineKeyboard;
+    }
+
+    public static InlineKeyboardMarkup GetConfirmWithCancelKeyboardMarkup(string acceptCallback = "accept", string denyCallback = "main_menu")
+    {
+        var cancelText = TextOrDefault("CancelButtonText", "Отменить");
+        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+                    {
+                        new[] { InlineKeyboardButton.WithCallbackData(GetResourceString("YesButtonText"), acceptCallback) },
+                        new[] { InlineKeyboardButton.WithCallbackData(cancelText, "cancel_download") },
+                        new[] { GetReturnButton(denyCallback) }
+                    });
+        return inlineKeyboard;
+    }
 }

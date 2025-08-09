@@ -42,7 +42,7 @@
             "UrlPatterns": [
                 "youtube\\.com/watch\\?v=",
                 "youtu\\.be/[a-zA-Z0-9_-]+",
-                "vimeo\\.com/[0-9]+",
+                "vt\\.tiktok\\.com/",
                 "pinterest\\.com/pin/",
                 "pinterest\\.com/",
                 "ru\\.pinterest\\.com/",
@@ -83,7 +83,7 @@
             "MaxRetries": 2,
             "UrlPatterns": [
                 "instagram\\.com/p/",
-                "twitter\\.com/[^/]+/status/",
+                "vt\\.tiktok\\.com/",
                 "pinterest\\.com/pin/",
                 "pinterest\\.com/",
                 "ru\\.pinterest\\.com/",
