@@ -8,7 +8,15 @@
   - `MessageDelaySettings:*`
   - `AppSettings:Proxy`
   - `AccessPolicy:*`
-  - Параметры загрузчиков в `downloader-config.json`
+- Параметры загрузчиков в `downloader-config.json`
+- Политика размеров в `Downloading` (Transcode/Split, лимиты и профили)
+
+> [!NOTE]
+> Hot‑reload поведения:
+> - Изменения в `downloader-config.json` не логируются централизованно. Они применяются при следующем срабатывании соответствующего загрузчика (без рестарта).
+> - Для `UrlPatterns` у загрузчиков есть «ленивое» обновление: при первом `CanHandle` после правки — паттерны перечитываются и в Debug будет строка `UrlPatterns reloaded for {Downloader}`.
+> - Секция `Downloaders.Defaults` — шаблон, автоматического наследования нет. Дублируйте важные поля в конкретных узлах.
+> - Изменения секции `Downloading` (основной конфиг) логируются строками `Config changed [Downloading]: ...`.
 
 - Пример через ENV (Linux bash):
   ```bash
@@ -18,6 +26,20 @@
   ```
 
 - Требует рестарта: `AppSettings:TelegramBotToken`, `AppSettings:DatabaseType/SqlConnectionString/DatabaseName`, смена пути к файлу загрузчиков.
+
+### Советы по большим файлам
+- Телеграм накладывает жёсткий лимит на размер загрузки ботом — обойти его нельзя.
+- Если включена политика `Downloading`:
+  - `Transcode` — пережимает файл под `TargetUploadLimitMb`.
+  - `Split` — режет на части `TargetPartSizeMb` и отправляет по очереди.
+  - `TranscodeThenSplit` — сначала пережимает, затем режет при необходимости.
+- Если `PreflightEnabled=true` и `ExternalDownloadMaxSizeMb` задан — большие источники можно отсекать до скачивания.
+
+### Что в downloader‑config.json применится «на лету»
+- Весь раздел `Downloaders` (включая `YtDlp`, `GalleryDl`):
+  - `Enabled`, `Priority`, `Path`, `AlternativePaths`, `CheckCommands`, `DefaultArguments`, `Timeout`, `MaxRetries`, `UrlPatterns`, `OutputPattern`, `ProgressPattern`, `ProxySettings`
+- Раздел `GlobalSettings` (например, таймауты, прогресс): применяется для следующих операций скачивания.
+- Блок `Downloaders.Defaults` — справочный (шаблон значений). Авто‑наследования сейчас нет, задавайте значения в конкретном загрузчике.
 
 # 💬 Использование
 

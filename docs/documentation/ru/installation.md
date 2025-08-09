@@ -8,7 +8,8 @@
 | .NET Runtime    | 8.0+         | Обязательно для запуска                    |
 | MySQL Server    | 9.3+         | Требуется для хранения данных (также можно использовать SQLite)              |
 | yt-dlp          | 2025.04.09+  | Должен быть установлен в системе (или лежать в корне проекта с исполняемым файлом) |
-| gallery-dl      | 2025.04.09+  | Должен быть установлен в системе (или лежать в корне проекта с исполняемым файломю. Скачивается отдельно не входит в релиз) |
+| gallery-dl      | 2025.04.09+  | Должен быть установлен в системе (или лежать в корне проекта с исполняемым файлом). Скачивается отдельно, не входит в релиз |
+| ffmpeg/ffprobe  | 6.0+         | Требуются для транскодирования/разбиения больших файлов |
 
 ### Поддерживаемые ОС
 - **Linux** (x64): Для разработки и использования я использовал Linux Mint и CachyOS. Поэтому, похожие дистрибутивы должны также работать, главное наличие основных компонентов в вашей системе
@@ -83,7 +84,11 @@ dotnet run --project TelegramMediaRelayBot.csproj
     wget https://github.com/mikf/gallery-dl/releases/latest/download/gallery-dl.bin -O gallery-dl.bin
     chmod +x gallery-dl
     ```
-5. Запустите исполняемый файл:
+5. Установите ffmpeg/ffprobe (для политики размера):
+    - Debian/Ubuntu: `sudo apt-get install ffmpeg`
+    - Arch: `sudo pacman -S ffmpeg`
+
+6. Запустите исполняемый файл:
     **Перед запуском убедитесь, что выполнены все остальные шаги настройки**
     ```bash
     ./TelegramMediaRelayBot
@@ -116,7 +121,7 @@ FLUSH PRIVILEGES;
 
 #### **2.2 Настройка конфигурации**
 
-После настройки MySQL/MariaDB, обновите конфигурационный файл `appsettings.json`. Убедитесь, что следующие параметры соответствуют вашей настройке MySQL/MariaDB:
+После настройки MySQL/MariaDB, обновите конфигурационный файл `appsettings.json`. Убедитесь, что следующие параметры соответствуют вашей настройке MySQL/MariaDB (см. также раздел `Downloading` ниже):
 
 ```json
 {
@@ -259,6 +264,7 @@ AppSettings__TelegramBotToken="1234:abcd" Tor__Enabled=true dotnet run --project
 - `AppSettings:Proxy` — глобальный прокси для загрузчиков
 - `AccessPolicy` — политика доступа для новых пользователей
 - Параметры загрузчиков из `downloader-config.json` (`Downloaders:*`) — включение/приоритет/аргументы/таймауты/паттерны
+- Раздел `Downloading` — политика размеров (TargetUploadLimitMb, ExternalDownloadMaxSizeMb, PreflightEnabled, IfTooLarge, TargetPartSizeMb, TranscodeProfile)
 
 Требует рестарта:
 - `AppSettings:TelegramBotToken`
@@ -275,6 +281,20 @@ AppSettings__TelegramBotToken="1234:abcd" Tor__Enabled=true dotnet run --project
 - Смена самого пути требует рестарта.
 
 Подробнее про структуру и примеры: см. раздел «[Конфигурация загрузчиков](downloader-config.md)».
+
+#### 3.4 Политика размеров (Downloading)
+
+Глобально управляет подготовкой файлов под лимиты Telegram:
+- `TargetUploadLimitMb` — целевой лимит, к которому приводятся файлы перед отправкой
+- `ExternalDownloadMaxSizeMb` — предчек источника по Content-Length (если больше — не скачиваем)
+- `PreflightEnabled` — включает предчек
+- `IfTooLarge` — `Off|Transcode|Split|TranscodeThenSplit`
+- `TargetPartSizeMb` — размер части при разбиении
+- `TranscodeProfile` — профилировка транскода (`MaxResolution`, битрейты, `Preset`)
+
+Рекомендации:
+- Для надёжности начать с `IfTooLarge=TranscodeThenSplit`, `TargetPartSizeMb=32`
+- Для агрессивной экономии — `MaxResolution=480p`, `VideoBitrateKbps=1200`, `AudioBitrateKbps=96`, `Preset=veryfast`
 
 #### 3.4 Рекомендации по секретам и не-горячим параметрам
 

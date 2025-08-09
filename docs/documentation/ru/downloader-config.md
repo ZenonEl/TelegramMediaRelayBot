@@ -20,18 +20,20 @@
 ```json
 {
   "Downloaders": {
+    "Defaults": {
+      "Enabled": true,
+      "Priority": 10,
+      "MatchAllIfNoPatterns": true,
+      "UrlPatterns": [],
+      "ProxySettings": { "UseGlobalProxy": true, "CustomProxy": null, "RequireProxy": false }
+    },
     "YtDlp": {
       "Type": "Executable",
       "Enabled": true,
       "Priority": 100,
       "Path": "yt-dlp",
       "CheckCommands": ["--dry-run", "--list-formats"],
-      "DefaultArguments": [
-        "--proxy", "{Proxy}",
-        "-v",
-        "-f", "best[filesize<50M]/worst[filesize<50M]/best",
-        "--output", "{OutputPath}/video.%(ext)s"
-      ],
+      "DefaultArguments": ["--proxy", "{Proxy}", "--output", "{OutputPath}/video.%(ext)s"],
       "ProxySettings": {
         "UseGlobalProxy": true,
         "CustomProxy": null,
@@ -58,7 +60,7 @@
       "AlternativePaths": ["gallery-dl.bin"],
       "SupportedMediaTypes": "Image",
       "CheckCommands": ["--list-urls", "--print filename"],
-      "DefaultArguments": ["--proxy", "{Proxy}", "-d", "{OutputPath}", "-D", "{OutputPath}", "--verbose"],
+      "DefaultArguments": ["--proxy", "{Proxy}", "-d", "{OutputPath}", "-D", "{OutputPath}"]
       "ProxySettings": {
         "UseGlobalProxy": true,
         "CustomProxy": null,
@@ -85,8 +87,31 @@
   - `{Proxy}` — будет заменён на актуальный прокси (глобальный из `AppSettings:Proxy` или сайт-специфичный из `ProxySettings:SiteSpecificProxies`).
   - `{OutputPath}` — временная директория загрузки.
 
+### Блок `Downloaders.Defaults`
+- Это секция с удобными значениями «по умолчанию», чтобы не дублировать их в каждом загрузчике.
+- Текущая реализация не делает автоматического наследования на уровне кода. Поэтому, чтобы значение гарантированно применилось, задавайте его в узле конкретного загрузчика. `Defaults` служит как единый шаблон/референс для копирования и для будущего расширения.
+  - Рекомендуемая дисциплина: поддерживайте одинаковые значения в `Defaults` и в нужных загрузчиках.
+
 ## Что можно менять без рестарта
-- `Enabled`, `Priority`, `Path`, `AlternativePaths`, `CheckCommands`, `DefaultArguments`, `Timeout`, `MaxRetries`, `UrlPatterns`, `OutputPattern`, `ProgressPattern`, `ProxySettings` — все применяются для следующих загрузок без рестарта.
+- `Enabled`, `Priority`, `Path`, `AlternativePaths`, `CheckCommands`, `DefaultArguments`, `Timeout`, `MaxRetries`, `UrlPatterns`, `OutputPattern`, `ProgressPattern`, `ProxySettings`, `Defaults:MatchAllIfNoPatterns` — применяются без рестарта.
+
+### Важно про hot‑reload downloader‑config
+- Изменения в `downloader-config.json` НЕ логируются через общий монитор конфигурации (нет строк «Config changed [...]»).
+- Эти изменения применяются «лениво»: при следующем запуске соответствующего загрузчика. Рестарт не нужен.
+- Для списка `UrlPatterns` добавлена лёгкая проверка и обновление «на лету»: при первом обращении `CanHandle` после правки файла паттерны будут перечитаны. В лог прилетит Debug‑сообщение вида: `UrlPatterns reloaded for {Downloader}`.
+- Секция `Downloaders.Defaults` служит шаблоном и не применяется автоматически как наследование. Продублируйте нужные поля в конкретном узле загрузчика.
+
+## ENV‑переменные (перекрытие)
+- Любой параметр можно переопределить через ENV, используя двойные подчёркивания как разделители:
+  - `DOWNLOADERS__YTDLP__PROXYSETTINGS__REQUIREPROXY=true`
+  - `DOWNLOADERS__GALLERYDL__ENABLED=false`
+  - `DOWNLOADERS__DEFAULTS__MATCHALLIFNOPATTERNS=false`
+  - Секреты (логин/пароль прокси) держите только в ENV.
+
+## Логирование
+- Мы больше не добавляем `-v/--verbose` в аргументы по умолчанию. Детальный вывод внешних тулов показывается в Debug и обрезается «хвостом».
+- Изменения секции `Downloading` основного конфига логируются как `Config changed [Downloading]: ...`.
+- Изменения в `downloader-config.json` (внешний файл) не логируются централизованно; ориентируйтесь на Debug‑сообщения загрузчиков и поведение при следующем запуске.
 
 ## Рекомендации
 - Проверяйте корректность регулярных выражений для `UrlPatterns`.
