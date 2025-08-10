@@ -167,17 +167,20 @@ namespace TelegramMediaRelayBot;
                             break;
 
                         case "cancel_download":
-                            // cancel only this message/session
-                            if (_decisionCtsByMessageId.TryGetValue(statusMessage.MessageId, out var cancelCts))
+                            // Полная отмена: останавливаем таймеры и выходим из состояния
+                            foreach (var cts in _decisionCtsByMessageId.Values)
                             {
-                                try { cancelCts.Cancel(); } catch { }
+                                try { cts.Cancel(); } catch { }
                             }
-                            if (_sessionCtsByMessageId.TryGetValue(statusMessage.MessageId, out var sessCts))
+                            foreach (var cts in _sessionCtsByMessageId.Values)
                             {
-                                try { sessCts.Cancel(); } catch { }
+                                try { cts.Cancel(); } catch { }
                             }
-                            _pendingByMessageId.Remove(statusMessage.MessageId);
+                            _decisionCtsByMessageId.Clear();
+                            _sessionCtsByMessageId.Clear();
+                            _pendingByMessageId.Clear();
                             await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("CanceledByUserMessage"), cancellationToken: cancellationToken);
+                            TGBot.StateManager.Remove(chatId);
                             return;
 
                         case "main_menu":
