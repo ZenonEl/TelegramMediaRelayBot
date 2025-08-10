@@ -47,7 +47,7 @@ public class Contacts
             infos.Add(string.Format(GetResourceString("ContactInfo"), id, uname, link));
         }
         string prompt = $"{GetResourceString("YourContacts")}\n{string.Join("\n", infos)}\n\n{GetResourceString("InputContactId")}";
-        Message statusMessage = await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, prompt, cancellationToken: cancellationToken);
+        Message statusMessage = await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, prompt, cancellationToken: cancellationToken, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
         TGBot.StateManager.Set(chatId, new ProcessRemoveUser(statusMessage, contactRemoverRepository, contactGetterRepository, userGetter, resourceService));
     }
 
@@ -71,7 +71,7 @@ public class Contacts
             infos.Add(string.Format(GetResourceString("ContactInfo"), id, uname, link));
         }
         string text = $"{GetResourceString("MuteUserInstructions")}\n\n{GetResourceString("YourContacts")}\n{string.Join("\n", infos)}";
-        await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, text, cancellationToken: cancellationToken);
+        await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, text, cancellationToken: cancellationToken, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
         TGBot.StateManager.Set(chatId, new ProcessUserMuteState(contactAdderRepository, contactGetterRepository, userGetter, resourceService));
     }
 
@@ -95,7 +95,7 @@ public class Contacts
             infos2.Add(string.Format(GetResourceString("ContactInfo"), id, uname, link));
         }
         string text2 = $"{GetResourceString("UnmuteUserInstructions")}\n\n{GetResourceString("YourContacts")}\n{string.Join("\n", infos2)}";
-        await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, text2, cancellationToken: cancellationToken);
+        await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, text2, cancellationToken: cancellationToken, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
         TGBot.StateManager.Set(chatId, new ProcessUserUnMuteState(contactRemoverRepository, contactGetter, userGetter, resourceService));
     }
 
