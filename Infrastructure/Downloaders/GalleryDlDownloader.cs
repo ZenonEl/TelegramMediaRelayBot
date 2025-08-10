@@ -74,6 +74,11 @@ public class GalleryDlDownloader : BaseMediaDownloader
             // Если не получилось, пробуем альтернативные пути
             if (!result.Success && AlternativePaths.Length > 0)
             {
+                // Если отменено пользователем — не пробуем альтернативные пути, выходим тихо
+                if (ct.IsCancellationRequested || string.Equals(result.ErrorMessage, "Canceled", StringComparison.OrdinalIgnoreCase))
+                {
+                    return result;
+                }
                 foreach (var alternativePath in AlternativePaths)
                 {
                     try
@@ -81,6 +86,15 @@ public class GalleryDlDownloader : BaseMediaDownloader
                         result = await TryDownloadWithPathAsync(alternativePath, url, tempDirPath, options, ct);
                         if (result.Success)
                             break;
+                        if (ct.IsCancellationRequested || string.Equals(result.ErrorMessage, "Canceled", StringComparison.OrdinalIgnoreCase))
+                        {
+                            return result;
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Тихая отмена — без стека
+                        return new DownloadResult { Success = false, ErrorMessage = "Canceled" };
                     }
                     catch (Exception ex)
                     {
@@ -273,7 +287,8 @@ public class GalleryDlDownloader : BaseMediaDownloader
         }
         catch (OperationCanceledException)
         {
-            // ignore cancellation during read
+            // пробрасываем отмену выше, чтобы перехватить её как тихую отмену в базовом загрузчике
+            throw;
         }
         stopwatch.Stop();
 

@@ -88,6 +88,22 @@ namespace TelegramMediaRelayBot;
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
 
+        // Глобальный выход из стейта по /start или main_menu из ЛЮБОГО состояния
+        if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false))
+        {
+            // Отменяем таймеры для всех pending текущего чата
+            foreach (var kv in _decisionCtsByMessageId.Values)
+            {
+                try { kv.Cancel(); } catch { }
+            }
+            foreach (var kv in _sessionCtsByMessageId.Values)
+            {
+                try { kv.Cancel(); } catch { }
+            }
+            _pendingByMessageId.Clear();
+            return;
+        }
+
         // TTL авто-уборка висячих сессий
         CleanupStalePending(TimeSpan.FromMinutes(10));
 
@@ -165,8 +181,8 @@ namespace TelegramMediaRelayBot;
                             return;
 
                         case "main_menu":
-                            await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false);
-                            break;
+                            // Уже обрабатывается в глобальном pre-check в начале метода, сюда не должны доходить
+                            return;
                     }
                 }
                 else if (update.Message != null && update.Message.Text != null)

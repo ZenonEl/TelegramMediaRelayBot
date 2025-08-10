@@ -238,7 +238,8 @@ public class YtDlpDownloader : BaseMediaDownloader
         }
         catch (OperationCanceledException)
         {
-            // ignore when canceled
+            // пробрасываем отмену выше для тихой обработки в базовом загрузчике
+            throw;
         }
         stopwatch.Stop();
 

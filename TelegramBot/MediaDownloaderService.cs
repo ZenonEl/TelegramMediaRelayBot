@@ -104,6 +104,12 @@ public class MediaDownloaderService
                 }
                 else
                 {
+                    // Если отмена — прекращаем цепочку без предупреждений и ошибок
+                    if (string.Equals(result.ErrorMessage, "Canceled", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Log.Information("Download canceled for {Url}", videoUrl);
+                        return null;
+                    }
                     Log.Warning("Downloader {Downloader} failed for {Url}: {Error}", 
                         downloader.Name, videoUrl, result.ErrorMessage);
                 }
@@ -120,6 +126,7 @@ public class MediaDownloaderService
             }
         }
         
+        // Если дошли сюда без успеха и без явной отмены — считаем, что все загрузчики действительно не смогли
         Log.Error("All downloaders failed for {Url}", videoUrl);
         return null;
     }

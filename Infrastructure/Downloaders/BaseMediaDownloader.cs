@@ -127,6 +127,12 @@ public abstract class BaseMediaDownloader : IMediaDownloader
             Log.Information("Download completed with {Downloader} for {Url}", Name, url);
             return result;
         }
+        catch (OperationCanceledException)
+        {
+            // Тихая отмена: пользователь нажал отмену — не засоряем логи ошибками
+            Log.Information("Download canceled with {Downloader} for {Url}", Name, url);
+            return new DownloadResult { Success = false, ErrorMessage = "Canceled" };
+        }
         catch (Exception ex)
         {
             Log.Error(ex, "Download failed with {Downloader} for {Url}", Name, url);
