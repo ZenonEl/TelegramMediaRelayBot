@@ -17,6 +17,10 @@ using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 namespace TelegramMediaRelayBot;
 
+/// <summary>
+/// Handles contact link operations (keep/delete subset). Follows a unified 3-step flow:
+/// ProcessAction -> ProcessData -> Finish. Uses inline keyboards, supports /start bailout.
+/// </summary>
 public class ProcessContactLinksState : IUserState
 {
 
@@ -85,7 +89,7 @@ public class ProcessContactLinksState : IUserState
         string? messageText = update.Message?.Text;
         if (string.IsNullOrEmpty(messageText))
         {
-            await botClient.SendMessage(chatId, "Invalid input", cancellationToken: cancellationToken);
+            await botClient.SendMessage(chatId, _resourceService.GetResourceString("State.ContactLinks.InvalidInput"), cancellationToken: cancellationToken);
             return;
         }
 
@@ -96,7 +100,7 @@ public class ProcessContactLinksState : IUserState
 
         if (inputIds.Count == 0)
         {
-            await botClient.SendMessage(chatId, "No valid IDs found", cancellationToken: cancellationToken);
+            await botClient.SendMessage(chatId, _resourceService.GetResourceString("State.ContactLinks.NoValidIds"), cancellationToken: cancellationToken);
             return;
         }
 
@@ -106,12 +110,12 @@ public class ProcessContactLinksState : IUserState
 
         if (userState.targetIds.Count == 0)
         {
-            await botClient.SendMessage(chatId, "No valid IDs found for your account", cancellationToken: cancellationToken);
+            await botClient.SendMessage(chatId, _resourceService.GetResourceString("State.ContactLinks.NoValidIdsForAccount"), cancellationToken: cancellationToken);
             return;
         }
 
         var idsList = string.Join(", ", userState.targetIds);
-        var message = $" to process:\n{idsList}\n\nConfirm?";
+        var message = string.Format(_resourceService.GetResourceString("State.ContactLinks.ConfirmList"), idsList);
         
         await botClient.SendMessage(
             chatId,

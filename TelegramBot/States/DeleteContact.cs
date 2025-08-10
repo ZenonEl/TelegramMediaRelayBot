@@ -18,6 +18,9 @@ using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot;
 
+/// <summary>
+/// Deletes one or multiple contacts by IDs. Uses inline confirmation and supports /start bailout.
+/// </summary>
 public class ProcessRemoveUser : IUserState
 {
     public UsersStandardState currentState;
@@ -50,9 +53,13 @@ public class ProcessRemoveUser : IUserState
         return currentState.ToString();
     }
 
+    /// <summary>
+    /// Handles the contact deletion flow; performs /start bailout before branching.
+    /// </summary>
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
+        if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
 
         switch (currentState)
         {

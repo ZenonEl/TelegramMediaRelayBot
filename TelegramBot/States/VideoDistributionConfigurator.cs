@@ -351,21 +351,22 @@ namespace TelegramMediaRelayBot;
         }
     }
 
-    private async Task TryScheduleDefaultActionForMessage(ITelegramBotClient botClient, long chatId, Message status, string url, string initialText, CancellationToken cancellationToken)
+    private Task TryScheduleDefaultActionForMessage(ITelegramBotClient botClient, long chatId, Message status, string url, string initialText, CancellationToken cancellationToken)
     {
         int userId = _userGetter.GetUserIDbyTelegramID(chatId);
         string defaultActionData = _defaultActionGetter.GetDefaultActionByUserIDAndType(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
-        if (defaultActionData == UsersAction.NO_VALUE) return;
+        if (defaultActionData == UsersAction.NO_VALUE) return Task.CompletedTask;
         string defaultAction = defaultActionData.Split(';')[0];
         int defaultCondition = 0;
         var partsDelay = defaultActionData.Split(';');
         if (partsDelay.Length >= 2) int.TryParse(partsDelay[1], out defaultCondition);
         if (defaultCondition <= 0) defaultCondition = 5; // дефолтная задержка окна/таймера, если не задано
-        if (defaultAction == UsersAction.OFF) return;
+        if (defaultAction == UsersAction.OFF) return Task.CompletedTask;
         var cts = new CancellationTokenSource();
         _decisionCtsByMessageId[status.MessageId] = cts;
         var privateUtils = new PrivateUtils(_tgBot, _contactGetterRepository, _defaultActionGetter, _userGetter, _groupGetter, _resourceService);
         privateUtils.ProcessDefaultSendAction(botClient, chatId, status, defaultAction, cancellationToken, userId, defaultCondition, cts, url, initialText);
+        return Task.CompletedTask;
     }
 
     public void RegisterSession(long messageId, CancellationTokenSource sessionCts)

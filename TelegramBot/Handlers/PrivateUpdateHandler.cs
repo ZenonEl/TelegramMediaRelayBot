@@ -105,10 +105,14 @@ public class PrivateUpdateHandler
             string helpText = _resourceService.GetResourceString("HelpText");
             await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken, helpText);
         }
-        else
+        else if (update.Message.Text != null)
         {
             // Сохраняем "предыдущий текст" для окна caption, если это не ссылка
             TGBot.RememberLastText(chatId, update.Message.Text);
+            await botClient.SendMessage(update.Message.Chat.Id, _resourceService.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken);
+        }
+        else
+        {
             await botClient.SendMessage(update.Message.Chat.Id, _resourceService.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken);
         }
     }

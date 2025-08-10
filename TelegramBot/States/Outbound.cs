@@ -17,6 +17,10 @@ using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 namespace TelegramMediaRelayBot;
 
+/// <summary>
+/// Manages outbound invites: view, revoke, and details. Follows ProcessAction -> Finish.
+/// Adds global /start bailout at the beginning of processing.
+/// </summary>
 public class UserProcessOutboundState : IUserState
 {
     private IContactRemover _contactRepository;
@@ -48,17 +52,20 @@ public class UserProcessOutboundState : IUserState
         return currentState.ToString();
     }
 
+    /// <summary>
+    /// Entry point for processing outbound state updates. Applies /start bailout first.
+    /// </summary>
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (!TGBot.StateManager.TryGet(chatId, out IUserState? value))
+        if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
+
+        if (!TGBot.StateManager.TryGet(chatId, out IUserState? value) || value is not UserProcessOutboundState userState)
         {
             return;
         }
-
-        var userState = (UserProcessOutboundState)value;
 
         switch (userState.currentState)
         {

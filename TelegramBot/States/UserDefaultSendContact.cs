@@ -16,6 +16,10 @@ using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot
 {
+    /// <summary>
+    /// Configures default media distribution targets (users or groups) for a user.
+    /// Unified flow with inline keyboards and /start bailout support.
+    /// </summary>
     public class ProcessUserSetDCSendState : IUserState
     {
 

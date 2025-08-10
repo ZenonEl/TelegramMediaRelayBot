@@ -17,6 +17,10 @@ using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 namespace TelegramMediaRelayBot;
 
+/// <summary>
+/// Manages user-defined groups: creation, editing, deletion and toggling default flag.
+/// Consistent ProcessAction -> ProcessData -> Finish flow.
+/// </summary>
 public class ProcessUsersGroupState : IUserState
 {
     public UsersStandardState currentState;
@@ -58,12 +62,10 @@ public class ProcessUsersGroupState : IUserState
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (!TGBot.StateManager.TryGet(chatId, out IUserState? value))
+        if (!TGBot.StateManager.TryGet(chatId, out IUserState? value) || value is not ProcessUsersGroupState userState)
         {
             return;
         }
-
-        var userState = (ProcessUsersGroupState)value;
 
         switch (userState.currentState)
         {
@@ -90,7 +92,7 @@ public class ProcessUsersGroupState : IUserState
 
             case UsersStandardState.ProcessData:
                 if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
-                if (update.CallbackQuery != null && update.CallbackQuery.Data == backCallback)
+                if (update.CallbackQuery != null && update.CallbackQuery.Data != null && update.CallbackQuery.Data == backCallback)
                 {
                     userState.currentState = UsersStandardState.ProcessAction;
                     await CommonUtilities.SendMessage(
@@ -117,7 +119,7 @@ public class ProcessUsersGroupState : IUserState
 
             case UsersStandardState.Finish:
                 if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
-                if (update.CallbackQuery != null && update.CallbackQuery.Data == backCallback)
+                if (update.CallbackQuery != null && update.CallbackQuery.Data != null && update.CallbackQuery.Data == backCallback)
                 {
                     userState.currentState = UsersStandardState.ProcessAction;
                     await CommonUtilities.SendMessage(

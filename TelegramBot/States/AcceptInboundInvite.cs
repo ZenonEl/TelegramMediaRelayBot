@@ -16,6 +16,9 @@ using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 namespace TelegramMediaRelayBot;
 
+/// <summary>
+/// Processes inbound invites: view, accept, decline. Unified 3-step flow with /start bailout.
+/// </summary>
 public class UserProcessInboundState : IUserState
 {
     public UserInboundState currentState;
@@ -50,17 +53,20 @@ public class UserProcessInboundState : IUserState
         return currentState.ToString();
     }
 
+    /// <summary>
+    /// Orchestrates inbound invite flow; runs /start bailout prior to branching.
+    /// </summary>
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (!TGBot.StateManager.TryGet(chatId, out IUserState? value))
+        if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
+
+        if (!TGBot.StateManager.TryGet(chatId, out IUserState? value) || value is not UserProcessInboundState userState)
         {
             return;
         }
-
-        var userState = (UserProcessInboundState)value;
 
         switch (userState.currentState)
         {
@@ -97,19 +103,34 @@ public class UserProcessInboundState : IUserState
                         _resourceService);
                     return;
                 }
-                string userID = update.CallbackQuery!.Data!.Split(':')[1];
-                if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("user_accept_inbounds_invite:"))
+                else if (update.CallbackQuery != null)
                 {
-                    await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_accept_invite:{userID}", $"decline_accept_invite:{userID}"),
-                    cancellationToken, _resourceService.GetResourceString("WaitAcceptInboundInvite"));
+                    var data = update.CallbackQuery.Data!;
+                    if (data.StartsWith("user_accept_inbounds_invite:") || data.StartsWith("user_decline_inbounds_invite:"))
+                    {
+                        var userID = data.Split(':')[1];
+                        if (data.StartsWith("user_accept_inbounds_invite:"))
+                        {
+                            await CommonUtilities.SendMessage(
+                                botClient,
+                                update,
+                                KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_accept_invite:{userID}", $"decline_accept_invite:{userID}"),
+                                cancellationToken,
+                                _resourceService.GetResourceString("WaitAcceptInboundInvite"));
+                        }
+                        else
+                        {
+                            await CommonUtilities.SendMessage(
+                                botClient,
+                                update,
+                                KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_decline_invite:{userID}", $"decline_decline_invite:{userID}"),
+                                cancellationToken,
+                                _resourceService.GetResourceString("WaitDeclineInboundInvite"));
+                        }
+                        userState.currentState = UserInboundState.Finish;
+                        break;
+                    }
                 }
-                else if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("user_decline_inbounds_invite:"))
-                {
-                    await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_decline_invite:{userID}", $"decline_decline_invite:{userID}"), 
-                    cancellationToken, _resourceService.GetResourceString("WaitDeclineInboundInvite"));
-                }
-
-                userState.currentState = UserInboundState.Finish;
                 break;
 
             case UserInboundState.Finish:

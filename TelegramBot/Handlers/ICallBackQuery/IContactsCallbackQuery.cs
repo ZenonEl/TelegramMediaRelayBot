@@ -139,17 +139,20 @@ public class EditContactGroupCommand : IBotCallbackQueryHandlers
     private readonly IContactGroupRepository _contactGroupRepository;
     private readonly IUserGetter _userGetter;
     private readonly IGroupGetter _groupGetter;
+    private readonly IContactGetter _contactGetter;
     private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public EditContactGroupCommand(
         IContactGroupRepository contactGroupRepository,
         IUserGetter userGetter,
         IGroupGetter groupGetter,
+        IContactGetter contactGetter,
         TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         _contactGroupRepository = contactGroupRepository;
         _userGetter = userGetter;
         _groupGetter = groupGetter;
+        _contactGetter = contactGetter;
         _resourceService = resourceService;
     }
 
@@ -158,7 +161,7 @@ public class EditContactGroupCommand : IBotCallbackQueryHandlers
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
-        await Contacts.EditContactGroup(botClient, update, chatId, _contactGroupRepository, _userGetter, _groupGetter, _resourceService);
+        await Contacts.EditContactGroup(botClient, update, chatId, _contactGroupRepository, _userGetter, _groupGetter, _contactGetter, _resourceService);
     }
 }
 

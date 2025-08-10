@@ -16,6 +16,10 @@ using TelegramMediaRelayBot.Database;
 
 namespace TelegramMediaRelayBot
 {
+    /// <summary>
+    /// Adds or removes site domain filters for the user's privacy settings.
+    /// Consistent ProcessAction -> ProcessData -> Finish flow, supports /start bailout.
+    /// </summary>
     public class ProcessUserAddDomainFilterState : IUserState
     {
 
@@ -23,7 +27,7 @@ namespace TelegramMediaRelayBot
         private readonly IPrivacySettingsTargetsSetter _privacySettingsTargetsSetter;
         private readonly int _privacyRuleId;
         private readonly int _userId;
-        private List<string> _checkedDomains;
+        private List<string> _checkedDomains = new();
         private bool _isRemoveDomains;
         private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
@@ -45,12 +49,17 @@ namespace TelegramMediaRelayBot
 
         public string GetCurrentState() => currentState.ToString();
 
+        /// <summary>
+        /// Drives the state machine and applies a global /start bailout before branching.
+        /// </summary>
         public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
             long chatId = CommonUtilities.GetIDfromUpdate(update);
             if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (!TGBot.StateManager.TryGet(chatId, out IUserState? value) || value is not ProcessUserAddDomainFilterState userState)
+            if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId)) return;
+
+            if (!TGBot.StateManager.TryGet(chatId, out IUserState? value) || value is not ProcessUserAddDomainFilterState userState)
                 return;
 
             switch (userState.currentState)

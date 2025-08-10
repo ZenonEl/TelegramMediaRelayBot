@@ -18,6 +18,9 @@ using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 namespace TelegramMediaRelayBot;
 
+/// <summary>
+/// Edits user-defined contact groups: add/remove members. Uses inline flows and supports /start bailout.
+/// </summary>
 public class ProcessContactGroupState : IUserState
 {
     public UsersStandardState currentState;
@@ -32,12 +35,14 @@ public class ProcessContactGroupState : IUserState
     private IContactGroupRepository _contactGroupRepository;
     private readonly IUserGetter _userGetter;
     private readonly IGroupGetter _groupGetter;
+    private readonly IContactGetter _contactGetter;
     private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public ProcessContactGroupState(
         IContactGroupRepository contactGroupRepository,
         IUserGetter userGetter,
         IGroupGetter groupGetter,
+        IContactGetter contactGetter,
         TelegramMediaRelayBot.Config.Services.IResourceService resourceService
         )
     {
@@ -45,6 +50,7 @@ public class ProcessContactGroupState : IUserState
         _contactGroupRepository = contactGroupRepository;
         _userGetter = userGetter;
         _groupGetter = groupGetter;
+        _contactGetter = contactGetter;
         _resourceService = resourceService;
     }
 
@@ -53,17 +59,20 @@ public class ProcessContactGroupState : IUserState
         return currentState.ToString();
     }
 
+    /// <summary>
+    /// Entry point for group editing flow; runs global /start bailout before branching.
+    /// </summary>
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (!TGBot.StateManager.TryGet(chatId, out IUserState? value))
+        if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
+
+        if (!TGBot.StateManager.TryGet(chatId, out IUserState? value) || value is not ProcessContactGroupState userState)
         {
             return;
         }
-
-        var userState = (ProcessContactGroupState)value;
 
         switch (userState.currentState)
         {
@@ -185,20 +194,47 @@ public class ProcessContactGroupState : IUserState
                 if (callbackAction.StartsWith("user_add_contact_to_group:"))
                 {
                     groupId = int.Parse(callbackAction.Split(':')[1]);
+                    // Display user's contacts for ID selection
+                    int ownerId = _userGetter.GetUserIDbyTelegramID(CommonUtilities.GetIDfromUpdate(update));
+                    List<long> tgIds = await _contactGetter.GetAllContactUserTGIds(ownerId);
+                    List<string> infos = new();
+                    foreach (var tg in tgIds)
+                    {
+                        int cid = _userGetter.GetUserIDbyTelegramID(tg);
+                        string uname = _userGetter.GetUserNameByTelegramID(tg);
+                        string link = _userGetter.GetUserSelfLink(tg);
+                        infos.Add(string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, link));
+                    }
+                    string header = _resourceService.GetResourceString("YourContacts");
+                    string prompt = _resourceService.GetResourceString("InputContactIDsText");
+                    string body = infos.Count > 0 ? string.Join("\n", infos) : _resourceService.GetResourceString("NoUsersFound");
                     await CommonUtilities.SendMessage(
                         botClient,
                         update,
                         KeyboardUtils.GetReturnButton(),
                         cancellationToken,
-                        _resourceService.GetResourceString("InputContactIDsText"));
+                        $"{header}\n{body}\n\n{prompt}");
                     return true;
                 }
                 else if (callbackAction.StartsWith("user_remove_contact_from_group:"))
                 {
                     groupId = int.Parse(callbackAction.Split(':')[1]);
+                    // Show current members of the group
+                    IEnumerable<int> members = await _groupGetter.GetAllUsersIdsInGroup(groupId);
+                    List<string> infos = new();
+                    foreach (var cid in members)
+                    {
+                        long tg = _userGetter.GetTelegramIDbyUserID(cid);
+                        string uname = _userGetter.GetUserNameByID(cid);
+                        string link = _userGetter.GetUserSelfLink(tg);
+                        infos.Add(string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, link));
+                    }
+                    string header = _resourceService.GetResourceString("AllContactsText");
+                    string body = infos.Count > 0 ? string.Join("\n", infos) : _resourceService.GetResourceString("NoUsersFound");
+                    string prompt = _resourceService.GetResourceString("InputContactIDsText");
                     await botClient.SendMessage(
                         CommonUtilities.GetIDfromUpdate(update),
-                        _resourceService.GetResourceString("InputContactIDsText"),
+                        $"{header} {body}\n\n{prompt}",
                         replyMarkup: KeyboardUtils.GetReturnButtonMarkup(),
                         cancellationToken: cancellationToken);
                     return true;
@@ -214,7 +250,7 @@ public class ProcessContactGroupState : IUserState
 
         try
         {
-            if (callbackAction.StartsWith("user_add_contact_to_group:"))
+                if (callbackAction.StartsWith("user_add_contact_to_group:"))
             {
                 groupId = int.Parse(callbackAction.Split(':')[1]);
                 contactIDs = update.Message!.Text!.Split(" ").Select(x => int.Parse(x)).ToList();
@@ -226,12 +262,22 @@ public class ProcessContactGroupState : IUserState
                 }
 
                 if (allowedIds.Count == 0) return null;
+                // Show confirmation summary with contact short data
+                List<string> confirmInfos = new();
+                foreach (var cid in allowedIds)
+                {
+                    long tg = _userGetter.GetTelegramIDbyUserID(cid);
+                    string uname = _userGetter.GetUserNameByID(cid);
+                    string link = _userGetter.GetUserSelfLink(tg);
+                    confirmInfos.Add(string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, link));
+                }
+                string confirmHeader = _resourceService.GetResourceString("ConfirmAddContactsToGroupText");
                 await CommonUtilities.SendMessage(
                     botClient,
                     update,
                     KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_add_contact_to_group"),
                     cancellationToken,
-                    _resourceService.GetResourceString("ConfirmAddContactsToGroupText"));
+                    $"{confirmHeader}\n\n{string.Join("\n", confirmInfos)}");
                 contactIDs = allowedIds;
                 return true;
             }
@@ -239,12 +285,22 @@ public class ProcessContactGroupState : IUserState
             {
                 groupId = int.Parse(callbackAction.Split(':')[1]);
                 contactIDs = update.Message!.Text!.Split(" ").Select(x => int.Parse(x)).ToList();
+                // Confirmation summary for removal
+                List<string> confirmInfos = new();
+                foreach (var cid in contactIDs)
+                {
+                    long tg = _userGetter.GetTelegramIDbyUserID(cid);
+                    string uname = _userGetter.GetUserNameByID(cid);
+                    string link = _userGetter.GetUserSelfLink(tg);
+                    confirmInfos.Add(string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, link));
+                }
+                string confirmHeader = _resourceService.GetResourceString("ConfirmDeleteContactsFromGroupText");
                 await CommonUtilities.SendMessage(
                     botClient,
                     update,
                     KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_delete_contact_from_group"),
                     cancellationToken,
-                    _resourceService.GetResourceString("ConfirmDeleteContactsFromGroupText"));
+                    $"{confirmHeader}\n\n{string.Join("\n", confirmInfos)}");
                 return true;
             }
             return null;
