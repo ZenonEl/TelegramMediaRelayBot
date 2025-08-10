@@ -318,10 +318,24 @@ ID: {0}
         <value>Действие по умолчанию не изменено.</value>
     </data>
     <data name="DefaultActionTimeoutMessage" xml:space="preserve">
-        <value>⏳ Время вышло, будет выполнено действие по умолчанию...</value>
+        <value>⏳ Отправляю по умолчанию…</value>
     </data>
   <data name="CanceledByUserMessage" xml:space="preserve">
     <value>❎ Отменено пользователем</value>
+  </data>
+
+  <!-- ContactLinks state texts -->
+  <data name="State.ContactLinks.InvalidInput" xml:space="preserve">
+    <value>Некорректный ввод.</value>
+  </data>
+  <data name="State.ContactLinks.NoValidIds" xml:space="preserve">
+    <value>Не найдены корректные ID.</value>
+  </data>
+  <data name="State.ContactLinks.NoValidIdsForAccount" xml:space="preserve">
+    <value>Среди указанных ID нет доступных для вашего аккаунта.</value>
+  </data>
+  <data name="State.ContactLinks.ConfirmList" xml:space="preserve">
+    <value>К обработке:\n{0}\n\nПодтвердить?</value>
   </data>
 
     <!-- Текст кнопок управления настройками-->
