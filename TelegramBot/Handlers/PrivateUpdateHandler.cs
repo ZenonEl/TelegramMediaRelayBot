@@ -28,6 +28,7 @@ public class PrivateUpdateHandler
     private readonly IGroupGetter _groupGetter;
     private readonly TelegramMediaRelayBot.Config.Services.IConfigurationService _configService;
     private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
+    private readonly TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService _textCleanup;
 
     public PrivateUpdateHandler(
         TGBot tgBot,
@@ -37,7 +38,8 @@ public class PrivateUpdateHandler
         IUserGetter userGetter,
         IGroupGetter groupGetter,
         TelegramMediaRelayBot.Config.Services.IConfigurationService configService,
-        TelegramMediaRelayBot.Config.Services.IResourceService resourceService
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService,
+        TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService textCleanup
         )
     {
         _tgBot = tgBot;
@@ -48,6 +50,7 @@ public class PrivateUpdateHandler
         _groupGetter = groupGetter;
         _configService = configService;
         _resourceService = resourceService;
+        _textCleanup = textCleanup;
     }
 
     public async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
@@ -56,20 +59,12 @@ public class PrivateUpdateHandler
         string link;
         string text = "";
 
-        int newLineIndex = messageText.IndexOf('\n');
-
-        if (newLineIndex != -1)
+        if (CommonUtilities.TryExtractLinkAndText(messageText, out var extractedLink, out var extractedText))
         {
-            link = messageText[..newLineIndex].Trim();
-            text = messageText[(newLineIndex + 1)..].Trim();
-        }
-        else
-        {
-            link = messageText.Trim();
-        }
-
-        if (CommonUtilities.IsLink(link))
-        {
+            link = extractedLink;
+            text = extractedText;
+            // Очередь задержек: используем базовую задержку default-действия как окно
+            var delayCfg = _tgBot.GetType(); // placeholder
             int replyToMessageId = update.Message.MessageId;
             
             Message statusMessage = await botClient.SendMessage(
@@ -87,14 +82,22 @@ public class PrivateUpdateHandler
                 cancellationToken: cancellationToken
             );
 
+            // Больше не чистим стартовый хвост доменными правилами: берём как есть (по договорённости)
+
             int userId = _userGetter.GetUserIDbyTelegramID(chatId);
-            TGBot.StateManager.Set(chatId, new ProcessVideoDC(link, statusMessage, text, _tgBot, _contactGetterRepository, _userGetter, _groupGetter, _defaultActionGetter, _resourceService));
+            TGBot.StateManager.Set(chatId, new ProcessVideoDC(link, statusMessage, text, _tgBot, _contactGetterRepository, _userGetter, _groupGetter, _defaultActionGetter, _resourceService, _textCleanup));
             // Scheduling of default action moved inside state per-message
             // It will create its own CTS and handle cancellation on user interaction
             await Task.Yield();
         }
         else if (update.Message.Text == "/start")
         {
+            // мгновенная отмена всех сессий чата
+            if (TGBot.StateManager.TryGet(chatId, out var state) && state is ProcessVideoDC)
+            {
+                // просто сбрасываем state; конкретные CTS будут отменены при первой кнопке
+                TGBot.StateManager.Remove(chatId);
+            }
             await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
         }
         else if (update.Message.Text == "/help")
@@ -104,6 +107,8 @@ public class PrivateUpdateHandler
         }
         else
         {
+            // Сохраняем "предыдущий текст" для окна caption, если это не ссылка
+            TGBot.RememberLastText(chatId, update.Message.Text);
             await botClient.SendMessage(update.Message.Chat.Id, _resourceService.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken);
         }
     }
@@ -116,8 +121,6 @@ public class PrivateUpdateHandler
         int colonIndex = data.IndexOf(':');
         string commandName = colonIndex >= 0 ? data[..(colonIndex + 1)] : data;
 
-        var command = _handlersFactory.GetCommand(commandName);
-        
-        await command.ExecuteAsync(update, botClient, cancellationToken);
+        await _handlersFactory.ExecuteAsync(commandName, update, botClient, cancellationToken);
     }
 }

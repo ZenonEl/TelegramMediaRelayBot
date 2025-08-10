@@ -5,6 +5,7 @@ using TelegramMediaRelayBot;
 using TelegramMediaRelayBot.Config;
 using TelegramMediaRelayBot.Domain.Interfaces;
 using TelegramMediaRelayBot.Domain.Models;
+using Telegram.Bot;
 
 namespace TelegramMediaRelayBot.Tests;
 
@@ -39,7 +40,9 @@ public class MediaDownloaderServiceTests
         factory.Setup(f => f.GetDownloadersForUrl(It.IsAny<string>()))
                .Returns(new[] { failing.Object, succeeding.Object });
 
-        var service = new MediaDownloaderService(factory.Object, optionsMonitor.Object);
+        var downloading = new Mock<IOptionsMonitor<DownloadingConfiguration>>();
+        downloading.SetupGet(d => d.CurrentValue).Returns(new DownloadingConfiguration());
+        var service = new MediaDownloaderService(factory.Object, optionsMonitor.Object, downloading.Object);
 
         // Act
         var result = await service.DownloadMediaWithFallback(new Mock<ITelegramBotClient>().Object, "http://example", default!, CancellationToken.None);
@@ -61,7 +64,9 @@ public class MediaDownloaderServiceTests
         factory.Setup(f => f.GetDownloadersForUrl(It.IsAny<string>()))
                .Returns(Array.Empty<IMediaDownloader>());
 
-        var service = new MediaDownloaderService(factory.Object, optionsMonitor.Object);
+        var downloading = new Mock<IOptionsMonitor<DownloadingConfiguration>>();
+        downloading.SetupGet(d => d.CurrentValue).Returns(new DownloadingConfiguration());
+        var service = new MediaDownloaderService(factory.Object, optionsMonitor.Object, downloading.Object);
 
         var result = await service.DownloadMediaWithFallback(new Mock<ITelegramBotClient>().Object, "http://none", default!, CancellationToken.None);
 

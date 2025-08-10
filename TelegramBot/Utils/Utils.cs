@@ -135,6 +135,25 @@ public static class CommonUtilities
                             && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
     }
 
+    public static bool TryExtractLinkAndText(string message, out string link, out string text)
+    {
+        link = string.Empty;
+        text = string.Empty;
+        if (string.IsNullOrWhiteSpace(message)) return false;
+
+        // 1) Ищем первый http(s) URL в любом месте строки
+        var m = Regex.Match(message, @"https?://[^\s]+", RegexOptions.IgnoreCase);
+        if (m.Success)
+        {
+            link = m.Value.TrimEnd('.', ',', ';', '!', '?', ')', ']');
+            // Подписью считаем ХВОСТ после первой ссылки; всё, что ДО ссылки — игнорируем
+            int startAfterUrl = m.Index + m.Length;
+            text = startAfterUrl < message.Length ? message[startAfterUrl..].Trim() : string.Empty;
+            return true;
+        }
+        return false;
+    }
+
     public static string ExtractDomain(string url)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))

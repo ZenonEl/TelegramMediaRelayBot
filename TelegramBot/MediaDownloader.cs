@@ -36,12 +36,15 @@ public partial class TGBot
     private readonly IUserFilterService _userFilter;
     private readonly MediaDownloaderService _mediaDownloaderService;
     private readonly TelegramMediaRelayBot.Infrastructure.MediaProcessing.IMediaProcessingService _mediaProcessingService;
+    private readonly TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService _textCleanupService;
     private readonly TelegramMediaRelayBot.Config.Services.IConfigurationService _configService;
     private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
     private readonly IOptions<BotConfiguration> _botConfig;
     private readonly IOptionsMonitor<MessageDelayConfiguration> _delayConfig;
     private readonly IOptionsMonitor<TelegramMediaRelayBot.Config.DownloadingConfiguration> _downloadingConfig;
     public static IUserStateManager StateManager { get; private set; }
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<long, DateTime> _nextSlotByChatId = new();
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<long, (string Text, DateTime At)> _lastTextByChatId = new();
     public static CancellationToken cancellationToken;
 
     public TGBot(
@@ -61,7 +64,8 @@ public partial class TGBot
         IOptionsMonitor<MessageDelayConfiguration> delayConfig,
         IOptionsMonitor<TelegramMediaRelayBot.Config.DownloadingConfiguration> downloadingConfig,
         IUserStateManager userStateManager,
-        IUserFilterService userFilterService
+        IUserFilterService userFilterService,
+        TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService textCleanupService
         )
     {
         _userRepo = userRepo;
@@ -74,6 +78,7 @@ public partial class TGBot
         _userFilter = userFilterService;
         _mediaDownloaderService = mediaDownloaderService;
         _mediaProcessingService = mediaProcessingService;
+        _textCleanupService = textCleanupService;
         _botConfig = botConfig;
         _delayConfig = delayConfig;
         _downloadingConfig = downloadingConfig;
@@ -86,7 +91,8 @@ public partial class TGBot
             _userGetter,
             groupGetter,
             _configService,
-            resourceService
+            resourceService,
+            _textCleanupService
             );
 
         StateManager = userStateManager;
@@ -124,6 +130,26 @@ public partial class TGBot
         {
             await userState.ProcessState(botClient, update, cancellationToken);
         }
+    }
+
+    public TimeSpan ReserveDelaySlot(long chatId, TimeSpan baseDelay)
+    {
+        var now = DateTime.UtcNow;
+        var next = _nextSlotByChatId.TryGetValue(chatId, out var n) ? n : now;
+        var wait = (next > now ? next - now : TimeSpan.Zero) + baseDelay;
+        _nextSlotByChatId[chatId] = now + wait;
+        return wait;
+    }
+
+    public static void RememberLastText(long chatId, string text)
+    {
+        _lastTextByChatId[chatId] = (text, DateTime.UtcNow);
+    }
+
+    public static (bool Found, string Text, DateTime At) TryGetLastText(long chatId)
+    {
+        if (_lastTextByChatId.TryGetValue(chatId, out var v)) return (true, v.Text, v.At);
+        return (false, string.Empty, DateTime.MinValue);
     }
 
     private async Task UpdateHandler(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)

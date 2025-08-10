@@ -50,7 +50,9 @@ class PrivateUtils
         {
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(defaultCondition), timeoutCTS.Token);
+                // Резервируем слот, чтобы несколько авто‑действий не стартовали одновременно
+                var wait = _tgBot.ReserveDelaySlot(chatId, TimeSpan.FromSeconds(defaultCondition));
+                await Task.Delay(wait, timeoutCTS.Token);
 
                 List<long> targetUserIds = new List<long>();
                 List<long> mutedByUserIds = new List<long>();
@@ -99,15 +101,12 @@ class PrivateUtils
                         break;
                 }
 
-        if (TGBot.StateManager.TryGet(chatId, out var state) && state is ProcessVideoDC)
+                if (TGBot.StateManager.TryGet(chatId, out var state) && state is ProcessVideoDC cfg)
                 {
-                    await botClient.EditMessageText(
-                        statusMessage.Chat.Id,
-                        statusMessage.MessageId,
-                        _resourceService.GetResourceString("DefaultActionTimeoutMessage"),
-                        cancellationToken: cancellationToken
-                    );
-                    _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
+                    // Берём актуальный текст из pending при автозапуске
+                    var effectiveText = cfg.GetPendingTextOrCurrent(statusMessage.MessageId);
+                    // Не показываем "время вышло" в момент авто‑старта, чтобы не путать пользователя
+                    _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: effectiveText);
                 }
             }
             catch (TaskCanceledException) { }

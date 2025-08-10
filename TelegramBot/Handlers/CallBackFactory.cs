@@ -11,24 +11,40 @@
 
 
 using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers;
 
 
 public class CallbackQueryHandlersFactory
 {
-    private readonly Dictionary<string, IBotCallbackQueryHandlers> _commands;
+    private readonly IServiceProvider _provider;
 
-    public CallbackQueryHandlersFactory(IEnumerable<IBotCallbackQueryHandlers> commands)
+    public CallbackQueryHandlersFactory(IServiceProvider provider)
     {
-        _commands = commands.ToDictionary(c => c.Name);
+        _provider = provider;
     }
 
     public IBotCallbackQueryHandlers GetCommand(string commandName)
     {
-        if (_commands.TryGetValue(commandName, out var command))
-            return command;
+        // Fallback: resolve in a temporary scope for single call usage
+        using var scope = _provider.CreateScope();
+        var commands = scope.ServiceProvider.GetServices<IBotCallbackQueryHandlers>();
+        var command = commands.FirstOrDefault(c => c.Name == commandName);
+        if (command is null)
+        {
+            throw new Exception($"CallbackQuery command: {commandName} not found");
+        }
+        return command;
+    }
 
-        throw new Exception($"CallbackQuery command: {commandName} not found");
+    public async Task ExecuteAsync(string commandName, Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        using var scope = _provider.CreateScope();
+        var handler = scope.ServiceProvider
+            .GetServices<IBotCallbackQueryHandlers>()
+            .FirstOrDefault(c => c.Name == commandName)
+            ?? throw new Exception($"CallbackQuery command: {commandName} not found");
+        await handler.ExecuteAsync(update, botClient, ct);
     }
 }

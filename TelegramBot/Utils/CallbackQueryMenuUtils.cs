@@ -73,7 +73,14 @@ public static class CallbackQueryMenuUtils
 
     public static Task AcceptInboundInvite(Update update, IContactSetter contactSetter)
     {
-        contactSetter.SetContactStatus(long.Parse(update.CallbackQuery!.Data!.Split(':')[1]), update.CallbackQuery.Message!.Chat.Id, ContactsStatus.ACCEPTED);
+        try
+        {
+            contactSetter.SetContactStatus(long.Parse(update.CallbackQuery!.Data!.Split(':')[1]), update.CallbackQuery.Message!.Chat.Id, ContactsStatus.ACCEPTED);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error editing database: {Message}", ex.Message);
+        }
         return Task.CompletedTask;
     }
 

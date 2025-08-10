@@ -27,6 +27,17 @@
             "VideoBitrateKbps": 1200,
             "AudioBitrateKbps": 96,
             "Preset": "veryfast"
+        }
+    },
+    "TextCleanup": {
+        "Enabled": true,
+        "Rules": [
+            {
+                "Domains": ["www.pinterest.com", "pinterest.com", "pin.it", "www.pin.it"],
+                "Pattern": "^(смотри\s+|взгляните\s+|look\s+at\s+this[:!\s]+)",
+                "Replacement": ""
+            }
+        ]
     },
     "Tor": {
         "Enabled": true,

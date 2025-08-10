@@ -286,23 +286,29 @@ public class SqliteContactSetter(string connectionString, TelegramMediaRelayBot.
         SqliteContactGetter contactGetter = new(_connectionString, new TelegramMediaRelayBot.Config.Services.ResourceService());
         SqliteUserGetter userGetter = new(_connectionString);
 
-        using (var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString))
+        var ownsConnection = _uow is null;
+        var connection = (_uow?.Connection as SqliteConnection) ?? new SqliteConnection(_connectionString);
+        try
         {
-            try
+            _uow?.Begin();
+            connection.Execute(query, new 
             {
-                _uow?.Begin();
-                connection.Execute(query, new 
-                {
-                    Status = status,
-                    UserId = userGetter.GetUserIDbyTelegramID(SenderTelegramID),
-                    ContactId = contactGetter.GetContactByTelegramID(AccepterTelegramID)
-                }, _uow?.Transaction);
-                _uow?.Commit();
-            }
-            catch (Exception ex)
+                Status = status,
+                UserId = userGetter.GetUserIDbyTelegramID(SenderTelegramID),
+                ContactId = contactGetter.GetContactByTelegramID(AccepterTelegramID)
+            }, _uow?.Transaction);
+            _uow?.Commit();
+        }
+        catch (Exception ex)
+        {
+            _uow?.Rollback();
+            Log.Error("Error editing database: " + ex.Message);
+        }
+        finally
+        {
+            if (ownsConnection)
             {
-                _uow?.Rollback();
-                Log.Error("Error editing database: " + ex.Message);
+                connection.Dispose();
             }
         }
     }

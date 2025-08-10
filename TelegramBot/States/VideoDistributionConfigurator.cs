@@ -30,8 +30,9 @@ namespace TelegramMediaRelayBot;
         // per-message default-action timers
         private readonly Dictionary<int, CancellationTokenSource> _decisionCtsByMessageId = new();
         // pending entries per message
-    private readonly Dictionary<int, (string Link, string Text)> _pendingByMessageId = new();
+    private readonly Dictionary<int, (string Link, string Text, DateTime CreatedAt)> _pendingByMessageId = new();
     private readonly Dictionary<int, CancellationTokenSource> _sessionCtsByMessageId = new();
+    private readonly TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService _textCleanup;
     private string action = "";
     private List<long> targetUserIds = new List<long>();
     private List<long> preparedTargetUserIds = new List<long>();
@@ -51,7 +52,8 @@ namespace TelegramMediaRelayBot;
         IUserGetter userGetter,
         IGroupGetter groupGetter,
             IDefaultActionGetter defaultActionGetter,
-        TelegramMediaRelayBot.Config.Services.IResourceService resourceService
+            TelegramMediaRelayBot.Config.Services.IResourceService resourceService,
+            TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService textCleanup
         )
     {
         link = Link;
@@ -64,7 +66,8 @@ namespace TelegramMediaRelayBot;
         _groupGetter = groupGetter;
             _defaultActionGetter = defaultActionGetter;
         _resourceService = resourceService;
-            _pendingByMessageId[StatusMessage.MessageId] = (Link, Text);
+            _textCleanup = textCleanup;
+            _pendingByMessageId[StatusMessage.MessageId] = (Link, Text, DateTime.UtcNow);
     }
 
     public string GetCurrentState()
@@ -72,9 +75,21 @@ namespace TelegramMediaRelayBot;
         return currentState.ToString();
     }
 
+    public string GetPendingTextOrCurrent(int messageId)
+    {
+        if (_pendingByMessageId.TryGetValue(messageId, out var entry))
+        {
+            return entry.Text;
+        }
+        return text;
+    }
+
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
+
+        // TTL авто-уборка висячих сессий
+        CleanupStalePending(TimeSpan.FromMinutes(10));
 
         switch (currentState)
         {
@@ -158,22 +173,33 @@ namespace TelegramMediaRelayBot;
                 {
                     string messageText = update.Message.Text;
                     string newLink;
-                    string newText = "";
-
-                    int newLineIndex = messageText.IndexOf('\n');
-                    if (newLineIndex != -1)
+                    string newText;
+                    if (!CommonUtilities.TryExtractLinkAndText(messageText, out newLink, out newText))
                     {
-                        newLink = messageText[..newLineIndex].Trim();
-                        newText = messageText[(newLineIndex + 1)..].Trim();
-                    }
-                    else
-                    {
-                        newLink = messageText.Trim();
+                        newLink = string.Empty;
+                        newText = string.Empty;
                     }
 
-                    if (CommonUtilities.IsLink(newLink))
+                    if (!string.IsNullOrEmpty(newLink))
                     {
-
+                        // Подхватить предыдущий текст, если он был недавно
+                        var userId = _userGetter.GetUserIDbyTelegramID(chatId);
+                        var defaultActionData = _defaultActionGetter.GetDefaultActionByUserIDAndType(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+                        int baseDelaySec = 0;
+                        if (defaultActionData != UsersAction.NO_VALUE)
+                        {
+                            var parts = defaultActionData.Split(';');
+                            if (parts.Length >= 2 && int.TryParse(parts[1], out var s)) baseDelaySec = s;
+                        }
+                        if (string.IsNullOrWhiteSpace(newText))
+                        {
+                            var last = TGBot.TryGetLastText(chatId);
+                            if (last.Found && (DateTime.UtcNow - last.At) <= TimeSpan.FromSeconds(baseDelaySec))
+                            {
+                                var domain = CommonUtilities.ExtractDomain(newLink);
+                                newText = _textCleanup.Cleanup(last.Text, domain);
+                            }
+                        }
                         int replyToMessageId = update.Message.MessageId;
                         statusMessage = await botClient.SendMessage(
                             chatId, 
@@ -182,9 +208,49 @@ namespace TelegramMediaRelayBot;
                             replyParameters: new ReplyParameters { MessageId = replyToMessageId }, 
                             cancellationToken: cancellationToken
                         );
-                        _pendingByMessageId[statusMessage.MessageId] = (newLink, newText);
+                        // Очистим подпись по домену уже на этапе pending
+                        var cleanedInitial = string.IsNullOrWhiteSpace(newText) ? newText : _textCleanup.Cleanup(newText, CommonUtilities.ExtractDomain(newLink));
+                        _pendingByMessageId[statusMessage.MessageId] = (newLink, cleanedInitial, DateTime.UtcNow);
                         // schedule default action for this message id if configured
                         await TryScheduleDefaultActionForMessage(botClient, chatId, statusMessage, newLink, newText, cancellationToken);
+                    }
+                    else
+                    {
+                        // не ссылка -> запоминаем как предыдущий текст
+                        TGBot.RememberLastText(chatId, messageText);
+                        // Если есть активный pending и окно ещё не истекло — считаем это next-caption и заменяем его
+                        if (_pendingByMessageId.Count > 0)
+                        {
+                            // берём последний созданный pending
+                            var kv = _pendingByMessageId.OrderByDescending(p => p.Value.CreatedAt).First();
+                            var pending = kv.Value;
+                            var userId2 = _userGetter.GetUserIDbyTelegramID(chatId);
+                            var da = _defaultActionGetter.GetDefaultActionByUserIDAndType(userId2, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+                            int baseDelay2 = 0;
+                            if (da != UsersAction.NO_VALUE)
+                            {
+                                var parts = da.Split(';');
+                                if (parts.Length >= 2 && int.TryParse(parts[1], out var s)) baseDelay2 = s;
+                            }
+                            if (baseDelay2 <= 0) baseDelay2 = 5; // минимальное окно 5 секунд
+                            if ((DateTime.UtcNow - pending.CreatedAt) <= TimeSpan.FromSeconds(baseDelay2))
+                            {
+                                // Обновляем подпись на текст из следующего сообщения как есть (без очистки)
+                                _pendingByMessageId[kv.Key] = (pending.Link, messageText, pending.CreatedAt);
+                                // Перепланируем авто-действие под обновлённый текст
+                                if (_decisionCtsByMessageId.TryGetValue(kv.Key, out var oldCts))
+                                {
+                                    try { oldCts.Cancel(); } catch { }
+                                    _decisionCtsByMessageId.Remove(kv.Key);
+                                }
+                                // Переиспользуем текущее statusMessage если совпадает, иначе создаём минимальный объект с нужным ChatId и MessageId через конструктор ReplyParameters
+                                var status = statusMessage?.MessageId == kv.Key ? statusMessage : new Message();
+                                status = statusMessage ?? new Message();
+                                status.Chat = new Chat { Id = chatId };
+                                // Передаём оригинальный statusMessage, если он есть, иначе используем текущий
+                                _ = TryScheduleDefaultActionForMessage(botClient, chatId, statusMessage ?? status, pending.Link, messageText, cancellationToken);
+                            }
+                        }
                     }
                 }
                 break;
@@ -242,7 +308,23 @@ namespace TelegramMediaRelayBot;
                 // start download/send specifically for this message
                 var sessionCts = new CancellationTokenSource();
                 _sessionCtsByMessageId[statusMessage.MessageId] = sessionCts;
-                _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, groupChat: false, caption: text, sessionToken: sessionCts.Token);
+                // Очередь задержек: учитываем базовую задержку как окно и как слот
+                var da2 = _defaultActionGetter.GetDefaultActionByUserIDAndType(_userGetter.GetUserIDbyTelegramID(chatId), UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+                int baseDelay = 0; if (da2 != UsersAction.NO_VALUE) { var parts = da2.Split(';'); if (parts.Length >= 2 && int.TryParse(parts[1], out var s)) baseDelay = s; }
+                var wait = _tgBot.ReserveDelaySlot(chatId, TimeSpan.FromSeconds(baseDelay));
+                try { await Task.Delay(wait, sessionCts.Token); } catch { }
+                // Очистка caption по домену ссылки перед отправкой; берём pending-текст, если есть
+                var captionRaw = _pendingByMessageId.TryGetValue(statusMessage.MessageId, out var pend) ? pend.Text : text;
+                string cleanedText = captionRaw;
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(captionRaw) && Uri.TryCreate(link, UriKind.Absolute, out var uri))
+                    {
+                        cleanedText = _textCleanup.Cleanup(captionRaw, uri.Host);
+                    }
+                }
+                catch { }
+                _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, groupChat: false, caption: cleanedText, sessionToken: sessionCts.Token);
                 _pendingByMessageId.Remove(statusMessage.MessageId);
                 currentState = UsersStandardState.ProcessAction;
 
@@ -256,7 +338,10 @@ namespace TelegramMediaRelayBot;
         string defaultActionData = _defaultActionGetter.GetDefaultActionByUserIDAndType(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
         if (defaultActionData == UsersAction.NO_VALUE) return;
         string defaultAction = defaultActionData.Split(';')[0];
-        int defaultCondition = int.Parse(defaultActionData.Split(';')[1]);
+        int defaultCondition = 0;
+        var partsDelay = defaultActionData.Split(';');
+        if (partsDelay.Length >= 2) int.TryParse(partsDelay[1], out defaultCondition);
+        if (defaultCondition <= 0) defaultCondition = 5; // дефолтная задержка окна/таймера, если не задано
         if (defaultAction == UsersAction.OFF) return;
         var cts = new CancellationTokenSource();
         _decisionCtsByMessageId[status.MessageId] = cts;
@@ -316,5 +401,19 @@ namespace TelegramMediaRelayBot;
         }
 
         currentState = UsersStandardState.Finish;
+    }
+
+    private void CleanupStalePending(TimeSpan ttl)
+    {
+        var now = DateTime.UtcNow;
+        foreach (var kv in _pendingByMessageId.ToList())
+        {
+            if (now - kv.Value.CreatedAt > ttl)
+            {
+                if (_decisionCtsByMessageId.TryGetValue(kv.Key, out var dcts)) { try { dcts.Cancel(); } catch { } _decisionCtsByMessageId.Remove(kv.Key); }
+                if (_sessionCtsByMessageId.TryGetValue(kv.Key, out var scts)) { try { scts.Cancel(); } catch { } _sessionCtsByMessageId.Remove(kv.Key); }
+                _pendingByMessageId.Remove(kv.Key);
+            }
+        }
     }
 }

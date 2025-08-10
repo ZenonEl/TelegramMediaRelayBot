@@ -3,6 +3,9 @@ using Moq;
 using TelegramMediaRelayBot;
 using TelegramMediaRelayBot.Domain.Interfaces;
 using TelegramMediaRelayBot.Domain.Models;
+using Microsoft.Extensions.Options;
+using TelegramMediaRelayBot.Config;
+using Telegram.Bot;
 
 namespace TelegramMediaRelayBot.Tests.Business;
 
@@ -32,11 +35,13 @@ public class MediaFlowScenarioTests
         factory.Setup(f => f.GetDownloadersForUrl(It.IsAny<string>()))
                .Returns(new[] { d1.Object, d2.Object });
 
-        var opt = Microsoft.Extensions.Options.Options.Create(new TelegramMediaRelayBot.Config.BotConfiguration());
-        var optMon = new Mock<Microsoft.Extensions.Options.IOptionsMonitor<TelegramMediaRelayBot.Config.BotConfiguration>>();
+        var opt = Options.Create(new BotConfiguration());
+        var optMon = new Mock<IOptionsMonitor<BotConfiguration>>();
         optMon.SetupGet(x => x.CurrentValue).Returns(opt.Value);
+        var downloading = new Mock<IOptionsMonitor<DownloadingConfiguration>>();
+        downloading.SetupGet(d => d.CurrentValue).Returns(new DownloadingConfiguration());
 
-        var service = new MediaDownloaderService(factory.Object, optMon.Object);
+        var service = new MediaDownloaderService(factory.Object, optMon.Object, downloading.Object);
         var result = await service.DownloadMediaWithFallback(new Mock<ITelegramBotClient>().Object, "http://test", default!, CancellationToken.None);
 
         result.Should().NotBeNull();

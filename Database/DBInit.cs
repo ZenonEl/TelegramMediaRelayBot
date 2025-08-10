@@ -148,6 +148,8 @@ public class FluentDBMigrator
                     finalConfiguration.GetSection("Tor"));
                 builder.Services.Configure<AccessPolicyConfiguration>(
                     finalConfiguration.GetSection("AccessPolicy"));
+                builder.Services.Configure<TextCleanupConfiguration>(
+                    finalConfiguration.GetSection("TextCleanup"));
                 
                 // Регистрируем финальную конфигурацию для загрузчиков
                 builder.Services.AddSingleton<IConfiguration>(finalConfiguration);
@@ -197,6 +199,8 @@ public class FluentDBMigrator
             configuration.GetSection("Tor"));
         builder.Services.Configure<AccessPolicyConfiguration>(
             configuration.GetSection("AccessPolicy"));
+        builder.Services.Configure<TextCleanupConfiguration>(
+            configuration.GetSection("TextCleanup"));
 
         // Add configuration validators (fail fast)
         builder.Services.AddSingleton<IValidateOptions<BotConfiguration>, TelegramMediaRelayBot.Config.Validation.BotConfigurationValidator>();
@@ -208,6 +212,7 @@ public class FluentDBMigrator
         builder.Services.AddSingleton<TelegramMediaRelayBot.Config.Services.IDatabaseConfigurationService, TelegramMediaRelayBot.Config.Services.DatabaseConfigurationService>();
         builder.Services.AddSingleton<TelegramMediaRelayBot.Config.Services.IResourceService, TelegramMediaRelayBot.Config.Services.ResourceService>();
         builder.Services.AddSingleton<TelegramMediaRelayBot.Infrastructure.MediaProcessing.IMediaProcessingService, TelegramMediaRelayBot.Infrastructure.MediaProcessing.FfmpegService>();
+        builder.Services.AddSingleton<TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService, TelegramMediaRelayBot.TelegramBot.Utils.TextCleanupService>();
         
         // Регистрация загрузчиков
         builder.Services.AddScoped<TelegramMediaRelayBot.Domain.Interfaces.IMediaDownloaderFactory, TelegramMediaRelayBot.Infrastructure.Factories.MediaDownloaderFactory>();
