@@ -257,7 +257,10 @@ public partial class TGBot
                 effectiveToken);
             Log.Debug("Size policy applied: files before={Before}, after={After}", mediaFiles.Count, processedFiles.Count);
 
-            await SendMediaToTelegram(botClient, chatId, processedFiles, statusMessage, targetUserIds, contentUrl, groupChat, caption, effectiveToken);
+            // Санитизация и лимиты подписи: удаляем HTML, сохраняем Markdown, обрезаем до лимита TG
+            var safeCaption = TelegramBot.Utils.CommonUtilities.TrimCaptionToLimit(
+                TelegramBot.Utils.CommonUtilities.SanitizeCaptionRemoveHtml(caption));
+            await SendMediaToTelegram(botClient, chatId, processedFiles, statusMessage, targetUserIds, contentUrl, groupChat, safeCaption, effectiveToken);
             return;
         }
 
