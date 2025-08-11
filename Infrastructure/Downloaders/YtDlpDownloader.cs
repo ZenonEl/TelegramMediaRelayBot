@@ -26,6 +26,12 @@ public class YtDlpDownloader : BaseMediaDownloader
     private int MaxRetries => _configuration.GetValue($"Downloaders:{Name}:MaxRetries", 3);
     private string OutputPattern => _configuration.GetValue($"Downloaders:{Name}:OutputPattern", "\\[download\\] Destination: (.+)")!;
     private string ProgressPattern => _configuration.GetValue($"Downloaders:{Name}:ProgressPattern", "\\[download\\]")!;
+        // Auth (cookies) settings
+        private bool UseCookies => _configuration.GetValue($"Downloaders:{Name}:Auth:UseCookies", false);
+        private string? CookiesFileEnvVar => _configuration.GetValue($"Downloaders:{Name}:Auth:CookiesFileEnvVar", (string?)null);
+        private string? CookiesFilePath => _configuration.GetValue($"Downloaders:{Name}:Auth:CookiesFilePath", (string?)null);
+        private bool UseCookiesFromBrowser => _configuration.GetValue($"Downloaders:{Name}:Auth:UseCookiesFromBrowser", false);
+        private string? CookiesFromBrowser => _configuration.GetValue($"Downloaders:{Name}:Auth:CookiesFromBrowser", (string?)null);
     
     public override string Name => "YtDlp";
     public override int Priority => _configuration.GetValue($"Downloaders:{Name}:Priority", 100);
@@ -72,7 +78,7 @@ public class YtDlpDownloader : BaseMediaDownloader
         var arguments = BuildArguments(url, tempDirPath, options);
         
         Log.Debug("YtDlp temp directory: {TempDir}", tempDirPath);
-        Log.Debug("YtDlp arguments: {Arguments}", arguments);
+        Log.Debug("YtDlp arguments: {Arguments}", RedactSensitiveArgs(arguments));
         
         // Выполняем команду
         var result = await ExecuteCommandWithProgressAsync(ExecutablePath, arguments, options, ct);
@@ -185,12 +191,72 @@ public class YtDlpDownloader : BaseMediaDownloader
             arguments.Add(processedArg);
         }
         
+        // Добавляем аргументы авторизации (cookies)
+        TryAppendCookieArgs(arguments);
+
         // Добавляем URL в конец
         arguments.Add(url);
         
         var result = string.Join(" ", arguments);
-        Log.Debug("YtDlp arguments: {Arguments}", result);
+        var redacted = RedactSensitiveArgs(result);
+        Log.Debug("YtDlp arguments: {Arguments}", redacted);
         return result;
+    }
+
+    private void TryAppendCookieArgs(List<string> arguments)
+    {
+        try
+        {
+            if (UseCookiesFromBrowser && !string.IsNullOrWhiteSpace(CookiesFromBrowser))
+            {
+                arguments.Add("--cookies-from-browser");
+                arguments.Add(CookiesFromBrowser!);
+                Log.Information("YtDlp cookies-from-browser enabled");
+                return;
+            }
+
+            if (!UseCookies)
+            {
+                return;
+            }
+
+            string? path = null;
+            if (!string.IsNullOrWhiteSpace(CookiesFileEnvVar))
+            {
+                path = Environment.GetEnvironmentVariable(CookiesFileEnvVar!);
+            }
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                path = CookiesFilePath;
+            }
+
+            if (!string.IsNullOrWhiteSpace(path) && System.IO.File.Exists(path))
+            {
+                arguments.Add("--cookies");
+                arguments.Add($"\"{path}\"");
+                Log.Information("YtDlp cookies file enabled");
+            }
+            else if (!string.IsNullOrWhiteSpace(path))
+            {
+                Log.Warning("YtDlp cookies file not found: {Path}", path);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to append cookies args for yt-dlp");
+        }
+    }
+
+    private static string RedactSensitiveArgs(string args)
+    {
+        try
+        {
+            return Regex.Replace(args, "(--cookies(?:-from-browser)?\\s+)(\".*?\"|\\S+)", "$1***");
+        }
+        catch
+        {
+            return args;
+        }
     }
     
     private async Task<CommandResult> ExecuteCommandWithProgressAsync(string executablePath, string arguments, DownloadOptions options, CancellationToken ct)

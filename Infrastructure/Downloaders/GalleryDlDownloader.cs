@@ -26,6 +26,10 @@ public class GalleryDlDownloader : BaseMediaDownloader
     private TimeSpan Timeout => TimeSpan.Parse(_configuration.GetValue($"Downloaders:{Name}:Timeout", "00:05:00")!);
     private int MaxRetries => _configuration.GetValue($"Downloaders:{Name}:MaxRetries", 2);
     private string ProgressPattern => _configuration.GetValue($"Downloaders:{Name}:ProgressPattern", "\\[download\\]")!;
+        // Auth (cookies) settings
+        private bool UseCookies => _configuration.GetValue($"Downloaders:{Name}:Auth:UseCookies", false);
+        private string? CookiesFileEnvVar => _configuration.GetValue($"Downloaders:{Name}:Auth:CookiesFileEnvVar", (string?)null);
+        private string? CookiesFilePath => _configuration.GetValue($"Downloaders:{Name}:Auth:CookiesFilePath", (string?)null);
     
     public override string Name => "GalleryDl";
     public override int Priority => _configuration.GetValue($"Downloaders:{Name}:Priority", 90);
@@ -128,7 +132,7 @@ public class GalleryDlDownloader : BaseMediaDownloader
         var arguments = BuildArguments(url, tempDirPath, options);
         
         Log.Debug("GalleryDl temp directory: {TempDir}", tempDirPath);
-        Log.Debug("GalleryDl arguments: {Arguments}", arguments);
+        Log.Debug("GalleryDl arguments: {Arguments}", RedactSensitiveArgs(arguments));
         
         // Выполняем команду
         var result = await ExecuteCommandWithProgressAsync(executablePath, arguments, options, ct);
@@ -234,12 +238,65 @@ public class GalleryDlDownloader : BaseMediaDownloader
             arguments.Add(processedArg);
         }
         
+        // Добавляем аргументы авторизации (cookies)
+        TryAppendCookieArgs(arguments);
+
         // Добавляем URL в конец
         arguments.Add(url);
         
         var result = string.Join(" ", arguments);
-        Log.Debug("GalleryDl arguments: {Arguments}", result);
+        var redacted = RedactSensitiveArgs(result);
+        Log.Debug("GalleryDl arguments: {Arguments}", redacted);
         return result;
+    }
+
+    private void TryAppendCookieArgs(List<string> arguments)
+    {
+        try
+        {
+            if (!UseCookies)
+            {
+                return;
+            }
+
+            string? path = null;
+            if (!string.IsNullOrWhiteSpace(CookiesFileEnvVar))
+            {
+                path = Environment.GetEnvironmentVariable(CookiesFileEnvVar!);
+            }
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                path = CookiesFilePath;
+            }
+
+            if (!string.IsNullOrWhiteSpace(path) && System.IO.File.Exists(path))
+            {
+                // gallery-dl supports --cookies for a Netscape cookie file
+                arguments.Add("--cookies");
+                arguments.Add($"\"{path}\"");
+                Log.Information("GalleryDl cookies file enabled");
+            }
+            else if (!string.IsNullOrWhiteSpace(path))
+            {
+                Log.Warning("GalleryDl cookies file not found: {Path}", path);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to append cookies args for gallery-dl");
+        }
+    }
+
+    private static string RedactSensitiveArgs(string args)
+    {
+        try
+        {
+            return Regex.Replace(args, "(--cookies\\s+)(\".*?\"|\\S+)", "$1***");
+        }
+        catch
+        {
+            return args;
+        }
     }
     
     private async Task<CommandResult> ExecuteCommandWithProgressAsync(string executablePath, string arguments, DownloadOptions options, CancellationToken ct)

@@ -118,3 +118,47 @@
 - При спорных изменениях сначала тестируйте на одной ссылке.
 - Если загрузчик требует обязательный прокси, установите `RequireProxy: true` и задайте `CustomProxy`.
 
+## Авторизация (cookies)
+Оба загрузчика поддерживают аутентификацию через cookie‑файлы. Мы не храним секреты в коде или в базовой конфигурации. Рекомендуемый вариант — хранить путь к файлу в переменной окружения, чтобы исключить попадание в репозиторий.
+
+### YtDlp
+Секция:
+```json
+"YtDlp": {
+  "Auth": {
+    "UseCookies": false,
+    "CookiesFileEnvVar": "TMRB_YTDLP_COOKIES",
+    "CookiesFilePath": null,
+    "UseCookiesFromBrowser": false,
+    "CookiesFromBrowser": null
+  }
+}
+```
+- Если `UseCookiesFromBrowser = true` и задано `CookiesFromBrowser` (например: `firefox:default`), будет использован флаг `--cookies-from-browser` yt‑dlp.
+- Иначе, если `UseCookies = true`, берём путь из `CookiesFileEnvVar` (ENV) или `CookiesFilePath` (фикcированный путь) и добавляем `--cookies <path>`.
+- В логах путь редактируется (не выводится полностью).
+
+Пример ENV:
+```bash
+export TMRB_YTDLP_COOKIES=/opt/tmrb/yt_cookies.txt
+```
+
+### Gallery‑dl
+Секция:
+```json
+"GalleryDl": {
+  "Auth": {
+    "UseCookies": false,
+    "CookiesFileEnvVar": "TMRB_GDL_COOKIES",
+    "CookiesFilePath": null
+  }
+}
+```
+- Если `UseCookies = true`, берём путь к cookies из `CookiesFileEnvVar` или `CookiesFilePath` и добавляем `--cookies <path>`.
+- В логах путь редактируется (не выводится полностью).
+
+Безопасность:
+- Держите файлы cookies вне репозитория, с правами доступа 600.
+- Передавайте путь только через ENV, если возможно.
+- Не логинимся паролями через аргументы, используем только cookie‑файлы/браузерный источник.
+

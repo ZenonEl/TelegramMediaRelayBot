@@ -34,7 +34,8 @@
                 "RequireProxy": false,
                 "SiteSpecificProxies": {
                     "vk.com": null,
-                    "pinterest.com": null
+                    "pinterest.com": null,
+                    "youtube.com": null
                 }
             },
             "Timeout": "00:10:00",
@@ -53,7 +54,14 @@
                 "vk\\.com/clip-"
             ],
             "OutputPattern": "\\[download\\] Destination: (.+)",
-            "ProgressPattern": "\\[download\\]"
+            "ProgressPattern": "\\[download\\]",
+            "Auth": {
+                "UseCookies": true,
+                "CookiesFileEnvVar": "TMRB_YTDLP_COOKIES",
+                "CookiesFilePath": "/home/zentfany/Загрузки/cookies.txt",
+                "UseCookiesFromBrowser": false,
+                "CookiesFromBrowser": null
+            }
         },
         "GalleryDl": {
             "Type": "Executable",
@@ -83,7 +91,6 @@
             "Timeout": "00:05:00",
             "MaxRetries": 2,
             "UrlPatterns": [
-                "instagram\\.com/p/",
                 "vt\\.tiktok\\.com/",
                 "pinterest\\.com/pin/",
                 "pinterest\\.com/",
@@ -94,7 +101,12 @@
                 "vk\\.com/video",
                 "vk\\.com/clip-"
             ],
-            "ProgressPattern": "\\[download\\]"
+            "ProgressPattern": "\\[download\\]",
+            "Auth": {
+                "UseCookies": true,
+                "CookiesFileEnvVar": "TMRB_GDL_COOKIES",
+                "CookiesFilePath": "/home/zentfany/Загрузки/cookies.txt"
+            }
         }
     },
     "GlobalSettings": {
