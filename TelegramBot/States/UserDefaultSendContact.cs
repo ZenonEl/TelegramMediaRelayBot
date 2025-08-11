@@ -109,7 +109,36 @@ namespace TelegramMediaRelayBot
 
             if (inputIds.Count == 0)
             {
-                await botClient.SendMessage(chatId, _resourceService.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
+                // Before re-prompting, show available list based on mode
+                if (!_isGroupIds)
+                {
+                    var tgIds = await _contactGetterRepository.GetAllContactUserTGIds(_userGetter.GetUserIDbyTelegramID(chatId));
+                    var infos = new List<string>();
+                    foreach (var tg in tgIds)
+                    {
+                        int cid = _userGetter.GetUserIDbyTelegramID(tg);
+                        string uname = _userGetter.GetUserNameByTelegramID(tg);
+                        string link = _userGetter.GetUserSelfLink(tg);
+                        infos.Add(string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, link));
+                    }
+                    string header = _resourceService.GetResourceString("YourContacts");
+                    string body = infos.Count > 0 ? string.Join("\n", infos) : _resourceService.GetResourceString("NoUsersFound");
+                    await botClient.SendMessage(chatId, $"{header}\n{body}\n\n{_resourceService.GetResourceString("PleaseEnterContactIDs")}", cancellationToken: cancellationToken);
+                }
+                else
+                {
+                    int ownerId = _userGetter.GetUserIDbyTelegramID(chatId);
+                    var groupIds = await _groupGetter.GetGroupIDsByUserId(ownerId);
+                    var lines = new List<string>();
+                    foreach (var gid in groupIds)
+                    {
+                        string name = await _groupGetter.GetGroupNameById(gid);
+                        lines.Add($"{name} (ID: {gid})");
+                    }
+                    string header = _resourceService.GetResourceString("YourGroups");
+                    string body = lines.Count > 0 ? string.Join("\n", lines) : _resourceService.GetResourceString("NoGroupsFound");
+                    await botClient.SendMessage(chatId, $"{header}\n{body}\n\n{_resourceService.GetResourceString("PleaseEnterContactIDs")}", cancellationToken: cancellationToken);
+                }
                 return;
             }
 

@@ -88,29 +88,28 @@ public class SetAutoSendTimeCommand : IBotCallbackQueryHandlers
 public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
 {
     private readonly IContactGetter _contactGetterRepository;
+    private readonly IGroupGetter _groupGetter;
     private readonly IDefaultAction _defaultAction;
     private readonly IDefaultActionSetter _defaultActionSetter;
     private readonly IUserGetter _userGetter;
-    private readonly IGroupGetter _groupGetter;
     private readonly IDefaultActionGetter _defaultActionGetter;
     private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public SetVideoSendUsersCommand(
         IContactGetter contactGetterRepository,
+        IGroupGetter groupGetter,
         IDefaultAction defaultAction,
         IDefaultActionSetter defaultActionSetter,
         IUserGetter userGetter,
-        IGroupGetter groupGetter,
         IDefaultActionGetter defaultActionGetter,
         TelegramMediaRelayBot.Config.Services.IResourceService resourceService
         )
     {
         _contactGetterRepository = contactGetterRepository;
+        _groupGetter = groupGetter;
         _defaultAction = defaultAction;
         _defaultActionSetter = defaultActionSetter;
         _userGetter = userGetter;
-        _userGetter = userGetter;
-        _groupGetter = groupGetter;
         _defaultActionGetter = defaultActionGetter;
         _resourceService = resourceService;
     }
@@ -130,16 +129,47 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
 
         if (extendActions.Contains(action))
         {
+            bool isGroup = action == UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS;
+
+            int ownerUserId = _userGetter.GetUserIDbyTelegramID(chatId);
+            string header;
+            string listBody;
+            if (!isGroup)
+            {
+                // Build contacts list with IDs and links
+                var tgIds = await _contactGetterRepository.GetAllContactUserTGIds(ownerUserId);
+                var lines = new List<string>();
+                foreach (var tg in tgIds)
+                {
+                    int cid = _userGetter.GetUserIDbyTelegramID(tg);
+                    string uname = _userGetter.GetUserNameByTelegramID(tg);
+                    string link = _userGetter.GetUserSelfLink(tg);
+                    lines.Add(string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, link));
+                }
+                header = _resourceService.GetResourceString("YourContacts");
+                listBody = lines.Count > 0 ? string.Join("\n", lines) : _resourceService.GetResourceString("NoUsersFound");
+            }
+            else
+            {
+                // Build groups list with IDs
+                var groupIds = await _groupGetter.GetGroupIDsByUserId(ownerUserId);
+                var lines = new List<string>();
+                foreach (var gid in groupIds)
+                {
+                    string gname = await _groupGetter.GetGroupNameById(gid);
+                    lines.Add($"{gname} (ID: {gid})");
+                }
+                header = _resourceService.GetResourceString("YourGroups");
+                listBody = lines.Count > 0 ? string.Join("\n", lines) : _resourceService.GetResourceString("NoGroupsFound");
+            }
+
+            string prompt = _resourceService.GetResourceString("EnterContactIdsPrompt");
             await CommonUtilities.SendMessage(
                 botClient,
                 update,
                 KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
                 cancellationToken,
-                _resourceService.GetResourceString("DefaultActionGetGroupOrUserIDs")
-            );
-
-            bool isGroup = false;
-            if (action == UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS) isGroup = true;
+                $"{header}\n{listBody}\n\n{prompt}");
 
             Users.SetDefaultActionToUser(chatId, action, _defaultActionSetter, _userGetter);
             TGBot.StateManager.Set(chatId, new ProcessUserSetDCSendState(

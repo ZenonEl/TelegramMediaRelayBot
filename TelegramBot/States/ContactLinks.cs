@@ -100,7 +100,20 @@ public class ProcessContactLinksState : IUserState
 
         if (inputIds.Count == 0)
         {
-            await botClient.SendMessage(chatId, _resourceService.GetResourceString("State.ContactLinks.NoValidIds"), cancellationToken: cancellationToken);
+            // Show available contacts before re-prompt
+            var tgIds = await _contactGetterRepository.GetAllContactUserTGIds(_userGetter.GetUserIDbyTelegramID(chatId));
+            var lines = new List<string>();
+            foreach (var tg in tgIds)
+            {
+                int cid = _userGetter.GetUserIDbyTelegramID(tg);
+                string uname = _userGetter.GetUserNameByTelegramID(tg);
+                string link = _userGetter.GetUserSelfLink(tg);
+                lines.Add(string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, link));
+            }
+            string header = _resourceService.GetResourceString("YourContacts");
+            string body = lines.Count > 0 ? string.Join("\n", lines) : _resourceService.GetResourceString("NoUsersFound");
+            string prompt = _resourceService.GetResourceString("State.ContactLinks.NoValidIds");
+            await botClient.SendMessage(chatId, $"{header}\n{body}\n\n{prompt}", cancellationToken: cancellationToken);
             return;
         }
 

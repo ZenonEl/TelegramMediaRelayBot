@@ -84,6 +84,22 @@ namespace TelegramMediaRelayBot;
         return text;
     }
 
+    // Guard: check if a manual/active session already started for this message
+    public bool IsSessionActiveForMessage(int messageId)
+    {
+        return _sessionCtsByMessageId.ContainsKey(messageId);
+    }
+
+    // Guard: disable any scheduled auto action for this message id
+    public void DisableAutoForMessageId(int messageId)
+    {
+        if (_decisionCtsByMessageId.TryGetValue(messageId, out var cts))
+        {
+            try { cts.Cancel(); } catch { }
+            _decisionCtsByMessageId.Remove(messageId);
+        }
+    }
+
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
@@ -131,18 +147,22 @@ namespace TelegramMediaRelayBot;
                     {
                         case UsersAction.SEND_MEDIA_TO_ALL_CONTACTS:
                             action = UsersAction.SEND_MEDIA_TO_ALL_CONTACTS;
+                            // cancel and remove any auto timer for this message before proceeding
+                            DisableAutoForMessageId(statusMessage.MessageId);
                             await PrepareTargetUserIds(chatId);
                             await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
                             break;
 
                         case UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS:
                             action = UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS;
+                            DisableAutoForMessageId(statusMessage.MessageId);
                             await PrepareTargetUserIds(chatId);
                             await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
                             break;
 
                         case UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS:
                             action = UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS;
+                            DisableAutoForMessageId(statusMessage.MessageId);
                             List<string> groupInfos = await UsersGroup.GetUserGroupInfoByUserId(_userGetter.GetUserIDbyTelegramID(chatId), _groupGetter);
 
                             string messageText = groupInfos.Any() 
@@ -156,6 +176,7 @@ namespace TelegramMediaRelayBot;
 
                         case UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS:
                             action = UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS;
+                            DisableAutoForMessageId(statusMessage.MessageId);
                             await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
                             currentState = UsersStandardState.ProcessData;
                             break;
@@ -327,6 +348,8 @@ namespace TelegramMediaRelayBot;
                 // start download/send specifically for this message
                 var sessionCts = new CancellationTokenSource();
                 _sessionCtsByMessageId[statusMessage.MessageId] = sessionCts;
+                // ensure any auto timer is disabled now that manual session started
+                DisableAutoForMessageId(statusMessage.MessageId);
                 // Очередь задержек: учитываем базовую задержку как окно и как слот
                 var da2 = _defaultActionGetter.GetDefaultActionByUserIDAndType(_userGetter.GetUserIDbyTelegramID(chatId), UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
                 int baseDelay = 0; if (da2 != UsersAction.NO_VALUE) { var parts = da2.Split(';'); if (parts.Length >= 2 && int.TryParse(parts[1], out var s)) baseDelay = s; }

@@ -247,11 +247,14 @@
 - [x] Async DB Model (core paths)
 - [x] Unit of Work across write repositories (Contacts, Groups, Privacy, DefaultActions)
 - [x] Basic Unit/Integration/Business tests
+ - [x] Default Actions SQLite/MySQL upsert: обновление без дубликатов (UPDATE‑first, INSERT‑if‑missing)
+ - [x] Персональные задержки-очереди на пользователя (staggering) и окна для caption
+ - [x] Отмена дублирующей авто‑отправки при ручном подтверждении (гасим таймер auto, не даём двойной отправки)
+ - [x] Улучшение UX во вводе ID: вывод доступных контактов/групп перед вводом (Users, ContactGroup, ContactLinks)
 
 ### **В Процессе ⚠️**
  - [x] Async DB Model — core части переведены на async/await (остались единичные короткие sync Execute в write-методах — опционально)
-- [ ] Message Merging (0% - высокий приоритет)
-- [ ] Text Cleanup (0%)
+ - [ ] Text Cleanup (60%): доменные правила (Pinterest) + сервис с hot‑reload; расширение набора правил
 
 ### **Не Начато ❌**
 - [ ] Authorization Support

@@ -34,7 +34,7 @@ public class Contacts
         await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, GetResourceString("SpecifyContactLink"));
     }
 
-    public static async Task DeleteContact(ITelegramBotClient botClient, Update update, long chatId, IContactRemover contactRemoverRepository, IContactGetter contactGetterRepository, IUserGetter userGetter, TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
+    public static async Task DeleteContact(ITelegramBotClient botClient, Update update, long chatId, IContactRemover contactRemoverRepository, IContactGetter contactGetterRepository, IUserGetter userGetter, IGroupGetter groupGetter, TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         // Show user's contacts to help choose IDs
         List<long> tgIds = await contactGetterRepository.GetAllContactUserTGIds(userGetter.GetUserIDbyTelegramID(chatId));
@@ -44,7 +44,10 @@ public class Contacts
             int id = userGetter.GetUserIDbyTelegramID(tg);
             string uname = userGetter.GetUserNameByTelegramID(tg);
             string link = userGetter.GetUserSelfLink(tg);
-            infos.Add(string.Format(GetResourceString("ContactInfo"), id, uname, link));
+            // Resolve group memberships for this contact
+            var membership = await BuildMembershipInfo(userGetter.GetUserIDbyTelegramID(chatId), id, groupGetter);
+            string groupsSuffix = string.IsNullOrEmpty(membership) ? string.Empty : $"\n{membership}";
+            infos.Add(string.Format(GetResourceString("ContactInfo"), id, uname, link) + groupsSuffix);
         }
         string prompt = $"{GetResourceString("YourContacts")}\n{string.Join("\n", infos)}\n\n{GetResourceString("InputContactId")}";
         Message statusMessage = await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, prompt, cancellationToken: cancellationToken, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
@@ -58,6 +61,7 @@ public class Contacts
         IContactAdder contactAdderRepository,
         IContactGetter contactGetterRepository,
         IUserGetter userGetter,
+        IGroupGetter groupGetter,
         TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         // Send instructions with contact list to simplify ID selection
@@ -68,7 +72,9 @@ public class Contacts
             int id = userGetter.GetUserIDbyTelegramID(tg);
             string uname = userGetter.GetUserNameByTelegramID(tg);
             string link = userGetter.GetUserSelfLink(tg);
-            infos.Add(string.Format(GetResourceString("ContactInfo"), id, uname, link));
+            var membership = await BuildMembershipInfo(userGetter.GetUserIDbyTelegramID(chatId), id, groupGetter);
+            string groupsSuffix = string.IsNullOrEmpty(membership) ? string.Empty : $"\n{membership}";
+            infos.Add(string.Format(GetResourceString("ContactInfo"), id, uname, link) + groupsSuffix);
         }
         string text = $"{GetResourceString("MuteUserInstructions")}\n\n{GetResourceString("YourContacts")}\n{string.Join("\n", infos)}";
         await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, text, cancellationToken: cancellationToken, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
@@ -82,6 +88,7 @@ public class Contacts
         IContactRemover contactRemoverRepository,
         IContactGetter contactGetter,
         IUserGetter userGetter,
+        IGroupGetter groupGetter,
         TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         // Show user's contacts to simplify choosing whom to unmute
@@ -92,7 +99,9 @@ public class Contacts
             int id = userGetter.GetUserIDbyTelegramID(tg);
             string uname = userGetter.GetUserNameByTelegramID(tg);
             string link = userGetter.GetUserSelfLink(tg);
-            infos2.Add(string.Format(GetResourceString("ContactInfo"), id, uname, link));
+            var membership = await BuildMembershipInfo(userGetter.GetUserIDbyTelegramID(chatId), id, groupGetter);
+            string groupsSuffix = string.IsNullOrEmpty(membership) ? string.Empty : $"\n{membership}";
+            infos2.Add(string.Format(GetResourceString("ContactInfo"), id, uname, link) + groupsSuffix);
         }
         string text2 = $"{GetResourceString("UnmuteUserInstructions")}\n\n{GetResourceString("YourContacts")}\n{string.Join("\n", infos2)}";
         await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, text2, cancellationToken: cancellationToken, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
@@ -136,5 +145,22 @@ public class Contacts
             : GetResourceString("AltYourGroupsText");
 
         await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(GetResourceString("ContactGroupInfoText"), messageText));
+    }
+
+    private static async Task<string> BuildMembershipInfo(int ownerUserId, int contactUserId, IGroupGetter groupGetter)
+    {
+        var groupIds = await groupGetter.GetGroupIDsByUserId(ownerUserId);
+        var membership = new List<string>();
+        foreach (var gid in groupIds)
+        {
+            var members = await groupGetter.GetAllUsersIdsInGroup(gid);
+            if (members.Any(m => m == contactUserId))
+            {
+                string name = await groupGetter.GetGroupNameById(gid);
+                membership.Add($"{name} (ID: {gid})");
+            }
+        }
+        if (membership.Count == 0) return string.Empty;
+        return $"<i>{GetResourceString("ContactGroupsLabel")}</i> {string.Join(", ", membership)}";
     }
 }

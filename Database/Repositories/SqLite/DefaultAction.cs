@@ -59,32 +59,40 @@ public class SqliteDefaultActionSetter : IDefaultActionSetter
 
     public bool SetAutoSendVideoConditionToUser(int userId, string actionCondition, string type)
     {
-        const string query = @"
-            INSERT INTO DefaultUsersActions (UserId, Type, ActionCondition) 
-            VALUES (@userId, @type, @actionCondition)
-            ON CONFLICT(UserId, Type) 
-            DO UPDATE SET ActionCondition = @actionCondition";
-
         using var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString);
         _uow?.Begin();
-        var ok = connection.Execute(query, new {userId, type, actionCondition}, _uow?.Transaction) > 0;
+        // First try to update the existing row for (UserId, Type)
+        int affected = connection.Execute(
+            "UPDATE DefaultUsersActions SET ActionCondition = @actionCondition WHERE UserId = @userId AND Type = @type AND IsActive = 1",
+            new { userId, type, actionCondition }, _uow?.Transaction);
+        // If no row was updated, insert a new one
+        if (affected == 0)
+        {
+            affected = connection.Execute(
+                "INSERT INTO DefaultUsersActions (UserId, Type, ActionCondition) VALUES (@userId, @type, @actionCondition)",
+                new { userId, type, actionCondition }, _uow?.Transaction);
+        }
         _uow?.Commit();
-        return ok;
+        return affected > 0;
     }
 
     public bool SetAutoSendVideoActionToUser(int userId, string action, string type)
     {
-        const string query = @"
-            INSERT INTO DefaultUsersActions (UserId, Type, Action) 
-            VALUES (@userId, @type, @action)
-            ON CONFLICT(UserId, Type) 
-            DO UPDATE SET Action = @action";
-
         using var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString);
         _uow?.Begin();
-        var ok = connection.Execute(query, new {userId, type, action}, _uow?.Transaction) > 0;
+        // First try to update the existing row for (UserId, Type)
+        int affected = connection.Execute(
+            "UPDATE DefaultUsersActions SET Action = @action WHERE UserId = @userId AND Type = @type AND IsActive = 1",
+            new { userId, type, action }, _uow?.Transaction);
+        // If no row was updated, insert a new one
+        if (affected == 0)
+        {
+            affected = connection.Execute(
+                "INSERT INTO DefaultUsersActions (UserId, Type, Action) VALUES (@userId, @type, @action)",
+                new { userId, type, action }, _uow?.Transaction);
+        }
         _uow?.Commit();
-        return ok;
+        return affected > 0;
     }
 }
 
@@ -118,7 +126,9 @@ public class SqliteDefaultActionGetter : IDefaultActionGetter
     {
         const string query = @"
             SELECT ID FROM DefaultUsersActions 
-            WHERE UserId = @userId AND Type = @type";
+            WHERE UserId = @userId AND Type = @type
+            ORDER BY ID DESC
+            LIMIT 1";
 
         try
         {
@@ -143,7 +153,9 @@ public class SqliteDefaultActionGetter : IDefaultActionGetter
                 FROM DefaultUsersActions
                 WHERE UserID = @userID
                 AND Type = @type
-                AND IsActive = 1",
+                AND IsActive = 1
+                ORDER BY ID DESC
+                LIMIT 1",
                 new { userID, type });
 
             return result != default 
@@ -177,7 +189,7 @@ public class SqliteDefaultActionGetter : IDefaultActionGetter
 
     public async Task<int> GetDefaultActionIdAsync(int userId, string type)
     {
-        const string query = @"SELECT ID FROM DefaultUsersActions WHERE UserId = @userId AND Type = @type";
+        const string query = @"SELECT ID FROM DefaultUsersActions WHERE UserId = @userId AND Type = @type ORDER BY ID DESC LIMIT 1";
         try
         {
             using var connection = new SqliteConnection(_connectionString);
@@ -200,7 +212,9 @@ public class SqliteDefaultActionGetter : IDefaultActionGetter
                 FROM DefaultUsersActions
                 WHERE UserID = @userID
                 AND Type = @type
-                AND IsActive = 1",
+                AND IsActive = 1
+                ORDER BY ID DESC
+                LIMIT 1",
                 new { userID, type });
             return result != default 
                 ? $"{result.Action};{result.ActionCondition}" 

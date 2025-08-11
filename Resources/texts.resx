@@ -297,6 +297,9 @@ Are you sure you want to unmute them? If not, type /start</value>
     <data name="AltYourGroupsText" xml:space="preserve">
         <value>You have no groups yet.</value>
     </data>
+    <data name="ContactGroupsLabel" xml:space="preserve">
+        <value>Groups:</value>
+    </data>
     <data name="SettingsButtonText" xml:space="preserve">
         <value>Settings</value>
     </data>
@@ -329,6 +332,21 @@ Are you sure you want to unmute them? If not, type /start</value>
     <data name="VideoDefaultActionsMenuText" xml:space="preserve">
         <value>Available actions for configuring default actions when processing links:</value>
     </data>
+  <data name="Summary.Defaults.Header" xml:space="preserve">
+    <value>Current default distribution</value>
+  </data>
+  <data name="Summary.Defaults.Action" xml:space="preserve">
+    <value>Action</value>
+  </data>
+  <data name="Summary.Defaults.Timeout" xml:space="preserve">
+    <value>Timeout</value>
+  </data>
+  <data name="Summary.Defaults.Users" xml:space="preserve">
+    <value>Users</value>
+  </data>
+  <data name="Summary.Defaults.Groups" xml:space="preserve">
+    <value>Groups</value>
+  </data>
     <data name="UsersVideoSentUsersMenuText" xml:space="preserve">
         <value>Available actions for configuring default distribution:</value>
     </data>

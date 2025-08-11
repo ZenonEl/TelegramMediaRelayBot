@@ -103,9 +103,13 @@ class PrivateUtils
 
                 if (TGBot.StateManager.TryGet(chatId, out var state) && state is ProcessVideoDC cfg)
                 {
+                    // Если к этому моменту пользователь уже начал ручную сессию — не дублируем авто‑отправку
+                    if (cfg.IsSessionActiveForMessage(statusMessage.MessageId))
+                    {
+                        return;
+                    }
                     // Берём актуальный текст из pending при автозапуске
                     var effectiveText = cfg.GetPendingTextOrCurrent(statusMessage.MessageId);
-                    // Не показываем "время вышло" в момент авто‑старта, чтобы не путать пользователя
                     _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: effectiveText);
                 }
             }

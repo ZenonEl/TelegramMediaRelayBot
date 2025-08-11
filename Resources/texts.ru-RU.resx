@@ -302,6 +302,9 @@ ID: {0}
     <data name="AltYourGroupsText" xml:space="preserve">
         <value>У вас пока нет групп.</value>
     </data>
+    <data name="ContactGroupsLabel" xml:space="preserve">
+        <value>Группы:</value>
+    </data>
     <data name="SettingsButtonText" xml:space="preserve">
         <value>Настройки</value>
     </data>
@@ -348,6 +351,21 @@ ID: {0}
     <data name="VideoDefaultActionsMenuText" xml:space="preserve">
         <value>Доступные действия для настройки действий по умолчанию при обработке ссылок:</value>
     </data>
+  <data name="Summary.Defaults.Header" xml:space="preserve">
+    <value>Текущая рассылка по умолчанию</value>
+  </data>
+  <data name="Summary.Defaults.Action" xml:space="preserve">
+    <value>Действие</value>
+  </data>
+  <data name="Summary.Defaults.Timeout" xml:space="preserve">
+    <value>Таймаут</value>
+  </data>
+  <data name="Summary.Defaults.Users" xml:space="preserve">
+    <value>Пользователи</value>
+  </data>
+  <data name="Summary.Defaults.Groups" xml:space="preserve">
+    <value>Группы</value>
+  </data>
     <data name="UsersVideoSentUsersMenuText" xml:space="preserve">
         <value>Доступные действия для настройки рассылки по умолчанию:</value>
     </data>

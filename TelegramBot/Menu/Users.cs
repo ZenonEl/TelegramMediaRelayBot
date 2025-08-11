@@ -106,36 +106,36 @@ public class Users
         );
     }
 
-    public static async Task ViewVideoDefaultActionsMenu(ITelegramBotClient botClient, Update update)
+    public static async Task ViewVideoDefaultActionsMenu(ITelegramBotClient botClient, Update update, string? preface = null)
     {
         await CommonUtilities.SendMessage(
             botClient,
             update,
             UsersDefaultActionsMenuKB.GetDefaultVideoDistributionKeyboardMarkup(),
             cancellationToken,
-            GetResourceString("VideoDefaultActionsMenuText")
+            (preface ?? string.Empty) + GetResourceString("VideoDefaultActionsMenuText")
         );
     }
 
-    public static async Task ViewUsersVideoSentUsersActionsMenu(ITelegramBotClient botClient, Update update)
+    public static async Task ViewUsersVideoSentUsersActionsMenu(ITelegramBotClient botClient, Update update, string? preface = null)
     {
         await CommonUtilities.SendMessage(
             botClient,
             update,
             UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
             cancellationToken,
-            GetResourceString("UsersVideoSentUsersMenuText")
+            (preface ?? string.Empty) + GetResourceString("UsersVideoSentUsersMenuText")
         );
     }
 
-    public static async Task ViewAutoSendVideoTimeMenu(ITelegramBotClient botClient, Update update)
+    public static async Task ViewAutoSendVideoTimeMenu(ITelegramBotClient botClient, Update update, string? preface = null)
     {
         await CommonUtilities.SendMessage(
             botClient,
             update,
             UsersDefaultActionsMenuKB.GetUsersAutoSendVideoTimeKeyboardMarkup(),
             cancellationToken,
-            GetResourceString("AutoSendVideoTimeMenuText")
+            (preface ?? string.Empty) + GetResourceString("AutoSendVideoTimeMenuText")
         );
     }
 
