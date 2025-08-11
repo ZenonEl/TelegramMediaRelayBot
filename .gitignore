@@ -44,3 +44,4 @@ TikTokMediaRelayBot.db
 hosts
 todo
 *.db
+/backups

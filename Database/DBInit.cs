@@ -201,6 +201,8 @@ public class FluentDBMigrator
             configuration.GetSection("AccessPolicy"));
         builder.Services.Configure<TextCleanupConfiguration>(
             configuration.GetSection("TextCleanup"));
+        builder.Services.Configure<BackupConfiguration>(
+            configuration.GetSection("Backup"));
 
         // Add configuration validators (fail fast)
         builder.Services.AddSingleton<IValidateOptions<BotConfiguration>, TelegramMediaRelayBot.Config.Validation.BotConfigurationValidator>();
@@ -213,6 +215,8 @@ public class FluentDBMigrator
         builder.Services.AddSingleton<TelegramMediaRelayBot.Config.Services.IResourceService, TelegramMediaRelayBot.Config.Services.ResourceService>();
         builder.Services.AddSingleton<TelegramMediaRelayBot.Infrastructure.MediaProcessing.IMediaProcessingService, TelegramMediaRelayBot.Infrastructure.MediaProcessing.FfmpegService>();
         builder.Services.AddSingleton<TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService, TelegramMediaRelayBot.TelegramBot.Utils.TextCleanupService>();
+        builder.Services.AddSingleton<TelegramMediaRelayBot.Infrastructure.Backup.IBackupProviderFactory, TelegramMediaRelayBot.Infrastructure.Backup.BackupProviderFactory>();
+        builder.Services.AddSingleton<TelegramMediaRelayBot.Infrastructure.Backup.IBackupOrchestrator, TelegramMediaRelayBot.Infrastructure.Backup.BackupOrchestrator>();
         
         // Регистрация загрузчиков
         builder.Services.AddScoped<TelegramMediaRelayBot.Domain.Interfaces.IMediaDownloaderFactory, TelegramMediaRelayBot.Infrastructure.Factories.MediaDownloaderFactory>();

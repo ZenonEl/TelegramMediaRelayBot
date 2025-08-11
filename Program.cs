@@ -93,6 +93,24 @@ namespace TelegramMediaRelayBot
                 _ = app.Services.GetRequiredService<TelegramMediaRelayBot.Config.Services.ConfigurationChangeLogger>();
                 TGBot tgBot = app.Services.GetRequiredService<TGBot>();
                 Scheduler scheduler = app.Services.GetRequiredService<Scheduler>();
+                // Initialize backup orchestrator (no UI; config-only)
+                var backup = app.Services.GetRequiredService<TelegramMediaRelayBot.Infrastructure.Backup.IBackupOrchestrator>();
+                await backup.InitializeAsync(CancellationToken.None);
+                await backup.RunOnStartAsync(CancellationToken.None);
+                // Ensure shutdown backup for both host stop and Ctrl+C/ProcessExit
+                var lifetime = app.Lifetime;
+                lifetime.ApplicationStopping.Register(() =>
+                {
+                    try { backup.RunOnShutdownAsync(CancellationToken.None).GetAwaiter().GetResult(); } catch { }
+                });
+                Console.CancelKeyPress += (_, __) =>
+                {
+                    try { backup.RunOnShutdownAsync(CancellationToken.None).GetAwaiter().GetResult(); } catch { }
+                };
+                AppDomain.CurrentDomain.ProcessExit += (_, __) =>
+                {
+                    try { backup.RunOnShutdownAsync(CancellationToken.None).GetAwaiter().GetResult(); } catch { }
+                };
 
                 Log.Information($"Log level: {initialLevel}");
                 scheduler.Init();

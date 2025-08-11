@@ -70,5 +70,32 @@
                 "BlacklistedReferrerIds": []
             }
         }
+    },
+    "Backup": {
+        "Enabled": true,
+        "Schedule": {
+            "OnStart": true,
+            "OnShutdown": true,
+            "DailyTimes": ["12:00"],
+            "TimeZone": "UTC",
+            "InitialDelayMinutes": 5
+        },
+        "Storage": {
+            "Path": "backups",
+            "UseGzip": true,
+            "Retention": { "MaxCount": 14, "MaxAgeDays": 30 }
+        },
+        "Encryption": { "Enabled": false, "PasswordEnvVar": "DB_BACKUP_PASSWORD" },
+        "ProviderOverride": null,
+        "MySql": { "Cli": { "DumpPath": "mysqldump", "ClientPath": "mysql", "ExtraArgs": "" } },
+        "Sqlite": { "UseVacuumInto": true },
+        "Restore": {
+            "Enabled": false,
+            "BackupFile": "",
+            "RequireConfirmationFile": "restore.ok",
+            "VerifyChecksum": true,
+            "TimeoutMinutes": 5,
+            "Mode": "Auto"
+        }
     }
 }
