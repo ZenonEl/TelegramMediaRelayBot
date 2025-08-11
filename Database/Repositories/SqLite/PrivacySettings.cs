@@ -28,20 +28,29 @@ public class SqlitePrivacySettingsSetter : IPrivacySettingsSetter
 
     public async Task<bool> SetPrivacyRule(int userId, string type, string action, bool isActive, string actionCondition)
     {
-        const string query = @"
-            INSERT INTO PrivacySettings (UserId, Type, Action, IsActive, ActionCondition)
-            VALUES (@userId, @type, @action, @isActive, @actionCondition)
-            ON CONFLICT(UserId, Type) 
-            DO UPDATE SET
-                Action = @action,
-                IsActive = @isActive,
-                ActionCondition = @actionCondition";
-
         using var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString);
         _uow?.Begin();
-        var affected = await connection.ExecuteAsync(query, new {userId, type, action, isActive, actionCondition}, _uow?.Transaction) > 0;
+        // Try update first to avoid duplicates even when unique index is missing
+        var updated = await connection.ExecuteAsync(
+            @"UPDATE PrivacySettings
+              SET Action = @action,
+                  IsActive = @isActive,
+                  ActionCondition = @actionCondition
+              WHERE UserId = @userId AND Type = @type",
+            new { userId, type, action, isActive, actionCondition }, _uow?.Transaction);
+
+        if (updated == 0)
+        {
+            var inserted = await connection.ExecuteAsync(
+                @"INSERT INTO PrivacySettings (UserId, Type, Action, IsActive, ActionCondition)
+                  VALUES (@userId, @type, @action, @isActive, @actionCondition)",
+                new { userId, type, action, isActive, actionCondition }, _uow?.Transaction);
+            _uow?.Commit();
+            return inserted > 0;
+        }
+
         _uow?.Commit();
-        return affected;
+        return updated > 0;
     }
 
     public bool SetPrivacyRuleToDisabled(int userId, string type)
