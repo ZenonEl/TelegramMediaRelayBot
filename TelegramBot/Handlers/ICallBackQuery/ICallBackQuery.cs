@@ -57,3 +57,26 @@ public class WhosTheGeniusCommand : IBotCallbackQueryHandlers
     }
 }
 
+public class ShowHelpCommand : IBotCallbackQueryHandlers
+{
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
+
+    public ShowHelpCommand(TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
+    {
+        _resourceService = resourceService;
+    }
+
+    public string Name => "show_help";
+
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        string helpText = _resourceService.GetResourceString("HelpText");
+        await botClient.EditMessageText(
+            chatId: update.CallbackQuery!.Message!.Chat.Id,
+            messageId: update.CallbackQuery!.Message!.MessageId,
+            text: helpText,
+            replyMarkup: KeyboardUtils.GetReturnButtonMarkup("main_menu"),
+            cancellationToken: ct,
+            parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
+    }
+}

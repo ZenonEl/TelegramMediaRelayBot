@@ -112,6 +112,7 @@ public static class KeyboardUtils
                         new[]
                         {
                             InlineKeyboardButton.WithCallbackData(GetResourceString("SettingsButtonText"), "show_settings"),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("HelpButtonText"), "show_help"),
                         },
                         new[]
                         {
