@@ -138,6 +138,19 @@ public abstract class BaseDBMigration : Migration
                 .WithColumn("TargetType").AsString(255).NotNullable()
                 .WithColumn("TargetValue").AsString(255).NotNullable();
         }
+
+        // InboxItems
+        if (!Schema.Table("InboxItems").Exists())
+        {
+            Create.Table("InboxItems")
+                .WithColumn("ID").AsInt64().PrimaryKey().Identity()
+                .WithColumn("OwnerUserId").AsInt32().NotNullable()
+                .WithColumn("FromContactId").AsInt32().NotNullable()
+                .WithColumn("Caption").AsString(int.MaxValue).Nullable()
+                .WithColumn("PayloadJson").AsString(int.MaxValue).NotNullable()
+                .WithColumn("Status").AsString(50).NotNullable().WithDefaultValue("new")
+                .WithColumn("CreatedAt").AsDateTime().NotNullable().WithDefaultValue(SystemMethods.CurrentUTCDateTime);
+        }
     }
 
     protected abstract void CreateSpecificConstraints();

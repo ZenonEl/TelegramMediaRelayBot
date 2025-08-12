@@ -281,6 +281,9 @@ public class FluentDBMigrator
                 builder.Services.AddScoped<IPrivacySettingsTargetsGetter>(_ =>
                     new MySqlPrivacySettingsTargetsGetter(connectionString));
 
+                builder.Services.AddScoped<IInboxRepository>(_ =>
+                    new MySqlInboxRepository(connectionString));
+
                 builder.Services.AddScoped<IDefaultAction>(_ =>
                     new MySqlDefaultAction(connectionString));
                 builder.Services.AddScoped<IDefaultActionSetter>(sp =>
@@ -328,6 +331,9 @@ public class FluentDBMigrator
                     new SqlitePrivacySettingsTargetsSetter(connectionString, sp.GetRequiredService<TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork>()));
                 builder.Services.AddScoped<IPrivacySettingsTargetsGetter>(_ =>
                     new SqlitePrivacySettingsTargetsGetter(connectionString));
+
+                builder.Services.AddScoped<IInboxRepository>(_ =>
+                    new SqliteInboxRepository(connectionString));
 
                 builder.Services.AddScoped<IDefaultAction>(_ =>
                     new SqliteDefaultAction(connectionString));

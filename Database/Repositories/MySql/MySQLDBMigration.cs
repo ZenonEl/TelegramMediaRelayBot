@@ -114,5 +114,22 @@ public class MySQLDBMigration : BaseDBMigration
         Create.ForeignKey("FK_PrivacySettingsTargets_PrivacySettingId")
             .FromTable("PrivacySettingsTargets").ForeignColumn("PrivacySettingId")
             .ToTable("PrivacySettings").PrimaryColumn("ID").OnDelete(Rule.Cascade);
+
+        // ========== InboxItems ==========
+        if (!Schema.Table("InboxItems").Exists())
+        {
+            Create.Table("InboxItems")
+                .WithColumn("ID").AsInt64().PrimaryKey().Identity()
+                .WithColumn("OwnerUserId").AsInt32().NotNullable()
+                .WithColumn("FromContactId").AsInt32().NotNullable()
+                .WithColumn("Caption").AsString(int.MaxValue).Nullable()
+                .WithColumn("PayloadJson").AsString(int.MaxValue).NotNullable()
+                .WithColumn("Status").AsString(50).NotNullable().WithDefaultValue("new")
+                .WithColumn("CreatedAt").AsDateTime().NotNullable().WithDefaultValue(SystemMethods.CurrentUTCDateTime);
+        }
+
+        Create.Index("IX_InboxItems_OwnerUserId")
+            .OnTable("InboxItems")
+            .OnColumn("OwnerUserId");
     }
 }

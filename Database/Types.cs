@@ -44,6 +44,7 @@ public class PrivacyRuleType
     public const string NSFW_SITE_FILTER = "nsfw_sites_filter";
     public const string UNIFIED_SITE_FILTER = "unified_sites_filter";
     public const string SITES_BY_DOMAIN_FILTER = "sites_by_domain_filter";
+    public const string INBOX_DELIVERY = "inbox_delivery";
 }
 
 public class PrivacyRuleAction
@@ -55,6 +56,7 @@ public class PrivacyRuleAction
     public const string NSFW_FILTER = "block_nsfw_sites";
     public const string UNIFIED_FILTER = "block_unified_sites";
     public const string DOMAIN_FILTER = "block_sites_by_domain";
+    public const string USE_INBOX = "use_inbox";
 }
 
 public class UsersAction

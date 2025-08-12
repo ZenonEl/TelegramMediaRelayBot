@@ -89,5 +89,10 @@ public class SQLiteDBMigration : BaseDBMigration
         Create.Index("IX_PrivacySettings_UserId")
             .OnTable("PrivacySettings")
             .OnColumn("UserId");
+
+        // ========== Индексы для InboxItems ==========
+        Create.Index("IX_InboxItems_OwnerUserId")
+            .OnTable("InboxItems")
+            .OnColumn("OwnerUserId");
     }
 }
