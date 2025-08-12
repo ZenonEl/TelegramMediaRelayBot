@@ -94,13 +94,13 @@ public class PrivateUpdateHandler
         }
         else if (update.Message.Text == "/start")
         {
-            // мгновенная отмена всех сессий чата
+            // Разрешаем пользоваться меню, не прерывая уже идущие отправки
             if (TGBot.StateManager.TryGet(chatId, out var state) && state is ProcessVideoDC)
             {
-                // полностью отменяем таймеры и очищаем pending перед выходом в меню
+                // Гасим только авто-таймеры/пенднги, оставляем активные сессии
                 var s = (ProcessVideoDC)state;
-                s.CancelAll();
-                TGBot.StateManager.Remove(chatId);
+                s.CancelPendingButKeepSessions();
+                // Состояние оставляем в StateManager, чтобы кнопка cancel_download продолжала работать
             }
             int userId = _userGetter.GetUserIDbyTelegramID(chatId);
             int newCount = await _inbox.GetNewCountAsync(userId);

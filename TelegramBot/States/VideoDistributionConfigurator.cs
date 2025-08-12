@@ -130,6 +130,17 @@ namespace TelegramMediaRelayBot;
         _pendingByMessageId.Clear();
     }
 
+    // Отменить только авто-таймеры и очистить pending, НЕ трогая активные сессии отправки
+    public void CancelPendingButKeepSessions()
+    {
+        foreach (var kv in _decisionCtsByMessageId.Values)
+        {
+            try { kv.Cancel(); } catch { }
+        }
+        _decisionCtsByMessageId.Clear();
+        _pendingByMessageId.Clear();
+    }
+
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
@@ -137,16 +148,8 @@ namespace TelegramMediaRelayBot;
         // Глобальный выход из стейта по /start или main_menu из ЛЮБОГО состояния
         if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false))
         {
-            // Отменяем таймеры для всех pending текущего чата
-            foreach (var kv in _decisionCtsByMessageId.Values)
-            {
-                try { kv.Cancel(); } catch { }
-            }
-            foreach (var kv in _sessionCtsByMessageId.Values)
-            {
-                try { kv.Cancel(); } catch { }
-            }
-            _pendingByMessageId.Clear();
+            // Не прерываем активные отправки: гасим только авто-таймеры и pending
+            CancelPendingButKeepSessions();
             return;
         }
 
