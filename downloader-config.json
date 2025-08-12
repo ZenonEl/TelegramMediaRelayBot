@@ -42,6 +42,7 @@
             "MaxRetries": 3,
             "UrlPatterns": [
                 "youtube\\.com/watch\\?v=",
+                "youtube\\.com/shorts/",
                 "youtu\\.be/[a-zA-Z0-9_-]+",
                 "vt\\.tiktok\\.com/",
                 "pinterest\\.com/pin/",
@@ -58,7 +59,7 @@
             "Auth": {
                 "UseCookies": true,
                 "CookiesFileEnvVar": "TMRB_YTDLP_COOKIES",
-                "CookiesFilePath": "/home/zentfany/Загрузки/cookies.txt",
+                "CookiesFilePath": "./cookies/cookies.txt",
                 "UseCookiesFromBrowser": false,
                 "CookiesFromBrowser": null
             }
@@ -105,7 +106,7 @@
             "Auth": {
                 "UseCookies": true,
                 "CookiesFileEnvVar": "TMRB_GDL_COOKIES",
-                "CookiesFilePath": "/home/zentfany/Загрузки/cookies.txt"
+                "CookiesFilePath": "./cookies/cookies.txt"
             }
         }
     },

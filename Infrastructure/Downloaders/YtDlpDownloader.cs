@@ -14,6 +14,7 @@ using TelegramMediaRelayBot.Domain.Interfaces;
 using TelegramMediaRelayBot.Domain.Models;
 using Microsoft.Extensions.Configuration;
 using System.Diagnostics;
+using System.Linq;
 
 namespace TelegramMediaRelayBot.Infrastructure.Downloaders;
 
@@ -113,13 +114,39 @@ public class YtDlpDownloader : BaseMediaDownloader
         // Ищем путь к скачанному файлу
         var filePath = ExtractFilePath(result.Output);
         Log.Debug("YtDlp extracted file path: {FilePath}", filePath);
-        
+
+        // Если исходный путь не найден (мог произойти merge с удалением частей) — пробуем альтернативы
         if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath))
         {
-            // Проверяем содержимое временной директории
-            var files = Directory.GetFiles(tempDirPath);
-            Log.Debug("YtDlp found {Count} files in temp directory: {Files}", files.Length, string.Join(", ", files));
-            throw new InvalidOperationException("Could not find downloaded file");
+            // Попробуем вытащить путь из сообщения о merge
+            var mergedPath = ExtractMergedFilePath(result.Output);
+            if (!string.IsNullOrWhiteSpace(mergedPath) && System.IO.File.Exists(mergedPath))
+            {
+                filePath = mergedPath;
+            }
+            else
+            {
+                // Выберем наиболее подходящий файл из временной директории (видео/аудио, по убыванию размера)
+                var candidates = Directory.GetFiles(tempDirPath);
+                Log.Debug("YtDlp found {Count} files in temp directory: {Files}", candidates.Length, string.Join(", ", candidates));
+
+                string[] preferredExt = new[] { ".mp4", ".mkv", ".webm", ".mov", ".m4v", ".avi", ".m4a", ".mp3", ".aac", ".flac", ".wav" };
+                var best = candidates
+                    .Select(p => new FileInfo(p))
+                    .OrderByDescending(fi => Array.IndexOf(preferredExt, fi.Extension.ToLowerInvariant()) >= 0)
+                    .ThenByDescending(fi => fi.Length)
+                    .FirstOrDefault();
+
+                if (best != null && best.Exists)
+                {
+                    filePath = best.FullName;
+                }
+            }
+
+            if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath))
+            {
+                throw new InvalidOperationException("Could not find downloaded file");
+            }
         }
         
         // Читаем файл
@@ -371,5 +398,19 @@ public class YtDlpDownloader : BaseMediaDownloader
     {
         var match = Regex.Match(output, OutputPattern);
         return match.Success ? match.Groups[1].Value.Trim() : null;
+    }
+
+    private string? ExtractMergedFilePath(string output)
+    {
+        try
+        {
+            // Пример строки: [Merger] Merging formats into "/tmp/..../video.webm"
+            var match = Regex.Match(output, "\\[Merger\\] Merging formats into \"(.+?)\"");
+            return match.Success ? match.Groups[1].Value.Trim() : null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 } 
