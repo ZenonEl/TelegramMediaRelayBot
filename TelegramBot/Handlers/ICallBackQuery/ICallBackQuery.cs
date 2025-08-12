@@ -13,6 +13,8 @@
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.Database.Interfaces;
 using Telegram.Bot.Types.ReplyMarkups;
+using FluentValidation;
+using TelegramMediaRelayBot.TelegramBot.Validation;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
@@ -120,10 +122,12 @@ public class InboxListCommand : IBotCallbackQueryHandlers
     private readonly IUserGetter _userGetter;
     private readonly IInboxRepository _inbox;
     public string Name => "inbox:list:";
+    private readonly IValidator<InboxListRequest> _listValidator;
     public InboxListCommand(IUserGetter userGetter, IInboxRepository inbox)
     {
         _userGetter = userGetter;
         _inbox = inbox;
+        _listValidator = new InboxListRequestValidator();
     }
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
@@ -133,6 +137,13 @@ public class InboxListCommand : IBotCallbackQueryHandlers
         var parts = data.Split(':');
         int page = parts.Length >= 3 && int.TryParse(parts[2], out var p) ? Math.Max(1, p) : 1;
         const int pageSize = 10;
+        var validation = await _listValidator.ValidateAsync(new InboxListRequest { ChatId = chatId, Page = page, PageSize = pageSize }, ct);
+        if (!validation.IsValid)
+        {
+            string err = string.Join("\n", validation.Errors.Select(e => $"• {e.ErrorMessage}"));
+            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, err, showAlert: true, cancellationToken: ct);
+            return;
+        }
         int offset = (page - 1) * pageSize;
         var items = (await _inbox.GetItemsAsync(userId, pageSize, offset)).ToList();
         if (items.Count == 0 && page > 1)
@@ -190,10 +201,12 @@ public class InboxViewCommand : IBotCallbackQueryHandlers
     private readonly IUserGetter _userGetter;
     private readonly IInboxRepository _inbox;
     public string Name => "inbox:view:";
+    private readonly IValidator<InboxViewRequest> _viewValidator;
     public InboxViewCommand(IUserGetter userGetter, IInboxRepository inbox)
     {
         _userGetter = userGetter;
         _inbox = inbox;
+        _viewValidator = new InboxViewRequestValidator();
     }
     private sealed class SavedMediaItem
     {
@@ -215,6 +228,13 @@ public class InboxViewCommand : IBotCallbackQueryHandlers
         var parts = update.CallbackQuery!.Data!.Split(':');
         long id = long.Parse(parts[2]);
         int page = parts.Length >= 4 && int.TryParse(parts[3], out var p) ? p : 1;
+        var validation = await _viewValidator.ValidateAsync(new InboxViewRequest { ChatId = chatId, ItemId = id, Page = page }, ct);
+        if (!validation.IsValid)
+        {
+            string err = string.Join("\n", validation.Errors.Select(e => $"• {e.ErrorMessage}"));
+            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, err, showAlert: true, cancellationToken: ct);
+            return;
+        }
         var item = await _inbox.GetItemAsync(id);
         if (item == null)
         {
@@ -271,6 +291,35 @@ public class InboxViewCommand : IBotCallbackQueryHandlers
         await botClient.SendMessage(chatId, info, cancellationToken: ct, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
         // Затем отдельным сообщением отправляем инлайн-кнопки
         await botClient.SendMessage(chatId, "ㅤ", replyMarkup: kb, cancellationToken: ct, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
+    }
+}
+
+public class CancelDownloadCommand : IBotCallbackQueryHandlers
+{
+    public string Name => "cancel_download:";
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        // колбек формата cancel_download:<messageId>
+        var parts = update.CallbackQuery!.Data!.Split(':');
+        if (parts.Length < 2 || !int.TryParse(parts[^1], out var msgId))
+        {
+            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, cancellationToken: ct);
+            return;
+        }
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        if (TGBot.StateManager.TryGet(chatId, out var state) && state is ProcessVideoDC s)
+        {
+            // Пытаемся отменить только конкретную сессию отправки по messageId
+            s.DisableAutoForMessageId(msgId);
+            // Используем внутреннее хранилище токенов сессии
+            var field = typeof(ProcessVideoDC).GetField("_sessionCtsByMessageId", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (field?.GetValue(s) is Dictionary<int, CancellationTokenSource> map && map.TryGetValue(msgId, out var cts))
+            {
+                try { cts.Cancel(); } catch { }
+                map.Remove(msgId);
+            }
+        }
+        await botClient.EditMessageText(update.CallbackQuery!.Message!.Chat.Id, update.CallbackQuery!.Message!.MessageId, "❎ Отменено пользователем", cancellationToken: ct);
     }
 }
 
