@@ -141,6 +141,21 @@ namespace TelegramMediaRelayBot;
         _pendingByMessageId.Clear();
     }
 
+    // Публичная отмена конкретной сессии по messageId
+    public bool CancelSessionForMessageId(int messageId)
+    {
+        bool cancelled = false;
+        if (_sessionCtsByMessageId.TryGetValue(messageId, out var cts))
+        {
+            try { cts.Cancel(); } catch { }
+            _sessionCtsByMessageId.Remove(messageId);
+            cancelled = true;
+        }
+        DisableAutoForMessageId(messageId);
+        _pendingByMessageId.Remove(messageId);
+        return cancelled;
+    }
+
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
@@ -160,6 +175,29 @@ namespace TelegramMediaRelayBot;
         int? requestedMsgId = null;
         if (update.CallbackQuery != null)
         {
+            // Глобальная обработка отмены: отменяем конкретную сессию по messageId из колбэка
+            var raw = update.CallbackQuery.Data ?? string.Empty;
+            if (raw.StartsWith("cancel_download:"))
+            {
+                var partsCancel = raw.Split(':');
+                if (partsCancel.Length >= 2 && int.TryParse(partsCancel[^1], out var msgIdCancel))
+                {
+                    bool cancelled = CancelSessionForMessageId(msgIdCancel);
+                    try
+                    {
+                        if (cancelled)
+                        {
+                            await botClient.EditMessageText(update.CallbackQuery.Message!.Chat.Id, msgIdCancel, _resourceService.GetResourceString("CanceledByUserMessage"), cancellationToken: cancellationToken);
+                        }
+                        else
+                        {
+                            await botClient.AnswerCallbackQuery(update.CallbackQuery.Id!, cancellationToken: cancellationToken);
+                        }
+                    }
+                    catch { }
+                    return;
+                }
+            }
             var dataQ = update.CallbackQuery.Data ?? string.Empty;
             var partsQ = dataQ.Split(':');
             if (partsQ.Length > 1 && int.TryParse(partsQ[^1], out var midQ))
@@ -221,7 +259,26 @@ namespace TelegramMediaRelayBot;
                             _sessionCtsByMessageId[statusMessage.MessageId] = sessionCts0;
                             DisableAutoForMessageId(statusMessage.MessageId);
                             var wait0 = _tgBot.ReserveDelaySlot(chatId, TimeSpan.Zero);
-                            try { await Task.Delay(wait0, sessionCts0.Token); } catch { }
+                            try { await Task.Delay(wait0, sessionCts0.Token); }
+                            catch (OperationCanceledException)
+                            {
+                                // отменено до старта — выходим тихо и помечаем карточку
+                                try { await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("CanceledByUserMessage"), cancellationToken: cancellationToken); } catch { }
+                                _pendingByMessageId.Remove(statusMessage.MessageId);
+                                _sessionCtsByMessageId.Remove(statusMessage.MessageId);
+                                currentState = UsersStandardState.ProcessAction;
+                                _finishMessageId = null;
+                                break;
+                            }
+                            if (sessionCts0.IsCancellationRequested)
+                            {
+                                try { await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("CanceledByUserMessage"), cancellationToken: cancellationToken); } catch { }
+                                _pendingByMessageId.Remove(statusMessage.MessageId);
+                                _sessionCtsByMessageId.Remove(statusMessage.MessageId);
+                                currentState = UsersStandardState.ProcessAction;
+                                _finishMessageId = null;
+                                break;
+                            }
                             var captionFallback0 = _pendingByMessageId.TryGetValue(statusMessage.MessageId, out var pend0a) ? pend0a.Text : ( _pendingByMessageId.Values.LastOrDefault().Text );
                             var captionRaw0 = captionFallback0 ?? string.Empty;
                             string cleanedText0 = captionRaw0;
@@ -495,7 +552,25 @@ namespace TelegramMediaRelayBot;
                 DisableAutoForMessageId(statusMessage.MessageId);
                 // Ручное подтверждение: выполняем без дополнительной базовой задержки
                 var wait = _tgBot.ReserveDelaySlot(chatId, TimeSpan.Zero);
-                try { await Task.Delay(wait, sessionCts.Token); } catch { }
+                try { await Task.Delay(wait, sessionCts.Token); }
+                catch (OperationCanceledException)
+                {
+                    try { await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("CanceledByUserMessage"), cancellationToken: cancellationToken); } catch { }
+                    _pendingByMessageId.Remove(statusMessage.MessageId);
+                    _sessionCtsByMessageId.Remove(statusMessage.MessageId);
+                    currentState = UsersStandardState.ProcessAction;
+                    _finishMessageId = null;
+                    break;
+                }
+                if (sessionCts.IsCancellationRequested)
+                {
+                    try { await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("CanceledByUserMessage"), cancellationToken: cancellationToken); } catch { }
+                    _pendingByMessageId.Remove(statusMessage.MessageId);
+                    _sessionCtsByMessageId.Remove(statusMessage.MessageId);
+                    currentState = UsersStandardState.ProcessAction;
+                    _finishMessageId = null;
+                    break;
+                }
                 // Очистка caption по домену ссылки перед отправкой; берём pending-текст, если есть
                 var captionRaw = _pendingByMessageId.TryGetValue(statusMessage.MessageId, out var pend) ? pend.Text : text;
                 string cleanedText = captionRaw;

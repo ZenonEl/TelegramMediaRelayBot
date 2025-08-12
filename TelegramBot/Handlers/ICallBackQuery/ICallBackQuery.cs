@@ -307,19 +307,19 @@ public class CancelDownloadCommand : IBotCallbackQueryHandlers
             return;
         }
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        bool cancelled = false;
         if (TGBot.StateManager.TryGet(chatId, out var state) && state is ProcessVideoDC s)
         {
-            // Пытаемся отменить только конкретную сессию отправки по messageId
-            s.DisableAutoForMessageId(msgId);
-            // Используем внутреннее хранилище токенов сессии
-            var field = typeof(ProcessVideoDC).GetField("_sessionCtsByMessageId", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (field?.GetValue(s) is Dictionary<int, CancellationTokenSource> map && map.TryGetValue(msgId, out var cts))
-            {
-                try { cts.Cancel(); } catch { }
-                map.Remove(msgId);
-            }
+            cancelled = s.CancelSessionForMessageId(msgId);
         }
-        await botClient.EditMessageText(update.CallbackQuery!.Message!.Chat.Id, update.CallbackQuery!.Message!.MessageId, "❎ Отменено пользователем", cancellationToken: ct);
+        if (cancelled)
+        {
+            await botClient.EditMessageText(update.CallbackQuery!.Message!.Chat.Id, update.CallbackQuery!.Message!.MessageId, "❎ Отменено пользователем", cancellationToken: ct);
+        }
+        else
+        {
+            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, "Нечего отменять", cancellationToken: ct, showAlert: false);
+        }
     }
 }
 

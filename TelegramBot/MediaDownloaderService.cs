@@ -82,6 +82,11 @@ public class MediaDownloaderService
         
         foreach (var downloader in downloaders)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                // пользователь отменил — выходим из fallback-цепочки
+                return null;
+            }
             try
             {
                 Log.Information("Trying downloader {Downloader} for {Url}", downloader.Name, videoUrl);
@@ -123,6 +128,11 @@ public class MediaDownloaderService
             {
                 Log.Warning(ex, "Downloader {Downloader} failed for {Url}", downloader.Name, videoUrl);
                 continue;
+            }
+            
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return null;
             }
         }
         
