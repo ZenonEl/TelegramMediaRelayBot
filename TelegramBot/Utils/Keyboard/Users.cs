@@ -35,6 +35,10 @@ public static class UsersKB
             },
             new[]
             {
+                InlineKeyboardButton.WithCallbackData(GetResourceString("InboxSettingsButtonText"), "user_inbox_menu"),
+            },
+            new[]
+            {
                 InlineKeyboardButton.WithCallbackData(GetResourceString("PrivacyButtonText"), "privacy_menu_and_safety"),
             },
             new[]
@@ -76,12 +80,30 @@ public static class UsersPrivacyMenuKB
             {
                 InlineKeyboardButton.WithCallbackData(GetResourceString("AllowContentForwardingBtn"), "user_update_content_forwarding_rule"),
             },
+            
             new[]
             {
                 KeyboardUtils.GetReturnButton("show_settings")
             },
         });
         return inlineKeyboard;
+    }
+
+    public static InlineKeyboardMarkup GetInboxKeyboardMarkup(bool isEnabled)
+    {
+        var toggleText = isEnabled ? GetResourceString("Disable") : GetResourceString("Enable");
+        var toggleCmd = isEnabled ? "user_inbox_disable" : "user_inbox_enable";
+        return new InlineKeyboardMarkup(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(toggleText, toggleCmd),
+            },
+            new[]
+            {
+                KeyboardUtils.GetReturnButton("privacy_menu_and_safety")
+            },
+        });
     }
 
     public static InlineKeyboardMarkup GetWhoCanFindMeByLinkKeyboardMarkup()

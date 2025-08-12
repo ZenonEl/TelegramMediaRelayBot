@@ -16,6 +16,7 @@ using Microsoft.Extensions.Configuration;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Menu;
 using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
@@ -265,9 +266,68 @@ public class PrivacySafetyMenuCommand : IBotCallbackQueryHandlers
         if (_privacyGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.NSFW_SITE_FILTER)) enabled.Add("NSFW");
         if (_privacyGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.UNIFIED_SITE_FILTER)) enabled.Add("Unified");
         bool domainsOn = _privacyGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.SITES_BY_DOMAIN_FILTER);
+        bool inboxOn = _privacyGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.INBOX_DELIVERY);
         string domainInfo = domainsOn ? "Domains: ON" : "Domains: OFF";
-        string preface = $"<b>Privacy:</b> {string.Join(", ", enabled)}\n{domainInfo}\n\n";
+        string inboxInfo = inboxOn ? "Inbox: ON" : "Inbox: OFF";
+        string preface = $"<b>Privacy:</b> {string.Join(", ", enabled)}\n{domainInfo}\n{inboxInfo}\n\n";
         await Users.ViewPrivacyMenu(botClient, update, preface);
+    }
+}
+
+public class UserInboxMenuCommand : IBotCallbackQueryHandlers
+{
+    public string Name => "user_inbox_menu";
+    private readonly IUserGetter _userGetter;
+    private readonly IPrivacySettingsGetter _privacyGetter;
+    public UserInboxMenuCommand(IUserGetter userGetter, IPrivacySettingsGetter privacyGetter)
+    {
+        _userGetter = userGetter;
+        _privacyGetter = privacyGetter;
+    }
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        bool inboxOn = _privacyGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.INBOX_DELIVERY);
+        await CommonUtilities.SendMessage(botClient, update, UsersPrivacyMenuKB.GetInboxKeyboardMarkup(inboxOn), ct, "Inbox settings");
+    }
+}
+
+public class UserInboxEnableCommand : IBotCallbackQueryHandlers
+{
+    public string Name => "user_inbox_enable";
+    private readonly IUserGetter _userGetter;
+    private readonly IPrivacySettingsSetter _privacySetter;
+    public UserInboxEnableCommand(IUserGetter userGetter, IPrivacySettingsSetter privacySetter)
+    {
+        _userGetter = userGetter;
+        _privacySetter = privacySetter;
+    }
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        await _privacySetter.SetPrivacyRule(userId, PrivacyRuleType.INBOX_DELIVERY, PrivacyRuleAction.USE_INBOX, true, "always");
+        await Users.ViewPrivacyMenu(botClient, update, "Inbox: ON");
+    }
+}
+
+public class UserInboxDisableCommand : IBotCallbackQueryHandlers
+{
+    public string Name => "user_inbox_disable";
+    private readonly IUserGetter _userGetter;
+    private readonly IPrivacySettingsSetter _privacySetter;
+    public UserInboxDisableCommand(IUserGetter userGetter, IPrivacySettingsSetter privacySetter)
+    {
+        _userGetter = userGetter;
+        _privacySetter = privacySetter;
+    }
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        _privacySetter.SetPrivacyRuleToDisabled(userId, PrivacyRuleType.INBOX_DELIVERY);
+        await Users.ViewPrivacyMenu(botClient, update, "Inbox: OFF");
     }
 }
 

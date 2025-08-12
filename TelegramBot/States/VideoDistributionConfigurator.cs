@@ -84,6 +84,12 @@ namespace TelegramMediaRelayBot;
         return text;
     }
 
+    // Schedules default action for the provided message immediately (used for the very first link)
+    public Task ScheduleDefaultActionFor(ITelegramBotClient botClient, long chatId, Message status, string url, string initialText, CancellationToken cancellationToken)
+    {
+        return TryScheduleDefaultActionForMessage(botClient, chatId, status, url, initialText, cancellationToken);
+    }
+
     // Guard: check if a manual/active session already started for this message
     public bool IsSessionActiveForMessage(int messageId)
     {
@@ -98,6 +104,22 @@ namespace TelegramMediaRelayBot;
             try { cts.Cancel(); } catch { }
             _decisionCtsByMessageId.Remove(messageId);
         }
+    }
+
+    // Cancel all timers (auto and session) and clear pending state
+    public void CancelAll()
+    {
+        foreach (var kv in _decisionCtsByMessageId.Values)
+        {
+            try { kv.Cancel(); } catch { }
+        }
+        foreach (var kv in _sessionCtsByMessageId.Values)
+        {
+            try { kv.Cancel(); } catch { }
+        }
+        _decisionCtsByMessageId.Clear();
+        _sessionCtsByMessageId.Clear();
+        _pendingByMessageId.Clear();
     }
 
     public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
@@ -141,8 +163,23 @@ namespace TelegramMediaRelayBot;
                             link = entry.Link;
                             text = entry.Text;
                         }
+                        else
+                        {
+                            // нет pending для этого сообщения — не продолжаем, чтобы не перепутать ссылки
+                            return;
+                        }
                     }
                     string callbackData = update.CallbackQuery.Data!;
+                    // поддержка формата "cmd:messageId" — отбрасываем часть после второй ':'
+                    var cbParts = callbackData.Split(':');
+                    if (cbParts.Length > 1 && int.TryParse(cbParts[^1], out int cbMsgId))
+                    {
+                        if (statusMessage.MessageId != cbMsgId)
+                        {
+                            return; // чужой колбек
+                        }
+                        callbackData = string.Join(':', cbParts.Take(cbParts.Length - 1));
+                    }
                     switch (callbackData)
                     {
                         case UsersAction.SEND_MEDIA_TO_ALL_CONTACTS:
@@ -150,14 +187,16 @@ namespace TelegramMediaRelayBot;
                             // cancel and remove any auto timer for this message before proceeding
                             DisableAutoForMessageId(statusMessage.MessageId);
                             await PrepareTargetUserIds(chatId);
-                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
+                        await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
+                            currentState = UsersStandardState.Finish;
                             break;
 
                         case UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS:
                             action = UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS;
                             DisableAutoForMessageId(statusMessage.MessageId);
                             await PrepareTargetUserIds(chatId);
-                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
+                        await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, _resourceService.GetResourceString("ConfirmDecision"), replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
+                            currentState = UsersStandardState.Finish;
                             break;
 
                         case UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS:

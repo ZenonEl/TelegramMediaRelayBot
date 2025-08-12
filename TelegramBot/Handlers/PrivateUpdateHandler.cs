@@ -78,24 +78,25 @@ public class PrivateUpdateHandler
                 statusMessage.Chat.Id,
                 statusMessage.MessageId,
                 _resourceService.GetResourceString("VideoDistributionQuestion"),
-                replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(),
+                replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(statusMessage.MessageId),
                 cancellationToken: cancellationToken
             );
 
             // Больше не чистим стартовый хвост доменными правилами: берём как есть (по договорённости)
 
             int userId = _userGetter.GetUserIDbyTelegramID(chatId);
-            TGBot.StateManager.Set(chatId, new ProcessVideoDC(link, statusMessage, text, _tgBot, _contactGetterRepository, _userGetter, _groupGetter, _defaultActionGetter, _resourceService, _textCleanup));
-            // Scheduling of default action moved inside state per-message
-            // It will create its own CTS and handle cancellation on user interaction
-            await Task.Yield();
+            var state = new ProcessVideoDC(link, statusMessage, text, _tgBot, _contactGetterRepository, _userGetter, _groupGetter, _defaultActionGetter, _resourceService, _textCleanup);
+            TGBot.StateManager.Set(chatId, state);
+            await state.ScheduleDefaultActionFor(botClient, chatId, statusMessage, link, text, cancellationToken);
         }
         else if (update.Message.Text == "/start")
         {
             // мгновенная отмена всех сессий чата
             if (TGBot.StateManager.TryGet(chatId, out var state) && state is ProcessVideoDC)
             {
-                // просто сбрасываем state; конкретные CTS будут отменены при первой кнопке
+                // полностью отменяем таймеры и очищаем pending перед выходом в меню
+                var s = (ProcessVideoDC)state;
+                s.CancelAll();
                 TGBot.StateManager.Remove(chatId);
             }
             await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
@@ -123,7 +124,17 @@ public class PrivateUpdateHandler
 
         string data = callbackQuery!.Data!;
         int colonIndex = data.IndexOf(':');
-        string commandName = colonIndex >= 0 ? data[..(colonIndex + 1)] : data;
+        string commandName;
+        if (data.StartsWith("inbox:"))
+        {
+            // поддержка inbox:* команд с несколькими сегментами
+            int second = data.IndexOf(':', 6); // позиция после "inbox:"
+            commandName = second > 0 ? data[..(second + 1)] : data + ":";
+        }
+        else
+        {
+            commandName = colonIndex >= 0 ? data[..(colonIndex + 1)] : data;
+        }
 
         await _handlersFactory.ExecuteAsync(commandName, update, botClient, cancellationToken);
     }

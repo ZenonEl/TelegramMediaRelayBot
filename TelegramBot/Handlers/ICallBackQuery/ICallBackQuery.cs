@@ -12,6 +12,7 @@
 
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.Database.Interfaces;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
@@ -24,10 +25,25 @@ public interface IBotCallbackQueryHandlers
 public class MainMenuCommand : IBotCallbackQueryHandlers
 {
     public string Name => "main_menu";
+    private readonly TelegramMediaRelayBot.Database.Interfaces.IInboxRepository _inbox;
+    private readonly IUserGetter _userGetter;
+    public MainMenuCommand(TelegramMediaRelayBot.Database.Interfaces.IInboxRepository inbox, IUserGetter userGetter)
+    {
+        _inbox = inbox;
+        _userGetter = userGetter;
+    }
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, ct);
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        if (TGBot.StateManager.TryGet(chatId, out var state) && state is ProcessVideoDC s)
+        {
+            s.CancelAll();
+            TGBot.StateManager.Remove(chatId);
+        }
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        int newCount = await _inbox.GetNewCountAsync(userId);
+        await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, ct, inboxNewCount: newCount);
     }
 }
 
@@ -78,5 +94,174 @@ public class ShowHelpCommand : IBotCallbackQueryHandlers
             replyMarkup: KeyboardUtils.GetReturnButtonMarkup("main_menu"),
             cancellationToken: ct,
             parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
+    }
+}
+
+public class OpenInboxCommand : IBotCallbackQueryHandlers
+{
+    private readonly IUserGetter _userGetter;
+    private readonly IInboxRepository _inbox;
+    public string Name => "open_inbox";
+    public OpenInboxCommand(IUserGetter userGetter, IInboxRepository inbox)
+    {
+        _userGetter = userGetter;
+        _inbox = inbox;
+    }
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        // Show first page via list command
+        update.CallbackQuery!.Data = "inbox:list:1";
+        await new InboxListCommand(_userGetter, _inbox).ExecuteAsync(update, botClient, ct);
+    }
+}
+
+public class InboxListCommand : IBotCallbackQueryHandlers
+{
+    private readonly IUserGetter _userGetter;
+    private readonly IInboxRepository _inbox;
+    public string Name => "inbox:list:";
+    public InboxListCommand(IUserGetter userGetter, IInboxRepository inbox)
+    {
+        _userGetter = userGetter;
+        _inbox = inbox;
+    }
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        string data = update.CallbackQuery!.Data!;
+        var parts = data.Split(':');
+        int page = parts.Length >= 3 && int.TryParse(parts[2], out var p) ? Math.Max(1, p) : 1;
+        const int pageSize = 20;
+        int offset = (page - 1) * pageSize;
+        var items = (await _inbox.GetItemsAsync(userId, pageSize, offset)).ToList();
+        if (items.Count == 0 && page > 1)
+        {
+            // fallback to previous page
+            page = 1; offset = 0; items = (await _inbox.GetItemsAsync(userId, pageSize, offset)).ToList();
+        }
+        // Build keyboard: one button per item
+        var rows = new List<InlineKeyboardButton[]>();
+        foreach (var it in items)
+        {
+            bool isNew = string.Equals(it.Status, "new", StringComparison.OrdinalIgnoreCase);
+            string senderName = _userGetter != null ? _userGetter.GetUserNameByTelegramID(_userGetter.GetTelegramIDbyUserID(it.FromContactId)) : it.FromContactId.ToString();
+            string title = $"#{it.Id} · от {senderName} · {it.CreatedAt:yyyy-MM-dd HH:mm}{(isNew ? " · NEW" : " · ✓")}";
+            rows.Add(new[] { InlineKeyboardButton.WithCallbackData(title, $"inbox:view:{it.Id}:{page}") });
+        }
+        // navigation
+        var prevCb = page > 1 ? $"inbox:list:{page - 1}" : "inbox:list:1";
+        var nextCb = items.Count == pageSize ? $"inbox:list:{page + 1}" : $"inbox:list:{page}";
+        rows.Add(new[] { InlineKeyboardButton.WithCallbackData($"◀ {page}", prevCb), InlineKeyboardButton.WithCallbackData($"▶", nextCb) });
+        rows.Add(new[] { KeyboardUtils.GetReturnButton("main_menu") });
+        var kb = new InlineKeyboardMarkup(rows);
+        await botClient.EditMessageText(chatId, update.CallbackQuery!.Message!.MessageId, "Входящие:", replyMarkup: kb, cancellationToken: ct);
+    }
+}
+
+public class InboxViewCommand : IBotCallbackQueryHandlers
+{
+    private readonly IUserGetter _userGetter;
+    private readonly IInboxRepository _inbox;
+    public string Name => "inbox:view:";
+    public InboxViewCommand(IUserGetter userGetter, IInboxRepository inbox)
+    {
+        _userGetter = userGetter;
+        _inbox = inbox;
+    }
+    private sealed class SavedMediaItem
+    {
+        public string Type { get; set; } = string.Empty; // serialized name in payload
+        public string FileId { get; set; } = string.Empty;
+        public string? Caption { get; set; }
+    }
+    private sealed class Payload
+    {
+        public long SourceChatId { get; set; }
+        public List<SavedMediaItem> SavedMedia { get; set; } = new();
+        public string Url { get; set; } = string.Empty;
+        public string Caption { get; set; } = string.Empty;
+        public object? Hashtag { get; set; }
+    }
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        var parts = update.CallbackQuery!.Data!.Split(':');
+        long id = long.Parse(parts[2]);
+        int page = parts.Length >= 4 && int.TryParse(parts[3], out var p) ? p : 1;
+        var item = await _inbox.GetItemAsync(id);
+        if (item == null)
+        {
+            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, "Не найдено", cancellationToken: ct);
+            return;
+        }
+        var payload = System.Text.Json.JsonSerializer.Deserialize<Payload>(item.PayloadJson) ?? new Payload();
+        // Rebuild media group from file ids
+        var media = new List<IAlbumInputMedia>();
+        foreach (var m in payload.SavedMedia)
+        {
+            string t = m.Type?.ToLowerInvariant() ?? string.Empty;
+            if (t.Contains("photo") || t == "image") { media.Add(new InputMediaPhoto(m.FileId) { Caption = m.Caption }); continue; }
+            if (t.Contains("video")) { media.Add(new InputMediaVideo(m.FileId) { Caption = m.Caption }); continue; }
+            if (t.Contains("audio")) { media.Add(new InputMediaAudio(m.FileId) { Caption = m.Caption }); continue; }
+            media.Add(new InputMediaDocument(m.FileId) { Caption = m.Caption });
+        }
+        if (media.Count > 0)
+        {
+            await botClient.SendMediaGroup(chatId, media, disableNotification: true, cancellationToken: ct);
+        }
+        await _inbox.SetStatusAsync(id, "viewed");
+        string senderName = System.Net.WebUtility.HtmlEncode(_userGetter.GetUserNameByTelegramID(_userGetter.GetTelegramIDbyUserID(item.FromContactId)));
+        // Extract two hashes: H1 (code) and H2 (#)
+        string h1 = string.Empty;
+        string h2 = string.Empty;
+        if (payload.Hashtag is string hs)
+        {
+            h1 = hs;
+        }
+        else if (payload.Hashtag is System.Text.Json.JsonElement el)
+        {
+            if (el.ValueKind == System.Text.Json.JsonValueKind.Array)
+            {
+                var arr = el.EnumerateArray().Select(x => x.GetString()).Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
+                h1 = arr.ElementAtOrDefault(0) ?? string.Empty;
+                h2 = arr.ElementAtOrDefault(1) ?? string.Empty;
+            }
+            else if (el.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                h1 = el.GetString() ?? string.Empty;
+            }
+        }
+        h1 = System.Net.WebUtility.HtmlEncode(h1);
+        h2 = System.Net.WebUtility.HtmlEncode(h2);
+        string captionEsc = System.Net.WebUtility.HtmlEncode(payload.Caption ?? string.Empty);
+        string info = $"От: {senderName}\n<code>{h1}</code>\n#{h2}\n\n{captionEsc}";
+        var kb = new InlineKeyboardMarkup(new[]
+        {
+            new[] { InlineKeyboardButton.WithCallbackData("Удалить", $"inbox:delete:{id}:{page}") },
+            new[] { InlineKeyboardButton.WithCallbackData("Назад", $"inbox:list:{page}") }
+        });
+        // Сначала отправляем текст с данными отправителя
+        await botClient.SendMessage(chatId, info, cancellationToken: ct, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
+        // Затем отдельным сообщением отправляем инлайн-кнопки
+        await botClient.SendMessage(chatId, "ㅤ", replyMarkup: kb, cancellationToken: ct, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
+    }
+}
+
+public class InboxDeleteCommand : IBotCallbackQueryHandlers
+{
+    private readonly IInboxRepository _inbox;
+    private readonly IUserGetter _userGetter;
+    public string Name => "inbox:delete:";
+    public InboxDeleteCommand(IInboxRepository inbox, IUserGetter userGetter) { _inbox = inbox; _userGetter = userGetter; }
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        var parts = update.CallbackQuery!.Data!.Split(':');
+        long id = long.Parse(parts[2]);
+        int page = parts.Length >= 4 && int.TryParse(parts[3], out var p) ? p : 1;
+        await _inbox.DeleteAsync(id);
+        // go back to list
+        update.CallbackQuery!.Data = $"inbox:list:{page}";
+        await new InboxListCommand(_userGetter, _inbox).ExecuteAsync(update, botClient, ct);
     }
 }

@@ -118,7 +118,13 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        string action = update.CallbackQuery!.Data!.Split(':')[1];
+        var parts = update.CallbackQuery!.Data!.Split(':');
+        string action = parts[1];
+        int? sourceMessageId = parts.Length > 2 && int.TryParse(parts[2], out var mid) ? mid : null;
+        if (sourceMessageId.HasValue && update.CallbackQuery!.Message!.MessageId != sourceMessageId.Value)
+        {
+            return; // ignore callback from another message
+        }
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
 
         List<string> extendActions = new List<string>

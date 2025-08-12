@@ -84,7 +84,7 @@ public static class KeyboardUtils
         return inlineKeyboard;
     }
 
-    public static Task SendInlineKeyboardMenu(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, string? text = null)
+    public static Task SendInlineKeyboardMenu(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, string? text = null, int inboxNewCount = 0)
     {
         var inlineKeyboard = new InlineKeyboardMarkup(new[]
                     {
@@ -109,6 +109,7 @@ public static class KeyboardUtils
                         {
                             InlineKeyboardButton.WithCallbackData(GetResourceString("UsersGroupButtonText"), "show_groups"),
                         },
+                        new[] { InlineKeyboardButton.WithCallbackData(inboxNewCount > 0 ? $"{GetResourceString("OpenInboxButtonText")} ({inboxNewCount})" : GetResourceString("OpenInboxButtonText"), "open_inbox") },
                         new[]
                         {
                             InlineKeyboardButton.WithCallbackData(GetResourceString("SettingsButtonText"), "show_settings"),
@@ -122,31 +123,32 @@ public static class KeyboardUtils
         return CommonUtilities.SendMessage(botClient, update, inlineKeyboard, cancellationToken, text);
     }
 
-    public static InlineKeyboardMarkup GetVideoDistributionKeyboardMarkup()
-{
-    var inlineKeyboard = new InlineKeyboardMarkup(new[]
-                    {
-                        new[]
+    public static InlineKeyboardMarkup GetVideoDistributionKeyboardMarkup(int? messageId = null)
+    {
+        string suffix = messageId.HasValue ? $":{messageId.Value}" : string.Empty;
+        var inlineKeyboard = new InlineKeyboardMarkup(new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(GetResourceString("SendToAllContactsButtonText"), "send_to_all_contacts"),
-                            InlineKeyboardButton.WithCallbackData(GetResourceString("SendToDefaultGroupsButtonText"), "send_to_default_groups"),
-                        },
-                        new[]
-                        {
-                            InlineKeyboardButton.WithCallbackData(GetResourceString("SendToSpecifiedGroupsButtonText"), "send_to_specified_groups"),
-                            InlineKeyboardButton.WithCallbackData(GetResourceString("SendToSpecifiedUsersButtonText"), "send_to_specified_users"),
-                        },
-                        new[]
-                        {
-                            InlineKeyboardButton.WithCallbackData(GetResourceString("SendOnlyToMeButtonText"), "send_only_to_me"),
-                        },
-                        new[]
-                        {
-                            GetReturnButton()
-                        },
-                    });
-        return inlineKeyboard;
-}
+                            new[]
+                            {
+                                InlineKeyboardButton.WithCallbackData(GetResourceString("SendToAllContactsButtonText"), "send_to_all_contacts" + suffix),
+                                InlineKeyboardButton.WithCallbackData(GetResourceString("SendToDefaultGroupsButtonText"), "send_to_default_groups" + suffix),
+                            },
+                            new[]
+                            {
+                                InlineKeyboardButton.WithCallbackData(GetResourceString("SendToSpecifiedGroupsButtonText"), "send_to_specified_groups" + suffix),
+                                InlineKeyboardButton.WithCallbackData(GetResourceString("SendToSpecifiedUsersButtonText"), "send_to_specified_users" + suffix),
+                            },
+                            new[]
+                            {
+                                InlineKeyboardButton.WithCallbackData(GetResourceString("SendOnlyToMeButtonText"), "send_only_to_me" + suffix),
+                            },
+                            new[]
+                            {
+                                GetReturnButton()
+                            },
+                        });
+            return inlineKeyboard;
+    }
 
     private static string TextOrDefault(string key, string fallback)
     {

@@ -18,6 +18,7 @@ using TelegramMediaRelayBot.TelegramBot.Handlers;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot.SiteFilter;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Config.Services;
 using TelegramMediaRelayBot.Config;
 using Microsoft.Extensions.Options;
@@ -33,6 +34,7 @@ public partial class TGBot
     private readonly PrivateUpdateHandler _updateHandler;
     private readonly IPrivacySettingsGetter _privacySettingsGetter;
     private readonly ILinkCategorizer _categorizer;
+    private readonly IInboxRepository _inboxRepo;
     private readonly IUserFilterService _userFilter;
     private readonly MediaDownloaderService _mediaDownloaderService;
     private readonly TelegramMediaRelayBot.Infrastructure.MediaProcessing.IMediaProcessingService _mediaProcessingService;
@@ -65,6 +67,7 @@ public partial class TGBot
         IOptionsMonitor<TelegramMediaRelayBot.Config.DownloadingConfiguration> downloadingConfig,
         IUserStateManager userStateManager,
         IUserFilterService userFilterService,
+        IInboxRepository inboxRepository,
         TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService textCleanupService
         )
     {
@@ -79,6 +82,7 @@ public partial class TGBot
         _mediaDownloaderService = mediaDownloaderService;
         _mediaProcessingService = mediaProcessingService;
         _textCleanupService = textCleanupService;
+        _inboxRepo = inboxRepository;
         _botConfig = botConfig;
         _delayConfig = delayConfig;
         _downloadingConfig = downloadingConfig;
@@ -397,12 +401,20 @@ public partial class TGBot
                                 msg.Audio != null ? new InputMediaAudio(msg.Audio.FileId) :
                                 new InputMediaDocument(msg.Document!.FileId)).ToList();
 
+                var savedMediaRefs = mess.Select(msg =>
+                {
+                    if (msg.Photo != null) return (Kind: nameof(InputMediaPhoto), FileId: msg.Photo[0].FileId);
+                    if (msg.Video != null) return (Kind: nameof(InputMediaVideo), FileId: msg.Video.FileId);
+                    if (msg.Audio != null) return (Kind: nameof(InputMediaAudio), FileId: msg.Audio.FileId);
+                    return (Kind: nameof(InputMediaDocument), FileId: msg.Document!.FileId);
+                }).ToList();
+
                 if (i + 10 >= mediaGroup.Count()) { lastMediaGroup = true; text = caption; }
 
                 if (!groupChat && targetUserIds != null && targetUserIds.Count > 0)
                 {
                     await SendVideoToContacts(chatId, botClient, statusMessage, targetUserIds,
-                        savedMediaGroupIDs: savedMediaGroupIDs, contentUrl, caption: text,
+                        savedMediaGroupIDs: savedMediaGroupIDs, savedMediaRefs: savedMediaRefs, contentUrl, caption: text,
                         lastMediaGroup: lastMediaGroup);
                 }
 
@@ -417,6 +429,7 @@ public partial class TGBot
         Message statusMessage,
         List<long> targetUserIds,
         List<InputMedia> savedMediaGroupIDs,
+        List<(string Kind, string FileId)> savedMediaRefs,
         string contentUrl,
         string caption = "",
         bool lastMediaGroup = false
@@ -436,6 +449,8 @@ public partial class TGBot
         string name = _userGetter.GetUserNameByTelegramID(telegramId);
                     string text = string.Format(_resourceService.GetResourceString("ContactSentVideo"), 
                                     name, now.ToString("yyyy_MM_dd_HH_mm_ss"), MyRegex().Replace(name, "_"), caption);
+                    string defaultHash1 = now.ToString("yyyy_MM_dd_HH_mm_ss");
+                    string defaultHash2 = $"{defaultHash1}_{MyRegex().Replace(name, "_")}";
         int sentCount = 0;
 
         foreach (long contactUserTgId in usersAllowedByLink)
@@ -444,6 +459,38 @@ public partial class TGBot
             {
 
                 int contactUserId = _userGetter.GetUserIDbyTelegramID(contactUserTgId);
+
+                // Inbox gating: if recipient enabled Inbox, store item instead of direct send
+                if (_privacySettingsGetter.GetIsActivePrivacyRule(contactUserId, PrivacyRuleType.INBOX_DELIVERY))
+                {
+                    try
+                    {
+                        var payload = new
+                        {
+                            SourceChatId = telegramId,
+                            SavedMedia = savedMediaRefs.Select(r => new { Type = r.Kind, FileId = r.FileId, Caption = (string?)null }).ToList(),
+                            Url = contentUrl,
+                            Caption = caption,
+                            Hashtag = new [] { defaultHash1, defaultHash2 }
+                        };
+                        string payloadJson = System.Text.Json.JsonSerializer.Serialize(payload);
+                        await _inboxRepo.AddItemAsync(contactUserId, _userGetter.GetUserIDbyTelegramID(telegramId), caption, payloadJson, "new");
+                        Log.Information("Added to Inbox for user {User}", contactUserId);
+                        sentCount++; // count as delivered
+                        try
+                        {
+                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId,
+                                $"{filteredContactUserTGIds.Count}/{sentCount}",
+                                cancellationToken: cancellationToken);
+                        }
+                        catch { }
+                        continue; // skip direct sending
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "Failed to add Inbox item, fallback to direct send");
+                    }
+                }
 
                 Message[] mediaMessages = await botClient.SendMediaGroup(contactUserTgId,
                                                                         savedMediaGroupIDs.Select(media => (IAlbumInputMedia)media),
