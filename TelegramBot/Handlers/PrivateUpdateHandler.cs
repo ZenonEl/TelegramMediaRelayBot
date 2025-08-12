@@ -29,6 +29,7 @@ public class PrivateUpdateHandler
     private readonly TelegramMediaRelayBot.Config.Services.IConfigurationService _configService;
     private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
     private readonly TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService _textCleanup;
+    private readonly TelegramMediaRelayBot.Database.Interfaces.IInboxRepository _inbox;
 
     public PrivateUpdateHandler(
         TGBot tgBot,
@@ -39,7 +40,8 @@ public class PrivateUpdateHandler
         IGroupGetter groupGetter,
         TelegramMediaRelayBot.Config.Services.IConfigurationService configService,
         TelegramMediaRelayBot.Config.Services.IResourceService resourceService,
-        TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService textCleanup
+        TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService textCleanup,
+        TelegramMediaRelayBot.Database.Interfaces.IInboxRepository inbox
         )
     {
         _tgBot = tgBot;
@@ -51,6 +53,7 @@ public class PrivateUpdateHandler
         _configService = configService;
         _resourceService = resourceService;
         _textCleanup = textCleanup;
+        _inbox = inbox;
     }
 
     public async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
@@ -99,7 +102,9 @@ public class PrivateUpdateHandler
                 s.CancelAll();
                 TGBot.StateManager.Remove(chatId);
             }
-            await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
+            int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+            int newCount = await _inbox.GetNewCountAsync(userId);
+            await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, inboxNewCount: newCount);
         }
         else if (update.Message.Text == "/help")
         {

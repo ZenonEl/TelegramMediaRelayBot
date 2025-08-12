@@ -42,17 +42,18 @@ public static class KeyboardUtils
         return inlineKeyboard;
     }
 
-    public static InlineKeyboardMarkup GetConfirmForActionKeyboardMarkup(string acceptCallback = "accept", string denyCallback = "main_menu")
+    public static InlineKeyboardMarkup GetConfirmForActionKeyboardMarkup(string acceptCallback = "accept", string denyCallback = "main_menu", int? messageId = null)
     {
+        string suffix = messageId.HasValue ? $":{messageId.Value}" : string.Empty;
         var inlineKeyboard = new InlineKeyboardMarkup(new[]
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(GetResourceString("YesButtonText"), acceptCallback),
+                            InlineKeyboardButton.WithCallbackData(GetResourceString("YesButtonText"), acceptCallback + suffix),
                         },
                         new[]
                         {
-                            GetReturnButton(denyCallback)
+                            GetReturnButton(denyCallback + suffix)
                         },
                     });
         return inlineKeyboard;
@@ -157,24 +158,26 @@ public static class KeyboardUtils
         return value;
     }
 
-    public static InlineKeyboardMarkup GetCancelKeyboardMarkup()
+    public static InlineKeyboardMarkup GetCancelKeyboardMarkup(int? messageId = null)
     {
         var cancelText = TextOrDefault("CancelButtonText", "Отменить");
+        string suffix = messageId.HasValue ? $":{messageId.Value}" : string.Empty;
         var inlineKeyboard = new InlineKeyboardMarkup(new[]
                     {
-                        new[] { InlineKeyboardButton.WithCallbackData(cancelText, "cancel_download") }
+                        new[] { InlineKeyboardButton.WithCallbackData(cancelText, "cancel_download" + suffix) }
                     });
         return inlineKeyboard;
     }
 
-    public static InlineKeyboardMarkup GetConfirmWithCancelKeyboardMarkup(string acceptCallback = "accept", string denyCallback = "main_menu")
+    public static InlineKeyboardMarkup GetConfirmWithCancelKeyboardMarkup(string acceptCallback = "accept", string denyCallback = "main_menu", int? messageId = null)
     {
         var cancelText = TextOrDefault("CancelButtonText", "Отменить");
+        string suffix = messageId.HasValue ? $":{messageId.Value}" : string.Empty;
         var inlineKeyboard = new InlineKeyboardMarkup(new[]
                     {
-                        new[] { InlineKeyboardButton.WithCallbackData(GetResourceString("YesButtonText"), acceptCallback) },
-                        new[] { InlineKeyboardButton.WithCallbackData(cancelText, "cancel_download") },
-                        new[] { GetReturnButton(denyCallback) }
+                        new[] { InlineKeyboardButton.WithCallbackData(GetResourceString("YesButtonText"), acceptCallback + suffix) },
+                        new[] { InlineKeyboardButton.WithCallbackData(cancelText, "cancel_download" + suffix) },
+                        new[] { GetReturnButton(denyCallback + suffix) }
                     });
         return inlineKeyboard;
     }

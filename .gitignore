@@ -45,3 +45,4 @@ hosts
 todo
 *.db
 /backups
+/cookies

@@ -87,7 +87,7 @@ public partial class TGBot
         _delayConfig = delayConfig;
         _downloadingConfig = downloadingConfig;
         
-        _updateHandler = new PrivateUpdateHandler(
+            _updateHandler = new PrivateUpdateHandler(
             this,
             _handlersFactory,
             contactGetterRepository,
@@ -96,7 +96,8 @@ public partial class TGBot
             groupGetter,
             _configService,
             resourceService,
-            _textCleanupService
+                _textCleanupService,
+                _inboxRepo
             );
 
         StateManager = userStateManager;

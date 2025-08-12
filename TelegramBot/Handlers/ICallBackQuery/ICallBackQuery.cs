@@ -132,7 +132,7 @@ public class InboxListCommand : IBotCallbackQueryHandlers
         string data = update.CallbackQuery!.Data!;
         var parts = data.Split(':');
         int page = parts.Length >= 3 && int.TryParse(parts[2], out var p) ? Math.Max(1, p) : 1;
-        const int pageSize = 20;
+        const int pageSize = 10;
         int offset = (page - 1) * pageSize;
         var items = (await _inbox.GetItemsAsync(userId, pageSize, offset)).ToList();
         if (items.Count == 0 && page > 1)
@@ -140,22 +140,48 @@ public class InboxListCommand : IBotCallbackQueryHandlers
             // fallback to previous page
             page = 1; offset = 0; items = (await _inbox.GetItemsAsync(userId, pageSize, offset)).ToList();
         }
-        // Build keyboard: one button per item
+        // Build keyboard and header
         var rows = new List<InlineKeyboardButton[]>();
-        foreach (var it in items)
+        if (items.Count > 0)
         {
-            bool isNew = string.Equals(it.Status, "new", StringComparison.OrdinalIgnoreCase);
-            string senderName = _userGetter != null ? _userGetter.GetUserNameByTelegramID(_userGetter.GetTelegramIDbyUserID(it.FromContactId)) : it.FromContactId.ToString();
-            string title = $"#{it.Id} · от {senderName} · {it.CreatedAt:yyyy-MM-dd HH:mm}{(isNew ? " · NEW" : " · ✓")}";
-            rows.Add(new[] { InlineKeyboardButton.WithCallbackData(title, $"inbox:view:{it.Id}:{page}") });
+            foreach (var it in items)
+            {
+                bool isNew = string.Equals(it.Status, "new", StringComparison.OrdinalIgnoreCase);
+                string senderName = _userGetter != null ? _userGetter.GetUserNameByTelegramID(_userGetter.GetTelegramIDbyUserID(it.FromContactId)) : it.FromContactId.ToString();
+                string title = $"#{it.Id} · от {senderName} · {it.CreatedAt:yyyy-MM-dd HH:mm}{(isNew ? " · NEW" : " · ✓")}";
+                rows.Add(new[] { InlineKeyboardButton.WithCallbackData(title, $"inbox:view:{it.Id}:{page}") });
+            }
+            bool hasPrev = page > 1;
+            bool hasNext = items.Count == pageSize;
+            if (hasPrev || hasNext)
+            {
+                var prevCb = hasPrev ? $"inbox:list:{page - 1}" : $"inbox:list:{page}";
+                var nextCb = hasNext ? $"inbox:list:{page + 1}" : $"inbox:list:{page}";
+                var navRow = new List<InlineKeyboardButton>();
+                if (hasPrev) navRow.Add(InlineKeyboardButton.WithCallbackData($"◀ {page - 1}", prevCb));
+                if (hasNext) navRow.Add(InlineKeyboardButton.WithCallbackData($"▶ {page + 1}", nextCb));
+                if (navRow.Count > 0) rows.Add(navRow.ToArray());
+            }
         }
-        // navigation
-        var prevCb = page > 1 ? $"inbox:list:{page - 1}" : "inbox:list:1";
-        var nextCb = items.Count == pageSize ? $"inbox:list:{page + 1}" : $"inbox:list:{page}";
-        rows.Add(new[] { InlineKeyboardButton.WithCallbackData($"◀ {page}", prevCb), InlineKeyboardButton.WithCallbackData($"▶", nextCb) });
         rows.Add(new[] { KeyboardUtils.GetReturnButton("main_menu") });
         var kb = new InlineKeyboardMarkup(rows);
-        await botClient.EditMessageText(chatId, update.CallbackQuery!.Message!.MessageId, "Входящие:", replyMarkup: kb, cancellationToken: ct);
+        string header = items.Count == 0 ? "Ваш список входящих\nПока пусто" : $"Ваш список входящих\nТекущий лист: {page}";
+        string currentText = update.CallbackQuery!.Message!.Text ?? string.Empty;
+        if (string.Equals(currentText, header, StringComparison.Ordinal))
+        {
+            // Ничего менять не нужно
+            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, cancellationToken: ct);
+            return;
+        }
+        try
+        {
+            await botClient.EditMessageText(chatId, update.CallbackQuery!.Message!.MessageId, header, replyMarkup: kb, cancellationToken: ct);
+        }
+        catch (Telegram.Bot.Exceptions.ApiRequestException ex) when (ex.Message.Contains("message is not modified", StringComparison.OrdinalIgnoreCase))
+        {
+            // Совсем нет изменений — просто игнорируем
+            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, cancellationToken: ct);
+        }
     }
 }
 
