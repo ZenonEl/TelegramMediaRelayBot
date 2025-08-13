@@ -46,3 +46,4 @@ todo
 *.db
 /backups
 /cookies
+*.log
