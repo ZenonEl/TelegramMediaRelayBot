@@ -45,6 +45,10 @@ public class LoggingConfiguration
     public Serilog.Events.LogEventLevel LogLevel { get; set; } = Serilog.Events.LogEventLevel.Information;
     public bool ShowVideoDownloadProgress { get; set; } = false;
     public bool ShowVideoUploadProgress { get; set; } = false;
+    public bool EnableFileLogging { get; set; } = false;
+    public string FilePath { get; set; } = "logs/bot-.log"; // rolling per day
+    public long FileSizeLimitBytes { get; set; } = 10 * 1024 * 1024; // 10MB
+    public int RetainedFileCountLimit { get; set; } = 7;
 }
 
 /// <summary>
