@@ -58,10 +58,27 @@ namespace TelegramMediaRelayBot
             // Получаем уровень логирования (горячо через switch)
             var initialLevel = configuration.GetValue<Serilog.Events.LogEventLevel>("ConsoleOutputSettings:LogLevel", Serilog.Events.LogEventLevel.Information);
             var levelSwitch = new Serilog.Core.LoggingLevelSwitch(initialLevel);
-            Log.Logger = new LoggerConfiguration()
+            var loggerConfig = new LoggerConfiguration()
                 .MinimumLevel.ControlledBy(levelSwitch)
                 .Enrich.FromLogContext()
-                .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss} [{Level}] {Message} {Exception}{NewLine}").CreateLogger();
+                .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss} [{Level}] {Message} {Exception}{NewLine}");
+
+            // Optional file logging
+            var fileEnabled = configuration.GetValue<bool>("ConsoleOutputSettings:EnableFileLogging", false);
+            if (fileEnabled)
+            {
+                var filePath = configuration.GetValue<string>("ConsoleOutputSettings:FilePath", "logs/bot-.log");
+                var sizeLimit = configuration.GetValue<long>("ConsoleOutputSettings:FileSizeLimitBytes", 10 * 1024 * 1024);
+                var retain = configuration.GetValue<int>("ConsoleOutputSettings:RetainedFileCountLimit", 7);
+                loggerConfig = loggerConfig.WriteTo.File(
+                    filePath,
+                    rollingInterval: Serilog.RollingInterval.Day,
+                    retainedFileCountLimit: retain,
+                    fileSizeLimitBytes: sizeLimit,
+                    rollOnFileSizeLimit: true,
+                    shared: true);
+            }
+            Log.Logger = loggerConfig.CreateLogger();
 
             try
             {
