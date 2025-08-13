@@ -35,10 +35,6 @@ public static class UsersKB
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(GetResourceString("InboxSettingsButtonText"), "user_inbox_menu"),
-            },
-            new[]
-            {
                 InlineKeyboardButton.WithCallbackData(GetResourceString("PrivacyButtonText"), "privacy_menu_and_safety"),
             },
             new[]
@@ -80,6 +76,10 @@ public static class UsersPrivacyMenuKB
             {
                 InlineKeyboardButton.WithCallbackData(GetResourceString("AllowContentForwardingBtn"), "user_update_content_forwarding_rule"),
             },
+			new[]
+			{
+				InlineKeyboardButton.WithCallbackData(GetResourceString("InboxSettingsButtonText"), "user_inbox_menu"),
+			},
             
             new[]
             {
@@ -112,15 +112,15 @@ public static class UsersPrivacyMenuKB
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("Никто", "user_set_nobody_who_can_find_me_by_link"),
+                InlineKeyboardButton.WithCallbackData(GetResourceString("WhoCanFindMe.Nobody"), "user_set_nobody_who_can_find_me_by_link"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("Только общие контакты", "user_set_general_who_can_find_me_by_link"),
+                InlineKeyboardButton.WithCallbackData(GetResourceString("WhoCanFindMe.General"), "user_set_general_who_can_find_me_by_link"),
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("Все", "user_set_all_who_can_find_me_by_link"),
+                InlineKeyboardButton.WithCallbackData(GetResourceString("WhoCanFindMe.All"), "user_set_all_who_can_find_me_by_link"),
             },
             new[]
             {

@@ -52,7 +52,7 @@ class PrivateUtils
             {
                 // Резервируем слот, чтобы несколько авто‑действий не стартовали одновременно
                 var wait = _tgBot.ReserveDelaySlot(chatId, TimeSpan.FromSeconds(defaultCondition));
-                await Task.Delay(wait, timeoutCTS.Token);
+                await Task.Delay(wait, timeoutCTS.Token).ConfigureAwait(false);
 
                 List<long> targetUserIds = new List<long>();
                 List<long> mutedByUserIds = new List<long>();
@@ -64,12 +64,12 @@ class PrivateUtils
                 switch (defaultAction)
                 {
                     case UsersAction.SEND_MEDIA_TO_ALL_CONTACTS:
-                        List<long> contactUserTGIds = await _contactGetterRepository.GetAllContactUserTGIds(userId);
+                        List<long> contactUserTGIds = await _contactGetterRepository.GetAllContactUserTGIds(userId).ConfigureAwait(false);
                         targetUserIds = contactUserTGIds.Except(mutedByUserIds).ToList();
                         break;
 
                     case UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS:
-                        userIds = await _groupGetter.GetAllUsersInDefaultEnabledGroups(userId);
+                        userIds = await _groupGetter.GetAllUsersInDefaultEnabledGroups(userId).ConfigureAwait(false);
 
                         targetUserIds = userIds
                             .Where(contactId => !mutedByUserIds.Contains(_userGetter.GetTelegramIDbyUserID(contactId)))
@@ -82,7 +82,7 @@ class PrivateUtils
 
                         foreach (int groupId in groupIds)
                         {
-                            userIds.AddRange(await _groupGetter.GetAllUsersIdsInGroup(groupId));
+                            userIds.AddRange(await _groupGetter.GetAllUsersIdsInGroup(groupId).ConfigureAwait(false));
                         }
 
                         targetUserIds = userIds

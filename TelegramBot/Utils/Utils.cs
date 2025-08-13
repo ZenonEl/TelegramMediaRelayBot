@@ -103,8 +103,8 @@ public static class CommonUtilities
 
     public static async Task AlertMessageAndShowMenu(ITelegramBotClient botClient, Update update, long chatId, string text)
     {
-        await botClient.SendMessage(chatId, text, cancellationToken: cancellationToken);
-        await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
+        await botClient.SendMessage(chatId, text, cancellationToken: cancellationToken).ConfigureAwait(false);
+        await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken).ConfigureAwait(false);
         TGBot.StateManager.Remove(chatId);
     }
 

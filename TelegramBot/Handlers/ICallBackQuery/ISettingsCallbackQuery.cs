@@ -52,120 +52,24 @@ public class VideoDefaultActionsMenuCommand : IBotCallbackQueryHandlers
     private readonly IUserGetter _userGetter;
     private readonly IDefaultActionGetter _defaultActionGetter;
     private readonly IGroupGetter _groupGetter;
+    private readonly TelegramMediaRelayBot.TelegramBot.Services.IDefaultSummaryService _summary;
 
     public VideoDefaultActionsMenuCommand(
         IUserGetter userGetter,
         IDefaultActionGetter defaultActionGetter,
-        IGroupGetter groupGetter)
+        IGroupGetter groupGetter,
+        TelegramMediaRelayBot.TelegramBot.Services.IDefaultSummaryService summary)
     {
         _userGetter = userGetter;
         _defaultActionGetter = defaultActionGetter;
         _groupGetter = groupGetter;
+        _summary = summary;
     }
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        long chatId = update.CallbackQuery!.Message!.Chat.Id;
-        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
-        string da = _defaultActionGetter.GetDefaultActionByUserIDAndType(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
-        string action = string.Empty; string condition = string.Empty;
-        if (!string.IsNullOrEmpty(da) && da != UsersAction.NO_VALUE && da.Contains(';'))
-        {
-            var parts = da.Split(';');
-            action = parts.ElementAtOrDefault(0) ?? string.Empty;
-            condition = parts.ElementAtOrDefault(1) ?? string.Empty;
-        }
-        int actionId = _defaultActionGetter.GetDefaultActionId(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
-        var users = _defaultActionGetter.GetAllDefaultUsersActionTargets(userId, TargetTypes.USER, actionId);
-        var groupIds = _defaultActionGetter.GetAllDefaultUsersActionTargets(userId, TargetTypes.GROUP, actionId);
-        var groupNames = new List<string>();
-        foreach (var gid in groupIds)
-        {
-            try { groupNames.Add($"{await _groupGetter.GetGroupNameById(gid)} (ID: {gid})"); } catch {}
-        }
-        string preface = $"<b>{Users.GetResourceString("Summary.Defaults.Header")}</b>\n" +
-                         $"{Users.GetResourceString("Summary.Defaults.Action")}: <code>{action}</code>\n" +
-                         $"{Users.GetResourceString("Summary.Defaults.Timeout")}: <code>{condition}</code>\n" +
-                         $"{Users.GetResourceString("Summary.Defaults.Users")}: <code>{string.Join(", ", users)}</code>\n" +
-                         (groupNames.Count > 0 ? $"{Users.GetResourceString("Summary.Defaults.Groups")}: {string.Join(", ", groupNames)}\n\n" : "\n");
+        string preface = await _summary.BuildDefaultsSummary(update);
         await Users.ViewVideoDefaultActionsMenu(botClient, update, preface);
-    }
-}
-
-internal static class DefaultSummaries
-{
-    public static async Task<string> BuildDefaultsSummary(Update update)
-    {
-        try
-        {
-            long chatId = update.CallbackQuery!.Message!.Chat.Id;
-            using var scope = FluentDBMigrator.GetCurrentServiceProvider("sqlite", new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build()).CreateScope();
-            var userGetter = scope.ServiceProvider.GetRequiredService<IUserGetter>();
-            var defaultGetter = scope.ServiceProvider.GetRequiredService<IDefaultActionGetter>();
-            var groupGetter = scope.ServiceProvider.GetRequiredService<IGroupGetter>();
-            int userId = userGetter.GetUserIDbyTelegramID(chatId);
-            string da = defaultGetter.GetDefaultActionByUserIDAndType(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
-            string action = ""; string condition = "";
-            if (!string.IsNullOrEmpty(da) && da != UsersAction.NO_VALUE && da.Contains(';'))
-            {
-                var parts = da.Split(';');
-                action = parts.ElementAtOrDefault(0) ?? "";
-                condition = parts.ElementAtOrDefault(1) ?? "";
-            }
-            int actionId = defaultGetter.GetDefaultActionId(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
-            var users = defaultGetter.GetAllDefaultUsersActionTargets(userId, TargetTypes.USER, actionId);
-            var groups = defaultGetter.GetAllDefaultUsersActionTargets(userId, TargetTypes.GROUP, actionId);
-            var groupNames = new List<string>();
-            foreach (var gid in groups) { try { groupNames.Add($"{await groupGetter.GetGroupNameById(gid)} (ID: {gid})"); } catch {} }
-            return $"<b>{Users.GetResourceString("Summary.Defaults.Header")}</b>\n" +
-                   $"{Users.GetResourceString("Summary.Defaults.Action")}: <code>{action}</code>\n" +
-                   $"{Users.GetResourceString("Summary.Defaults.Timeout")}: <code>{condition}</code>\n" +
-                   $"{Users.GetResourceString("Summary.Defaults.Users")}: <code>{string.Join(", ", users)}</code>\n" +
-                   (groupNames.Count > 0 ? $"{Users.GetResourceString("Summary.Defaults.Groups")}: {string.Join(", ", groupNames)}\n\n" : "\n");
-        }
-        catch { return string.Empty; }
-    }
-
-    public static async Task<string> BuildTargetsSummary(Update update)
-    {
-        try
-        {
-            long chatId = update.CallbackQuery!.Message!.Chat.Id;
-            using var scope = FluentDBMigrator.GetCurrentServiceProvider("sqlite", new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build()).CreateScope();
-            var userGetter = scope.ServiceProvider.GetRequiredService<IUserGetter>();
-            var defaultGetter = scope.ServiceProvider.GetRequiredService<IDefaultActionGetter>();
-            var groupGetter = scope.ServiceProvider.GetRequiredService<IGroupGetter>();
-            int userId = userGetter.GetUserIDbyTelegramID(chatId);
-            int actionId = defaultGetter.GetDefaultActionId(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
-            var users = defaultGetter.GetAllDefaultUsersActionTargets(userId, TargetTypes.USER, actionId);
-            var groups = defaultGetter.GetAllDefaultUsersActionTargets(userId, TargetTypes.GROUP, actionId);
-            var groupNames = new List<string>();
-            foreach (var gid in groups) { try { groupNames.Add($"{await groupGetter.GetGroupNameById(gid)} (ID: {gid})"); } catch {} }
-            return $"{Users.GetResourceString("Summary.Defaults.Users")}: <code>{string.Join(", ", users)}</code>\n" +
-                   (groupNames.Count > 0 ? $"{Users.GetResourceString("Summary.Defaults.Groups")}: {string.Join(", ", groupNames)}\n\n" : "\n");
-        }
-        catch { return string.Empty; }
-    }
-
-    public static Task<string> BuildTimeoutSummary(Update update)
-    {
-        try
-        {
-            long chatId = update.CallbackQuery!.Message!.Chat.Id;
-            using var scope = FluentDBMigrator.GetCurrentServiceProvider("sqlite", new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build()).CreateScope();
-            var userGetter = scope.ServiceProvider.GetRequiredService<IUserGetter>();
-            var defaultGetter = scope.ServiceProvider.GetRequiredService<IDefaultActionGetter>();
-            int userId = userGetter.GetUserIDbyTelegramID(chatId);
-            string da = defaultGetter.GetDefaultActionByUserIDAndType(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
-            string condition = string.Empty;
-            if (!string.IsNullOrEmpty(da) && da != UsersAction.NO_VALUE && da.Contains(';'))
-            {
-                var parts = da.Split(';');
-                condition = parts.ElementAtOrDefault(1) ?? string.Empty;
-            }
-            return Task.FromResult($"{Users.GetResourceString("Summary.Defaults.Timeout")}: <code>{condition}</code>\n\n");
-        }
-        catch { return Task.FromResult(string.Empty); }
     }
 }
 public class UserSetAutoSendVideoTimeCommand : IBotCallbackQueryHandlers
@@ -173,27 +77,21 @@ public class UserSetAutoSendVideoTimeCommand : IBotCallbackQueryHandlers
     public string Name => "user_set_auto_send_video_time";
     private readonly IUserGetter _userGetter;
     private readonly IDefaultActionGetter _defaultActionGetter;
+    private readonly TelegramMediaRelayBot.TelegramBot.Services.IDefaultSummaryService _summary;
 
     public UserSetAutoSendVideoTimeCommand(
         IUserGetter userGetter,
-        IDefaultActionGetter defaultActionGetter)
+        IDefaultActionGetter defaultActionGetter,
+        TelegramMediaRelayBot.TelegramBot.Services.IDefaultSummaryService summary)
     {
         _userGetter = userGetter;
         _defaultActionGetter = defaultActionGetter;
+        _summary = summary;
     }
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        long chatId = update.CallbackQuery!.Message!.Chat.Id;
-        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
-        string da = _defaultActionGetter.GetDefaultActionByUserIDAndType(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
-        string condition = string.Empty;
-        if (!string.IsNullOrEmpty(da) && da != UsersAction.NO_VALUE && da.Contains(';'))
-        {
-            var parts = da.Split(';');
-            condition = parts.ElementAtOrDefault(1) ?? string.Empty;
-        }
-        string preface = $"{Users.GetResourceString("Summary.Defaults.Timeout")}: <code>{condition}</code>\n\n";
+        string preface = await _summary.BuildTimeoutSummary(update);
         await Users.ViewAutoSendVideoTimeMenu(botClient, update, preface);
     }
 }
@@ -204,31 +102,23 @@ public class UserSetVideoSendUsersCommand : IBotCallbackQueryHandlers
     private readonly IUserGetter _userGetter;
     private readonly IDefaultActionGetter _defaultActionGetter;
     private readonly IGroupGetter _groupGetter;
+    private readonly TelegramMediaRelayBot.TelegramBot.Services.IDefaultSummaryService _summary;
 
     public UserSetVideoSendUsersCommand(
         IUserGetter userGetter,
         IDefaultActionGetter defaultActionGetter,
-        IGroupGetter groupGetter)
+        IGroupGetter groupGetter,
+        TelegramMediaRelayBot.TelegramBot.Services.IDefaultSummaryService summary)
     {
         _userGetter = userGetter;
         _defaultActionGetter = defaultActionGetter;
         _groupGetter = groupGetter;
+        _summary = summary;
     }
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        long chatId = update.CallbackQuery!.Message!.Chat.Id;
-        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
-        int actionId = _defaultActionGetter.GetDefaultActionId(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
-        var users = _defaultActionGetter.GetAllDefaultUsersActionTargets(userId, TargetTypes.USER, actionId);
-        var groupIds = _defaultActionGetter.GetAllDefaultUsersActionTargets(userId, TargetTypes.GROUP, actionId);
-        var groupNames = new List<string>();
-        foreach (var gid in groupIds)
-        {
-            try { groupNames.Add($"{await _groupGetter.GetGroupNameById(gid)} (ID: {gid})"); } catch {}
-        }
-        string preface = $"{Users.GetResourceString("Summary.Defaults.Users")}: <code>{string.Join(", ", users)}</code>\n" +
-                         (groupNames.Count > 0 ? $"{Users.GetResourceString("Summary.Defaults.Groups")}: {string.Join(", ", groupNames)}\n\n" : "\n");
+        string preface = await _summary.BuildTargetsSummary(update);
         await Users.ViewUsersVideoSentUsersActionsMenu(botClient, update, preface);
     }
 }
@@ -244,32 +134,23 @@ public class PrivacySafetyMenuCommand : IBotCallbackQueryHandlers
     private readonly IUserGetter _userGetter;
     private readonly IPrivacySettingsGetter _privacyGetter;
     private readonly IPrivacySettingsTargetsGetter _privacyTargetsGetter;
+    private readonly TelegramMediaRelayBot.TelegramBot.Services.IDefaultSummaryService _summary;
 
     public PrivacySafetyMenuCommand(
         IUserGetter userGetter,
         IPrivacySettingsGetter privacyGetter,
-        IPrivacySettingsTargetsGetter privacyTargetsGetter)
+        IPrivacySettingsTargetsGetter privacyTargetsGetter,
+        TelegramMediaRelayBot.TelegramBot.Services.IDefaultSummaryService summary)
     {
         _userGetter = userGetter;
         _privacyGetter = privacyGetter;
         _privacyTargetsGetter = privacyTargetsGetter;
+        _summary = summary;
     }
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        long chatId = update.CallbackQuery!.Message!.Chat.Id;
-        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
-
-        // Build summary for privacy
-        var enabled = new List<string>();
-        if (_privacyGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.SOCIAL_SITE_FILTER)) enabled.Add("Social");
-        if (_privacyGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.NSFW_SITE_FILTER)) enabled.Add("NSFW");
-        if (_privacyGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.UNIFIED_SITE_FILTER)) enabled.Add("Unified");
-        bool domainsOn = _privacyGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.SITES_BY_DOMAIN_FILTER);
-        bool inboxOn = _privacyGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.INBOX_DELIVERY);
-        string domainInfo = domainsOn ? "Domains: ON" : "Domains: OFF";
-        string inboxInfo = inboxOn ? "Inbox: ON" : "Inbox: OFF";
-        string preface = $"<b>Privacy:</b> {string.Join(", ", enabled)}\n{domainInfo}\n{inboxInfo}\n\n";
+        string preface = await _summary.BuildPrivacySummary(update);
         await Users.ViewPrivacyMenu(botClient, update, preface);
     }
 }
@@ -289,7 +170,7 @@ public class UserInboxMenuCommand : IBotCallbackQueryHandlers
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
         int userId = _userGetter.GetUserIDbyTelegramID(chatId);
         bool inboxOn = _privacyGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.INBOX_DELIVERY);
-        await CommonUtilities.SendMessage(botClient, update, UsersPrivacyMenuKB.GetInboxKeyboardMarkup(inboxOn), ct, "Inbox settings");
+        await CommonUtilities.SendMessage(botClient, update, UsersPrivacyMenuKB.GetInboxKeyboardMarkup(inboxOn), ct, Users.GetResourceString("InboxSettingsTitle"));
     }
 }
 
@@ -308,7 +189,7 @@ public class UserInboxEnableCommand : IBotCallbackQueryHandlers
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
         int userId = _userGetter.GetUserIDbyTelegramID(chatId);
         await _privacySetter.SetPrivacyRule(userId, PrivacyRuleType.INBOX_DELIVERY, PrivacyRuleAction.USE_INBOX, true, "always");
-        await Users.ViewPrivacyMenu(botClient, update, "Inbox: ON");
+        await Users.ViewPrivacyMenu(botClient, update, Users.GetResourceString("InboxOn"));
     }
 }
 
@@ -327,7 +208,7 @@ public class UserInboxDisableCommand : IBotCallbackQueryHandlers
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
         int userId = _userGetter.GetUserIDbyTelegramID(chatId);
         _privacySetter.SetPrivacyRuleToDisabled(userId, PrivacyRuleType.INBOX_DELIVERY);
-        await Users.ViewPrivacyMenu(botClient, update, "Inbox: OFF");
+        await Users.ViewPrivacyMenu(botClient, update, Users.GetResourceString("InboxOff"));
     }
 }
 
@@ -386,17 +267,20 @@ public class UserUpdateSelfLinkWithKeepSelectedContactsCommand : IBotCallbackQue
     private readonly IContactGetter _contactGetterRepository;
     private readonly IUserRepository _userRepository;
     private readonly IUserGetter _userGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public UserUpdateSelfLinkWithKeepSelectedContactsCommand(
         IContactRemover contactRemoverRepository,
         IContactGetter contactGetterRepository,
         IUserRepository userRepository,
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         _contactRemoverRepository = contactRemoverRepository;
         _contactGetterRepository = contactGetterRepository;
         _userRepository = userRepository;
         _userGetter = userGetter;
+        _resourceService = resourceService;
     }
 
     public string Name => "user_update_self_link_with_keep_selected_contacts";
@@ -423,7 +307,7 @@ public class UserUpdateSelfLinkWithKeepSelectedContactsCommand : IBotCallbackQue
             KeyboardUtils.GetReturnButtonMarkup("user_update_self_link"),
             ct,
             $"{header}\n{body}\n\n{prompt}");
-        UsersDB.UpdateSelfLinkWithKeepSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository, _userRepository, _userGetter, new TelegramMediaRelayBot.Config.Services.ResourceService());
+        UsersDB.UpdateSelfLinkWithKeepSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository, _userRepository, _userGetter, _resourceService);
     }
 }
 
@@ -433,17 +317,20 @@ public class UserUpdateSelfLinkWithDeleteSelectedContactsCommand : IBotCallbackQ
     private readonly IContactGetter _contactGetterRepository;    
     private readonly IUserRepository _userRepository;
     private readonly IUserGetter _userGetter;
+    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
 
     public UserUpdateSelfLinkWithDeleteSelectedContactsCommand(
         IContactRemover contactRemoverRepository,
         IContactGetter contactGetterRepository,
         IUserRepository userRepository,
-        IUserGetter userGetter)
+        IUserGetter userGetter,
+        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
     {
         _contactRemoverRepository = contactRemoverRepository;
         _contactGetterRepository = contactGetterRepository;
         _userRepository = userRepository;
         _userGetter = userGetter;
+        _resourceService = resourceService;
     }
 
     public string Name => "user_update_self_link_with_delete_selected_contacts";
@@ -470,7 +357,7 @@ public class UserUpdateSelfLinkWithDeleteSelectedContactsCommand : IBotCallbackQ
             KeyboardUtils.GetReturnButtonMarkup("user_update_self_link"),
             ct,
             $"{header}\n{body}\n\n{prompt}");
-        UsersDB.UpdateSelfLinkWithDeleteSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository, _userRepository, _userGetter, new TelegramMediaRelayBot.Config.Services.ResourceService());
+        UsersDB.UpdateSelfLinkWithDeleteSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository, _userRepository, _userGetter, _resourceService);
     }
 }
 

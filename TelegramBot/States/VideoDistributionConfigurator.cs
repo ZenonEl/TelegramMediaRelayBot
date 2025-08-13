@@ -317,7 +317,7 @@ namespace TelegramMediaRelayBot;
                             List<string> groupInfos = await UsersGroup.GetUserGroupInfoByUserId(_userGetter.GetUserIDbyTelegramID(chatId), _groupGetter);
 
                             string messageText = groupInfos.Any() 
-                                ? $"{_resourceService.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
+                                ? $"{_resourceService.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos.Select(System.Net.WebUtility.HtmlEncode))}" 
                                 : _resourceService.GetResourceString("AltYourGroupsText");
                             string text = $"{messageText}\n{_resourceService.GetResourceString("PleaseEnterContactIDs")}";
 

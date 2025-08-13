@@ -87,40 +87,40 @@ public class ProcessUserMuteState : IUserState
                 int contactId;
                 if (int.TryParse(message.Text, out contactId))
                 {
-                    List<long> allowedIds = await _contactGetter.GetAllContactUserTGIds(_userGetter.GetUserIDbyTelegramID(message.Chat.Id));
+                    List<long> allowedIds = await _contactGetter.GetAllContactUserTGIds(_userGetter.GetUserIDbyTelegramID(message.Chat.Id)).ConfigureAwait(false);
                     string name = _userGetter.GetUserNameByID(contactId);
                     if (name == "" || !allowedIds.Contains(_userGetter.GetTelegramIDbyUserID(contactId)))
                     {
-                        await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, _resourceService.GetResourceString("NoUserFoundByID"));
+                        await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, _resourceService.GetResourceString("NoUserFoundByID")).ConfigureAwait(false);
                         return;
                     }
-                    await botClient.SendMessage(chatId, string.Format(_resourceService.GetResourceString("WillWorkWithContact"), contactId, name), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, string.Format(_resourceService.GetResourceString("WillWorkWithContact"), contactId, name), cancellationToken: cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
                     string link = message.Text!;
-                    contactId = await _contactGetter.GetContactIDByLinkAsync(link);
-                    List<long> allowedIds = await _contactGetter.GetAllContactUserTGIds(_userGetter.GetUserIDbyTelegramID(message.Chat.Id));
+                    contactId = await _contactGetter.GetContactIDByLinkAsync(link).ConfigureAwait(false);
+                    List<long> allowedIds = await _contactGetter.GetAllContactUserTGIds(_userGetter.GetUserIDbyTelegramID(message.Chat.Id)).ConfigureAwait(false);
 
                     if (contactId == -1 || !allowedIds.Contains(_userGetter.GetTelegramIDbyUserID(contactId)))
                     {
-                        await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, _resourceService.GetResourceString("NoUserFoundByLink"));
+                        await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, _resourceService.GetResourceString("NoUserFoundByLink")).ConfigureAwait(false);
                         return;
                     }
                     string name = _userGetter.GetUserNameByID(contactId);
-                    await botClient.SendMessage(chatId, string.Format(_resourceService.GetResourceString("WillWorkWithContact"), contactId, name), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, string.Format(_resourceService.GetResourceString("WillWorkWithContact"), contactId, name), cancellationToken: cancellationToken).ConfigureAwait(false);
                 }
                 mutedByUserId = _userGetter.GetUserIDbyTelegramID(chatId);
                 mutedContactId = contactId;
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("ConfirmDecision"), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("ConfirmDecision"), cancellationToken: cancellationToken).ConfigureAwait(false);
                 userState.currentState = UserMuteState.WaitingForConfirmation;
                 break;
 
             case UserMuteState.WaitingForConfirmation:
-                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId)) return;
+                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId).ConfigureAwait(false)) return;
 
                 string text = _resourceService.GetResourceString("MuteTimeInstructions");
-                await botClient.SendMessage(chatId, text, cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, text, cancellationToken: cancellationToken).ConfigureAwait(false);
                 userState.currentState = UserMuteState.WaitingForMuteTime;
                 break;
 
@@ -128,7 +128,7 @@ public class ProcessUserMuteState : IUserState
                 var msg2 = update.Message;
                 if (msg2 == null || string.IsNullOrWhiteSpace(msg2.Text))
                 {
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidMuteTimeFormat"), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidMuteTimeFormat"), cancellationToken: cancellationToken).ConfigureAwait(false);
                     return;
                 }
                 string muteTime = msg2.Text!;
@@ -138,25 +138,25 @@ public class ProcessUserMuteState : IUserState
                     DateTime unmuteTime = DateTime.Now.AddSeconds(time);
                     expirationDate = unmuteTime;
                     string unmuteMessage = string.Format(_resourceService.GetResourceString("UserWillBeUnmuted"), unmuteTime, time);
-                    await botClient.SendMessage(chatId, unmuteMessage, cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, unmuteMessage, cancellationToken: cancellationToken).ConfigureAwait(false);
                 }
                 else if (DateTime.TryParse(muteTime, out DateTime specifiedDate))
                 {
                     expirationDate = specifiedDate;
-                    await botClient.SendMessage(chatId, string.Format(_resourceService.GetResourceString("UserWillBeUnmutedAt"), specifiedDate), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, string.Format(_resourceService.GetResourceString("UserWillBeUnmutedAt"), specifiedDate), cancellationToken: cancellationToken).ConfigureAwait(false);
                 }
                 else if (muteTime.Equals(_resourceService.GetResourceString("IndefinitelyButtonText"), StringComparison.OrdinalIgnoreCase))
                 {
                     expirationDate = null;
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("UserWillBeMutedIndefinitely"), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("UserWillBeMutedIndefinitely"), cancellationToken: cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidMuteTimeFormat"), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidMuteTimeFormat"), cancellationToken: cancellationToken).ConfigureAwait(false);
                     return;
                 }
                 await botClient.SendMessage(chatId, _resourceService.GetResourceString("ConfirmFinalDecision"), cancellationToken: cancellationToken,
-                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(_resourceService.GetResourceString("NextButtonText")));
+                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(_resourceService.GetResourceString("NextButtonText"))).ConfigureAwait(false);
                 userState.currentState = UserMuteState.Finish;
                 break;
 

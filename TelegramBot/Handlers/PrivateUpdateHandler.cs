@@ -103,23 +103,23 @@ public class PrivateUpdateHandler
                 // Состояние оставляем в StateManager, чтобы кнопка cancel_download продолжала работать
             }
             int userId = _userGetter.GetUserIDbyTelegramID(chatId);
-            int newCount = await _inbox.GetNewCountAsync(userId);
-            await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, inboxNewCount: newCount);
+            int newCount = await _inbox.GetNewCountAsync(userId).ConfigureAwait(false);
+            await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, inboxNewCount: newCount).ConfigureAwait(false);
         }
         else if (update.Message.Text == "/help")
         {
             string helpText = _resourceService.GetResourceString("HelpText");
-            await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken, helpText);
+            await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken, helpText).ConfigureAwait(false);
         }
         else if (update.Message.Text != null)
         {
             // Сохраняем "предыдущий текст" для окна caption, если это не ссылка
             TGBot.RememberLastText(chatId, update.Message.Text);
-            await botClient.SendMessage(update.Message.Chat.Id, _resourceService.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken);
+            await botClient.SendMessage(update.Message.Chat.Id, _resourceService.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken).ConfigureAwait(false);
         }
         else
         {
-            await botClient.SendMessage(update.Message.Chat.Id, _resourceService.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken);
+            await botClient.SendMessage(update.Message.Chat.Id, _resourceService.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken).ConfigureAwait(false);
         }
     }
 

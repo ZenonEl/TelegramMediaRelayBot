@@ -15,12 +15,24 @@ using TelegramMediaRelayBot.Database.Interfaces;
 using Telegram.Bot.Types.ReplyMarkups;
 using FluentValidation;
 using TelegramMediaRelayBot.TelegramBot.Validation;
+using TelegramMediaRelayBot.TelegramBot.Menu;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
+/// <summary>
+/// Defines a Telegram callback query handler.
+/// Implementations handle a specific callback command identified by <see cref="Name"/>.
+/// </summary>
 public interface IBotCallbackQueryHandlers
 {
+    /// <summary>
+    /// Unique prefix or full name of the callback command this handler processes.
+    /// </summary>
     string Name { get; }
+
+    /// <summary>
+    /// Executes the handler logic for the provided callback update.
+    /// </summary>
     Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct);
 }
 
@@ -95,7 +107,7 @@ public class ShowHelpCommand : IBotCallbackQueryHandlers
             text: helpText,
             replyMarkup: KeyboardUtils.GetReturnButtonMarkup("main_menu"),
             cancellationToken: ct,
-            parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
+            parseMode: Telegram.Bot.Types.Enums.ParseMode.Html).ConfigureAwait(false);
     }
 }
 
@@ -104,16 +116,18 @@ public class OpenInboxCommand : IBotCallbackQueryHandlers
     private readonly IUserGetter _userGetter;
     private readonly IInboxRepository _inbox;
     public string Name => "open_inbox";
-    public OpenInboxCommand(IUserGetter userGetter, IInboxRepository inbox)
+    private readonly IValidator<InboxListRequest> _listValidator;
+    public OpenInboxCommand(IUserGetter userGetter, IInboxRepository inbox, IValidator<InboxListRequest> listValidator)
     {
         _userGetter = userGetter;
         _inbox = inbox;
+        _listValidator = listValidator;
     }
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         // Show first page via list command
         update.CallbackQuery!.Data = "inbox:list:1";
-        await new InboxListCommand(_userGetter, _inbox).ExecuteAsync(update, botClient, ct);
+        await new InboxListCommand(_userGetter, _inbox, _listValidator).ExecuteAsync(update, botClient, ct);
     }
 }
 
@@ -123,11 +137,12 @@ public class InboxListCommand : IBotCallbackQueryHandlers
     private readonly IInboxRepository _inbox;
     public string Name => "inbox:list:";
     private readonly IValidator<InboxListRequest> _listValidator;
-    public InboxListCommand(IUserGetter userGetter, IInboxRepository inbox)
+    private const int PageSize = 10;
+    public InboxListCommand(IUserGetter userGetter, IInboxRepository inbox, IValidator<InboxListRequest> listValidator)
     {
         _userGetter = userGetter;
         _inbox = inbox;
-        _listValidator = new InboxListRequestValidator();
+        _listValidator = listValidator;
     }
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
@@ -136,20 +151,20 @@ public class InboxListCommand : IBotCallbackQueryHandlers
         string data = update.CallbackQuery!.Data!;
         var parts = data.Split(':');
         int page = parts.Length >= 3 && int.TryParse(parts[2], out var p) ? Math.Max(1, p) : 1;
-        const int pageSize = 10;
-        var validation = await _listValidator.ValidateAsync(new InboxListRequest { ChatId = chatId, Page = page, PageSize = pageSize }, ct);
+        int pageSize = PageSize;
+        var validation = await _listValidator.ValidateAsync(new InboxListRequest { ChatId = chatId, Page = page, PageSize = pageSize }, ct).ConfigureAwait(false);
         if (!validation.IsValid)
         {
             string err = string.Join("\n", validation.Errors.Select(e => $"• {e.ErrorMessage}"));
-            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, err, showAlert: true, cancellationToken: ct);
+            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, err, showAlert: true, cancellationToken: ct).ConfigureAwait(false);
             return;
         }
         int offset = (page - 1) * pageSize;
-        var items = (await _inbox.GetItemsAsync(userId, pageSize, offset)).ToList();
+        var items = (await _inbox.GetItemsAsync(userId, pageSize, offset).ConfigureAwait(false)).ToList();
         if (items.Count == 0 && page > 1)
         {
             // fallback to previous page
-            page = 1; offset = 0; items = (await _inbox.GetItemsAsync(userId, pageSize, offset)).ToList();
+            page = 1; offset = 0; items = (await _inbox.GetItemsAsync(userId, pageSize, offset).ConfigureAwait(false)).ToList();
         }
         // Build keyboard and header
         var rows = new List<InlineKeyboardButton[]>();
@@ -176,22 +191,22 @@ public class InboxListCommand : IBotCallbackQueryHandlers
         }
         rows.Add(new[] { KeyboardUtils.GetReturnButton("main_menu") });
         var kb = new InlineKeyboardMarkup(rows);
-        string header = items.Count == 0 ? "Ваш список входящих\nПока пусто" : $"Ваш список входящих\nТекущий лист: {page}";
+        string header = items.Count == 0 ? Users.GetResourceString("InboxListEmpty") : string.Format(Users.GetResourceString("InboxListCurrentPage"), page);
         string currentText = update.CallbackQuery!.Message!.Text ?? string.Empty;
         if (string.Equals(currentText, header, StringComparison.Ordinal))
         {
             // Ничего менять не нужно
-            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, cancellationToken: ct);
+            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, cancellationToken: ct).ConfigureAwait(false);
             return;
         }
         try
         {
-            await botClient.EditMessageText(chatId, update.CallbackQuery!.Message!.MessageId, header, replyMarkup: kb, cancellationToken: ct);
+            await botClient.EditMessageText(chatId, update.CallbackQuery!.Message!.MessageId, header, replyMarkup: kb, cancellationToken: ct).ConfigureAwait(false);
         }
         catch (Telegram.Bot.Exceptions.ApiRequestException ex) when (ex.Message.Contains("message is not modified", StringComparison.OrdinalIgnoreCase))
         {
             // Совсем нет изменений — просто игнорируем
-            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, cancellationToken: ct);
+            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, cancellationToken: ct).ConfigureAwait(false);
         }
     }
 }
@@ -202,11 +217,11 @@ public class InboxViewCommand : IBotCallbackQueryHandlers
     private readonly IInboxRepository _inbox;
     public string Name => "inbox:view:";
     private readonly IValidator<InboxViewRequest> _viewValidator;
-    public InboxViewCommand(IUserGetter userGetter, IInboxRepository inbox)
+    public InboxViewCommand(IUserGetter userGetter, IInboxRepository inbox, IValidator<InboxViewRequest> viewValidator)
     {
         _userGetter = userGetter;
         _inbox = inbox;
-        _viewValidator = new InboxViewRequestValidator();
+        _viewValidator = viewValidator;
     }
     private sealed class SavedMediaItem
     {
@@ -228,17 +243,17 @@ public class InboxViewCommand : IBotCallbackQueryHandlers
         var parts = update.CallbackQuery!.Data!.Split(':');
         long id = long.Parse(parts[2]);
         int page = parts.Length >= 4 && int.TryParse(parts[3], out var p) ? p : 1;
-        var validation = await _viewValidator.ValidateAsync(new InboxViewRequest { ChatId = chatId, ItemId = id, Page = page }, ct);
+        var validation = await _viewValidator.ValidateAsync(new InboxViewRequest { ChatId = chatId, ItemId = id, Page = page }, ct).ConfigureAwait(false);
         if (!validation.IsValid)
         {
             string err = string.Join("\n", validation.Errors.Select(e => $"• {e.ErrorMessage}"));
-            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, err, showAlert: true, cancellationToken: ct);
+            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, err, showAlert: true, cancellationToken: ct).ConfigureAwait(false);
             return;
         }
-        var item = await _inbox.GetItemAsync(id);
+        var item = await _inbox.GetItemAsync(id).ConfigureAwait(false);
         if (item == null)
         {
-            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, "Не найдено", cancellationToken: ct);
+            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, Users.GetResourceString("InboxItemNotFound"), cancellationToken: ct).ConfigureAwait(false);
             return;
         }
         var payload = System.Text.Json.JsonSerializer.Deserialize<Payload>(item.PayloadJson) ?? new Payload();
@@ -254,9 +269,9 @@ public class InboxViewCommand : IBotCallbackQueryHandlers
         }
         if (media.Count > 0)
         {
-            await botClient.SendMediaGroup(chatId, media, disableNotification: true, cancellationToken: ct);
+            await botClient.SendMediaGroup(chatId, media, disableNotification: true, cancellationToken: ct).ConfigureAwait(false);
         }
-        await _inbox.SetStatusAsync(id, "viewed");
+        await _inbox.SetStatusAsync(id, "viewed").ConfigureAwait(false);
         string senderName = System.Net.WebUtility.HtmlEncode(_userGetter.GetUserNameByTelegramID(_userGetter.GetTelegramIDbyUserID(item.FromContactId)));
         // Extract two hashes: H1 (code) and H2 (#)
         string h1 = string.Empty;
@@ -281,16 +296,16 @@ public class InboxViewCommand : IBotCallbackQueryHandlers
         h1 = System.Net.WebUtility.HtmlEncode(h1);
         h2 = System.Net.WebUtility.HtmlEncode(h2);
         string captionEsc = System.Net.WebUtility.HtmlEncode(payload.Caption ?? string.Empty);
-        string info = $"От: {senderName}\n<code>{h1}</code>\n#{h2}\n\n{captionEsc}";
+        string info = string.Format(Users.GetResourceString("Inbox.ViewInfoTemplate"), senderName, h1, h2, captionEsc);
         var kb = new InlineKeyboardMarkup(new[]
         {
-            new[] { InlineKeyboardButton.WithCallbackData("Удалить", $"inbox:delete:{id}:{page}") },
-            new[] { InlineKeyboardButton.WithCallbackData("Назад", $"inbox:list:{page}") }
+            new[] { InlineKeyboardButton.WithCallbackData(Users.GetResourceString("InboxDeleteButtonText"), $"inbox:delete:{id}:{page}") },
+            new[] { InlineKeyboardButton.WithCallbackData(Users.GetResourceString("BackButtonText"), $"inbox:list:{page}") }
         });
         // Сначала отправляем текст с данными отправителя
-        await botClient.SendMessage(chatId, info, cancellationToken: ct, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
+        await botClient.SendMessage(chatId, info, cancellationToken: ct, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html).ConfigureAwait(false);
         // Затем отдельным сообщением отправляем инлайн-кнопки
-        await botClient.SendMessage(chatId, "ㅤ", replyMarkup: kb, cancellationToken: ct, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
+        await botClient.SendMessage(chatId, "ㅤ", replyMarkup: kb, cancellationToken: ct, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html).ConfigureAwait(false);
     }
 }
 
@@ -303,7 +318,7 @@ public class CancelDownloadCommand : IBotCallbackQueryHandlers
         var parts = update.CallbackQuery!.Data!.Split(':');
         if (parts.Length < 2 || !int.TryParse(parts[^1], out var msgId))
         {
-            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, cancellationToken: ct);
+            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, cancellationToken: ct).ConfigureAwait(false);
             return;
         }
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
@@ -314,11 +329,11 @@ public class CancelDownloadCommand : IBotCallbackQueryHandlers
         }
         if (cancelled)
         {
-            await botClient.EditMessageText(update.CallbackQuery!.Message!.Chat.Id, update.CallbackQuery!.Message!.MessageId, "❎ Отменено пользователем", cancellationToken: ct);
+            await botClient.EditMessageText(update.CallbackQuery!.Message!.Chat.Id, update.CallbackQuery!.Message!.MessageId, Users.GetResourceString("CanceledByUserMessage"), cancellationToken: ct).ConfigureAwait(false);
         }
         else
         {
-            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, "Нечего отменять", cancellationToken: ct, showAlert: false);
+            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, Users.GetResourceString("NothingToCancelMessage"), cancellationToken: ct, showAlert: false).ConfigureAwait(false);
         }
     }
 }
@@ -327,16 +342,17 @@ public class InboxDeleteCommand : IBotCallbackQueryHandlers
 {
     private readonly IInboxRepository _inbox;
     private readonly IUserGetter _userGetter;
+    private readonly CallbackQueryHandlersFactory _factory;
     public string Name => "inbox:delete:";
-    public InboxDeleteCommand(IInboxRepository inbox, IUserGetter userGetter) { _inbox = inbox; _userGetter = userGetter; }
+    public InboxDeleteCommand(IInboxRepository inbox, IUserGetter userGetter, CallbackQueryHandlersFactory factory) { _inbox = inbox; _userGetter = userGetter; _factory = factory; }
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         var parts = update.CallbackQuery!.Data!.Split(':');
         long id = long.Parse(parts[2]);
         int page = parts.Length >= 4 && int.TryParse(parts[3], out var p) ? p : 1;
-        await _inbox.DeleteAsync(id);
+        await _inbox.DeleteAsync(id).ConfigureAwait(false);
         // go back to list
         update.CallbackQuery!.Data = $"inbox:list:{page}";
-        await new InboxListCommand(_userGetter, _inbox).ExecuteAsync(update, botClient, ct);
+        await _factory.ExecuteAsync("inbox:list:", update, botClient, ct).ConfigureAwait(false);
     }
 }

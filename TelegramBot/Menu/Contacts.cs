@@ -42,15 +42,15 @@ public class Contacts
         foreach (var tg in tgIds)
         {
             int id = userGetter.GetUserIDbyTelegramID(tg);
-            string uname = userGetter.GetUserNameByTelegramID(tg);
-            string link = userGetter.GetUserSelfLink(tg);
+            string uname = System.Net.WebUtility.HtmlEncode(userGetter.GetUserNameByTelegramID(tg));
+            string link = System.Net.WebUtility.HtmlEncode(userGetter.GetUserSelfLink(tg));
             // Resolve group memberships for this contact
             var membership = await BuildMembershipInfo(userGetter.GetUserIDbyTelegramID(chatId), id, groupGetter);
-            string groupsSuffix = string.IsNullOrEmpty(membership) ? string.Empty : $"\n{membership}";
+            string groupsSuffix = string.IsNullOrEmpty(membership) ? string.Empty : $"\n{System.Net.WebUtility.HtmlEncode(membership)}";
             infos.Add(string.Format(GetResourceString("ContactInfo"), id, uname, link) + groupsSuffix);
         }
         string prompt = $"{GetResourceString("YourContacts")}\n{string.Join("\n", infos)}\n\n{GetResourceString("InputContactId")}";
-        Message statusMessage = await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, prompt, cancellationToken: cancellationToken, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
+        Message statusMessage = await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, prompt, cancellationToken: cancellationToken, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html).ConfigureAwait(false);
         TGBot.StateManager.Set(chatId, new ProcessRemoveUser(statusMessage, contactRemoverRepository, contactGetterRepository, userGetter, resourceService));
     }
 
@@ -70,14 +70,14 @@ public class Contacts
         foreach (var tg in tgIds)
         {
             int id = userGetter.GetUserIDbyTelegramID(tg);
-            string uname = userGetter.GetUserNameByTelegramID(tg);
-            string link = userGetter.GetUserSelfLink(tg);
+            string uname = System.Net.WebUtility.HtmlEncode(userGetter.GetUserNameByTelegramID(tg));
+            string link = System.Net.WebUtility.HtmlEncode(userGetter.GetUserSelfLink(tg));
             var membership = await BuildMembershipInfo(userGetter.GetUserIDbyTelegramID(chatId), id, groupGetter);
-            string groupsSuffix = string.IsNullOrEmpty(membership) ? string.Empty : $"\n{membership}";
+            string groupsSuffix = string.IsNullOrEmpty(membership) ? string.Empty : $"\n{System.Net.WebUtility.HtmlEncode(membership)}";
             infos.Add(string.Format(GetResourceString("ContactInfo"), id, uname, link) + groupsSuffix);
         }
         string text = $"{GetResourceString("MuteUserInstructions")}\n\n{GetResourceString("YourContacts")}\n{string.Join("\n", infos)}";
-        await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, text, cancellationToken: cancellationToken, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
+        await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, text, cancellationToken: cancellationToken, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html).ConfigureAwait(false);
         TGBot.StateManager.Set(chatId, new ProcessUserMuteState(contactAdderRepository, contactGetterRepository, userGetter, resourceService));
     }
 
@@ -104,7 +104,7 @@ public class Contacts
             infos2.Add(string.Format(GetResourceString("ContactInfo"), id, uname, link) + groupsSuffix);
         }
         string text2 = $"{GetResourceString("UnmuteUserInstructions")}\n\n{GetResourceString("YourContacts")}\n{string.Join("\n", infos2)}";
-        await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, text2, cancellationToken: cancellationToken, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
+        await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, text2, cancellationToken: cancellationToken, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html).ConfigureAwait(false);
         TGBot.StateManager.Set(chatId, new ProcessUserUnMuteState(contactRemoverRepository, contactGetter, userGetter, resourceService));
     }
 
