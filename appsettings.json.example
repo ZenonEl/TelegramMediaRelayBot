@@ -54,7 +54,11 @@
     "ConsoleOutputSettings": {
         "LogLevel": "Information",
         "ShowVideoDownloadProgress": false,
-        "ShowVideoUploadProgress": false
+      "ShowVideoUploadProgress": false,
+      "EnableFileLogging": false,
+      "FilePath": "logs/bot-.log",
+      "FileSizeLimitBytes": 10485760,
+      "RetainedFileCountLimit": 7
     },
     "AccessPolicy": {
         "Enabled": false,
