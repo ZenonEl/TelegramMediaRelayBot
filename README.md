@@ -35,6 +35,20 @@ Thus, the project has transformed into a multifunctional tool for content exchan
 - **Video Download**: Support for multiple platforms via **yt-dlp** and **gallery-dl** (**gallery-dl** needs to be downloaded independently).
 - **Contact Forwarding**: Ability to add contacts within the bot to whom downloaded videos will be automatically forwarded.
 - **Proxy**: Support for proxies (including Tor) for downloading videos.
+- **Text cleanup and message merging**: Automatically remove junk text before the link and merge text sent in separate messages after a link into a single caption. You can also overwrite the caption with a separate message.
+- **Inbox**: Optionally store incoming content in the database for later viewing. Includes list view, item details, and deletion.
+
+### Text cleanup and message merging
+
+The bot automatically extracts the first valid link from your message, removes junk text placed before the link by various services, and merges text that you send in separate messages shortly after the link into a single caption for the media.
+
+### Inbox
+
+Inbox lets you save incoming media to the database instead of sending it immediately to the recipient. You can view a list, open details (sender, time, hashtags, original caption), and delete items.
+
+How to use:
+- Enable via Settings → Privacy | Safety → Inbox.
+- Open Inbox from the main menu, browse pages, view an item, or delete it when done.
 
 ## Project Details
 For more detailed familiarization with the functionality of my project and its features, you can refer to the detailed documentation. It is available on my website at [link](https://zenonel.github.io/TelegramMediaRelayBot-Site) or in the folder [docs](documentation/en/index.md), which is located in the root directory of the project. In the documentation you will find information not only about the functionality, but also about the process of setting up, installing and using my solution. I recommend you to familiarize yourself with it in order to use all the functions of our project as efficiently as possible. 

@@ -31,35 +31,36 @@
 - [x] **Завершить Modular Downloader Architecture**
   - [x] Добавить валидацию конфигурации загрузчиков (минимальная, базовая)
   - [x] Улучшить логирование выбора загрузчика и применения параметров
-- [x] **Intelligent Message Merging**
-  - [x] Анализ предыдущих сообщений пользователя (pending‑подпись по `statusMessageId`)
-  - [x] Объединение текста из разных сообщений (подхват "следующего текста" в окне)
-  - [x] Временные окна для объединения (окно = задержка дефолт‑действия; дефолт 5 сек)
+- [x] **Smart Text Cleanup + Message Merging (объединено)**
+  - [x] Удаление «мусорного» текста ДО ссылки
+  - [x] Объединение текста из отдельных сообщений ДО/ПОСЛЕ ссылки в одну подпись
+  - [x] Возможность дополнять/перезаписывать подпись отдельным сообщением
+  - [x] Соблюдение лимита подписи Telegram и HTML‑санитайз
 - [x] **Download Cancellation UI**
   - [x] UI для отмены загрузки (кнопка cancel_download)
   - [x] Уведомления об отмене (редактирование статус‑сообщения: "❎ Отменено пользователем")
   - [x] Очистка временных файлов при отмене (удаление temp‑директории в загрузчиках в блоке finally)
 
 ### **Дополнительные Критические Улучшения**
-- [ ] **Валидация входных данных** через FluentValidation
+- [x] **Валидация входных данных** через FluentValidation
+  - [x] Inbox: валидаторы запросов вынесены в DI (`IValidator<InboxListRequest>`, `IValidator<InboxViewRequest>`)
 - [x] **Улучшить Dependency Injection lifecycle** — репозитории переведены на Scoped
 - [ ] **Rate Limiting** для защиты от злоупотреблений
+  - [ ] Пер-юзер лимит запуска скачиваний в единицу времени (например, N загрузок за M минут)
 - [x] **Санитизация URL'ов** для безопасности (выделение первой ссылки, игнор префикса)
 - [x] **Санитизация подписи** (удаление HTML, сохранение Markdown, обрезка до лимита TG)
+ - [x] **File Logging** через Serilog (опционально через ConsoleOutputSettings)
+ - [x] **Сводочная логика** вынесена в DI‑сервис `IDefaultSummaryService` (дефолт‑действия, приватность)
 
 ---
 
 ## 🎯 **СРЕДНИЙ ПРИОРИТЕТ (Important Features)**
 
 ### **Из Текущего Roadmap**
-- [ ] **Smart Text Cleanup and Formatting**
-  - [ ] Регулярные выражения для очистки "мусорного" текста
-  - [ ] Конфигурируемые правила очистки
-  - [ ] Опции размещения очищенного текста
-- [ ] **Improve Message Formatting** (завершить 70%)
-  - [ ] Более информативные caption'ы
-  - [ ] Форматирование текста с HTML/Markdown
-  - [ ] Метаданные о источнике (platform, duration, size)
+- [x] **Smart Text Cleanup and Formatting**
+  - [x] Регулярные выражения для очистки "мусорного" текста
+  - [x] Конфигурируемые правила очистки
+- [ ] **Inbox (Создание инбоксов)**
 - [x] **Завершить Detailed Downloader Parameter Configuration**
   - [x] Валидация конфигурации загрузчиков
 
@@ -70,24 +71,26 @@
 - [ ] **Retry механизм** с Polly для внешних вызовов
 - [ ] **Улучшения старых мест в коде** рефакторинг старых код решений на более качественное решение
 - [x] **Structured Logging** — улучшено логирование конфиг-изменений
+ - [x] **Локализация** — вынесены жёсткие строки в `texts.resx` (Inbox, Cancel, Privacy, WhoCanFindMe)
 
 ---
 
 ## 📝 **НИЗКИЙ ПРИОРИТЕТ (Nice to Have)**
 
 ### **Из Текущего Roadmap**
-- [ ] **Downloader Authorization Support**
-  - [ ] Хранение credentials в конфигурации
-  - [ ] Передача авторизационных данных в загрузчики
-  - [ ] Безопасное хранение паролей/токенов (Azure KeyVault/HashiCorp Vault)
-- [ ] **Built-in Database Backup**
-  - [ ] Команды для создания бэкапов
-  - [ ] Планировщик автоматических бэкапов
-  - [ ] Восстановление из бэкапов
-- [ ] **Add "Help" Button**
-  - [ ] Кнопка Help в главном меню
-  - [ ] Ссылки на документацию
-  - [ ] Контекстная помощь
+- [x] **Downloader Authorization Support**
+  - [x] Хранение credentials в конфигурации
+  - [x] Передача авторизационных данных в загрузчики
+  - [x] Безопасное хранение паролей/токенов
+- [x] **Built-in Database Backup**
+  - [x] Планировщик через Scheduler (OnStart/OnShutdown/DailyTimes)
+  - [x] Провайдеры: SQLite (VACUUM INTO/копия), MySQL/MariaDB (mysqldump/mariadb-dump + mysql/mariadb)
+  - [x] Сжатие (gzip), checksum (SHA-256), ретеншн (MaxCount/MaxAgeDays)
+  - [x] Восстановление при старте с подтверждением (`restore.ok`)
+  - [x] Документация и пример конфигурации (`appsettings.json.example`)
+- [x] **Add "Help" Button**
+  - [x] Кнопка Help в главном меню
+  - [x] Ссылки на документацию
 
 ### **Дополнительные Улучшения**
 - [ ] **Metrics и Monitoring** (Application Insights/Prometheus)
@@ -100,7 +103,7 @@
 - [ ] **CI/CD Pipeline** с GitHub Actions
 - [ ] **Load Testing** с NBomber
 - [ ] **Security Scanning** статического кода
-- [ ] **Logger** добавить логирование в файл
+- [x] **Logger** добавить логирование в файл
 
 ---
 
@@ -128,6 +131,20 @@
 - [ ] **XSS protection** для HTML контента
 - [ ] **Secrets management** - убрать secrets из кода
 - [ ] **HTTPS enforcement** для всех внешних вызовов
+  - [x] Экранирование HTML при `ParseMode.Html` (имена, подписи, хэштеги, сводки)
+
+### **Performance**
+- [ ] **Async/await best practices** - ConfigureAwait(false)
+  - [x] Применён `ConfigureAwait(false)` на горячих путях (Inbox/Help/Cancel, Utils, Private/Group handlers)
+- [ ] **Memory optimization** - использование Span<T>, ArrayPool
+- [ ] **Database query optimization** - анализ и оптимизация запросов
+- [ ] **Connection pooling** настройка для БД
+  
+### **Code Quality**
+- [ ] **Вынести текст из кода в переводы**
+  - [x] Вынесены ключевые строки UI (Inbox, Cancel, Privacy, WhoCanFindMe)
+  - [x] Добавлены ресурсы `PrivacyFilter.Social/NSFW/Unified`
+  - [ ] Остальные жёсткие строки — пройтись финально
 
 ---
 
@@ -200,16 +217,15 @@
 
 ### **Sprint 2 (2-3 недели) - Core Features**
 **Цель: Реализовать ключевую функциональность**
-- [ ] Intelligent Message Merging
-- [ ] Download Cancellation UI
+- [x] Intelligent Message Merging
+- [x] Download Cancellation UI
 - [ ] Validation и Rate Limiting
 - [x] Integration тесты для DB layer
-- [ ] Завершить Modular Downloader Architecture
+- [x] Завершить Modular Downloader Architecture
 
 ### **Sprint 3 (2-3 недели) - Quality Improvements**
 **Цель: Улучшить качество и UX**
-- [ ] Smart Text Cleanup and Formatting
-- [ ] Improve Message Formatting (завершить)
+- [ ] Inbox (Создание инбоксов)
 - [ ] Parameter Configuration (завершить)
 - [ ] Performance optimization (async best practices)
 - [x] Unit of Work pattern
@@ -224,11 +240,11 @@
 
 ### **Sprint 5+ - Advanced Features**
 **Цель: Дополнительная функциональность**
-- [ ] Authorization support для загрузчиков
-- [ ] Database Backup functionality
+- [x] Authorization support для загрузчиков
+- [x] Database Backup functionality
 - [ ] Monitoring и Metrics
 - [ ] Security hardening
-- [ ] Help Button и Documentation
+- [x] Help Button и Documentation
 
 ---
 
@@ -251,15 +267,13 @@
  - [x] Персональные задержки-очереди на пользователя (staggering) и окна для caption
  - [x] Отмена дублирующей авто‑отправки при ручном подтверждении (гасим таймер auto, не даём двойной отправки)
  - [x] Улучшение UX во вводе ID: вывод доступных контактов/групп перед вводом (Users, ContactGroup, ContactLinks)
+ - [x] Inline Help: кнопка в главном меню + редактирование сообщения при показе помощи
+ - [x] Сводочная логика вынесена в сервис `IDefaultSummaryService` (дефолт‑действия, приватность)
+ - [x] DI‑чистка: удалены жёсткие вызовы провайдера/сервис локатора
 
 ### **В Процессе ⚠️**
  - [x] Async DB Model — core части переведены на async/await (остались единичные короткие sync Execute в write-методах — опционально)
  - [ ] Text Cleanup (60%): доменные правила (Pinterest) + сервис с hot‑reload; расширение набора правил
-
-### **Не Начато ❌**
-- [ ] Authorization Support
-- [ ] Database Backup
-- [ ] Help Button Integration
 
 ---
 
@@ -284,5 +298,5 @@
 
 ---
 
-*Последнее обновление: 2025-01-07*
+*Последнее обновление: 2025-08-12*
 *Следующий review: Sprint 1 completion*
