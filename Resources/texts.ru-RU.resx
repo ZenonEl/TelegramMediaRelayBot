@@ -16,6 +16,7 @@
     <data name="HereIsYourVideo" xml:space="preserve">
         <value>ㅤ</value>
     </data>
+  </data>
     <data name="ContactSentVideo" xml:space="preserve">
         <value>{0} отправил медиа!
 &lt;code&gt;#{1}&lt;/code&gt;

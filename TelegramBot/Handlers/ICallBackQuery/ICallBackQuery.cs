@@ -151,6 +151,7 @@ public class InboxListCommand : IBotCallbackQueryHandlers
         string data = update.CallbackQuery!.Data!;
         var parts = data.Split(':');
         int page = parts.Length >= 3 && int.TryParse(parts[2], out var p) ? Math.Max(1, p) : 1;
+        string filter = parts.Length >= 4 ? parts[3] : string.Empty; // "unread" or ""
         int pageSize = PageSize;
         var validation = await _listValidator.ValidateAsync(new InboxListRequest { ChatId = chatId, Page = page, PageSize = pageSize }, ct).ConfigureAwait(false);
         if (!validation.IsValid)
@@ -160,7 +161,7 @@ public class InboxListCommand : IBotCallbackQueryHandlers
             return;
         }
         int offset = (page - 1) * pageSize;
-        var items = (await _inbox.GetItemsAsync(userId, pageSize, offset).ConfigureAwait(false)).ToList();
+        var items = (await _inbox.GetItemsAsync(userId, string.Equals(filter, "unread", StringComparison.OrdinalIgnoreCase) ? "new" : null, null, pageSize, offset).ConfigureAwait(false)).ToList();
         if (items.Count == 0 && page > 1)
         {
             // fallback to previous page
@@ -168,26 +169,49 @@ public class InboxListCommand : IBotCallbackQueryHandlers
         }
         // Build keyboard and header
         var rows = new List<InlineKeyboardButton[]>();
+        // Filter toggle row + Senders menu
+        string toggleText = string.Equals(filter, "unread", StringComparison.OrdinalIgnoreCase) ? Users.GetResourceString("Inbox.Filter.Unread") : Users.GetResourceString("Inbox.Filter.All");
+        string toggleCb = string.Equals(filter, "unread", StringComparison.OrdinalIgnoreCase) ? $"inbox:list:{page}" : $"inbox:list:{page}:unread";
+        rows.Add(new[] { InlineKeyboardButton.WithCallbackData(toggleText, toggleCb), InlineKeyboardButton.WithCallbackData(Users.GetResourceString("Inbox.SendersButton"), "inbox:senders:") });
         if (items.Count > 0)
         {
             foreach (var it in items)
             {
                 bool isNew = string.Equals(it.Status, "new", StringComparison.OrdinalIgnoreCase);
                 string senderName = _userGetter != null ? _userGetter.GetUserNameByTelegramID(_userGetter.GetTelegramIDbyUserID(it.FromContactId)) : it.FromContactId.ToString();
-                string title = $"#{it.Id} · от {senderName} · {it.CreatedAt:yyyy-MM-dd HH:mm}{(isNew ? " · NEW" : " · ✓")}";
+                // Try read original time from payload
+                DateTime displayTimeLocal = it.CreatedAt;
+                try
+                {
+                    // no-op
+                }
+                catch { }
+                try
+                {
+                    var doc = System.Text.Json.JsonDocument.Parse(it.PayloadJson);
+                    if (doc.RootElement.TryGetProperty("OriginalMessageDateUtc", out var ts) && ts.ValueKind == System.Text.Json.JsonValueKind.String)
+                    {
+                        if (DateTime.TryParse(ts.GetString(), out var parsed)) displayTimeLocal = DateTime.SpecifyKind(parsed, DateTimeKind.Utc).ToLocalTime();
+                    }
+                }
+                catch { }
+                string title = $"от {senderName} · {displayTimeLocal:yyyy-MM-dd HH:mm}{(isNew ? " · NEW" : " · ✓")}";
                 rows.Add(new[] { InlineKeyboardButton.WithCallbackData(title, $"inbox:view:{it.Id}:{page}") });
             }
             bool hasPrev = page > 1;
             bool hasNext = items.Count == pageSize;
             if (hasPrev || hasNext)
             {
-                var prevCb = hasPrev ? $"inbox:list:{page - 1}" : $"inbox:list:{page}";
-                var nextCb = hasNext ? $"inbox:list:{page + 1}" : $"inbox:list:{page}";
+                var prevCb = hasPrev ? $"inbox:list:{page - 1}:{filter}".TrimEnd(':') : $"inbox:list:{page}:{filter}".TrimEnd(':');
+                var nextCb = hasNext ? $"inbox:list:{page + 1}:{filter}".TrimEnd(':') : $"inbox:list:{page}:{filter}".TrimEnd(':');
                 var navRow = new List<InlineKeyboardButton>();
                 if (hasPrev) navRow.Add(InlineKeyboardButton.WithCallbackData($"◀ {page - 1}", prevCb));
                 if (hasNext) navRow.Add(InlineKeyboardButton.WithCallbackData($"▶ {page + 1}", nextCb));
                 if (navRow.Count > 0) rows.Add(navRow.ToArray());
             }
+            // Bulk actions row
+            rows.Add(new[] { InlineKeyboardButton.WithCallbackData(Users.GetResourceString("Inbox.MarkAllRead"), $"inbox:mark:read:{filter}:{page}"), InlineKeyboardButton.WithCallbackData(Users.GetResourceString("Inbox.MarkAllUnread"), $"inbox:mark:unread:{filter}:{page}") });
+            rows.Add(new[] { InlineKeyboardButton.WithCallbackData(Users.GetResourceString("Inbox.DeleteRead"), $"inbox:bulkdel:read:{filter}:{page}"), InlineKeyboardButton.WithCallbackData(Users.GetResourceString("Inbox.DeleteUnread"), $"inbox:bulkdel:unread:{filter}:{page}") });
         }
         rows.Add(new[] { KeyboardUtils.GetReturnButton("main_menu") });
         var kb = new InlineKeyboardMarkup(rows);
@@ -309,6 +333,90 @@ public class InboxViewCommand : IBotCallbackQueryHandlers
     }
 }
 
+public class InboxSendersCommand : IBotCallbackQueryHandlers
+{
+    private readonly IUserGetter _userGetter;
+    private readonly IInboxRepository _inbox;
+    public string Name => "inbox:senders:";
+    public InboxSendersCommand(IUserGetter userGetter, IInboxRepository inbox) { _userGetter = userGetter; _inbox = inbox; }
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        var senders = (await _inbox.GetSendersAsync(userId).ConfigureAwait(false)).ToList();
+        var rows = new List<InlineKeyboardButton[]>();
+        foreach (var s in senders)
+        {
+            string name = _userGetter.GetUserNameByTelegramID(_userGetter.GetTelegramIDbyUserID(s.FromContactId));
+            string text = $"{name} · {s.NewCount}/{s.Total}";
+            rows.Add(new[] { InlineKeyboardButton.WithCallbackData(text, $"inbox:senderops:{s.FromContactId}:1") });
+        }
+        rows.Add(new[] { InlineKeyboardButton.WithCallbackData(Users.GetResourceString("BackButtonText"), "inbox:list:1") });
+        var kb = new InlineKeyboardMarkup(rows);
+        await botClient.EditMessageText(chatId, update.CallbackQuery!.Message!.MessageId, Users.GetResourceString("ChooseOptionText"), replyMarkup: kb, cancellationToken: ct).ConfigureAwait(false);
+    }
+}
+
+public class InboxSenderOperationsCommand : IBotCallbackQueryHandlers
+{
+    private readonly IUserGetter _userGetter;
+    private readonly IInboxRepository _inbox;
+    public string Name => "inbox:senderops:";
+    public InboxSenderOperationsCommand(IUserGetter userGetter, IInboxRepository inbox) { _userGetter = userGetter; _inbox = inbox; }
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        var parts = update.CallbackQuery!.Data!.Split(':');
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        int senderContactId = int.Parse(parts[2]);
+        int page = parts.Length >= 4 && int.TryParse(parts[3], out var p) ? p : 1;
+        string name = _userGetter.GetUserNameByTelegramID(_userGetter.GetTelegramIDbyUserID(senderContactId));
+        var kb = new InlineKeyboardMarkup(new[]
+        {
+            new[] { InlineKeyboardButton.WithCallbackData(Users.GetResourceString("Inbox.Sender.MarkRead"), $"inbox:sender:mark:confirm:read:{senderContactId}:{page}") },
+            new[] { InlineKeyboardButton.WithCallbackData(Users.GetResourceString("Inbox.Sender.MarkUnread"), $"inbox:sender:mark:confirm:unread:{senderContactId}:{page}") },
+            new[] { InlineKeyboardButton.WithCallbackData(Users.GetResourceString("Inbox.Sender.DeleteRead"), $"inbox:sender:del:confirm:read:{senderContactId}:{page}") },
+            new[] { InlineKeyboardButton.WithCallbackData(Users.GetResourceString("Inbox.Sender.DeleteUnread"), $"inbox:sender:del:confirm:unread:{senderContactId}:{page}") },
+            new[] { InlineKeyboardButton.WithCallbackData(Users.GetResourceString("BackButtonText"), "inbox:senders:") }
+        });
+        await botClient.EditMessageText(chatId, update.CallbackQuery!.Message!.MessageId, System.Net.WebUtility.HtmlEncode(name), replyMarkup: kb, cancellationToken: ct, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html).ConfigureAwait(false);
+    }
+}
+
+public class InboxSenderBulkApplyCommand : IBotCallbackQueryHandlers
+{
+    private readonly IUserGetter _userGetter;
+    private readonly IInboxRepository _inbox;
+    public string Name => "inbox:sender:";
+    public InboxSenderBulkApplyCommand(IUserGetter userGetter, IInboxRepository inbox) { _userGetter = userGetter; _inbox = inbox; }
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        // inbox:sender:mark:confirm:read|unread:senderId:page OR inbox:sender:del:confirm:read|unread:senderId:page
+        var parts = update.CallbackQuery!.Data!.Split(':');
+        if (parts.Length < 6) { await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, cancellationToken: ct).ConfigureAwait(false); return; }
+        string mode = parts[1]; // mark|del
+        string which = parts[3]; // read|unread
+        int senderId = int.Parse(parts[4]);
+        int page = int.TryParse(parts[5], out var p) ? p : 1;
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        int ownerId = _userGetter.GetUserIDbyTelegramID(chatId);
+        if (mode == "mark")
+        {
+            string to = which == "read" ? "viewed" : "new";
+            string from = which == "read" ? "new" : "viewed";
+            await _inbox.SetStatusForOwnerAsync(ownerId, from, to, senderId).ConfigureAwait(false);
+        }
+        else if (mode == "del")
+        {
+            string st = which == "read" ? "viewed" : "new";
+            await _inbox.DeleteForOwnerAsync(ownerId, st, senderId).ConfigureAwait(false);
+        }
+        update.CallbackQuery!.Data = $"inbox:senders:";
+        await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, Users.GetResourceString("SuccessActionResult"), cancellationToken: ct).ConfigureAwait(false);
+        await new InboxSendersCommand(_userGetter, _inbox).ExecuteAsync(update, botClient, ct);
+    }
+}
+
 public class CancelDownloadCommand : IBotCallbackQueryHandlers
 {
     public string Name => "cancel_download:";
@@ -354,5 +462,78 @@ public class InboxDeleteCommand : IBotCallbackQueryHandlers
         // go back to list
         update.CallbackQuery!.Data = $"inbox:list:{page}";
         await _factory.ExecuteAsync("inbox:list:", update, botClient, ct).ConfigureAwait(false);
+    }
+}
+
+public class InboxMarkBulkCommand : IBotCallbackQueryHandlers
+{
+    private readonly IInboxRepository _inbox;
+    private readonly IUserGetter _userGetter;
+    public string Name => "inbox:mark:";
+    public InboxMarkBulkCommand(IInboxRepository inbox, IUserGetter userGetter) { _inbox = inbox; _userGetter = userGetter; }
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        // inbox:mark:read|unread:filter:page or inbox:mark:confirm:toStatus:filter:page
+        var parts = update.CallbackQuery!.Data!.Split(':');
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        if (parts.Length >= 3 && parts[2] == "confirm")
+        {
+            string to = parts.ElementAtOrDefault(3) ?? "read";
+            string filter = parts.ElementAtOrDefault(4) ?? string.Empty;
+            int page = parts.Length >= 6 && int.TryParse(parts[5], out var p) ? p : 1;
+            string toStatus = to == "read" ? "viewed" : "new";
+            string fromStatus = to == "read" ? "new" : "viewed";
+            await _inbox.SetStatusForOwnerAsync(userId, fromStatus, toStatus).ConfigureAwait(false);
+            update.CallbackQuery!.Data = $"inbox:list:{page}:{filter}".TrimEnd(':');
+            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, Users.GetResourceString("SuccessActionResult"), cancellationToken: ct).ConfigureAwait(false);
+            await new InboxListCommand(_userGetter, _inbox, new InboxListRequestValidator()).ExecuteAsync(update, botClient, ct);
+            return;
+        }
+        string toStatusKey = parts[2];
+        string f = parts.ElementAtOrDefault(3) ?? string.Empty;
+        int curPage = parts.Length >= 5 && int.TryParse(parts[4], out var pg) ? pg : 1;
+        var kb = new InlineKeyboardMarkup(new[]
+        {
+            new[] { InlineKeyboardButton.WithCallbackData(Users.GetResourceString("YesButtonText"), $"inbox:mark:confirm:{toStatusKey}:{f}:{curPage}") },
+            new[] { InlineKeyboardButton.WithCallbackData(Users.GetResourceString("NoButtonText"), $"inbox:list:{curPage}:{f}".TrimEnd(':')) }
+        });
+        await botClient.EditMessageText(chatId, update.CallbackQuery!.Message!.MessageId, Users.GetResourceString("ConfirmDecision"), replyMarkup: kb, cancellationToken: ct).ConfigureAwait(false);
+    }
+}
+
+public class InboxBulkDeleteCommand : IBotCallbackQueryHandlers
+{
+    private readonly IInboxRepository _inbox;
+    private readonly IUserGetter _userGetter;
+    public string Name => "inbox:bulkdel:";
+    public InboxBulkDeleteCommand(IInboxRepository inbox, IUserGetter userGetter) { _inbox = inbox; _userGetter = userGetter; }
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        // inbox:bulkdel:read|unread:filter:page or inbox:bulkdel:confirm:which:filter:page
+        var parts = update.CallbackQuery!.Data!.Split(':');
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        if (parts.Length >= 3 && parts[2] == "confirm")
+        {
+            string which = parts.ElementAtOrDefault(3) ?? "read";
+            string filter = parts.ElementAtOrDefault(4) ?? string.Empty;
+            int page = parts.Length >= 6 && int.TryParse(parts[5], out var p) ? p : 1;
+            string status = which == "read" ? "viewed" : "new";
+            await _inbox.DeleteForOwnerAsync(userId, status).ConfigureAwait(false);
+            update.CallbackQuery!.Data = $"inbox:list:{page}:{filter}".TrimEnd(':');
+            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, Users.GetResourceString("SuccessActionResult"), cancellationToken: ct).ConfigureAwait(false);
+            await new InboxListCommand(_userGetter, _inbox, new InboxListRequestValidator()).ExecuteAsync(update, botClient, ct);
+            return;
+        }
+        string target = parts[2];
+        string f = parts.ElementAtOrDefault(3) ?? string.Empty;
+        int curPage = parts.Length >= 5 && int.TryParse(parts[4], out var pg) ? pg : 1;
+        var kb = new InlineKeyboardMarkup(new[]
+        {
+            new[] { InlineKeyboardButton.WithCallbackData(Users.GetResourceString("YesButtonText"), $"inbox:bulkdel:confirm:{target}:{f}:{curPage}") },
+            new[] { InlineKeyboardButton.WithCallbackData(Users.GetResourceString("NoButtonText"), $"inbox:list:{curPage}:{f}".TrimEnd(':')) }
+        });
+        await botClient.EditMessageText(chatId, update.CallbackQuery!.Message!.MessageId, Users.GetResourceString("ConfirmDecision"), replyMarkup: kb, cancellationToken: ct).ConfigureAwait(false);
     }
 }

@@ -30,7 +30,7 @@ namespace TelegramMediaRelayBot;
         // per-message default-action timers
         private readonly Dictionary<int, CancellationTokenSource> _decisionCtsByMessageId = new();
         // pending entries per message
-    private readonly Dictionary<int, (string Link, string Text, DateTime CreatedAt)> _pendingByMessageId = new();
+    private readonly Dictionary<int, (string Link, string Text, DateTime CreatedAt, DateTime OriginalMessageDateUtc)> _pendingByMessageId = new();
     private readonly Dictionary<int, CancellationTokenSource> _sessionCtsByMessageId = new();
     private readonly TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService _textCleanup;
     private int? _finishMessageId = null;
@@ -58,7 +58,8 @@ namespace TelegramMediaRelayBot;
         IGroupGetter groupGetter,
             IDefaultActionGetter defaultActionGetter,
             TelegramMediaRelayBot.Config.Services.IResourceService resourceService,
-            TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService textCleanup
+            TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService textCleanup,
+            DateTime? originalMessageDateUtc = null
         )
     {
         link = Link;
@@ -72,7 +73,7 @@ namespace TelegramMediaRelayBot;
             _defaultActionGetter = defaultActionGetter;
         _resourceService = resourceService;
             _textCleanup = textCleanup;
-            _pendingByMessageId[StatusMessage.MessageId] = (Link, Text, DateTime.UtcNow);
+            _pendingByMessageId[StatusMessage.MessageId] = (Link, Text, DateTime.UtcNow, (originalMessageDateUtc ?? DateTime.UtcNow).ToUniversalTime());
             _actionByMessageId[StatusMessage.MessageId] = string.Empty;
             _targetsByMessageId[StatusMessage.MessageId] = new List<long>();
             _preparedTargetsByMessageId[StatusMessage.MessageId] = new List<long>();
@@ -90,6 +91,15 @@ namespace TelegramMediaRelayBot;
             return entry.Text;
         }
         return text;
+    }
+
+    public DateTime GetPendingOriginalDateUtc(int messageId)
+    {
+        if (_pendingByMessageId.TryGetValue(messageId, out var entry))
+        {
+            return entry.OriginalMessageDateUtc;
+        }
+        return DateTime.UtcNow;
     }
 
     // Schedules default action for the provided message immediately (used for the very first link)
@@ -411,7 +421,8 @@ namespace TelegramMediaRelayBot;
                         );
                         // Очистим подпись по домену уже на этапе pending
                         var cleanedInitial = string.IsNullOrWhiteSpace(newText) ? newText : _textCleanup.Cleanup(newText, CommonUtilities.ExtractDomain(newLink));
-                        _pendingByMessageId[statusMessage.MessageId] = (newLink, cleanedInitial, DateTime.UtcNow);
+                        var originalUtc = update.Message!.Date.ToUniversalTime();
+                        _pendingByMessageId[statusMessage.MessageId] = (newLink, cleanedInitial, DateTime.UtcNow, originalUtc);
                         // schedule default action for this message id if configured
                         await TryScheduleDefaultActionForMessage(botClient, chatId, statusMessage, newLink, newText, cancellationToken);
                     }
@@ -437,7 +448,7 @@ namespace TelegramMediaRelayBot;
                             if ((DateTime.UtcNow - pending.CreatedAt) <= TimeSpan.FromSeconds(baseDelay2))
                             {
                                 // Обновляем подпись на текст из следующего сообщения как есть (без очистки)
-                                _pendingByMessageId[kv.Key] = (pending.Link, messageText, pending.CreatedAt);
+                                _pendingByMessageId[kv.Key] = (pending.Link, messageText, pending.CreatedAt, pending.OriginalMessageDateUtc);
                                 // Перепланируем авто-действие под обновлённый текст
                                 if (_decisionCtsByMessageId.TryGetValue(kv.Key, out var oldCts))
                                 {
@@ -445,11 +456,10 @@ namespace TelegramMediaRelayBot;
                                     _decisionCtsByMessageId.Remove(kv.Key);
                                 }
                                 // Переиспользуем текущее statusMessage если совпадает, иначе создаём минимальный объект с нужным ChatId и MessageId через конструктор ReplyParameters
-                                var status = statusMessage?.MessageId == kv.Key ? statusMessage : new Message();
-                                status = statusMessage ?? new Message();
+                            var status = statusMessage ?? new Message();
                                 status.Chat = new Chat { Id = chatId };
                                 // Передаём оригинальный statusMessage, если он есть, иначе используем текущий
-                                _ = TryScheduleDefaultActionForMessage(botClient, chatId, statusMessage ?? status, pending.Link, messageText, cancellationToken);
+                            _ = TryScheduleDefaultActionForMessage(botClient, chatId, statusMessage ?? status, pending.Link, messageText, cancellationToken);
                             }
                         }
                     }

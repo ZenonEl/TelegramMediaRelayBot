@@ -8,9 +8,17 @@ namespace TelegramMediaRelayBot.Database.Interfaces
         Task<long> AddItemAsync(int ownerUserId, int fromContactId, string caption, string payloadJson, string status);
         Task<bool> SetStatusAsync(long inboxItemId, string status);
         Task<IEnumerable<InboxItemDto>> GetItemsAsync(int ownerUserId, int limit = 20, int offset = 0);
+        Task<IEnumerable<InboxItemDto>> GetItemsAsync(int ownerUserId, string? statusFilter, int? fromContactId, int limit = 20, int offset = 0);
         Task<InboxItemDto?> GetItemAsync(long id);
         Task<bool> DeleteAsync(long id);
         Task<int> GetNewCountAsync(int ownerUserId);
+
+        // Bulk operations
+        Task<int> SetStatusForOwnerAsync(int ownerUserId, string fromStatus, string toStatus, int? fromContactId = null);
+        Task<int> DeleteForOwnerAsync(int ownerUserId, string? statusFilter = null, int? fromContactId = null);
+
+        // Aggregations
+        Task<IEnumerable<InboxSenderInfo>> GetSendersAsync(int ownerUserId);
     }
 
     public sealed class InboxItemDto
@@ -23,6 +31,13 @@ namespace TelegramMediaRelayBot.Database.Interfaces
         public string Status { get; set; } = "new";
         public DateTime CreatedAt { get; set; }
         // For future extensions (viewed timestamp etc.)
+    }
+
+    public sealed class InboxSenderInfo
+    {
+        public int FromContactId { get; set; }
+        public int Total { get; set; }
+        public int NewCount { get; set; }
     }
 }
 

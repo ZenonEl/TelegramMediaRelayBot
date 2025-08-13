@@ -43,6 +43,19 @@ public class SqliteInboxRepository : IInboxRepository
         return await conn.QueryAsync<InboxItemDto>(sql, new { ownerUserId, limit, offset });
     }
 
+    public async Task<IEnumerable<InboxItemDto>> GetItemsAsync(int ownerUserId, string? statusFilter, int? fromContactId, int limit = 20, int offset = 0)
+    {
+        await using var conn = new SqliteConnection(_connectionString);
+        var conditions = new List<string> { "OwnerUserId=@ownerUserId" };
+        if (!string.IsNullOrWhiteSpace(statusFilter)) conditions.Add("Status=@status");
+        if (fromContactId.HasValue) conditions.Add("FromContactId=@fromContactId");
+        var where = string.Join(" AND ", conditions);
+        var sql = $@"SELECT ID as Id, OwnerUserId, FromContactId, Caption, PayloadJson, Status, CreatedAt
+                    FROM InboxItems WHERE {where}
+                    ORDER BY CreatedAt DESC LIMIT @limit OFFSET @offset";
+        return await conn.QueryAsync<InboxItemDto>(sql, new { ownerUserId, status = statusFilter, fromContactId, limit, offset });
+    }
+
     public async Task<InboxItemDto?> GetItemAsync(long id)
     {
         await using var conn = new SqliteConnection(_connectionString);
@@ -64,6 +77,37 @@ public class SqliteInboxRepository : IInboxRepository
         await using var conn = new SqliteConnection(_connectionString);
         var sql = "SELECT COUNT(*) FROM InboxItems WHERE OwnerUserId=@ownerUserId AND Status='new'";
         return await conn.ExecuteScalarAsync<int>(sql, new { ownerUserId });
+    }
+
+    public async Task<int> SetStatusForOwnerAsync(int ownerUserId, string fromStatus, string toStatus, int? fromContactId = null)
+    {
+        await using var conn = new SqliteConnection(_connectionString);
+        var sql = "UPDATE InboxItems SET Status=@toStatus WHERE OwnerUserId=@ownerUserId AND Status=@fromStatus" + (fromContactId.HasValue ? " AND FromContactId=@fromContactId" : "");
+        return await conn.ExecuteAsync(sql, new { ownerUserId, fromStatus, toStatus, fromContactId });
+    }
+
+    public async Task<int> DeleteForOwnerAsync(int ownerUserId, string? statusFilter = null, int? fromContactId = null)
+    {
+        await using var conn = new SqliteConnection(_connectionString);
+        var conditions = new List<string> { "OwnerUserId=@ownerUserId" };
+        if (!string.IsNullOrWhiteSpace(statusFilter)) conditions.Add("Status=@status");
+        if (fromContactId.HasValue) conditions.Add("FromContactId=@fromContactId");
+        var where = string.Join(" AND ", conditions);
+        var sql = $"DELETE FROM InboxItems WHERE {where}";
+        return await conn.ExecuteAsync(sql, new { ownerUserId, status = statusFilter, fromContactId });
+    }
+
+    public async Task<IEnumerable<InboxSenderInfo>> GetSendersAsync(int ownerUserId)
+    {
+        await using var conn = new SqliteConnection(_connectionString);
+        var sql = @"SELECT FromContactId,
+                           COUNT(*) as Total,
+                           SUM(CASE WHEN Status='new' THEN 1 ELSE 0 END) as NewCount
+                    FROM InboxItems
+                    WHERE OwnerUserId=@ownerUserId
+                    GROUP BY FromContactId
+                    ORDER BY MAX(CreatedAt) DESC";
+        return await conn.QueryAsync<InboxSenderInfo>(sql, new { ownerUserId });
     }
 }
 

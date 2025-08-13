@@ -242,7 +242,8 @@ public partial class TGBot
     }
 
     public async Task HandleMediaRequest(ITelegramBotClient botClient, string contentUrl, long chatId, Message statusMessage,
-                                                List<long>? targetUserIds = null, bool groupChat = false, string caption = "", CancellationToken? sessionToken = null)
+                                                List<long>? targetUserIds = null, bool groupChat = false, string caption = "", CancellationToken? sessionToken = null,
+                                                DateTime? originalMessageDateUtc = null)
     {
         var effectiveToken = sessionToken ?? cancellationToken;
         List<byte[]>? mediaFiles = await _mediaDownloaderService.DownloadMedia(botClient, contentUrl, statusMessage, effectiveToken);
@@ -265,7 +266,7 @@ public partial class TGBot
             // Санитизация и лимиты подписи: удаляем HTML, сохраняем Markdown, обрезаем до лимита TG
             var safeCaption = TelegramBot.Utils.CommonUtilities.TrimCaptionToLimit(
                 TelegramBot.Utils.CommonUtilities.SanitizeCaptionRemoveHtml(caption));
-            await SendMediaToTelegram(botClient, chatId, processedFiles, statusMessage, targetUserIds, contentUrl, groupChat, safeCaption, effectiveToken);
+            await SendMediaToTelegram(botClient, chatId, processedFiles, statusMessage, targetUserIds, contentUrl, groupChat, safeCaption, effectiveToken, originalMessageDateUtc);
             return;
         }
 
@@ -282,7 +283,8 @@ public partial class TGBot
 
         private async Task SendMediaToTelegram(ITelegramBotClient botClient, long chatId, List<byte[]> mediaFiles,
                                                         Message statusMessage, List<long>? targetUserIds, string contentUrl, bool groupChat = false,
-                                                        string caption = "", CancellationToken? sessionToken = null)
+                                                        string caption = "", CancellationToken? sessionToken = null,
+                                                        DateTime? originalMessageDateUtc = null)
     {
         var effectiveToken = sessionToken ?? cancellationToken;
         if (!await ValidateMediaFilesOrReport(botClient, statusMessage, mediaFiles)) return;
@@ -291,7 +293,7 @@ public partial class TGBot
 
         try
         {
-            await SendGroupedMedia(botClient, chatId, statusMessage, groupedFiles, targetUserIds, contentUrl, groupChat, caption, effectiveToken);
+            await SendGroupedMedia(botClient, chatId, statusMessage, groupedFiles, targetUserIds, contentUrl, groupChat, caption, effectiveToken, originalMessageDateUtc);
             Log.Debug($"Successfully sent {mediaFiles.Count} files");
         }
         catch (Telegram.Bot.Exceptions.ApiRequestException apiEx) when (apiEx.ErrorCode == 413)
@@ -374,7 +376,8 @@ public partial class TGBot
         string contentUrl,
         bool groupChat,
         string caption,
-        CancellationToken? sessionToken = null)
+        CancellationToken? sessionToken = null,
+        DateTime? originalMessageDateUtc = null)
     {
         var effectiveToken = sessionToken ?? cancellationToken;
         string text = string.Empty;
@@ -416,7 +419,7 @@ public partial class TGBot
                 {
                     await SendVideoToContacts(chatId, botClient, statusMessage, targetUserIds,
                         savedMediaGroupIDs: savedMediaGroupIDs, savedMediaRefs: savedMediaRefs, contentUrl, caption: text,
-                        lastMediaGroup: lastMediaGroup);
+                        lastMediaGroup: lastMediaGroup, originalMessageDateUtc: originalMessageDateUtc);
                 }
 
                 await Task.Delay(1000, cancellationToken);
@@ -433,7 +436,8 @@ public partial class TGBot
         List<(string Kind, string FileId)> savedMediaRefs,
         string contentUrl,
         string caption = "",
-        bool lastMediaGroup = false
+        bool lastMediaGroup = false,
+        DateTime? originalMessageDateUtc = null
         )
     {
         int userId = _userGetter.GetUserIDbyTelegramID(telegramId);
@@ -472,11 +476,22 @@ public partial class TGBot
                             SavedMedia = savedMediaRefs.Select(r => new { Type = r.Kind, FileId = r.FileId, Caption = (string?)null }).ToList(),
                             Url = contentUrl,
                             Caption = caption,
-                            Hashtag = new [] { defaultHash1, defaultHash2 }
+                            Hashtag = new [] { defaultHash1, defaultHash2 },
+                            OriginalMessageDateUtc = (originalMessageDateUtc ?? DateTime.UtcNow).ToUniversalTime()
                         };
                         string payloadJson = System.Text.Json.JsonSerializer.Serialize(payload);
                         await _inboxRepo.AddItemAsync(contactUserId, _userGetter.GetUserIDbyTelegramID(telegramId), caption, payloadJson, "new");
                         Log.Information("Added to Inbox for user {User}", contactUserId);
+                        try
+                        {
+                            int newCount = await _inboxRepo.GetNewCountAsync(contactUserId).ConfigureAwait(false);
+                            if (newCount == 1 || newCount % 5 == 0)
+                            {
+                                string note = string.Format(_resourceService.GetResourceString("InboxNewCountNotify"), newCount);
+                                await botClient.SendMessage(contactUserTgId, note, cancellationToken: cancellationToken).ConfigureAwait(false);
+                            }
+                        }
+                        catch { }
                         sentCount++; // count as delivered
                         try
                         {

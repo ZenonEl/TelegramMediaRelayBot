@@ -88,7 +88,7 @@ public class PrivateUpdateHandler
             // Больше не чистим стартовый хвост доменными правилами: берём как есть (по договорённости)
 
             int userId = _userGetter.GetUserIDbyTelegramID(chatId);
-            var state = new ProcessVideoDC(link, statusMessage, text, _tgBot, _contactGetterRepository, _userGetter, _groupGetter, _defaultActionGetter, _resourceService, _textCleanup);
+            var state = new ProcessVideoDC(link, statusMessage, text, _tgBot, _contactGetterRepository, _userGetter, _groupGetter, _defaultActionGetter, _resourceService, _textCleanup, update.Message!.Date.ToUniversalTime());
             TGBot.StateManager.Set(chatId, state);
             await state.ScheduleDefaultActionFor(botClient, chatId, statusMessage, link, text, cancellationToken);
         }
