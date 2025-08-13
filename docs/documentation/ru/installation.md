@@ -212,6 +212,20 @@ nano ./appsettings.json
 }
 ```
 
+##### Бэкапы/восстановление БД
+Добавьте секцию `Backup` (пример см. `appsettings.json.example`).
+- Включите `Backup.Enabled=true` и выберите триггеры в `Backup.Schedule` (`OnStart`, `OnShutdown`, `DailyTimes`).
+- Для восстановления укажите `Backup.Restore.Enabled=true`, путь к файлу `Backup.Restore.BackupFile` и создайте файл подтверждения `restore.ok`. Перезапустите сервис.
+
+> [!NOTE]
+> MariaDB: `mysqldump` помечен как устаревший и будет удалён в будущих релизах. Используйте `mariadb-dump` и `mariadb`.
+> Настройте пути в конфиге:
+> ```json
+> "Backup": {
+>   "MySql": { "Cli": { "DumpPath": "/usr/bin/mariadb-dump", "ClientPath": "/usr/bin/mariadb", "ExtraArgs": "" } }
+> }
+> ```
+
 #### 3.1 Порядок источников конфигурации и переменные окружения (ENV)
 
 Конфигурация загружается в следующем порядке (выше — приоритетнее, перезаписывает нижележащие значения):

@@ -11,6 +11,7 @@
 - Параметры загрузчиков в `downloader-config.json`
 - Политика размеров в `Downloading` (Transcode/Split, лимиты и профили)
  - Очистка подписей в `TextCleanup` (включение/выключение и правила)
+ - Бэкапы БД в `Backup` (расписание OnStart/OnShutdown/DailyTimes, хранилище, ретеншн, restore)
 
 > [!NOTE]
 > Hot‑reload поведения:
@@ -52,6 +53,23 @@
 - Пример (в `appsettings.json` или через ENV): удалить «Look at this» для Pinterest.
 
 ### Что в downloader‑config.json применится «на лету»
+### Бэкапы баз данных (Backup)
+- Управляется через секцию `Backup` в `appsettings.json`.
+- Триггеры (любые комбинации):
+  - `Schedule:OnStart` — делать бэкап при запуске
+  - `Schedule:OnShutdown` — делать бэкап при остановке (с таймаутом из `Restore:TimeoutMinutes`)
+  - `Schedule:DailyTimes` — список локальных времени по `Schedule:TimeZone`
+- Хранилище и ретеншн:
+  - `Storage:Path` — каталог для файлов
+  - `Storage:UseGzip` — сжатие
+  - `Storage:Retention` — `MaxCount` и `MaxAgeDays`
+- Восстановление (`Restore`):
+  - Выполняется на старте, если `Restore:Enabled=true` и существует файл подтверждения `Restore:RequireConfirmationFile`
+  - `Restore:BackupFile` — путь к файлу бэкапа (.db/.db.gz для SQLite, .sql/.sql.gz для MySQL)
+  - `Restore:VerifyChecksum` — опциональная проверка целостности (поддержка на уровне оркестратора)
+  - После успешного восстановления выключите флаг `Restore:Enabled`
+
+Пример `Backup` см. в `appsettings.json.example`.
 - Весь раздел `Downloaders` (включая `YtDlp`, `GalleryDl`):
   - `Enabled`, `Priority`, `Path`, `AlternativePaths`, `CheckCommands`, `DefaultArguments`, `Timeout`, `MaxRetries`, `UrlPatterns`, `OutputPattern`, `ProgressPattern`, `ProxySettings`
 - Раздел `GlobalSettings` (например, таймауты, прогресс): применяется для следующих операций скачивания.
