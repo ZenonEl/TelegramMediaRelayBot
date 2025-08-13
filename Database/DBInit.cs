@@ -23,6 +23,8 @@ using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 using TelegramMediaRelayBot.TelegramBot.SiteFilter;
 using TelegramMediaRelayBot.Config;
 using Microsoft.Extensions.Options;
+using FluentValidation;
+using TelegramMediaRelayBot.TelegramBot.Validation;
 
 
 namespace TelegramMediaRelayBot.Database;
@@ -215,6 +217,7 @@ public class FluentDBMigrator
         builder.Services.AddSingleton<TelegramMediaRelayBot.Config.Services.IResourceService, TelegramMediaRelayBot.Config.Services.ResourceService>();
         builder.Services.AddSingleton<TelegramMediaRelayBot.Infrastructure.MediaProcessing.IMediaProcessingService, TelegramMediaRelayBot.Infrastructure.MediaProcessing.FfmpegService>();
         builder.Services.AddSingleton<TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService, TelegramMediaRelayBot.TelegramBot.Utils.TextCleanupService>();
+        builder.Services.AddScoped<TelegramMediaRelayBot.TelegramBot.Services.IDefaultSummaryService, TelegramMediaRelayBot.TelegramBot.Services.DefaultSummaryService>();
         builder.Services.AddSingleton<TelegramMediaRelayBot.Infrastructure.Backup.IBackupProviderFactory, TelegramMediaRelayBot.Infrastructure.Backup.BackupProviderFactory>();
         builder.Services.AddSingleton<TelegramMediaRelayBot.Infrastructure.Backup.IBackupOrchestrator, TelegramMediaRelayBot.Infrastructure.Backup.BackupOrchestrator>();
         
@@ -237,6 +240,10 @@ public class FluentDBMigrator
             .AsImplementedInterfaces()
             .WithScopedLifetime()
         );
+
+        // Валидация (FluentValidation) — регистрируем валидаторы в DI
+        builder.Services.AddScoped<IValidator<InboxListRequest>, InboxListRequestValidator>();
+        builder.Services.AddScoped<IValidator<InboxViewRequest>, InboxViewRequestValidator>();
 
 
 
