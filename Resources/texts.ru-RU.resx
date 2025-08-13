@@ -16,6 +16,50 @@
     <data name="HereIsYourVideo" xml:space="preserve">
         <value>ㅤ</value>
     </data>
+  <data name="PrivacyFilter.Social" xml:space="preserve">
+    <value>Социальные</value>
+  </data>
+  <data name="InboxNewCountNotify" xml:space="preserve">
+    <value>У вас {0} непрочитанных во Входящих.</value>
+  </data>
+  <data name="Inbox.Filter.All" xml:space="preserve">
+    <value>Все</value>
+  </data>
+  <data name="Inbox.Filter.Unread" xml:space="preserve">
+    <value>• Непрочитанные</value>
+  </data>
+  <data name="Inbox.SendersButton" xml:space="preserve">
+    <value>Отправители</value>
+  </data>
+  <data name="Inbox.MarkAllRead" xml:space="preserve">
+    <value>✓ Отметить все прочитанными</value>
+  </data>
+  <data name="Inbox.MarkAllUnread" xml:space="preserve">
+    <value>↺ Отметить все непрочитанными</value>
+  </data>
+  <data name="Inbox.DeleteRead" xml:space="preserve">
+    <value>Удалить прочитанные</value>
+  </data>
+  <data name="Inbox.DeleteUnread" xml:space="preserve">
+    <value>Удалить непрочитанные</value>
+  </data>
+  <data name="Inbox.Sender.MarkRead" xml:space="preserve">
+    <value>✓ Отметить этого отправителя прочитанным</value>
+  </data>
+  <data name="Inbox.Sender.MarkUnread" xml:space="preserve">
+    <value>↺ Отметить этого отправителя непрочитанным</value>
+  </data>
+  <data name="Inbox.Sender.DeleteRead" xml:space="preserve">
+    <value>Удалить прочитанные этого отправителя</value>
+  </data>
+  <data name="Inbox.Sender.DeleteUnread" xml:space="preserve">
+    <value>Удалить непрочитанные этого отправителя</value>
+  </data>
+  <data name="PrivacyFilter.NSFW" xml:space="preserve">
+    <value>NSFW</value>
+  </data>
+  <data name="PrivacyFilter.Unified" xml:space="preserve">
+    <value>Объединённые</value>
   </data>
     <data name="ContactSentVideo" xml:space="preserve">
         <value>{0} отправил медиа!
@@ -261,6 +305,62 @@ ID: {0}
     <data name="BackButtonText" xml:space="preserve">
         <value>Назад в меню</value>
     </data>
+  <!-- Inbox localized strings -->
+  <data name="InboxListEmpty" xml:space="preserve">
+    <value>Ваш список входящих
+Пока пусто</value>
+  </data>
+  <data name="InboxListCurrentPage" xml:space="preserve">
+    <value>Ваш список входящих
+Текущий лист: {0}</value>
+  </data>
+  <data name="InboxItemNotFound" xml:space="preserve">
+    <value>Не найдено</value>
+  </data>
+  <data name="InboxDeleteButtonText" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="NothingToCancelMessage" xml:space="preserve">
+    <value>Нечего отменять</value>
+  </data>
+  <data name="Inbox.ViewInfoTemplate" xml:space="preserve">
+    <value>От: {0}
+&lt;code&gt;#{1}&lt;/code&gt;
+#{2}
+
+{3}</value>
+  </data>
+  <data name="DomainsFilterOn" xml:space="preserve">
+    <value>Domains: ON</value>
+  </data>
+  <data name="DomainsFilterOff" xml:space="preserve">
+    <value>Domains: OFF</value>
+  </data>
+  <data name="InboxOn" xml:space="preserve">
+    <value>Inbox: ON</value>
+  </data>
+  <data name="InboxOff" xml:space="preserve">
+    <value>Inbox: OFF</value>
+  </data>
+  <data name="PrivacyPrefaceTemplate" xml:space="preserve">
+    <value><b>Приватность:</b> {0}
+{1}
+{2}
+
+</value>
+  </data>
+  <data name="InboxSettingsTitle" xml:space="preserve">
+    <value>Inbox настройки</value>
+  </data>
+  <data name="WhoCanFindMe.Nobody" xml:space="preserve">
+    <value>Никто</value>
+  </data>
+  <data name="WhoCanFindMe.General" xml:space="preserve">
+    <value>Только общие контакты</value>
+  </data>
+  <data name="WhoCanFindMe.All" xml:space="preserve">
+    <value>Все</value>
+  </data>
     <data name="MuteUserButtonText" xml:space="preserve">
         <value>Замутить пользователя</value>
     </data>
@@ -308,6 +408,18 @@ ID: {0}
     </data>
     <data name="SettingsButtonText" xml:space="preserve">
         <value>Настройки</value>
+    </data>
+    <data name="InboxButtonText" xml:space="preserve">
+        <value>Входящие</value>
+    </data>
+    <data name="InboxSettingsButtonText" xml:space="preserve">
+        <value>Настройки Входящих</value>
+    </data>
+    <data name="OpenInboxButtonText" xml:space="preserve">
+        <value>Открыть Входящие</value>
+    </data>
+    <data name="HelpButtonText" xml:space="preserve">
+        <value>Помощь</value>
     </data>
     <data name="AutoSendTimeChangedMessage" xml:space="preserve">
         <value>Время отправки медиа изменено на </value>
@@ -594,7 +706,8 @@ ID: {0}
 Взгляните на этот космический танец северного сияния! 
 🌌 #природа #wow 
 &lt;/pre&gt; 
-&lt;b&gt;Если используете описание, то обязательно с новой строки!&lt;/b&gt;
+ &lt;b&gt;Если используете описание, то обязательно с новой строки!&lt;/b&gt;
+ - Описание также можно отправить и отдельным следующим сообщением — тогда оно перезапишет подпись из сообщения со ссылкой.
 
 → Бот сделает всё остальное:  
 1. Определит платформу — будь то YouTube, TikTok, Instagram или любой другой сервис.
@@ -608,6 +721,10 @@ ID: {0}
       Вы не должны находиться в муте у этих контактов.
       Параметры рассылки должны быть настроены корректно.
 
+ 📨 Inbox (входящие)
+ - Включается в: Настройки → Приватность | безопасность → Inbox.
+ - Новый контент попадёт в Inbox вместо мгновенной отправки. Представления: Все/Непрочитанные, Отправители; массовые пометки прочитано/непрочитано; массовое удаление; локальные действия по отправителю.
+
 &lt;b&gt;Совет: Используйте хештеги в описании!&lt;/b&gt;
     Это позволит вам легко находить контент в истории чатов. Например, ищите по тегам #котики или #работа_не_волк.
         Встроенные хештеги тоже работают, но свои — удобнее и персонализированнее.
@@ -619,8 +736,13 @@ ID: {0}
 - &lt;b&gt;Подпишитесь на мой аккаунт&lt;/b&gt; в &lt;a href="https://mastodon.ml/@ZenonEl"&gt;Mastodon&lt;/a&gt;.  
 - Или просто интересуйтесь новостями у того, кто пригласил вас в этот увлекательный цифровой круговорот медиа! 😉  
 
-🔗 Поддерживаемые платформы можно найти тут  
-Бот работает с 1000+ источников благодаря интеграции &lt;b&gt;yt-dlp&lt;/b&gt; — полный список &lt;a href="https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md"&gt;здесь&lt;/a&gt;.  
+🔗 Поддерживаемые платформы:  
+- yt-dlp: &lt;a href="https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md"&gt;список&lt;/a&gt;  
+- gallery-dl: &lt;a href="https://github.com/mikf/gallery-dl/blob/master/docs/supportedsites.md"&gt;список&lt;/a&gt;
+
+📚 Полезные ссылки по проекту:  
+- Сайт: &lt;a href="https://zenonel.github.io/TelegramMediaRelayBot-Site/docs"&gt;zenonel.github.io/TelegramMediaRelayBot-Site&lt;/a&gt;  
+- Репозиторий: &lt;a href="https://github.com/ZenonEl/TelegramMediaRelayBot"&gt;GitHub&lt;/a&gt;  
 
 P.S.
 &lt;b&gt;И не бойтесь&lt;/b&gt; писать мне в Mastodon!

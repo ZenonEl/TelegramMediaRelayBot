@@ -255,6 +255,62 @@ Are you sure you want to unmute them? If not, type /start</value>
     <data name="BackButtonText" xml:space="preserve">
         <value>Back to menu</value>
     </data>
+    <!-- Inbox localized strings -->
+    <data name="InboxListEmpty" xml:space="preserve">
+        <value>Your inbox list
+Empty for now</value>
+    </data>
+    <data name="InboxListCurrentPage" xml:space="preserve">
+        <value>Your inbox list
+Current page: {0}</value>
+    </data>
+    <data name="InboxItemNotFound" xml:space="preserve">
+        <value>Not found</value>
+    </data>
+    <data name="InboxDeleteButtonText" xml:space="preserve">
+        <value>Delete</value>
+    </data>
+    <data name="NothingToCancelMessage" xml:space="preserve">
+        <value>Nothing to cancel</value>
+    </data>
+    <data name="DomainsFilterOn" xml:space="preserve">
+        <value>Domains: ON</value>
+    </data>
+    <data name="DomainsFilterOff" xml:space="preserve">
+        <value>Domains: OFF</value>
+    </data>
+    <data name="InboxOn" xml:space="preserve">
+        <value>Inbox: ON</value>
+    </data>
+    <data name="InboxOff" xml:space="preserve">
+        <value>Inbox: OFF</value>
+    </data>
+    <data name="PrivacyPrefaceTemplate" xml:space="preserve">
+        <value><b>Privacy:</b> {0}
+{1}
+{2}
+
+</value>
+    </data>
+    <data name="InboxSettingsTitle" xml:space="preserve">
+        <value>Inbox settings</value>
+    </data>
+    <data name="WhoCanFindMe.Nobody" xml:space="preserve">
+        <value>Nobody</value>
+    </data>
+    <data name="WhoCanFindMe.General" xml:space="preserve">
+        <value>Only mutual contacts</value>
+    </data>
+    <data name="WhoCanFindMe.All" xml:space="preserve">
+        <value>Everyone</value>
+    </data>
+    <data name="Inbox.ViewInfoTemplate" xml:space="preserve">
+        <value>From: {0}
+&lt;code&gt;#{1}&lt;/code&gt;
+#{2}
+
+{3}</value>
+    </data>
     <data name="MuteUserButtonText" xml:space="preserve">
         <value>Mute user</value>
     </data>
@@ -303,6 +359,63 @@ Are you sure you want to unmute them? If not, type /start</value>
     <data name="SettingsButtonText" xml:space="preserve">
         <value>Settings</value>
     </data>
+    <data name="InboxButtonText" xml:space="preserve">
+        <value>Inbox</value>
+    </data>
+    <data name="InboxSettingsButtonText" xml:space="preserve">
+        <value>Inbox settings</value>
+    </data>
+    <data name="OpenInboxButtonText" xml:space="preserve">
+        <value>Open Inbox</value>
+    </data>
+    <data name="HelpButtonText" xml:space="preserve">
+        <value>Help</value>
+    </data>
+  <data name="PrivacyFilter.Social" xml:space="preserve">
+    <value>Social</value>
+  </data>
+  <data name="InboxNewCountNotify" xml:space="preserve">
+    <value>You have {0} unread items in your Inbox.</value>
+  </data>
+  <data name="Inbox.Filter.All" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Inbox.Filter.Unread" xml:space="preserve">
+    <value>• Unread</value>
+  </data>
+  <data name="Inbox.SendersButton" xml:space="preserve">
+    <value>Senders</value>
+  </data>
+  <data name="Inbox.MarkAllRead" xml:space="preserve">
+    <value>✓ Mark all read</value>
+  </data>
+  <data name="Inbox.MarkAllUnread" xml:space="preserve">
+    <value>↺ Mark all unread</value>
+  </data>
+  <data name="Inbox.DeleteRead" xml:space="preserve">
+    <value>Delete read</value>
+  </data>
+  <data name="Inbox.DeleteUnread" xml:space="preserve">
+    <value>Delete unread</value>
+  </data>
+  <data name="Inbox.Sender.MarkRead" xml:space="preserve">
+    <value>✓ Mark this sender read</value>
+  </data>
+  <data name="Inbox.Sender.MarkUnread" xml:space="preserve">
+    <value>↺ Mark this sender unread</value>
+  </data>
+  <data name="Inbox.Sender.DeleteRead" xml:space="preserve">
+    <value>Delete read of this sender</value>
+  </data>
+  <data name="Inbox.Sender.DeleteUnread" xml:space="preserve">
+    <value>Delete unread of this sender</value>
+  </data>
+  <data name="PrivacyFilter.NSFW" xml:space="preserve">
+    <value>NSFW</value>
+  </data>
+  <data name="PrivacyFilter.Unified" xml:space="preserve">
+    <value>Unified</value>
+  </data>
     <data name="AutoSendTimeChangedMessage" xml:space="preserve">
         <value>Video send time changed to </value>
     </data>
@@ -526,12 +639,13 @@ As connect members of your media circle:
 &lt;b&gt;🚀 Downloading and forwarding content is a three—step magic steps&lt;/b&gt; 
 📥 Working with links 
 
-Just send the bot &lt;b&gt;a link + description (if necessary and necessarily from a new line)&lt;/b&gt; in format: 
+ Just send the bot &lt;b&gt;a link + description (if necessary and necessarily from a new line)&lt;/b&gt; in format: 
 &lt;pre&gt;https://youtu.be/ваше_супер_видео 
 Take a look at this cosmic dance of the northern lights! 
 🌌 #nature #wow 
 &lt;/pre&gt; 
-&lt;b&gt;If you use the description, then you must start from a new line!&lt;/b&gt;
+ &lt;b&gt;If you use the description, then you must start from a new line!&lt;/b&gt;
+ - You can also send the description as a separate next message — it will overwrite the caption taken from the link message.
 
 → The bot will do the rest:
 1. It will determine the platform, whether it's YouTube, TikTok, Instagram, or any other service.
@@ -545,6 +659,10 @@ Take a look at this cosmic dance of the northern lights!
         You should not be in the mud at these contacts.
         The mailing list parameters must be configured correctly.
 
+ 📨 Inbox
+ - Enable in: Settings → Privacy | Safety → Inbox.
+ - New content goes to Inbox instead of instant forwarding. Views: All/Unread, Senders; bulk mark read/unread; bulk delete; per‑sender actions.
+
 &lt;b&gt;Advice: Use hashtags in the description!&lt;/b&gt;
     This will allow you to easily find content in your chat history. For example, search by tags #cats or #work_folk.
         The built—in hashtags also work, but their own ones are more convenient and personalized.
@@ -556,8 +674,13 @@ To keep up to date with all updates and not Skip anything important:
 - &lt;b&gt;Subscribe to my account&lt;/b&gt; in &lt;a href="https://fosstodon.org/@ZenonEl "&gt;Mastodon&lt;/a&gt;. 
 - Or just ask for news from the one who invited you to this fascinating digital media cycle! 😉 
 
-🔗 Supported platforms can be found here 
-The bot works with 1000+ sources thanks to the integration of &lt;b&gt;yt-dlp&lt;/b&gt; — full list &lt;a href="https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md"&gt;here&lt;/a&gt;. 
+🔗 Supported platforms: 
+- yt-dlp: &lt;a href="https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md"&gt;list&lt;/a&gt; 
+- gallery-dl: &lt;a href="https://github.com/mikf/gallery-dl/blob/master/docs/supportedsites.md"&gt;list&lt;/a&gt; 
+
+📚 Project links: 
+- Website: &lt;a href="https://zenonel.github.io/TelegramMediaRelayBot-Site/docs"&gt;zenonel.github.io/TelegramMediaRelayBot-Site&lt;/a&gt; 
+- Repository: &lt;a href="https://github.com/ZenonEl/TelegramMediaRelayBot"&gt;GitHub&lt;/a&gt; 
 
 P.S.
 &lt;b&gt;Don't be shy&lt;/b&gt; - message me on Mastodon!
