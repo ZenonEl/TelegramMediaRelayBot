@@ -111,7 +111,7 @@ class PrivateUtils
                     // Берём актуальный текст из pending при автозапуске
                     var effectiveText = cfg.GetPendingTextOrCurrent(statusMessage.MessageId);
                     var originalDateUtc = cfg.GetPendingOriginalDateUtc(statusMessage.MessageId);
-                    _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: effectiveText);
+                    _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: effectiveText, originalMessageDateUtc: originalDateUtc);
                 }
             }
             catch (TaskCanceledException) { }

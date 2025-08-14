@@ -45,6 +45,7 @@ public partial class TGBot
     private readonly IOptionsMonitor<MessageDelayConfiguration> _delayConfig;
     private readonly IOptionsMonitor<TelegramMediaRelayBot.Config.DownloadingConfiguration> _downloadingConfig;
     public static IUserStateManager StateManager { get; private set; }
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, DateTime> _lastInboxNotifyUtc = new();
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<long, DateTime> _nextSlotByChatId = new();
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<long, (string Text, DateTime At)> _lastTextByChatId = new();
     public static CancellationToken cancellationToken;
@@ -470,28 +471,77 @@ public partial class TGBot
                 {
                     try
                     {
-                        var payload = new
+                        // Merge strategy: if latest item from this sender has same Url or same Caption, append media to it
+                        var latest = await _inboxRepo.GetLatestItemForOwnerFromAsync(contactUserId, _userGetter.GetUserIDbyTelegramID(telegramId)).ConfigureAwait(false);
+                        bool merged = false;
+                        if (latest != null)
                         {
-                            SourceChatId = telegramId,
-                            SavedMedia = savedMediaRefs.Select(r => new { Type = r.Kind, FileId = r.FileId, Caption = (string?)null }).ToList(),
-                            Url = contentUrl,
-                            Caption = caption,
-                            Hashtag = new [] { defaultHash1, defaultHash2 },
-                            OriginalMessageDateUtc = (originalMessageDateUtc ?? DateTime.UtcNow).ToUniversalTime()
-                        };
-                        string payloadJson = System.Text.Json.JsonSerializer.Serialize(payload);
-                        await _inboxRepo.AddItemAsync(contactUserId, _userGetter.GetUserIDbyTelegramID(telegramId), caption, payloadJson, "new");
-                        Log.Information("Added to Inbox for user {User}", contactUserId);
-                        try
-                        {
-                            int newCount = await _inboxRepo.GetNewCountAsync(contactUserId).ConfigureAwait(false);
-                            if (newCount == 1 || newCount % 5 == 0)
+                            try
                             {
-                                string note = string.Format(_resourceService.GetResourceString("InboxNewCountNotify"), newCount);
-                                await botClient.SendMessage(contactUserTgId, note, cancellationToken: cancellationToken).ConfigureAwait(false);
+                                var doc = System.Text.Json.JsonDocument.Parse(latest.PayloadJson);
+                                string? lastUrl = doc.RootElement.TryGetProperty("Url", out var u) && u.ValueKind == System.Text.Json.JsonValueKind.String ? u.GetString() : null;
+                                string? lastCaption = latest.Caption;
+                                bool sameUrl = !string.IsNullOrWhiteSpace(lastUrl) && string.Equals(lastUrl, contentUrl, StringComparison.OrdinalIgnoreCase);
+                                bool sameCaption = string.Equals(lastCaption ?? string.Empty, caption ?? string.Empty, StringComparison.Ordinal);
+                                if (sameUrl && sameCaption)
+                                {
+                                    var mediaList = new List<object>();
+                                    if (doc.RootElement.TryGetProperty("SavedMedia", out var arr) && arr.ValueKind == System.Text.Json.JsonValueKind.Array)
+                                    {
+                                        foreach (var m in arr.EnumerateArray())
+                                        {
+                                            mediaList.Add(new { Type = m.GetProperty("Type").GetString(), FileId = m.GetProperty("FileId").GetString(), Caption = (string?)null });
+                                        }
+                                    }
+                                    mediaList.AddRange(savedMediaRefs.Select(r => new { Type = r.Kind, FileId = r.FileId, Caption = (string?)null }));
+                                    var mergedPayload = new
+                                    {
+                                        SourceChatId = telegramId,
+                                        SavedMedia = mediaList,
+                                        Url = string.IsNullOrEmpty(lastUrl) ? contentUrl : lastUrl,
+                                        Caption = caption,
+                                        Hashtag = new [] { defaultHash1, defaultHash2 },
+                                        OriginalMessageDateUtc = (originalMessageDateUtc ?? DateTime.UtcNow).ToUniversalTime()
+                                    };
+                                    string mergedJson = System.Text.Json.JsonSerializer.Serialize(mergedPayload);
+                                    merged = await _inboxRepo.UpdatePayloadAsync(latest.Id, mergedJson).ConfigureAwait(false);
+                                    if (merged) Log.Information("Merged into last Inbox item {Id} for user {User}", latest.Id, contactUserId);
+                                }
                             }
+                            catch { }
                         }
-                        catch { }
+                        if (!merged)
+                        {
+                            var payload = new
+                            {
+                                SourceChatId = telegramId,
+                                SavedMedia = savedMediaRefs.Select(r => new { Type = r.Kind, FileId = r.FileId, Caption = (string?)null }).ToList(),
+                                Url = contentUrl,
+                                Caption = caption,
+                                Hashtag = new [] { defaultHash1, defaultHash2 },
+                                OriginalMessageDateUtc = (originalMessageDateUtc ?? DateTime.UtcNow).ToUniversalTime()
+                            };
+                            string payloadJson = System.Text.Json.JsonSerializer.Serialize(payload);
+                            await _inboxRepo.AddItemAsync(contactUserId, _userGetter.GetUserIDbyTelegramID(telegramId), caption, payloadJson, "new");
+                            Log.Information("Added to Inbox for user {User}", contactUserId);
+                            try
+                            {
+                                int newCount = await _inboxRepo.GetNewCountAsync(contactUserId).ConfigureAwait(false);
+                                if (newCount == 1)
+                                {
+                                    var nowUtc = DateTime.UtcNow;
+                                    // Debounce per owner: not more than one notify per 5 seconds
+                                    if (!_lastInboxNotifyUtc.TryGetValue(contactUserId, out var last) || (nowUtc - last) > TimeSpan.FromSeconds(5))
+                                    {
+                                        _lastInboxNotifyUtc[contactUserId] = nowUtc;
+                                        string note = string.Format(_resourceService.GetResourceString("InboxNewCountNotify"), newCount);
+                                        await botClient.SendMessage(contactUserTgId, note, cancellationToken: cancellationToken).ConfigureAwait(false);
+                                    }
+                                }
+                            }
+                            catch { }
+                        }
+                        // If merged, не уведомляем повторно
                         sentCount++; // count as delivered
                         try
                         {

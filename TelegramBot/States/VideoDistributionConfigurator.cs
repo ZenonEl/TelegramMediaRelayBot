@@ -294,7 +294,7 @@ namespace TelegramMediaRelayBot;
                             string cleanedText0 = captionRaw0;
                             try { if (!string.IsNullOrWhiteSpace(captionRaw0) && Uri.TryCreate(link, UriKind.Absolute, out var uri0)) cleanedText0 = _textCleanup.Cleanup(captionRaw0, uri0.Host); } catch { }
                             var targets0 = GetTargetsForMessage(statusMessage.MessageId);
-                            _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targets0, groupChat: false, caption: cleanedText0, sessionToken: sessionCts0.Token);
+            _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targets0, groupChat: false, caption: cleanedText0, sessionToken: sessionCts0.Token, originalMessageDateUtc: GetPendingOriginalDateUtc(statusMessage.MessageId));
                             _pendingByMessageId.Remove(statusMessage.MessageId);
                             currentState = UsersStandardState.ProcessAction;
                             _finishMessageId = null;
@@ -593,7 +593,7 @@ namespace TelegramMediaRelayBot;
                 }
                 catch { }
                 var targetsForThis = GetTargetsForMessage(statusMessage.MessageId);
-                _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetsForThis, groupChat: false, caption: cleanedText, sessionToken: sessionCts.Token);
+            _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetsForThis, groupChat: false, caption: cleanedText, sessionToken: sessionCts.Token, originalMessageDateUtc: GetPendingOriginalDateUtc(statusMessage.MessageId));
                 _pendingByMessageId.Remove(statusMessage.MessageId);
                 currentState = UsersStandardState.ProcessAction;
                 _finishMessageId = null;
