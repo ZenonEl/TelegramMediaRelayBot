@@ -109,5 +109,22 @@ public class SqliteInboxRepository : IInboxRepository
                     ORDER BY MAX(CreatedAt) DESC";
         return await conn.QueryAsync<InboxSenderInfo>(sql, new { ownerUserId });
     }
+
+        public async Task<InboxItemDto?> GetLatestItemForOwnerFromAsync(int ownerUserId, int fromContactId)
+        {
+            await using var conn = new SqliteConnection(_connectionString);
+            var sql = @"SELECT ID as Id, OwnerUserId, FromContactId, Caption, PayloadJson, Status, CreatedAt
+                        FROM InboxItems WHERE OwnerUserId=@ownerUserId AND FromContactId=@fromContactId
+                        ORDER BY CreatedAt DESC LIMIT 1";
+            return (await conn.QueryAsync<InboxItemDto>(sql, new { ownerUserId, fromContactId })).FirstOrDefault();
+        }
+
+        public async Task<bool> UpdatePayloadAsync(long inboxItemId, string payloadJson)
+        {
+            await using var conn = new SqliteConnection(_connectionString);
+            var sql = "UPDATE InboxItems SET PayloadJson=@payloadJson WHERE ID=@id";
+            var affected = await conn.ExecuteAsync(sql, new { id = inboxItemId, payloadJson });
+            return affected > 0;
+        }
 }
 

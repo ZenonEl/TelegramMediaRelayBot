@@ -19,6 +19,10 @@ namespace TelegramMediaRelayBot.Database.Interfaces
 
         // Aggregations
         Task<IEnumerable<InboxSenderInfo>> GetSendersAsync(int ownerUserId);
+
+        // Helpers
+        Task<InboxItemDto?> GetLatestItemForOwnerFromAsync(int ownerUserId, int fromContactId);
+        Task<bool> UpdatePayloadAsync(long inboxItemId, string payloadJson);
     }
 
     public sealed class InboxItemDto
