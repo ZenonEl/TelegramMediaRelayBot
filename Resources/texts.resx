@@ -404,6 +404,12 @@ Current page: {0}</value>
   <data name="Inbox.Sender.MarkUnread" xml:space="preserve">
     <value>↺ Mark this sender unread</value>
   </data>
+  <data name="Inbox.Sender.ShowAll" xml:space="preserve">
+    <value>Show this sender (all)</value>
+  </data>
+  <data name="Inbox.Sender.ShowUnread" xml:space="preserve">
+    <value>Show this sender (unread)</value>
+  </data>
   <data name="Inbox.Sender.DeleteRead" xml:space="preserve">
     <value>Delete read of this sender</value>
   </data>
@@ -652,14 +658,14 @@ Take a look at this cosmic dance of the northern lights!
 2. Downloads the content in optimal quality (with the ability to adjust to your preferences in the configuration). 
 3. It will forward the video exactly there and to those who need it. ✨
 
-🔄 Automatic mailing list 
+🔄 &lt;b&gt;Automatic mailing list&lt;/b&gt; 
 - Your file will be instantly sent to all specified contacts from your list.
     Conditions:
         Contacts must be with you are on the list.
         You should not be in the mud at these contacts.
         The mailing list parameters must be configured correctly.
 
- 📨 Inbox
+ 📨 &lt;b&gt;Inbox&lt;/b&gt;
  - Enable in: Settings → Privacy | Safety → Inbox.
  - New content goes to Inbox instead of instant forwarding. Views: All/Unread, Senders; bulk mark read/unread; bulk delete; per‑sender actions.
 
