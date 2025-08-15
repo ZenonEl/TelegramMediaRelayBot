@@ -527,7 +527,9 @@ public partial class TGBot
                             try
                             {
                                 int newCount = await _inboxRepo.GetNewCountAsync(contactUserId).ConfigureAwait(false);
-                                if (newCount == 1)
+                                // Send notification on specific thresholds: 1, 5, 10, 15, 20, 25, etc.
+                                bool shouldNotify = newCount == 1 || (newCount >= 5 && newCount % 5 == 0);
+                                if (shouldNotify)
                                 {
                                     var nowUtc = DateTime.UtcNow;
                                     // Debounce per owner: not more than one notify per 5 seconds
