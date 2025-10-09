@@ -69,7 +69,7 @@ public class SetAutoSendTimeCommand : IBotCallbackQueryHandlers
     {
         string callbackQueryData = update.CallbackQuery!.Data!.Split(':')[1];
         var chatId = update.CallbackQuery!.Message!.Chat.Id;
-        bool result = Users.SetAutoSendVideoTimeToUser(chatId, callbackQueryData, _defaultActionSetter, _userGetter);
+        bool result = await Users.SetAutoSendVideoTimeToUser(chatId, callbackQueryData, _defaultActionSetter, _userGetter);
 
         var message = result 
             ? _resourceService.GetResourceString("AutoSendTimeChangedMessage") + callbackQueryData
@@ -177,7 +177,7 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
                 cancellationToken,
                 $"{header}\n{listBody}\n\n{prompt}");
 
-            Users.SetDefaultActionToUser(chatId, action, _defaultActionSetter, _userGetter);
+            await Users.SetDefaultActionToUser(chatId, action, _defaultActionSetter, _userGetter);
             TGBot.StateManager.Set(chatId, new ProcessUserSetDCSendState(
                 isGroup,
                 _contactGetterRepository,
@@ -190,7 +190,7 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
         }
 
 
-        bool result = Users.SetDefaultActionToUser(chatId, action, _defaultActionSetter, _userGetter);
+        bool result = await Users.SetDefaultActionToUser(chatId, action, _defaultActionSetter, _userGetter);
 
         if (result)
         {

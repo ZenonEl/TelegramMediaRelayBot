@@ -95,7 +95,7 @@ public class UserProcessOutboundState : IUserState
                     {
                         string userId = update.CallbackQuery.Data.Split(':')[1];
                         int accepterTelegramID = _userGetter.GetUserIDbyTelegramID(long.Parse(userId));
-                        _contactRepository.RemoveContactByStatus(_userGetter.GetUserIDbyTelegramID(chatId), accepterTelegramID, ContactsStatus.WAITING_FOR_ACCEPT);
+                        await _contactRepository.RemoveContactByStatus(_userGetter.GetUserIDbyTelegramID(chatId), accepterTelegramID, ContactsStatus.WAITING_FOR_ACCEPT);
                     }
                 }
         TGBot.StateManager.Remove(chatId);

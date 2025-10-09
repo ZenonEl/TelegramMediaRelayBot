@@ -207,7 +207,7 @@ public class UserInboxDisableCommand : IBotCallbackQueryHandlers
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
         int userId = _userGetter.GetUserIDbyTelegramID(chatId);
-        _privacySetter.SetPrivacyRuleToDisabled(userId, PrivacyRuleType.INBOX_DELIVERY);
+        await _privacySetter.SetPrivacyRuleToDisabled(userId, PrivacyRuleType.INBOX_DELIVERY);
         await Users.ViewPrivacyMenu(botClient, update, Users.GetResourceString("InboxOff"));
     }
 }
@@ -533,7 +533,7 @@ public class UserDisablePermanentContentSpoilerCommand : IBotCallbackQueryHandle
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         int userId = _userGetter.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id);
-        bool actionStatus = _privacySettingsSetter.SetPrivacyRuleToDisabled(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING);
+        bool actionStatus = await _privacySettingsSetter.SetPrivacyRuleToDisabled(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING);
         string statusMessage = actionStatus
             ? Users.GetResourceString("SuccessActionResult")
             : Users.GetResourceString("ErrorActionResult");

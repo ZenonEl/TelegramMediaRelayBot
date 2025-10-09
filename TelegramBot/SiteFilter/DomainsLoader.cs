@@ -14,7 +14,12 @@ using System.Net;
 
 namespace TelegramMediaRelayBot.TelegramBot.SiteFilter;
 
-public class DomainsLoader()
+public interface IDomainsLoader
+{
+    public HashSet<string> LoadDomainsFromFile(string filePath);
+}
+
+public class DomainsLoader : IDomainsLoader
 {
     public HashSet<string> LoadDomainsFromFile(string filePath)
     {

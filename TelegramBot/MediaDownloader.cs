@@ -18,15 +18,14 @@ using TelegramMediaRelayBot.TelegramBot.Handlers;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot.SiteFilter;
-using TelegramMediaRelayBot.Database.Interfaces;
-using TelegramMediaRelayBot.Config.Services;
+using Microsoft.Extensions.Hosting;
 using TelegramMediaRelayBot.Config;
 using Microsoft.Extensions.Options;
 
 
 namespace TelegramMediaRelayBot;
 
-public partial class TGBot
+public partial class TGBot : IHostedService
 {
     private readonly IUserRepository _userRepo;
     private readonly IUserGetter _userGetter;
@@ -87,21 +86,36 @@ public partial class TGBot
         _botConfig = botConfig;
         _delayConfig = delayConfig;
         _downloadingConfig = downloadingConfig;
-        
-            _updateHandler = new PrivateUpdateHandler(
-            this,
-            _handlersFactory,
-            contactGetterRepository,
-            defaultActionGetter,
-            _userGetter,
-            groupGetter,
-            _configService,
-            resourceService,
-                _textCleanupService,
-                _inboxRepo
-            );
+
+        _updateHandler = new PrivateUpdateHandler(
+        this,
+        _handlersFactory,
+        contactGetterRepository,
+        defaultActionGetter,
+        _userGetter,
+        groupGetter,
+        _configService,
+        resourceService,
+            _textCleanupService,
+            _inboxRepo
+        );
 
         StateManager = userStateManager;
+    }
+
+    // Хост вызовет его при запуске приложения.
+    public Task StartAsync(CancellationToken cancellationToken)
+    {
+        // Просто вызываем наш существующий метод Start
+        return Start();
+    }
+
+    // Хост вызовет его при остановке приложения (Ctrl+C).
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        Log.Information("Stopping Telegram Bot.");
+        // Здесь можно добавить логику для корректной остановки, если она нужна
+        return Task.CompletedTask;
     }
 
     public async Task Start()

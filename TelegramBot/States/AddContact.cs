@@ -139,7 +139,7 @@ public class ProcessContactState : IUserState
                 var cb = update.CallbackQuery.Data;
                 if (cb == "accept")
                 {
-                    _contactAdder.AddContact(chatId, link);
+                    await _contactAdder.AddContact(chatId, link);
                     await SendNotification(botClient, chatId, cancellationToken);
                     await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, _resourceService.GetResourceString("WaitForContactConfirmation"));
                 }

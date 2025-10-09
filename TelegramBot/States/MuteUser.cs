@@ -164,7 +164,7 @@ public class ProcessUserMuteState : IUserState
                 if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId)) return;
 
         TGBot.StateManager.Remove(chatId);
-                if (_contactAdder.AddMutedContact(mutedByUserId, mutedContactId, expirationDate))
+                if (await _contactAdder.AddMutedContact(mutedByUserId, mutedContactId, expirationDate))
                 {
                     await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, _resourceService.GetResourceString("ActionCancelledError"));
                     return;

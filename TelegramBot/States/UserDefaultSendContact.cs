@@ -200,22 +200,22 @@ namespace TelegramMediaRelayBot
 
             if (_isGroupIds)
             {
-                _defaultAction.RemoveAllDefaultUsersActionTargets(userId, TargetTypes.GROUP, actionId);
+                await _defaultAction.RemoveAllDefaultUsersActionTargets(userId, TargetTypes.GROUP, actionId);
             }
             else
             {
-                _defaultAction.RemoveAllDefaultUsersActionTargets(userId, TargetTypes.USER, actionId);
+                await _defaultAction.RemoveAllDefaultUsersActionTargets(userId, TargetTypes.USER, actionId);
             }
 
             foreach (var id in userState._targetIds)
             {
                 if (_isGroupIds)
                 {
-                    _defaultAction.AddDefaultUsersActionTargets(userId, actionId, TargetTypes.GROUP, id);
+                    await _defaultAction.AddDefaultUsersActionTargets(userId, actionId, TargetTypes.GROUP, id);
                 }
                 else
                 {
-                    _defaultAction.AddDefaultUsersActionTargets(userId, actionId, TargetTypes.USER, id);
+                    await _defaultAction.AddDefaultUsersActionTargets(userId, actionId, TargetTypes.USER, id);
                 }
             }
 

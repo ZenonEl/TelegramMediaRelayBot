@@ -20,8 +20,7 @@ public class HashTableLinkCategorizer : ILinkCategorizer
     private readonly HashSet<string> _nsfwDomains;
     private readonly HashSet<string> _unifiedDomains;
 
-    public HashTableLinkCategorizer(
-        DomainsLoader domainsLoader)
+    public HashTableLinkCategorizer(IDomainsLoader domainsLoader)
     {
         _socialDomains = domainsLoader.LoadDomainsFromFile("DomainLists/Social/hosts");
         _nsfwDomains = domainsLoader.LoadDomainsFromFile("DomainLists/NSFW/hosts");

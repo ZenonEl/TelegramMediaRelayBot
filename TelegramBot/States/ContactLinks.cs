@@ -164,11 +164,11 @@ public class ProcessContactLinksState : IUserState
         bool actionStatus;
         if (userState.isDeleteSelected)
         {
-            actionStatus = _contactRemover.RemoveUsersFromContacts(userState.actingUserId, userState.targetIds);
+            actionStatus = await _contactRemover.RemoveUsersFromContacts(userState.actingUserId, userState.targetIds);
         }
         else 
         {
-            actionStatus = _contactRemover.RemoveAllContactsExcept(userState.actingUserId, userState.targetIds);
+            actionStatus = await _contactRemover.RemoveAllContactsExcept(userState.actingUserId, userState.targetIds);
         }
 
         TGBot.StateManager.Remove(chatId);

@@ -127,7 +127,7 @@ public class ProcessUserUnMuteState : IUserState
 
             case UserUnMuteState.Finish:
                 if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId)) return;
-                _contactRemover.RemoveMutedContact(mutedByUserId, mutedContactId);
+                await _contactRemover.RemoveMutedContact(mutedByUserId, mutedContactId);
                 await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, _resourceService.GetResourceString("UserUnmuted"));
         TGBot.StateManager.Remove(chatId);
                 break;

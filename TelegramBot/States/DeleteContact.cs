@@ -96,7 +96,7 @@ public class ProcessRemoveUser : IUserState
                     string callbackData = update.CallbackQuery.Data!;
                     if (callbackData == "confirm_removal")
                     {
-                        RemoveUsersFromContacts(botClient, chatId, cancellationToken);
+                        await RemoveUsersFromContacts(botClient, chatId, cancellationToken);
                         await botClient.EditMessageText(chatId, statusMessage.MessageId, _resourceService.GetResourceString("RemovalProcessCompleted"), cancellationToken: cancellationToken);
                         
                         string text = isDeleteSuccessful ? _resourceService.GetResourceString("SuccessActionResult") : _resourceService.GetResourceString("ErrorActionResult");
@@ -146,9 +146,9 @@ public class ProcessRemoveUser : IUserState
         return false;
     }
 
-    private void RemoveUsersFromContacts(ITelegramBotClient botClient, long chatId, CancellationToken cancellationToken)
+    private async Task RemoveUsersFromContacts(ITelegramBotClient botClient, long chatId, CancellationToken cancellationToken)
     {
         int userId = _userGetter.GetUserIDbyTelegramID(chatId);
-        isDeleteSuccessful = _contactRemoverRepository.RemoveUsersFromContacts(userId, preparedTargetUserIds);
+        isDeleteSuccessful = await _contactRemoverRepository.RemoveUsersFromContacts(userId, preparedTargetUserIds);
     }
 }
