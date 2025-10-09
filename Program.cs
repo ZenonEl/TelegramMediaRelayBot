@@ -20,129 +20,35 @@ using Microsoft.Extensions.Configuration;
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot;
 using TelegramMediaRelayBot.Config;
+using TelegramMediaRelayBot.Extensions;
+using Microsoft.Extensions.Hosting;
 
 
 namespace TelegramMediaRelayBot
 {
-    class Program
+    public static class Program
     {
-        static async Task Main(string[] args)
+        public static async Task Main(string[] args)
         {
-            Console.WriteLine("============================================");
-            Console.WriteLine("TelegramMediaRelayBot");
-            Console.WriteLine("Copyright (C) 2024-2025 ZenonEl");
-            Console.WriteLine("This program is free software: you can redistribute it and/or modify");
-            Console.WriteLine("it under the terms of the GNU Affero General Public License as published");
-            Console.WriteLine("by the Free Software Foundation, either version 3 of the License, or");
-            Console.WriteLine("(at your option) any later version.");
-            Console.WriteLine("Source code: https://github.com/ZenonEl/TelegramMediaRelayBot");
-            Console.WriteLine("============================================\n");
+            var builder = Host.CreateDefaultBuilder(args);
 
-            // Создаем единую конфигурацию
-            var configuration = new ConfigurationBuilder()
-                .SetBasePath(AppContext.BaseDirectory)
-                .AddJsonFile("appsettings.example.json", optional: true, reloadOnChange: true)
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                .AddEnvironmentVariables()
-                .Build();
-
-            // Получаем настройки языка
-            var language = configuration.GetValue<string>("AppSettings:Language", "en-US");
-            CultureInfo currentCulture = CultureInfo.CurrentUICulture;
-
-            currentCulture = new CultureInfo(language);
-
-            Thread.CurrentThread.CurrentUICulture = currentCulture;
-            Thread.CurrentThread.CurrentCulture = currentCulture;
-
-            // Получаем уровень логирования (горячо через switch)
-            var initialLevel = configuration.GetValue<Serilog.Events.LogEventLevel>("ConsoleOutputSettings:LogLevel", Serilog.Events.LogEventLevel.Information);
-            var levelSwitch = new Serilog.Core.LoggingLevelSwitch(initialLevel);
-            var loggerConfig = new LoggerConfiguration()
-                .MinimumLevel.ControlledBy(levelSwitch)
-                .Enrich.FromLogContext()
-                .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss} [{Level}] {Message} {Exception}{NewLine}");
-
-            // Optional file logging
-            var fileEnabled = configuration.GetValue<bool>("ConsoleOutputSettings:EnableFileLogging", false);
-            if (fileEnabled)
+            // Конфигурируем сервисы и логирование
+            builder.ConfigureServices((hostContext, services) =>
             {
-                var filePath = configuration.GetValue<string>("ConsoleOutputSettings:FilePath", "logs/bot-.log");
-                var sizeLimit = configuration.GetValue<long>("ConsoleOutputSettings:FileSizeLimitBytes", 10 * 1024 * 1024);
-                var retain = configuration.GetValue<int>("ConsoleOutputSettings:RetainedFileCountLimit", 7);
-                loggerConfig = loggerConfig.WriteTo.File(
-                    filePath,
-                    rollingInterval: Serilog.RollingInterval.Day,
-                    retainedFileCountLimit: retain,
-                    fileSizeLimitBytes: sizeLimit,
-                    rollOnFileSizeLimit: true,
-                    shared: true);
-            }
-            Log.Logger = loggerConfig.CreateLogger();
+                // TODO: Здесь будем регистрировать остальные сервисы
+                services.AddConfigurationServices(hostContext.Configuration);
+                services.AddApplicationCore();
+                services.AddPersistenceServices(hostContext.Configuration);
+                // services.AddTelegramBot(...);
+                // services.AddBackupServices(...);
+            })
+            .AddSerilogLogging(); // Применяем нашу конфигурацию Serilog
 
-            try
-            {
-                var builder = FluentDBMigrator.CreateBuilderByDBType(args, configuration.GetValue<string>("AppSettings:DatabaseType", "sqlite"), configuration);
+            var host = builder.Build();
 
-                // Run DB migrations before starting services
-                ServiceProvider serviceProvider = FluentDBMigrator.GetCurrentServiceProvider(
-                    configuration.GetValue<string>("AppSettings:DatabaseType", "sqlite"), 
-                    configuration);
-                using (var scope = serviceProvider.CreateScope())
-                {
-                    var migrator = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
-                    migrator.MigrateUp();
-                }
+            await host.ApplyDatabaseMigrationsAsync();
 
-                var app = builder.Build();
-                // Подписка на горячую смену уровня логов
-                var loggingMonitor = app.Services.GetRequiredService<IOptionsMonitor<LoggingConfiguration>>();
-                loggingMonitor.OnChange(cfg =>
-                {
-                    if (levelSwitch.MinimumLevel == cfg.LogLevel)
-                    {
-                        return; // avoid duplicate messages on equivalent reloads
-                    }
-                    levelSwitch.MinimumLevel = cfg.LogLevel;
-                    Log.Information("Applied hot config [ConsoleOutputSettings]: LogLevel -> {Level}", cfg.LogLevel);
-                });
-                // ensure our change logger is constructed (subscribes to OnChange in ctor)
-                _ = app.Services.GetRequiredService<TelegramMediaRelayBot.Config.Services.ConfigurationChangeLogger>();
-                TGBot tgBot = app.Services.GetRequiredService<TGBot>();
-                Scheduler scheduler = app.Services.GetRequiredService<Scheduler>();
-                // Initialize backup orchestrator (no UI; config-only)
-                var backup = app.Services.GetRequiredService<TelegramMediaRelayBot.Infrastructure.Backup.IBackupOrchestrator>();
-                await backup.InitializeAsync(CancellationToken.None);
-                await backup.RunOnStartAsync(CancellationToken.None);
-                // Ensure shutdown backup for both host stop and Ctrl+C/ProcessExit
-                var lifetime = app.Lifetime;
-                lifetime.ApplicationStopping.Register(() =>
-                {
-                    try { backup.RunOnShutdownAsync(CancellationToken.None).GetAwaiter().GetResult(); } catch { }
-                });
-                Console.CancelKeyPress += (_, __) =>
-                {
-                    try { backup.RunOnShutdownAsync(CancellationToken.None).GetAwaiter().GetResult(); } catch { }
-                };
-                AppDomain.CurrentDomain.ProcessExit += (_, __) =>
-                {
-                    try { backup.RunOnShutdownAsync(CancellationToken.None).GetAwaiter().GetResult(); } catch { }
-                };
-
-                Log.Information($"Log level: {initialLevel}");
-                scheduler.Init();
-
-                await tgBot.Start();
-                await Task.Delay(-1);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "An error occurred in the method{MethodName}", nameof(Main));
-            }
-            finally
-            {
-                Log.CloseAndFlush();
-            }
+            await host.RunAsync();
         }
     }
 }
