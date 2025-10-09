@@ -10,95 +10,35 @@
 // (по вашему выбору) любой более поздней версии.
 
 using Dapper;
-using Microsoft.Data.Sqlite;
+using System.Data;
+using TelegramMediaRelayBot.Database.UnitOfWork.Services;
 using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.Database.Repositories.Sqlite;
 
-public class SqlitePrivacySettingsTargetsSetter : IPrivacySettingsTargetsSetter
+public class SqlitePrivacySettingsTargetsSetter(PrivacySettingsTargetsUoWService uowService) : IPrivacySettingsTargetsSetter
 {
-    private readonly string _connectionString;
-    private readonly TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? _uow;
-
-    public SqlitePrivacySettingsTargetsSetter(string connectionString, TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? unitOfWork = null)
+    public Task<bool> SetPrivacyRuleTarget(int userId, int privacySettingId, string targetType, string targetValue)
     {
-        _connectionString = connectionString;
-        _uow = unitOfWork;
+        return uowService.SetPrivacyRuleTarget(userId, privacySettingId, targetType, targetValue);
     }
 
-    public async Task<bool> SetPrivacyRuleTarget(int userId, int privacySettingId, string targetType, string targetValue)
+
+    public Task<bool> SetToRemovePrivacyRuleTarget(int privacySettingId, string targetValue)
     {
-        const string query = @"
-            INSERT INTO PrivacySettingsTargets (UserId, PrivacySettingId, TargetType, TargetValue)
-            VALUES (@userId, @privacySettingId, @targetType, @targetValue)
-            ON CONFLICT(UserId, PrivacySettingId, TargetType) 
-            DO UPDATE SET TargetValue = @targetValue";
-
-        var external = _uow?.Connection as SqliteConnection;
-        using var owned = external ?? new SqliteConnection(_connectionString);
-        var connection = (SqliteConnection)(external ?? owned);
-        _uow?.Begin();
-        var ok = await connection.ExecuteAsync(query, new {userId, privacySettingId, targetType, targetValue}, _uow?.Transaction) > 0;
-        _uow?.Commit();
-        return ok;
-    }
-
-    public async Task<bool> SetToRemovePrivacyRuleTarget(int privacySettingId, string targetValue)
-    {
-        const string query = @"
-            DELETE FROM PrivacySettingsTargets
-            WHERE PrivacySettingId = @privacySettingId AND TargetValue = @targetValue";
-
-        var external = _uow?.Connection as SqliteConnection;
-        using var owned = external ?? new SqliteConnection(_connectionString);
-        var connection = (SqliteConnection)(external ?? owned);
-        try
-        {
-            _uow?.Begin();
-            var ok = await connection.ExecuteAsync(query, new { privacySettingId, targetValue }, _uow?.Transaction) > 0;
-            _uow?.Commit();
-            return ok;
-        }
-        catch
-        {
-            _uow?.Rollback();
-            throw;
-        }
+        return uowService.SetToRemovePrivacyRuleTarget(privacySettingId, targetValue);
     }
 }
 
-public class SqlitePrivacySettingsTargetsGetter : IPrivacySettingsTargetsGetter
+public class SqlitePrivacySettingsTargetsGetter(IPrivacySettingsTargetsRepository repository) : IPrivacySettingsTargetsGetter
 {
-    private readonly string _connectionString;
-
-    public SqlitePrivacySettingsTargetsGetter(string connectionString)
+    public Task<bool> CheckPrivacyRuleTargetExists(int userId, string type)
     {
-        _connectionString = connectionString;
+        return repository.CheckTargetExists(userId, type);
     }
 
-    public async Task<bool> CheckPrivacyRuleTargetExists(int userId, string type)
+    public Task<List<string>> GetAllActiveUserRuleTargets(int userId)
     {
-        const string query = @"
-            SELECT EXISTS(
-                SELECT 1 FROM PrivacySettingsTargets
-                WHERE UserId = @userId AND TargetType = @type
-                LIMIT 1
-            )";
-
-        using var connection = new SqliteConnection(_connectionString);
-        var result = await connection.ExecuteScalarAsync<bool>(query, new { userId, type });
-        return result;
-    }
-
-    public async Task<List<string>> GetAllActiveUserRuleTargets(int userId)
-    {
-        const string query = @"
-            SELECT TargetValue
-            FROM PrivacySettingsTargets
-            WHERE UserId = @userId";
-
-        using var connection = new SqliteConnection(_connectionString);
-        var result = await connection.QueryAsync<string>(query, new { userId });
-        return result.ToList();
+        return repository.GetAllUserTargets(userId);
     }
 }

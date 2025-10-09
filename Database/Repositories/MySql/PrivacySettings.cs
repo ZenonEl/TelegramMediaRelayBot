@@ -10,81 +10,28 @@
 // (по вашему выбору) любой более поздней версии.
 
 using Dapper;
-using MySql.Data.MySqlClient;
+using System.Data;
 using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.Database.Repositories.MySql;
 
-public class MySqlPrivacySettingsSetter : IPrivacySettingsSetter
+public class MySqlPrivacySettingsSetter(IPrivacySettingsUoW uowService) : IPrivacySettingsSetter
 {
-    private readonly string _connectionString;
-    private readonly TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? _uow;
-
-    public MySqlPrivacySettingsSetter(string connectionString, TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? unitOfWork = null)
+    public Task<bool> SetPrivacyRule(int userId, string type, string action, bool isActive, string actionCondition)
     {
-        _connectionString = connectionString;
-        _uow = unitOfWork;
+        // Делегируем вызов общему сервису
+        return uowService.SetPrivacyRule(userId, type, action, isActive, actionCondition);
     }
 
-    public async Task<bool> SetPrivacyRule(int userId, string type, string action, bool isActive, string actionCondition)
+    public Task<bool> SetPrivacyRuleToDisabled(int userId, string type)
     {
-        using var connection = _uow?.Connection as MySqlConnection ?? new MySqlConnection(_connectionString);
-        _uow?.Begin();
-        // Update first (safer with existing unique constraints and avoids duplicates)
-        var updated = await connection.ExecuteAsync(
-            @"UPDATE PrivacySettings
-              SET Action = @action,
-                  IsActive = @isActive,
-                  ActionCondition = @actionCondition
-              WHERE UserId = @userId AND Type = @type",
-            new { userId, type, action, isActive, actionCondition }, _uow?.Transaction);
-
-        if (updated == 0)
-        {
-            var inserted = await connection.ExecuteAsync(
-                @"INSERT INTO PrivacySettings (UserId, Type, Action, IsActive, ActionCondition)
-                  VALUES (@userId, @type, @action, @isActive, @actionCondition)",
-                new { userId, type, action, isActive, actionCondition }, _uow?.Transaction);
-            _uow?.Commit();
-            return inserted > 0;
-        }
-
-        _uow?.Commit();
-        return updated > 0;
-    }
-
-    public bool SetPrivacyRuleToDisabled(int userId, string type)
-    {
-        const string query = @"
-            UPDATE PrivacySettings
-            SET IsActive = 0
-            WHERE UserId = @userId AND Type = @type";
-
-        using var connection = _uow?.Connection as MySqlConnection ?? new MySqlConnection(_connectionString);
-        try
-        {
-            _uow?.Begin();
-            var ok = connection.Execute(query, new {userId, type}, _uow?.Transaction) > 0;
-            _uow?.Commit();
-            return ok;
-        }
-        catch
-        {
-            _uow?.Rollback();
-            throw;
-        }
+        // Делегируем вызов общему сервису
+        return uowService.SetPrivacyRuleToDisabled(userId, type);
     }
 }
 
-public class MySqlPrivacySettingsGetter : IPrivacySettingsGetter
+public class MySqlPrivacySettingsGetter(IDbConnection dbConnection) : IPrivacySettingsGetter
 {
-    private readonly string _connectionString;
-
-    public MySqlPrivacySettingsGetter(string connectionString)
-    {
-        _connectionString = connectionString;
-    }
-
     public bool GetIsActivePrivacyRule(int userId, string type)
     {
         const string query = @"
@@ -92,8 +39,7 @@ public class MySqlPrivacySettingsGetter : IPrivacySettingsGetter
             FROM PrivacySettings
             WHERE UserId = @userId AND Type = @type";
 
-        using var connection = new MySqlConnection(_connectionString);
-        return connection.ExecuteScalar<bool>(query, new {userId, type});
+        return dbConnection.ExecuteScalar<bool>(query, new {userId, type});
     }
 
     public async Task<int> GetPrivacyRuleId(int userId, string type)
@@ -103,8 +49,7 @@ public class MySqlPrivacySettingsGetter : IPrivacySettingsGetter
             FROM PrivacySettings
             WHERE UserId = @userId AND Type = @type";
 
-        using var connection = new MySqlConnection(_connectionString);
-        return await connection.ExecuteScalarAsync<int>(query, new {userId, type});
+        return await dbConnection.ExecuteScalarAsync<int>(query, new {userId, type});
     }
 
     public async Task<string> GetPrivacyRuleValue(int userId, string type)
@@ -114,8 +59,7 @@ public class MySqlPrivacySettingsGetter : IPrivacySettingsGetter
             FROM PrivacySettings
             WHERE UserId = @userId AND Type = @type";
 
-        using var connection = new MySqlConnection(_connectionString);
-        return await connection.ExecuteScalarAsync<string>(query, new {userId, type}) ?? string.Empty;
+        return await dbConnection.ExecuteScalarAsync<string>(query, new {userId, type}) ?? string.Empty;
     }
 
     public async Task<List<PrivacyRuleResult>> GetAllActiveUserRulesWithTargets(int userId)
@@ -138,8 +82,7 @@ public class MySqlPrivacySettingsGetter : IPrivacySettingsGetter
             PrivacyRuleAction.DOMAIN_FILTER
         };
 
-        using var connection = new MySqlConnection(_connectionString);
-        var result = await connection.QueryAsync<PrivacyRuleResult>(query, new {
+        var result = await dbConnection.QueryAsync<PrivacyRuleResult>(query, new {
             userId,
             actions = allowedActions
         });

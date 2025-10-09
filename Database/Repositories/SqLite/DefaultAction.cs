@@ -10,107 +10,49 @@
 // (по вашему выбору) любой более поздней версии.
 
 using Dapper;
+using System.Data;
 using Microsoft.Data.Sqlite;
 using TelegramMediaRelayBot.Database.Interfaces;
 
 
 namespace TelegramMediaRelayBot.Database.Repositories.Sqlite;
 
-public class SqliteDefaultAction : IDefaultAction
+public class SqliteDefaultAction(IDefaultActionTargetsRepository repository) : IDefaultAction
 {
-    private readonly string _connectionString;
-
-    public SqliteDefaultAction(string connectionString)
+    public async Task<bool> AddDefaultUsersActionTargets(int userId, int actionId, string targetType, int targetId)
     {
-        _connectionString = connectionString;
-    }
-
-    public bool AddDefaultUsersActionTargets(int userId, int actionId, string targetType, int targetId)
-    {
-        const string query = @"
-            INSERT INTO DefaultUsersActionTargets (UserId, ActionID, TargetType, TargetID) 
-            VALUES (@userId, @actionId, @targetType, @targetId)";
-
-        using var connection = new SqliteConnection(_connectionString);
-        return connection.Execute(query, new {userId, actionId, targetType, targetId}) > 0;
-    }
-
-    public bool RemoveAllDefaultUsersActionTargets(int userId, string targetType, int actionId)
-    {
-        const string query = @"
-            DELETE FROM DefaultUsersActionTargets 
-            WHERE UserId = @userId AND ActionID = @actionId AND TargetType = @targetType";
-
-        using var connection = new SqliteConnection(_connectionString);
-        return connection.Execute(query, new {userId, actionId, targetType}) > 0;
-    }
-}
-
-public class SqliteDefaultActionSetter : IDefaultActionSetter
-{
-    private readonly string _connectionString;
-    private readonly TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? _uow;
-
-    public SqliteDefaultActionSetter(string connectionString, TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? unitOfWork = null)
-    {
-        _connectionString = connectionString;
-        _uow = unitOfWork;
-    }
-
-    public bool SetAutoSendVideoConditionToUser(int userId, string actionCondition, string type)
-    {
-        using var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString);
-        _uow?.Begin();
-        // First try to update the existing row for (UserId, Type)
-        int affected = connection.Execute(
-            "UPDATE DefaultUsersActions SET ActionCondition = @actionCondition WHERE UserId = @userId AND Type = @type AND IsActive = 1",
-            new { userId, type, actionCondition }, _uow?.Transaction);
-        // If no row was updated, insert a new one
-        if (affected == 0)
-        {
-            affected = connection.Execute(
-                "INSERT INTO DefaultUsersActions (UserId, Type, ActionCondition) VALUES (@userId, @type, @actionCondition)",
-                new { userId, type, actionCondition }, _uow?.Transaction);
-        }
-        _uow?.Commit();
+        var affected = await repository.AddTarget(userId, actionId, targetType, targetId);
         return affected > 0;
     }
 
-    public bool SetAutoSendVideoActionToUser(int userId, string action, string type)
+    public async Task<bool> RemoveAllDefaultUsersActionTargets(int userId, string targetType, int actionId)
     {
-        using var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString);
-        _uow?.Begin();
-        // First try to update the existing row for (UserId, Type)
-        int affected = connection.Execute(
-            "UPDATE DefaultUsersActions SET Action = @action WHERE UserId = @userId AND Type = @type AND IsActive = 1",
-            new { userId, type, action }, _uow?.Transaction);
-        // If no row was updated, insert a new one
-        if (affected == 0)
-        {
-            affected = connection.Execute(
-                "INSERT INTO DefaultUsersActions (UserId, Type, Action) VALUES (@userId, @type, @action)",
-                new { userId, type, action }, _uow?.Transaction);
-        }
-        _uow?.Commit();
+        var affected = await repository.RemoveAllTargets(userId, targetType, actionId);
         return affected > 0;
     }
 }
 
-public class SqliteDefaultActionGetter : IDefaultActionGetter
+public class SqliteDefaultActionSetter(IDefaultActionUoW uowService) : IDefaultActionSetter
 {
-    private readonly string _connectionString;
-
-    public SqliteDefaultActionGetter(string connectionString)
+    public Task<bool> SetAutoSendVideoConditionToUser(int userId, string actionCondition, string type)
     {
-        _connectionString = connectionString;
+        return uowService.SetAutoSendVideoCondition(userId, actionCondition, type);
     }
 
+    public Task<bool> SetAutoSendVideoActionToUser(int userId, string action, string type)
+    {
+        return uowService.SetAutoSendVideoAction(userId, action, type);
+    }
+}
+
+public class SqliteDefaultActionGetter(IDbConnection dbConnection) : IDefaultActionGetter
+{
     public List<int> GetAllDefaultUsersActionTargets(int userId, string targetType, int actionId)
     {
         try 
         {
-            using var connection = new SqliteConnection(_connectionString);
-            return connection.Query<int>(
+    
+            return dbConnection.Query<int>(
                 @"SELECT TargetID FROM DefaultUsersActionTargets 
                 WHERE UserId = @userId AND TargetType = @targetType AND ActionID = @actionId",
                 new { userId, targetType, actionId }).ToList();
@@ -132,8 +74,8 @@ public class SqliteDefaultActionGetter : IDefaultActionGetter
 
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
-            return connection.ExecuteScalar<int>(query, new {userId, type});
+    
+            return dbConnection.ExecuteScalar<int>(query, new {userId, type});
         }
         catch (Exception ex)
         {
@@ -146,9 +88,9 @@ public class SqliteDefaultActionGetter : IDefaultActionGetter
     {
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
+    
             
-            var result = connection.QueryFirstOrDefault<(string Action, string ActionCondition)>(
+            var result = dbConnection.QueryFirstOrDefault<(string Action, string ActionCondition)>(
                 @"SELECT Action, ActionCondition
                 FROM DefaultUsersActions
                 WHERE UserID = @userID
@@ -173,8 +115,8 @@ public class SqliteDefaultActionGetter : IDefaultActionGetter
     {
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
-            var result = await connection.QueryAsync<int>(
+    
+            var result = await dbConnection.QueryAsync<int>(
                 @"SELECT TargetID FROM DefaultUsersActionTargets 
                 WHERE UserId = @userId AND TargetType = @targetType AND ActionID = @actionId",
                 new { userId, targetType, actionId });
@@ -192,8 +134,8 @@ public class SqliteDefaultActionGetter : IDefaultActionGetter
         const string query = @"SELECT ID FROM DefaultUsersActions WHERE UserId = @userId AND Type = @type ORDER BY ID DESC LIMIT 1";
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
-            return await connection.ExecuteScalarAsync<int>(query, new { userId, type });
+    
+            return await dbConnection.ExecuteScalarAsync<int>(query, new { userId, type });
         }
         catch (Exception ex)
         {
@@ -206,8 +148,8 @@ public class SqliteDefaultActionGetter : IDefaultActionGetter
     {
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
-            var result = await connection.QueryFirstOrDefaultAsync<(string Action, string ActionCondition)>(
+    
+            var result = await dbConnection.QueryFirstOrDefaultAsync<(string Action, string ActionCondition)>(
                 @"SELECT Action, ActionCondition
                 FROM DefaultUsersActions
                 WHERE UserID = @userID

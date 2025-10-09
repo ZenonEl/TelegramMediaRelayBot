@@ -10,14 +10,16 @@
 // (по вашему выбору) любой более поздней версии.
 
 using Dapper;
+using System.Data;
+using System.Data;
 using Microsoft.Data.Sqlite;
 using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.Database.Repositories.Sqlite;
 
-public class SqliteUserRepository(string connectionString) : IUserRepository
+public class SqliteUserRepository(IDbConnection dbConnection) : IUserRepository
 {
-    private readonly string _connectionString = connectionString;
+
 
     public bool CheckUserExists(long telegramId)
     {
@@ -27,8 +29,8 @@ public class SqliteUserRepository(string connectionString) : IUserRepository
             WHERE TelegramID = @telegramId 
             LIMIT 1";
 
-        using var connection = new SqliteConnection(_connectionString);
-        return connection.ExecuteScalar<bool>(query, new { telegramId });
+
+        return dbConnection.ExecuteScalar<bool>(query, new { telegramId });
     }
 
     public void AddUser(string name, long telegramID, bool user)
@@ -44,8 +46,8 @@ public class SqliteUserRepository(string connectionString) : IUserRepository
             INSERT INTO Users (TelegramID, Name, Link) 
             VALUES (@telegramID, @name, @link)";
 
-        using var connection = new SqliteConnection(_connectionString);
-        connection.Execute(query, new { telegramID, name, link });
+
+        dbConnection.Execute(query, new { telegramID, name, link });
     }
 
     public void UnMuteUserByMuteId(int muteId)
@@ -55,8 +57,8 @@ public class SqliteUserRepository(string connectionString) : IUserRepository
             SET IsActive = 0 
             WHERE MutedId = @muteId";
         
-        using var connection = new SqliteConnection(_connectionString);
-        connection.Execute(query, new { muteId });
+
+        dbConnection.Execute(query, new { muteId });
     }
 
     public bool ReCreateUserSelfLink(int userId)
@@ -67,45 +69,43 @@ public class SqliteUserRepository(string connectionString) : IUserRepository
             SET Link = @newLink 
             WHERE ID = @userId";
         
-        using var connection = new SqliteConnection(_connectionString);
-        return connection.Execute(query, new { newLink, userId }) > 0;
+
+        return dbConnection.Execute(query, new { newLink, userId }) > 0;
     }
 }
 
-public class SqliteUserGetter(string connectionString) : IUserGetter
+public class SqliteUserGetter(IDbConnection dbConnection) : IUserGetter
 {
-    private readonly string _connectionString = connectionString;
-
     public long GetTelegramIDbyUserID(int userId)
     {
         const string query = "SELECT TelegramID FROM Users WHERE ID = @UserId";
         
-        using var connection = new SqliteConnection(_connectionString);
-        return connection.ExecuteScalar<long>(query, new { UserId = userId });
+
+        return dbConnection.ExecuteScalar<long>(query, new { UserId = userId });
     }
 
     public string GetUserNameByID(int userID)
     {
         const string query = "SELECT Name FROM Users WHERE ID = @UserID";
         
-        using var connection = new SqliteConnection(_connectionString);
-        return connection.ExecuteScalar<string?>(query, new { UserID = userID }) ?? "";
+
+        return dbConnection.ExecuteScalar<string?>(query, new { UserID = userID }) ?? "";
     }
 
     public int GetUserIDbyTelegramID(long telegramID)
     {
         const string query = "SELECT ID FROM Users WHERE TelegramID = @TelegramID";
         
-        using var connection = new SqliteConnection(_connectionString);
-        return connection.ExecuteScalar<int?>(query, new { TelegramID = telegramID }) ?? -1;
+
+        return dbConnection.ExecuteScalar<int?>(query, new { TelegramID = telegramID }) ?? -1;
     }
 
     public string GetUserNameByTelegramID(long telegramID)
     {
         const string query = "SELECT Name FROM Users WHERE TelegramID = @TelegramID";
         
-        using var connection = new SqliteConnection(_connectionString);
-        return connection.ExecuteScalar<string?>(query, new { TelegramID = telegramID }) ?? string.Empty;
+
+        return dbConnection.ExecuteScalar<string?>(query, new { TelegramID = telegramID }) ?? string.Empty;
     }
 
     public List<long> GetUsersIdForMuteContactId(int contactId)
@@ -115,8 +115,8 @@ public class SqliteUserGetter(string connectionString) : IUserGetter
             FROM MutedContacts 
             WHERE MutedContactId = @ContactId AND IsActive = 1";
         
-        using var connection = new SqliteConnection(_connectionString);
-        var mutedByUserIds = connection.Query<int>(query, new { ContactId = contactId }).ToList();
+
+        var mutedByUserIds = dbConnection.Query<int>(query, new { ContactId = contactId }).ToList();
         
         return mutedByUserIds.Select(GetTelegramIDbyUserID).ToList();
     }
@@ -128,8 +128,8 @@ public class SqliteUserGetter(string connectionString) : IUserGetter
             FROM MutedContacts 
             WHERE MutedContactId = @ContactId AND IsActive = 1";
 
-        using var connection = new SqliteConnection(_connectionString);
-        var mutedByUserIds = (await connection.QueryAsync<int>(query, new { ContactId = contactId })).ToList();
+
+        var mutedByUserIds = (await dbConnection.QueryAsync<int>(query, new { ContactId = contactId })).ToList();
         var telegramIds = new List<long>(mutedByUserIds.Count);
         foreach (var uid in mutedByUserIds)
         {
@@ -143,8 +143,8 @@ public class SqliteUserGetter(string connectionString) : IUserGetter
         const string query = "SELECT TelegramID FROM Users WHERE Link = @link";
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
-            var result = connection.QueryFirstOrDefault<long?>(query, new { link });
+    
+            var result = dbConnection.QueryFirstOrDefault<long?>(query, new { link });
             return result ?? -1;
         }
         catch (Exception ex)
@@ -159,8 +159,8 @@ public class SqliteUserGetter(string connectionString) : IUserGetter
         const string query = "SELECT TelegramID FROM Users WHERE Link = @link";
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
-            var result = await connection.QueryFirstOrDefaultAsync<long?>(query, new { link });
+    
+            var result = await dbConnection.QueryFirstOrDefaultAsync<long?>(query, new { link });
             return result ?? -1;
         }
         catch (Exception ex)
@@ -170,28 +170,27 @@ public class SqliteUserGetter(string connectionString) : IUserGetter
         }
     }
 
-    private static string GetUserLink(long telegramID, string connectionString)
+    private string _getUserLink(long telegramID)
     {
         const string query = "SELECT Link FROM Users WHERE TelegramID = @telegramID";
         try
         {
-            using var connection = new SqliteConnection(connectionString);
-            var result = connection.QueryFirstOrDefault<string>(query, new { telegramID });
+            var result = dbConnection.QueryFirstOrDefault<string>(query, new { telegramID });
             return result ?? string.Empty;
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "An error occurred in method {MethodName}", nameof(GetUserLink));
+            Log.Error(ex, "An error occurred in method {MethodName}", nameof(_getUserLink));
             return string.Empty;
         }
     }
 
     public string GetUserSelfLink(long telegramID)
     {
-        SqliteUserRepository repo = new(_connectionString);
+        SqliteUserRepository repo = new(dbConnection);
         if (repo.CheckUserExists(telegramID))
         {
-            return GetUserLink(telegramID, _connectionString);
+            return _getUserLink(telegramID);
         }
         return "";
     }
@@ -206,8 +205,8 @@ public class SqliteUserGetter(string connectionString) : IUserGetter
 
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
-            var expiredMuteIds = connection.Query<int>(query).ToList();
+    
+            var expiredMuteIds = dbConnection.Query<int>(query).ToList();
             return expiredMuteIds;
         }
         catch (Exception ex)
@@ -227,8 +226,8 @@ public class SqliteUserGetter(string connectionString) : IUserGetter
 
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
-            var expiredMuteIds = (await connection.QueryAsync<int>(query)).ToList();
+    
+            var expiredMuteIds = (await dbConnection.QueryAsync<int>(query)).ToList();
             return expiredMuteIds;
         }
         catch (Exception ex)
@@ -241,7 +240,7 @@ public class SqliteUserGetter(string connectionString) : IUserGetter
     public async Task<int> GetAllUsersCount()
     {
         const string query = "SELECT EXISTS(SELECT 1 FROM Users LIMIT 1)";
-        using var connection = new SqliteConnection(_connectionString);
-        return await connection.ExecuteScalarAsync<int>(query);
+
+        return await dbConnection.ExecuteScalarAsync<int>(query);
     }
 }

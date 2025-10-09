@@ -9,99 +9,50 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Microsoft.Data.Sqlite;
+using System.Data;
+using Dapper;
 using TelegramMediaRelayBot.Database.Interfaces;
-
 
 namespace TelegramMediaRelayBot.Database.Repositories.Sqlite;
 
-public class SqliteOutboundDBGetter : IOutboundDBGetter
+// Конструктор уже правильный, мы его не трогаем.
+public class SqliteOutboundDBGetter(IDbConnection dbConnection) : IOutboundDBGetter
 {
-    private readonly string _connectionString;
-
-    public SqliteOutboundDBGetter(string connectionString)
+    // Внутренний класс для удобного маппинга, как и в MySql-версии.
+    private class UserQueryResult
     {
-        _connectionString = connectionString;
+        public string Name { get; init; } = string.Empty;
+        public long TelegramID { get; init; }
     }
 
     public async Task<List<ButtonData>> GetOutboundButtonDataAsync(int userId)
     {
-        var buttonDataList = new List<ButtonData>();
-        var contactUserIds = await GetContactUserIdsAsync(userId);
+        // 1. Тот же самый эффективный SQL-запрос с JOIN.
+        // Он полностью совместим со SQLite.
+        const string query = @"
+            SELECT
+                u.Name,
+                u.TelegramID
+            FROM Contacts c
+            JOIN Users u ON c.ContactId = u.ID
+            WHERE c.UserId = @userId AND c.status = 'waiting_for_accept'";
 
-        foreach (var contactUserId in contactUserIds)
-        {
-            var userData = await GetUserDataByUserIdAsync(contactUserId);
-            if (userData != null)
+        // 2. Используем Dapper. Он отлично работает со SQLite.
+        // Вся работа с подключением, командами и чтением инкапсулирована здесь.
+        var users = await dbConnection.QueryAsync<UserQueryResult>(query, new { userId });
+
+        // 3. Преобразуем результат в итоговую модель данных.
+        var buttonDataList = users
+            .Select(user => new ButtonData
             {
-                buttonDataList.Add(new ButtonData 
-                { 
-                    ButtonText = userData.Item1, 
-                    CallbackData = "user_show_outbound_invite:" + userData.Item2 
-                });
-            }
-        }
+                ButtonText = user.Name,
+                CallbackData = "user_show_outbound_invite:" + user.TelegramID
+            })
+            .ToList();
 
         return buttonDataList;
     }
 
-    private async Task<List<int>> GetContactUserIdsAsync(int userId)
-    {
-        var contactUserIds = new List<int>();
-        const string queryContacts = @"
-            SELECT ContactId
-            FROM Contacts
-            WHERE UserId = @UserId AND status = 'waiting_for_accept'";
-
-        using (var connection = new SqliteConnection(_connectionString))
-        {
-            await connection.OpenAsync();
-            
-            using (var command = new SqliteCommand(queryContacts, connection))
-            {
-                command.Parameters.AddWithValue("@UserId", userId);
-                
-                using (var reader = await command.ExecuteReaderAsync())
-                {
-                    while (await reader.ReadAsync())
-                    {
-                        contactUserIds.Add(reader.GetInt32(0)); // ContactId
-                    }
-                }
-            }
-        }
-
-        return contactUserIds;
-    }
-
-    private async Task<Tuple<string, string>?> GetUserDataByUserIdAsync(int userId)
-    {
-        const string queryUsers = @"
-            SELECT Name, TelegramID
-            FROM Users
-            WHERE ID = @userId";
-
-        using (var connection = new SqliteConnection(_connectionString))
-        {
-            await connection.OpenAsync();
-            
-            using (var command = new SqliteCommand(queryUsers, connection))
-            {
-                command.Parameters.AddWithValue("@userId", userId);
-                
-                using (var reader = await command.ExecuteReaderAsync())
-                {
-                    if (await reader.ReadAsync())
-                    {
-                        return new Tuple<string, string>(
-                            reader.GetString(0), // Name
-                            reader.GetString(1)  // TelegramID
-                        );
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
+    // 4. Старые, небезопасные и неэффективные приватные методы
+    //    GetContactUserIdsAsync и GetUserDataByUserIdAsync удаляются.
 }

@@ -14,22 +14,22 @@ namespace TelegramMediaRelayBot.Database.Interfaces;
 
 public interface IContactAdder
 {
-    void AddContact(long telegramID, string link);
-    bool AddMutedContact(int mutedByUserId, int mutedContactId, DateTime? expirationDate = null, DateTime muteDate = default);
+    Task AddContact(long telegramID, string link);
+    Task<bool> AddMutedContact(int mutedByUserId, int mutedContactId, DateTime? expirationDate = null, DateTime muteDate = default);
 }
 
 public interface IContactRemover
 {
-    void RemoveMutedContact(int userId, int contactId);
-    bool RemoveContactByStatus(int senderTelegramID, int accepterTelegramID, string? status = null);
-    bool RemoveUsersFromContacts(int userId, List<int> contactIds);
-    bool RemoveAllContactsExcept(int userId, List<int> excludeIds);
-    bool RemoveAllContacts(int userId);
+    Task RemoveMutedContact(int userId, int contactId);
+    Task<bool> RemoveContactByStatus(int senderTelegramID, int accepterTelegramID, string? status = null);
+    Task<bool> RemoveUsersFromContacts(int userId, List<int> contactIds);
+    Task<bool> RemoveAllContactsExcept(int userId, List<int> excludeIds);
+    Task<bool> RemoveAllContacts(int userId);
 }
 
 public interface IContactSetter
 {
-    void SetContactStatus(long SenderTelegramID, long AccepterTelegramID, string status);
+    Task SetContactStatus(long SenderTelegramID, long AccepterTelegramID, string status);
 }
 
 public interface IContactGetter

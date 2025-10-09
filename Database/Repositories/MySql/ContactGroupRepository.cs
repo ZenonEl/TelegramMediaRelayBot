@@ -10,14 +10,15 @@
 // (по вашему выбору) любой более поздней версии.
 
 using Dapper;
+using System.Data;
 using MySql.Data.MySqlClient;
 using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.Database.Repositories.MySql;
 
-public class MySqlContactGroupRepository(string connectionString) : IContactGroupRepository
+public class MySqlContactGroupRepository(IDbConnection dbConnection) : IContactGroupRepository
 {
-    private readonly string _connectionString = connectionString;
+
 
     public bool AddContactToGroup(int userId, int contactId, int groupId)
     {
@@ -25,8 +26,8 @@ public class MySqlContactGroupRepository(string connectionString) : IContactGrou
             INSERT IGNORE INTO GroupMembers (UserId, ContactId, GroupId)
             VALUES (@userId, @contactId, @groupId);";
 
-        using var connection = new MySqlConnection(_connectionString);
-        return connection.Execute(query, new { userId, contactId, groupId }) > 0;
+
+        return dbConnection.Execute(query, new { userId, contactId, groupId }) > 0;
     }
 
     public bool RemoveContactFromGroup(int userId, int contactId, int groupId)
@@ -35,8 +36,8 @@ public class MySqlContactGroupRepository(string connectionString) : IContactGrou
             DELETE FROM GroupMembers
             WHERE UserId = @userId AND ContactId = @contactId AND GroupId = @groupId";
 
-        using var connection = new MySqlConnection(_connectionString);
-        return connection.Execute(query, new { userId, contactId, groupId }) > 0;
+
+        return dbConnection.Execute(query, new { userId, contactId, groupId }) > 0;
     }
 
     public bool CheckUserAndContactConnect(int userId, int contactId)
@@ -47,10 +48,10 @@ public class MySqlContactGroupRepository(string connectionString) : IContactGrou
                 ((UserId = @userId AND ContactId = @contactId) OR (UserId = @contactId AND ContactId = @userId))
                 AND Status = @status";
 
-        using var connection = new MySqlConnection(_connectionString);
-        connection.Open();
 
-        int count = connection.ExecuteScalar<int>(query, new
+        dbConnection.Open();
+
+        int count = dbConnection.ExecuteScalar<int>(query, new
         {
             userId,
             contactId,

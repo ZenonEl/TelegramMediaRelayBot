@@ -9,90 +9,52 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using MySql.Data.MySqlClient;
+using System.Data;
 using TelegramMediaRelayBot.Database.Interfaces;
 
 
 namespace TelegramMediaRelayBot.Database.Repositories.MySql;
 
 
-public class MySqlInboundDBGetter : IInboundDBGetter
-{
-    private readonly string _connectionString;
+using Dapper;
 
-    public MySqlInboundDBGetter(string connectionString)
+
+// Конструктор остается прежним, он уже правильный
+public class MySqlInboundDBGetter(IDbConnection dbConnection) : IInboundDBGetter
+{
+    // Внутренний класс для удобного маппинга результата из Dapper
+    private class UserQueryResult
     {
-        _connectionString = connectionString;
+        public string Name { get; init; } = string.Empty;
+        public long TelegramID { get; init; }
     }
 
     public async Task<List<ButtonData>> GetInboundsButtonDataAsync(int userId)
     {
-        var buttonDataList = new List<ButtonData>();
-        var contactUserIds = await GetContactUserIdsAsync(userId);
+        // 1. ОДИН эффективный запрос вместо N+1
+        // Мы объединяем таблицы Contacts и Users, чтобы получить все данные сразу.
+        const string query = @"
+            SELECT
+                u.Name,
+                u.TelegramID
+            FROM Contacts c
+            JOIN Users u ON c.UserId = u.ID
+            WHERE c.ContactId = @userId AND c.status = 'waiting_for_accept'";
 
-        foreach (var contactUserId in contactUserIds)
-        {
-            var userData = await GetUserDataByContactIdAsync(contactUserId);
-            if (userData != null)
+        // 2. Используем Dapper для выполнения запроса.
+        // Он безопасен и сам управляет открытием/закрытием подключения.
+        // Мы БОЛЬШЕ НИКОГДА не пишем 'using (dbConnection)' для внедренного подключения.
+        var users = await dbConnection.QueryAsync<UserQueryResult>(query, new { userId });
+
+        // 3. Преобразуем (мапим) результат в нужный нам формат ButtonData
+        var buttonDataList = users
+            .Select(user => new ButtonData
             {
-                buttonDataList.Add(new ButtonData { ButtonText = userData.Item1, CallbackData = "user_show_inbounds_invite:" + userData.Item2 });
-            }
-        }
+                ButtonText = user.Name,
+                CallbackData = "user_show_inbounds_invite:" + user.TelegramID
+            })
+            .ToList();
 
         return buttonDataList;
-    }
-
-    private async Task<List<int>> GetContactUserIdsAsync(int userId)
-    {
-        var contactUserIds = new List<int>();
-        string queryContacts = @"
-            SELECT UserId
-            FROM Contacts
-            WHERE ContactId = @UserId AND status = 'waiting_for_accept'";
-
-        using (MySqlConnection connection = new MySqlConnection(_connectionString))
-        {
-            MySqlCommand commandContacts = new MySqlCommand(queryContacts, connection);
-            commandContacts.Parameters.AddWithValue("@UserId", userId);
-            await connection.OpenAsync();
-
-            using (MySqlDataReader readerContacts = (MySqlDataReader)await commandContacts.ExecuteReaderAsync())
-            {
-                while (await readerContacts.ReadAsync())
-                {
-                    int contactUserId = readerContacts.GetInt32("UserId");
-                    contactUserIds.Add(contactUserId);
-                }
-            }
-        }
-
-        return contactUserIds;
-    }
-
-    private async Task<Tuple<string, string>?> GetUserDataByContactIdAsync(int contactId)
-    {
-        string queryUsers = @"
-            SELECT Name, TelegramID
-            FROM Users
-            WHERE ID = @contactId";
-
-        using (MySqlConnection connection = new MySqlConnection(_connectionString))
-        {
-            MySqlCommand commandUsers = new MySqlCommand(queryUsers, connection);
-            commandUsers.Parameters.AddWithValue("@contactId", contactId);
-            await connection.OpenAsync();
-
-            using (MySqlDataReader readerUsers = (MySqlDataReader)await commandUsers.ExecuteReaderAsync())
-            {
-                if (await readerUsers.ReadAsync())
-                {
-                    string name = readerUsers["Name"].ToString()!;
-                    string telegramId = readerUsers["TelegramID"].ToString()!;
-                    return new Tuple<string, string>(name, telegramId);
-                }
-            }
-        }
-
-        return null;
     }
 }

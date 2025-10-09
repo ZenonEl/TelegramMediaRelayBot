@@ -14,16 +14,16 @@ namespace TelegramMediaRelayBot.Database.Interfaces;
 
 public interface IDefaultAction
 {
-    public bool AddDefaultUsersActionTargets(int userId, int actionId, string targetType, int targetId);
+    public Task<bool> AddDefaultUsersActionTargets(int userId, int actionId, string targetType, int targetId);
 
-    public bool RemoveAllDefaultUsersActionTargets(int userId, string targetType, int actionId);
+    public Task<bool> RemoveAllDefaultUsersActionTargets(int userId, string targetType, int actionId);
 }
 
 public interface IDefaultActionSetter
 {
-    public bool SetAutoSendVideoConditionToUser(int userId, string actionCondition, string type);
+    public Task<bool> SetAutoSendVideoConditionToUser(int userId, string actionCondition, string type);
 
-    public bool SetAutoSendVideoActionToUser(int userId, string action, string type);
+    public Task<bool> SetAutoSendVideoActionToUser(int userId, string action, string type);
 
 }
 

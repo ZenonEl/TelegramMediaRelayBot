@@ -10,73 +10,28 @@
 // (по вашему выбору) любой более поздней версии.
 
 using Dapper;
-using MySql.Data.MySqlClient;
+using System.Data;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.Database.UnitOfWork.Services;
 
 
 namespace TelegramMediaRelayBot.Database.Repositories.MySql;
 
-public class MySqlPrivacySettingsTargetsSetter : IPrivacySettingsTargetsSetter
+public class MySqlPrivacySettingsTargetsSetter(PrivacySettingsTargetsUoWService service) : IPrivacySettingsTargetsSetter
 {
-    private readonly string _connectionString;
-    private readonly TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? _uow;
-
-    public MySqlPrivacySettingsTargetsSetter(string connectionString, TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? unitOfWork = null)
+    public Task<bool> SetPrivacyRuleTarget(int userId, int privacySettingId, string targetType, string targetValue)
     {
-        _connectionString = connectionString;
-        _uow = unitOfWork;
+        return service.SetPrivacyRuleTarget(userId, privacySettingId, targetType, targetValue);
     }
 
-    public async Task<bool> SetPrivacyRuleTarget(int userId, int privacySettingId, string targetType, string targetValue)
+    public Task<bool> SetToRemovePrivacyRuleTarget(int privacySettingId, string targetValue)
     {
-        const string query = @$"
-            INSERT INTO PrivacySettingsTargets (UserId, PrivacySettingId, TargetType, TargetValue)
-            VALUES (@userId, @privacySettingId, @targetType, @targetValue)
-            ON DUPLICATE KEY UPDATE
-            TargetValue = @targetValue";
-
-        var external = _uow?.Connection as MySqlConnection;
-        using var owned = external ?? new MySqlConnection(_connectionString);
-        var connection = (MySqlConnection)(external ?? owned);
-        _uow?.Begin();
-        var ok = await connection.ExecuteAsync(query, new {userId, privacySettingId, targetType, targetValue}, _uow?.Transaction) > 0;
-        _uow?.Commit();
-        return ok;
-    }
-
-    public async Task<bool> SetToRemovePrivacyRuleTarget(int privacySettingId, string targetValue)
-    {
-        const string query = @$"
-            DELETE FROM PrivacySettingsTargets
-            WHERE PrivacySettingId = @privacySettingId AND TargetValue = @targetValue";
-
-        var external = _uow?.Connection as MySqlConnection;
-        using var owned = external ?? new MySqlConnection(_connectionString);
-        var connection = (MySqlConnection)(external ?? owned);
-        try
-        {
-            _uow?.Begin();
-            var ok = await connection.ExecuteAsync(query, new { privacySettingId, targetValue }, _uow?.Transaction) > 0;
-            _uow?.Commit();
-            return ok;
-        }
-        catch
-        {
-            _uow?.Rollback();
-            throw;
-        }
+        return service.SetToRemovePrivacyRuleTarget(privacySettingId, targetValue);
     }
 }
 
-public class MySqlPrivacySettingsTargetsGetter : IPrivacySettingsTargetsGetter
+public class MySqlPrivacySettingsTargetsGetter(IDbConnection dbConnection) : IPrivacySettingsTargetsGetter
 {
-    private readonly string _connectionString;
-
-    public MySqlPrivacySettingsTargetsGetter(string connectionString)
-    {
-        _connectionString = connectionString;
-    }
-
     public async Task<bool> CheckPrivacyRuleTargetExists(int userId, string type)
     {
         const string query = @"
@@ -86,8 +41,8 @@ public class MySqlPrivacySettingsTargetsGetter : IPrivacySettingsTargetsGetter
                 LIMIT 1
             )";
 
-        using var connection = new MySqlConnection(_connectionString);
-        var result = await connection.ExecuteScalarAsync<bool>(query, new { userId, type });
+
+        var result = await dbConnection.ExecuteScalarAsync<bool>(query, new { userId, type });
         return result;
     }
 
@@ -98,7 +53,7 @@ public class MySqlPrivacySettingsTargetsGetter : IPrivacySettingsTargetsGetter
             FROM PrivacySettingsTargets
             WHERE UserId = @userId";
 
-        using var connection = new MySqlConnection(_connectionString);
-        return (List<string>)await connection.QueryAsync<List<string>>(query, new { userId });
+
+        return (List<string>)await dbConnection.QueryAsync<List<string>>(query, new { userId });
     }
 }

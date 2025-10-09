@@ -10,107 +10,50 @@
 // (по вашему выбору) любой более поздней версии.
 
 using Dapper;
+using System.Data;
 using MySql.Data.MySqlClient;
 using TelegramMediaRelayBot.Database.Interfaces;
 
 
 namespace TelegramMediaRelayBot.Database.Repositories.MySql;
 
-public class MySqlDefaultAction : IDefaultAction
+public class MySqlDefaultAction(IDefaultActionTargetsRepository repository) : IDefaultAction
 {
-    private readonly string _connectionString;
-
-    public MySqlDefaultAction(string connectionString)
+    public async Task<bool> AddDefaultUsersActionTargets(int userId, int actionId, string targetType, int targetId)
     {
-        _connectionString = connectionString;
+        var affectedRows = await repository.AddTarget(userId, actionId, targetType, targetId);
+        return affectedRows > 0;
     }
 
-    public bool AddDefaultUsersActionTargets(int userId, int actionId, string targetType, int targetId)
+    public async Task<bool> RemoveAllDefaultUsersActionTargets(int userId, string targetType, int actionId)
     {
-        const string query = @"
-            INSERT INTO DefaultUsersActionTargets (UserId, ActionID, TargetType, TargetID) 
-            VALUES (@userId, @actionId, @targetType, @targetId)";
-
-        using var connection = new MySqlConnection(_connectionString);
-        return connection.Execute(query, new { userId, actionId, targetType, targetId }) > 0;
-    }
-
-    public bool RemoveAllDefaultUsersActionTargets(int userId, string targetType, int actionId)
-    {
-        const string query = @"
-            DELETE FROM DefaultUsersActionTargets 
-            WHERE UserId = @userId AND ActionID = @actionId AND TargetType = @targetType;";
-
-        using var connection = new MySqlConnection(_connectionString);
-        return connection.Execute(query, new { userId, targetType, actionId }) > 0;
+        var affectedRows = await repository.RemoveAllTargets(userId, targetType, actionId);
+        return affectedRows > 0;
     }
 }
 
-public class MySqlDefaultActionSetter : IDefaultActionSetter
+public class MySqlDefaultActionSetter(IDefaultActionUoW uowService) : IDefaultActionSetter
 {
-    private readonly string _connectionString;
-    private readonly TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? _uow;
-
-    public MySqlDefaultActionSetter(string connectionString, TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? unitOfWork = null)
+    // Метод-прослойка, делегирующий вызов
+    public Task<bool> SetAutoSendVideoConditionToUser(int userId, string actionCondition, string type)
     {
-        _connectionString = connectionString;
-        _uow = unitOfWork;
+        return uowService.SetAutoSendVideoCondition(userId, actionCondition, type);
     }
 
-    public bool SetAutoSendVideoConditionToUser(int userId, string actionCondition, string type)
+    // Метод-прослойка, делегирующий вызов
+    public Task<bool> SetAutoSendVideoActionToUser(int userId, string action, string type)
     {
-        using var connection = _uow?.Connection as MySqlConnection ?? new MySqlConnection(_connectionString);
-        _uow?.Begin();
-        // 1) Try to update existing row for (UserId, Type)
-        int affected = connection.Execute(
-            "UPDATE DefaultUsersActions SET ActionCondition = @actionCondition WHERE UserId = @userId AND Type = @type AND IsActive = 1",
-            new { userId, type, actionCondition }, _uow?.Transaction);
-        // 2) If nothing was updated, insert a new row
-        if (affected == 0)
-        {
-            affected = connection.Execute(
-                "INSERT INTO DefaultUsersActions (UserId, Type, ActionCondition) VALUES (@userId, @type, @actionCondition)",
-                new { userId, type, actionCondition }, _uow?.Transaction);
-        }
-        _uow?.Commit();
-        return affected > 0;
-    }
-
-    public bool SetAutoSendVideoActionToUser(int userId, string action, string type)
-    {
-        using var connection = _uow?.Connection as MySqlConnection ?? new MySqlConnection(_connectionString);
-        _uow?.Begin();
-        // 1) Try to update existing row for (UserId, Type)
-        int affected = connection.Execute(
-            "UPDATE DefaultUsersActions SET Action = @action WHERE UserId = @userId AND Type = @type AND IsActive = 1",
-            new { userId, type, action }, _uow?.Transaction);
-        // 2) If nothing was updated, insert a new row
-        if (affected == 0)
-        {
-            affected = connection.Execute(
-                "INSERT INTO DefaultUsersActions (UserId, Type, Action) VALUES (@userId, @type, @action)",
-                new { userId, type, action }, _uow?.Transaction);
-        }
-        _uow?.Commit();
-        return affected > 0;
+        return uowService.SetAutoSendVideoAction(userId, action, type);
     }
 }
 
-public class MySqlDefaultActionGetter : IDefaultActionGetter
+public class MySqlDefaultActionGetter(IDbConnection dbConnection) : IDefaultActionGetter
 {
-    private readonly string _connectionString;
-
-    public MySqlDefaultActionGetter(string connectionString)
-    {
-        _connectionString = connectionString;
-    }
-
     public List<int> GetAllDefaultUsersActionTargets(int userId, string targetType, int actionId)
     {
         try 
         {
-            using var connection = new MySqlConnection(_connectionString);
-            return connection.Query<int>(
+            return dbConnection.Query<int>(
                 @"SELECT TargetID FROM DefaultUsersActionTargets 
                 WHERE UserId = @userId AND TargetType = @targetType AND ActionID = @actionId",
                 new { 
@@ -135,8 +78,8 @@ public class MySqlDefaultActionGetter : IDefaultActionGetter
             LIMIT 1;";
         try
         {
-            using var connection = new MySqlConnection(_connectionString);
-            return connection.ExecuteScalar<int>(query, new {userId, type});
+    
+            return dbConnection.ExecuteScalar<int>(query, new {userId, type});
         }
         catch (Exception ex)
         {
@@ -149,9 +92,9 @@ public class MySqlDefaultActionGetter : IDefaultActionGetter
     {
         try
         {
-            using var connection = new MySqlConnection(_connectionString);
+    
 
-            var result = connection.QueryFirstOrDefault<(string Action, string ActionCondition)>(
+            var result = dbConnection.QueryFirstOrDefault<(string Action, string ActionCondition)>(
                 @"SELECT Action, ActionCondition
                 FROM DefaultUsersActions
                 WHERE UserID = @userID
@@ -176,8 +119,8 @@ public class MySqlDefaultActionGetter : IDefaultActionGetter
     {
         try
         {
-            using var connection = new MySqlConnection(_connectionString);
-            var result = await connection.QueryAsync<int>(
+    
+            var result = await dbConnection.QueryAsync<int>(
                 @"SELECT TargetID FROM DefaultUsersActionTargets 
                 WHERE UserId = @userId AND TargetType = @targetType AND ActionID = @actionId",
                 new { userId, targetType, actionId });
@@ -195,8 +138,8 @@ public class MySqlDefaultActionGetter : IDefaultActionGetter
         const string query = @"SELECT ID FROM DefaultUsersActions WHERE UserId = @userId AND Type = @type ORDER BY ID DESC LIMIT 1;";
         try
         {
-            using var connection = new MySqlConnection(_connectionString);
-            return await connection.ExecuteScalarAsync<int>(query, new { userId, type });
+    
+            return await dbConnection.ExecuteScalarAsync<int>(query, new { userId, type });
         }
         catch (Exception ex)
         {
@@ -209,8 +152,8 @@ public class MySqlDefaultActionGetter : IDefaultActionGetter
     {
         try
         {
-            using var connection = new MySqlConnection(_connectionString);
-            var result = await connection.QueryFirstOrDefaultAsync<(string Action, string ActionCondition)>(
+    
+            var result = await dbConnection.QueryFirstOrDefaultAsync<(string Action, string ActionCondition)>(
                 @"SELECT Action, ActionCondition
                 FROM DefaultUsersActions
                 WHERE UserID = @userID

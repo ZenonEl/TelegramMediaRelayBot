@@ -16,7 +16,7 @@ namespace TelegramMediaRelayBot.Database.Interfaces;
 public interface IPrivacySettingsSetter
 {
     Task<bool> SetPrivacyRule(int userId, string type, string action, bool isActive, string actionCondition);
-    bool SetPrivacyRuleToDisabled(int userId, string type);
+    Task<bool> SetPrivacyRuleToDisabled(int userId, string type);
 }
 
 public interface IPrivacySettingsGetter

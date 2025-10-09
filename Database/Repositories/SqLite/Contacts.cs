@@ -10,260 +10,55 @@
 // (по вашему выбору) любой более поздней версии.
 
 using Dapper;
+using System.Data;
 using Microsoft.Data.Sqlite;
 using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.Database.Repositories.Sqlite;
 
-public class SqliteContactAdder(string connectionString, TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? unitOfWork = null) : IContactAdder
+public class SqliteContactAdder(IContactUoW contactUoWService) : IContactAdder
 {
-    private readonly string _connectionString = connectionString;
-    private readonly TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? _uow = unitOfWork;
-
-    public void AddContact(long telegramID, string link)
+    public Task AddContact(long telegramId, string link)
     {
-        const string query = @"
-            INSERT INTO Contacts (UserId, ContactId, Status) 
-            VALUES (@userId, @contactId, @status)";
-        SqliteContactGetter contactGetter = new(_connectionString, new TelegramMediaRelayBot.Config.Services.ResourceService());
-
-        using (var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString))
-        {
-            try
-            {
-                _uow?.Begin();
-                connection.Execute(query, new 
-                {
-                    userId = contactGetter.GetContactByTelegramID(telegramID),
-                    contactId = contactGetter.GetContactIDByLink(link),
-                    status = ContactsStatus.WAITING_FOR_ACCEPT
-                });
-                _uow?.Commit();
-            }
-            catch (Exception ex)
-            {
-                _uow?.Rollback();
-                Log.Error("Error editing database: " + ex.Message);
-            }
-        }
+        return contactUoWService.AddContactAsync(telegramId, link, ContactsStatus.WAITING_FOR_ACCEPT);
     }
 
-    public bool AddMutedContact(int mutedByUserId, int mutedContactId, DateTime? expirationDate = null, DateTime muteDate = default)
+    public Task<bool> AddMutedContact(int mutedByUserId, int mutedContactId, DateTime? expirationDate = null, DateTime muteDate = default)
     {
-        if (muteDate == default)
-        {
-            muteDate = DateTime.Now;
-        }
-
-        const string query = @"
-            INSERT INTO MutedContacts (MutedByUserId, MutedContactId, MuteDate, ExpirationDate)
-            VALUES (@mutedByUserId, @mutedContactId, @muteDate, @expirationDate)
-            ON CONFLICT(MutedByUserId, MutedContactId) 
-            DO UPDATE SET
-                MuteDate = @muteDate,
-                ExpirationDate = @expirationDate,
-                IsActive = 1";
-
-        using (var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString))
-        {
-            try
-            {
-                _uow?.Begin();
-                connection.Execute(query, new 
-                {
-                    mutedByUserId,
-                    mutedContactId,
-                    muteDate,
-                    expirationDate
-                });
-                _uow?.Commit();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _uow?.Rollback();
-                Log.Error("Error editing database: " + ex.Message);
-                return false;
-            }
-        }
+        return contactUoWService.MuteContactAsync(mutedByUserId, mutedContactId, expirationDate)
+            .ContinueWith(t => t.IsCompletedSuccessfully);
     }
 }
 
-public class SqliteContactRemover(string connectionString, TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? unitOfWork = null) : IContactRemover
+public class SqliteContactRemover(IContactUoW contactUoWService) : IContactRemover
 {
-    private readonly string _connectionString = connectionString;
-    private readonly TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? _uow = unitOfWork;
-
-    public void RemoveMutedContact(int userId, int contactId)
+    public Task RemoveMutedContact(int userId, int contactId)
     {
-        const string query = @"
-            UPDATE MutedContacts
-            SET IsActive = 0
-            WHERE MutedByUserId = @userId AND MutedContactId = @contactId";
-
-        using (var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString))
-        {
-            try
-            {
-                _uow?.Begin();
-                connection.Execute(query, new { userId, contactId }, _uow?.Transaction);
-                _uow?.Commit();
-            }
-            catch (Exception ex)
-            {
-                _uow?.Rollback();
-                Log.Error(ex, "An error occurred in the method {MethodName}", nameof(RemoveMutedContact));
-            }
-        }
+        return contactUoWService.UnmuteContactAsync(userId, contactId);
     }
 
-    public bool RemoveContactByStatus(int senderTelegramID, int accepterTelegramID, string? status = null)
+    public Task<bool> RemoveContactByStatus(int senderTelegramId, int accepterTelegramId, string? status = null)
     {
-        const string query = @"
-            DELETE FROM Contacts
-            WHERE (UserId = @senderTelegramID AND ContactId = @accepterTelegramID AND (@status IS NULL OR Status = @status))
-            OR (UserId = @accepterTelegramID AND ContactId = @senderTelegramID AND (@status IS NULL OR Status = @status))";
-
-        using (var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString))
-        {
-            try
-            {
-                _uow?.Begin();
-                connection.Execute(query, new 
-                {
-                    senderTelegramID,
-                    accepterTelegramID,
-                    status
-                }, _uow?.Transaction);
-                _uow?.Commit();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _uow?.Rollback();
-                Log.Error("Error editing database: " + ex.Message);
-                return false;
-            }
-        }
+        return contactUoWService.RemoveContactByStatusAsync(senderTelegramId, accepterTelegramId, status)
+            .ContinueWith(t => t.IsCompletedSuccessfully);
     }
 
-    public bool RemoveUsersFromContacts(int userId, List<int> contactIds)
+    public Task<bool> RemoveUsersFromContacts(int userId, List<int> contactIds)
     {
-        if (contactIds == null || contactIds.Count == 0)
-        {
-            return true;
-        }
-
-        string contactIdParams = string.Join(", ", contactIds.Select((_, i) => $"@contactId{i}"));
-
-        string deleteContactsQuery = @$"
-            DELETE FROM Contacts
-            WHERE (UserId = @userId AND ContactId IN ({contactIdParams}))
-            OR (ContactId = @userId AND UserId IN ({contactIdParams}));";
-
-        string deleteGroupMembersQuery = @$"
-            DELETE FROM GroupMembers
-            WHERE (UserId = @userId AND ContactId IN ({contactIdParams}))
-            OR (ContactId = @userId AND UserId IN ({contactIdParams}));";
-
-        using (var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString))
-        {
-            try
-            {
-                _uow?.Begin();
-                var parameters = new DynamicParameters();
-                parameters.Add("userId", userId);
-                for (int i = 0; i < contactIds.Count; i++)
-                {
-                    parameters.Add($"contactId{i}", contactIds[i]);
-                }
-
-                connection.Execute(deleteContactsQuery, parameters, _uow?.Transaction);
-                connection.Execute(deleteGroupMembersQuery, parameters, _uow?.Transaction);
-                _uow?.Commit();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _uow?.Rollback();
-                Log.Error("Error connecting to database: " + ex.Message);
-                return false;
-            }
-        }
+        return contactUoWService.RemoveUsersFromContactsAsync(userId, contactIds)
+            .ContinueWith(t => t.IsCompletedSuccessfully);
     }
 
-    public bool RemoveAllContactsExcept(int userId, List<int> excludeIds)
+    public Task<bool> RemoveAllContactsExcept(int userId, List<int> excludeIds)
     {
-        if (excludeIds == null || excludeIds.Count == 0)
-        {
-            return RemoveAllContacts(userId);
-        }
-
-        string excludeParams = string.Join(",", excludeIds.Select((_, i) => $"@excludeId{i}"));
-
-        string deleteContactsQuery = @$"
-            DELETE FROM Contacts
-            WHERE (UserId = @userId AND ContactId NOT IN ({excludeParams}))
-            OR (ContactId = @userId AND UserId NOT IN ({excludeParams}));";
-
-        string deleteGroupMembersQuery = @$"
-            DELETE FROM GroupMembers
-            WHERE (UserId = @userId AND ContactId NOT IN ({excludeParams}))
-            OR (ContactId = @userId AND UserId NOT IN ({excludeParams}));";
-
-        using (var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString))
-        {
-            try
-            {
-                _uow?.Begin();
-                var parameters = new DynamicParameters();
-                parameters.Add("userId", userId);
-                for (int i = 0; i < excludeIds.Count; i++)
-                {
-                    parameters.Add($"excludeId{i}", excludeIds[i]);
-                }
-
-                connection.Execute(deleteContactsQuery, parameters, _uow?.Transaction);
-                connection.Execute(deleteGroupMembersQuery, parameters, _uow?.Transaction);
-                _uow?.Commit();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _uow?.Rollback();
-                Log.Error("Error connecting to database: " + ex.Message);
-                return false;
-            }
-        }
+        return contactUoWService.RemoveAllUserContactsAsync(userId, excludeIds)
+            .ContinueWith(t => t.IsCompletedSuccessfully);
     }
 
-    public bool RemoveAllContacts(int userId)
+    public Task<bool> RemoveAllContacts(int userId)
     {
-        const string deleteContactsQuery = @"
-            DELETE FROM Contacts
-            WHERE UserId = @userId OR ContactId = @userId;";
-
-        const string deleteGroupMembersQuery = @"
-            DELETE FROM GroupMembers
-            WHERE UserId = @userId OR ContactId = @userId;";
-
-        using (var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString))
-        {
-            try
-            {
-                _uow?.Begin();
-                connection.Execute(deleteContactsQuery, new { userId }, _uow?.Transaction);
-                connection.Execute(deleteGroupMembersQuery, new { userId }, _uow?.Transaction);
-                _uow?.Commit();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _uow?.Rollback();
-                Log.Error("Error connecting to database: " + ex.Message);
-                return false;
-            }
-        }
+        return contactUoWService.RemoveAllUserContactsAsync(userId, null)
+            .ContinueWith(t => t.IsCompletedSuccessfully);
     }
 }
 
@@ -271,62 +66,27 @@ public class SqliteContactRemover(string connectionString, TelegramMediaRelayBot
 // ----------------------------------------------------------------------------------
 // ----------------------------------------------------------------------------------
 
-public class SqliteContactSetter(string connectionString, TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? unitOfWork = null) : IContactSetter
+public class SqliteContactSetter(IContactUoW contactUoWService) : IContactSetter
 {
-    private readonly string _connectionString = connectionString;
-    private readonly TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? _uow = unitOfWork;
-
-    public void SetContactStatus(long SenderTelegramID, long AccepterTelegramID, string status)
+    public Task SetContactStatus(long senderTelegramId, long accepterTelegramId, string status)
     {
-        const string query = @"
-            UPDATE Contacts 
-            SET Status = @Status 
-            WHERE UserId = @UserId AND ContactId = @ContactId";
-            
-        SqliteContactGetter contactGetter = new(_connectionString, new TelegramMediaRelayBot.Config.Services.ResourceService());
-        SqliteUserGetter userGetter = new(_connectionString);
-
-        var ownsConnection = _uow is null;
-        var connection = (_uow?.Connection as SqliteConnection) ?? new SqliteConnection(_connectionString);
-        try
-        {
-            _uow?.Begin();
-            connection.Execute(query, new 
-            {
-                Status = status,
-                UserId = userGetter.GetUserIDbyTelegramID(SenderTelegramID),
-                ContactId = contactGetter.GetContactByTelegramID(AccepterTelegramID)
-            }, _uow?.Transaction);
-            _uow?.Commit();
-        }
-        catch (Exception ex)
-        {
-            _uow?.Rollback();
-            Log.Error("Error editing database: " + ex.Message);
-        }
-        finally
-        {
-            if (ownsConnection)
-            {
-                connection.Dispose();
-            }
-        }
+        return contactUoWService.UpdateContactStatusAsync(senderTelegramId, accepterTelegramId, status);
     }
 }
 
-public class SqliteContactGetter(string connectionString, TelegramMediaRelayBot.Config.Services.IResourceService resourceService) : IContactGetter
+public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayBot.Config.Services.IResourceService resourceService) : IContactGetter
 {
-    private readonly string _connectionString = connectionString;
+
     private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService = resourceService;
 
     public async Task<List<long>> GetAllContactUserTGIds(int userId)
     {
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
-            SqliteUserGetter userGetter = new(_connectionString);
+    
+            SqliteUserGetter userGetter = new(dbConnection);
             
-            var results = await connection.QueryAsync<(long UserId, long ContactId)>(
+            var results = await dbConnection.QueryAsync<(long UserId, long ContactId)>(
                 @"SELECT UserId, ContactId
                 FROM Contacts
                 WHERE (ContactId = @UserId OR UserId = @UserId) 
@@ -354,9 +114,7 @@ public class SqliteContactGetter(string connectionString, TelegramMediaRelayBot.
     {
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
-            
-            var results = await connection.QueryAsync<long>(
+            var results = await dbConnection.QueryAsync<long>(
                 @"SELECT DISTINCT CASE 
                     WHEN UserId = @UserId THEN ContactId 
                     ELSE UserId 
@@ -379,9 +137,9 @@ public class SqliteContactGetter(string connectionString, TelegramMediaRelayBot.
     {
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
+    
             
-            var expirationDate = connection.QueryFirstOrDefault<DateTime?>(
+            var expirationDate = dbConnection.QueryFirstOrDefault<DateTime?>(
                 @"SELECT ExpirationDate 
                 FROM MutedContacts 
                 WHERE MutedContactId = @contactID 
@@ -402,8 +160,8 @@ public class SqliteContactGetter(string connectionString, TelegramMediaRelayBot.
     {
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
-            var expirationDate = await connection.QueryFirstOrDefaultAsync<DateTime?>(
+    
+            var expirationDate = await dbConnection.QueryFirstOrDefaultAsync<DateTime?>(
                 @"SELECT ExpirationDate 
                 FROM MutedContacts 
                 WHERE MutedContactId = @contactID 
@@ -425,8 +183,8 @@ public class SqliteContactGetter(string connectionString, TelegramMediaRelayBot.
         const string query = "SELECT ID FROM Users WHERE Link = @link";
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
-            var result = connection.QueryFirstOrDefault<int?>(query, new { link });
+    
+            var result = dbConnection.QueryFirstOrDefault<int?>(query, new { link });
             return result ?? -1;
         }
         catch (Exception ex)
@@ -441,8 +199,8 @@ public class SqliteContactGetter(string connectionString, TelegramMediaRelayBot.
         const string query = "SELECT ID FROM Users WHERE Link = @link";
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
-            var result = await connection.QueryFirstOrDefaultAsync<int?>(query, new { link });
+    
+            var result = await dbConnection.QueryFirstOrDefaultAsync<int?>(query, new { link });
             return result ?? -1;
         }
         catch (Exception ex)
@@ -457,8 +215,8 @@ public class SqliteContactGetter(string connectionString, TelegramMediaRelayBot.
         const string query = "SELECT ID FROM Users WHERE TelegramID = @telegramID";
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
-            var result = connection.QueryFirstOrDefault<int?>(query, new { telegramID });
+    
+            var result = dbConnection.QueryFirstOrDefault<int?>(query, new { telegramID });
             return result ?? -1;
         }
         catch (Exception ex)
@@ -473,8 +231,8 @@ public class SqliteContactGetter(string connectionString, TelegramMediaRelayBot.
         const string query = "SELECT ID FROM Users WHERE TelegramID = @telegramID";
         try
         {
-            using var connection = new SqliteConnection(_connectionString);
-            var result = await connection.QueryFirstOrDefaultAsync<int?>(query, new { telegramID });
+    
+            var result = await dbConnection.QueryFirstOrDefaultAsync<int?>(query, new { telegramID });
             return result ?? -1;
         }
         catch (Exception ex)

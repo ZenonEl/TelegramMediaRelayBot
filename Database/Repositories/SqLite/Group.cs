@@ -10,20 +10,15 @@
 // (по вашему выбору) любой более поздней версии
 
 using Dapper;
+using System.Data;
+using System.Data;
 using Microsoft.Data.Sqlite;
 using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.Database.Repositories.Sqlite;
 
-public class SqliteGroupGetter : IGroupGetter
+public class SqliteGroupGetter(IDbConnection dbConnection) : IGroupGetter
 {
-    private readonly string _connectionString;
-
-    public SqliteGroupGetter(string connection)
-    {
-        _connectionString = connection;
-    }
-
     public async Task<IEnumerable<int>> GetGroupIDsByUserId(int userId)
     {
         const string query = @"
@@ -31,8 +26,8 @@ public class SqliteGroupGetter : IGroupGetter
             FROM UsersGroups 
             WHERE UserId = @userId";
 
-        using var connection = new SqliteConnection(_connectionString);
-        return await connection.QueryAsync<int>(query, new { userId });
+
+        return await dbConnection.QueryAsync<int>(query, new { userId });
     }
 
     public async Task<bool> GetGroupOwnership(int groupId, int userId)
@@ -42,8 +37,8 @@ public class SqliteGroupGetter : IGroupGetter
             FROM UsersGroups 
             WHERE ID = @groupId AND UserId = @userId";
 
-        using var connection = new SqliteConnection(_connectionString);
-        var count = await connection.ExecuteScalarAsync<int>(query, new { groupId, userId });
+
+        var count = await dbConnection.ExecuteScalarAsync<int>(query, new { groupId, userId });
         return count > 0;
     }
 
@@ -54,8 +49,8 @@ public class SqliteGroupGetter : IGroupGetter
             FROM UsersGroups 
             WHERE ID = @groupId";
 
-        using var connection = new SqliteConnection(_connectionString);
-        return await connection.QueryFirstOrDefaultAsync<string>(query, new { groupId });
+
+        return await dbConnection.QueryFirstOrDefaultAsync<string>(query, new { groupId });
     }
 
     public async Task<string> GetGroupDescriptionById(int groupId)
@@ -65,8 +60,8 @@ public class SqliteGroupGetter : IGroupGetter
             FROM UsersGroups 
             WHERE ID = @groupId";
 
-        using var connection = new SqliteConnection(_connectionString);
-        return await connection.QueryFirstOrDefaultAsync<string>(query, new { groupId });
+
+        return await dbConnection.QueryFirstOrDefaultAsync<string>(query, new { groupId });
     }
 
     public async Task<int> GetGroupMemberCount(int groupId)
@@ -76,8 +71,8 @@ public class SqliteGroupGetter : IGroupGetter
             FROM GroupMembers 
             WHERE GroupId = @groupId";
 
-        using var connection = new SqliteConnection(_connectionString);
-        return await connection.QueryFirstOrDefaultAsync<int>(query, new { groupId });
+
+        return await dbConnection.QueryFirstOrDefaultAsync<int>(query, new { groupId });
     }
 
     public async Task<bool> GetIsDefaultGroup(int groupId)
@@ -87,8 +82,8 @@ public class SqliteGroupGetter : IGroupGetter
             FROM UsersGroups 
             WHERE ID = @groupId";
 
-        using var connection = new SqliteConnection(_connectionString);
-        return await connection.QueryFirstOrDefaultAsync<bool>(query, new { groupId });
+
+        return await dbConnection.QueryFirstOrDefaultAsync<bool>(query, new { groupId });
     }
 
     public async Task<IEnumerable<int>> GetAllUsersIdsInGroup(int groupId)
@@ -98,8 +93,8 @@ public class SqliteGroupGetter : IGroupGetter
             FROM GroupMembers 
             WHERE GroupId = @groupId";
 
-        using var connection = new SqliteConnection(_connectionString);
-        return await connection.QueryAsync<int>(query, new { groupId });
+
+        return await dbConnection.QueryAsync<int>(query, new { groupId });
     }
 
     public async Task<IEnumerable<int>> GetDefaultEnabledGroupIds(int userId)
@@ -109,8 +104,8 @@ public class SqliteGroupGetter : IGroupGetter
             FROM UsersGroups
             WHERE UserId = @userId AND IsDefaultEnabled = 1";
 
-        using var connection = new SqliteConnection(_connectionString);
-        return await connection.QueryAsync<int>(query, new { userId });
+
+        return await dbConnection.QueryAsync<int>(query, new { userId });
     }
 
     public async Task<IEnumerable<int>> GetAllUsersInGroup(int groupId, int userId)
@@ -120,8 +115,8 @@ public class SqliteGroupGetter : IGroupGetter
             FROM GroupMembers
             WHERE GroupId = @groupId AND UserId = @userId";
 
-        using var connection = new SqliteConnection(_connectionString);
-        return await connection.QueryAsync<int>(query, new { groupId, userId });
+
+        return await dbConnection.QueryAsync<int>(query, new { groupId, userId });
     }
 
     public async Task<List<int>> GetAllUsersInDefaultEnabledGroups(int userId)
@@ -138,92 +133,30 @@ public class SqliteGroupGetter : IGroupGetter
     }
 }
 
-public class SqliteGroupSetter : IGroupSetter
+public class SqliteGroupSetter(IGroupSetter uowService) : IGroupSetter
 {
-    private readonly string _connectionString;
-    private readonly TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? _uow;
-
-    public SqliteGroupSetter(string connection, TelegramMediaRelayBot.Database.UnitOfWork.IUnitOfWork? unitOfWork = null)
+    public Task<bool> SetNewGroup(int userId, string groupName, string description)
     {
-        _connectionString = connection;
-        _uow = unitOfWork;
+        return uowService.SetNewGroup(userId, groupName, description);
     }
 
-    public async Task<bool> SetNewGroup(int userId, string groupName, string description)
+    public Task<bool> SetGroupName(int groupId, string groupName)
     {
-        const string query = @"
-            INSERT INTO UsersGroups (UserId, GroupName, Description) 
-            VALUES (@userId, @groupName, @description)";
-
-        using var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString);
-        _uow?.Begin();
-        var rowsAffected = await connection.ExecuteAsync(query, new { 
-            userId, 
-            groupName, 
-            description 
-        }, _uow?.Transaction);
-        _uow?.Commit();
-        return rowsAffected > 0;
+        return uowService.SetGroupName(groupId, groupName);
     }
 
-    public async Task<bool> SetGroupName(int groupId, string groupName)
+    public Task<bool> SetGroupDescription(int groupId, string description)
     {
-        const string query = @"
-            UPDATE UsersGroups 
-            SET GroupName = @groupName 
-            WHERE ID = @groupId";
-
-        using var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString);
-        _uow?.Begin();
-        var rowsAffected = await connection.ExecuteAsync(query, new { 
-            groupId, 
-            groupName 
-        }, _uow?.Transaction);
-        _uow?.Commit();
-        return rowsAffected > 0;
+        return uowService.SetGroupDescription(groupId, description);
     }
 
-    public async Task<bool> SetGroupDescription(int groupId, string description)
+    public Task<bool> SetIsDefaultGroup(int groupId)
     {
-        const string query = @"
-            UPDATE UsersGroups 
-            SET Description = @description 
-            WHERE ID = @groupId";
-
-        using var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString);
-        _uow?.Begin();
-        var rowsAffected = await connection.ExecuteAsync(query, new { 
-            groupId, 
-            description 
-        }, _uow?.Transaction);
-        _uow?.Commit();
-        return rowsAffected > 0;
+        return uowService.SetIsDefaultGroup(groupId);
     }
 
-    public async Task<bool> SetIsDefaultGroup(int groupId)
+    public Task<bool> SetDeleteGroup(int groupId)
     {
-        const string query = @"
-            UPDATE UsersGroups 
-            SET IsDefaultEnabled = NOT IsDefaultEnabled 
-            WHERE ID = @groupId";
-
-        using var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString);
-        _uow?.Begin();
-        var rowsAffected = await connection.ExecuteAsync(query, new { groupId }, _uow?.Transaction);
-        _uow?.Commit();
-        return rowsAffected > 0;
-    }
-
-    public async Task<bool> SetDeleteGroup(int groupId)
-    {
-        const string query = @"
-            DELETE FROM UsersGroups 
-            WHERE ID = @groupId";
-
-        using var connection = _uow?.Connection as SqliteConnection ?? new SqliteConnection(_connectionString);
-        _uow?.Begin();
-        var rowsAffected = await connection.ExecuteAsync(query, new { groupId }, _uow?.Transaction);
-        _uow?.Commit();
-        return rowsAffected > 0;
+        return uowService.SetDeleteGroup(groupId);
     }
 }
