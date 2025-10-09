@@ -1,0 +1,39 @@
+using System.Data;
+using Dapper;
+using TelegramMediaRelayBot.Database.Interfaces;
+
+namespace TelegramMediaRelayBot.Database.Repositories.Sqlite;
+
+public class SqlitePrivacySettingsTargetsRepository(IDbConnection dbConnection) : IPrivacySettingsTargetsRepository
+{
+    public Task<int> UpsertTarget(int userId, int privacySettingId, string targetType, string targetValue)
+    {
+        // Используем правильный UPSERT синтаксис для SQLite
+        const string query = @"
+            INSERT INTO PrivacySettingsTargets (UserId, PrivacySettingId, TargetType, TargetValue)
+            VALUES (@userId, @privacySettingId, @targetType, @targetValue)
+            ON CONFLICT(UserId, PrivacySettingId, TargetType) 
+            DO UPDATE SET TargetValue = excluded.TargetValue";
+        
+        return dbConnection.ExecuteAsync(query, new { userId, privacySettingId, targetType, targetValue });
+    }
+
+    public Task<int> RemoveTarget(int privacySettingId, string targetValue)
+    {
+        const string query = "DELETE FROM PrivacySettingsTargets WHERE PrivacySettingId = @privacySettingId AND TargetValue = @targetValue";
+        return dbConnection.ExecuteAsync(query, new { privacySettingId, targetValue });
+    }
+
+    public Task<bool> CheckTargetExists(int userId, string type)
+    {
+        const string query = "SELECT EXISTS(SELECT 1 FROM PrivacySettingsTargets WHERE UserId = @userId AND TargetType = @type LIMIT 1)";
+        return dbConnection.ExecuteScalarAsync<bool>(query, new { userId, type });
+    }
+
+    public async Task<List<string>> GetAllUserTargets(int userId)
+    {
+        const string query = "SELECT TargetValue FROM PrivacySettingsTargets WHERE UserId = @userId";
+        var result = await dbConnection.QueryAsync<string>(query, new { userId });
+        return result.ToList();
+    }
+}
