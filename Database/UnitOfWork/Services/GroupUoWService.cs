@@ -2,7 +2,7 @@ using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.Database.UnitOfWork.Services;
 
-public class GroupUoWService : IGroupSetter
+public class GroupUoWService : IGroupUoW
 {
     private readonly IUnitOfWork _uow;
     private readonly IGroupRepository _repository;
@@ -13,6 +13,7 @@ public class GroupUoWService : IGroupSetter
         _repository = repository;
     }
 
+    // Методы остаются теми же, но теперь они правильно реализуют IGroupUoW
     public async Task<bool> SetNewGroup(int userId, string groupName, string description)
     {
         var affected = await ExecuteInTransaction(() => 

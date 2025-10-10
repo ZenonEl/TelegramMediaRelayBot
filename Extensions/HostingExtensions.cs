@@ -134,7 +134,7 @@ namespace TelegramMediaRelayBot.Extensions
 
             services.AddScoped<IContactUoW, ContactUoWService>();
             services.AddScoped<IDefaultActionUoW, DefaultActionUoWService>();
-            services.AddScoped<IGroupSetter, GroupUoWService>();
+            services.AddScoped<IGroupUoW, GroupUoWService>(); 
             services.AddScoped<IPrivacySettingsUoW, PrivacySettingsUoWService>();
             services.AddScoped<IPrivacySettingsTargetsUoW, PrivacySettingsTargetsUoWService>();
 
@@ -233,6 +233,7 @@ namespace TelegramMediaRelayBot.Extensions
             services.AddScoped<IContactGetter, SqliteContactGetter>(); // Убедись, что этот класс рефакторен
 
             // --- Группы ---
+            services.AddScoped<IGroupRepository, SqliteGroupRepository>();
             services.AddScoped<IGroupSetter, SqliteGroupSetter>();
             services.AddScoped<IGroupGetter, SqliteGroupGetter>(); // Убедись, что этот класс рефакторен
 
@@ -297,6 +298,7 @@ namespace TelegramMediaRelayBot.Extensions
             services.AddScoped<IContactGetter, MySqlContactGetter>(); // Убедись, что этот класс рефакторен
             
             // --- Группы ---
+            services.AddScoped<IGroupRepository, MySqlGroupRepository>();
             services.AddScoped<IGroupSetter, MySqlGroupSetter>();
             services.AddScoped<IGroupGetter, MySqlGroupGetter>(); // Убедись, что этот класс рефакторен
 

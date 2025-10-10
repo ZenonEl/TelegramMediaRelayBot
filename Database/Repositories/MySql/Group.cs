@@ -11,7 +11,7 @@
 
 using Dapper;
 using System.Data;
-using MySql.Data.MySqlClient;
+using TelegramMediaRelayBot.Database.UnitOfWork.Services;
 using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.Database.Repositories.MySql;
@@ -133,7 +133,7 @@ public class MySqlGroupGetter(IDbConnection dbConnection) : IGroupGetter
     }
 }
 
-public class MySqlGroupSetter(IGroupSetter uowService) : IGroupSetter
+public class MySqlGroupSetter(IGroupUoW uowService) : IGroupSetter
 {
     public Task<bool> SetNewGroup(int userId, string groupName, string description)
     {

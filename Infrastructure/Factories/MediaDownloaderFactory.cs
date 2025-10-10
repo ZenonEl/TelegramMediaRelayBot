@@ -10,8 +10,6 @@
 // (по вашему выбору) любой более поздней версии.
 
 using TelegramMediaRelayBot.Domain.Interfaces;
-using TelegramMediaRelayBot.Domain.Models;
-
 
 namespace TelegramMediaRelayBot.Infrastructure.Factories;
 

@@ -17,16 +17,16 @@ using TelegramMediaRelayBot.Database.UnitOfWork.Services;
 
 namespace TelegramMediaRelayBot.Database.Repositories.MySql;
 
-public class MySqlPrivacySettingsTargetsSetter(PrivacySettingsTargetsUoWService service) : IPrivacySettingsTargetsSetter
+public class MySqlPrivacySettingsTargetsSetter(IPrivacySettingsTargetsUoW uowService) : IPrivacySettingsTargetsSetter
 {
     public Task<bool> SetPrivacyRuleTarget(int userId, int privacySettingId, string targetType, string targetValue)
     {
-        return service.SetPrivacyRuleTarget(userId, privacySettingId, targetType, targetValue);
+        return uowService.SetPrivacyRuleTarget(userId, privacySettingId, targetType, targetValue);
     }
 
     public Task<bool> SetToRemovePrivacyRuleTarget(int privacySettingId, string targetValue)
     {
-        return service.SetToRemovePrivacyRuleTarget(privacySettingId, targetValue);
+        return uowService.SetToRemovePrivacyRuleTarget(privacySettingId, targetValue);
     }
 }
 
