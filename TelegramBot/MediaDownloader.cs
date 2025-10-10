@@ -15,6 +15,9 @@ using System.Text.RegularExpressions;
 using Telegram.Bot.Types.Enums;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Handlers;
+using TelegramMediaRelayBot.TelegramBot;
+using TelegramMediaRelayBot.Domain.Models;
+using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot.SiteFilter;
@@ -256,46 +259,56 @@ public partial class TGBot : IHostedService
         }
     }
 
-    public async Task HandleMediaRequest(ITelegramBotClient botClient, string contentUrl, long chatId, Message statusMessage,
-                                                List<long>? targetUserIds = null, bool groupChat = false, string caption = "", CancellationToken? sessionToken = null,
-                                                DateTime? originalMessageDateUtc = null)
+public async Task HandleMediaRequest(ITelegramBotClient botClient, string contentUrl, long chatId, Message statusMessage,
+                                            List<long>? targetUserIds = null, bool groupChat = false, string caption = "", CancellationToken? sessionToken = null,
+                                            DateTime? originalMessageDateUtc = null)
+{
+    var effectiveToken = sessionToken ?? CancellationToken.None;
+
+    // 1. Создаем и запускаем наш "подписчик" на логи
+    await using var logUpdater = new TelegramLogUpdater(botClient, statusMessage);
+    logUpdater.Start();
+
+    // 2. Создаем DownloadOptions, передавая туда Action от нашего подписчика
+    var downloadOptions = new DownloadOptions
     {
-        var effectiveToken = sessionToken ?? cancellationToken;
-        List<byte[]>? mediaFiles = await _mediaDownloaderService.DownloadMedia(botClient, contentUrl, statusMessage, effectiveToken);
-        
-        if (mediaFiles?.Count > 0)
+        BotClient = botClient,
+        StatusMessage = statusMessage,
+        // Здесь мы "подписываем" наш ProcessRunner на обновления логов в Telegram
+        OnProgress = logUpdater.HandleLogLine 
+    };
+
+    // 3. Вызываем наш новый, "умный" MediaDownloaderService
+    var downloadResult = await _mediaDownloaderService.DownloadMedia(contentUrl, downloadOptions, effectiveToken);
+    
+    // 4. Проверяем результат
+    if (downloadResult.Success)
+    {
+        Log.Debug($"Downloaded {downloadResult.MediaFiles.Count} files");
+
+        // 5. Постобработка (остается почти без изменений)
+        var processedFiles = await _mediaProcessingService.ApplySizePolicyAsync(
+            downloadResult.MediaFiles,
+            _downloadingConfig.CurrentValue,
+            effectiveToken);
+        Log.Debug("Size policy applied: files before={Before}, after={After}", downloadResult.MediaFiles.Count, processedFiles.Count);
+
+        var safeCaption = TelegramBot.Utils.CommonUtilities.TrimCaptionToLimit(
+            TelegramBot.Utils.CommonUtilities.SanitizeCaptionRemoveHtml(caption));
+            
+        await SendMediaToTelegram(botClient, chatId, processedFiles, statusMessage, targetUserIds, contentUrl, groupChat, safeCaption, effectiveToken, originalMessageDateUtc);
+    }
+    else
+    {
+        // 6. Обработка ошибки
+        if (!effectiveToken.IsCancellationRequested)
         {
-            Log.Debug($"Downloaded {mediaFiles.Count} files");
-
-            // Применяем политику размера (транскодирование/разбиение) перед отправкой
-            Log.Debug("Applying size policy {Policy} (TargetUploadLimitMb={Limit}, TargetPartSizeMb={Part})",
-                _downloadingConfig.CurrentValue.IfTooLarge,
-                _downloadingConfig.CurrentValue.TargetUploadLimitMb,
-                _downloadingConfig.CurrentValue.TargetPartSizeMb);
-            var processedFiles = await _mediaProcessingService.ApplySizePolicyAsync(
-                mediaFiles,
-                _downloadingConfig.CurrentValue,
-                effectiveToken);
-            Log.Debug("Size policy applied: files before={Before}, after={After}", mediaFiles.Count, processedFiles.Count);
-
-            // Санитизация и лимиты подписи: удаляем HTML, сохраняем Markdown, обрезаем до лимита TG
-            var safeCaption = TelegramBot.Utils.CommonUtilities.TrimCaptionToLimit(
-                TelegramBot.Utils.CommonUtilities.SanitizeCaptionRemoveHtml(caption));
-            await SendMediaToTelegram(botClient, chatId, processedFiles, statusMessage, targetUserIds, contentUrl, groupChat, safeCaption, effectiveToken, originalMessageDateUtc);
-            return;
-        }
-
-        // Если задача была отменена пользователем — выходим тихо
-        if (!(effectiveToken.IsCancellationRequested))
-        {
-            try
-            {
-                await botClient.SendMessage(chatId, _resourceService.GetResourceString("FailedToProcessLink"));
-            }
-            catch (OperationCanceledException) { }
+            // Используем сообщение об ошибке из DownloadResult
+            var errorMessage = _resourceService.GetResourceString("FailedToProcessLink") + $"\n`{downloadResult.ErrorMessage}`";
+            await botClient.EditMessageTextAsync(chatId, statusMessage.MessageId, errorMessage, parseMode: Telegram.Bot.Types.Enums.ParseMode.Markdown);
         }
     }
-
+}
         private async Task SendMediaToTelegram(ITelegramBotClient botClient, long chatId, List<byte[]> mediaFiles,
                                                         Message statusMessage, List<long>? targetUserIds, string contentUrl, bool groupChat = false,
                                                         string caption = "", CancellationToken? sessionToken = null,

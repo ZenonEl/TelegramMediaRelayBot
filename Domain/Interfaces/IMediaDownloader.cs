@@ -11,19 +11,27 @@
 
 using TelegramMediaRelayBot.Domain.Models;
 using Microsoft.Extensions.Configuration;
+using TelegramMediaRelayBot.Config.Downloaders;
 
 namespace TelegramMediaRelayBot.Domain.Interfaces;
+
 
 public interface IMediaDownloader
 {
     string Name { get; }
     int Priority { get; }
-    MediaType SupportedMediaTypes { get; }
     bool IsEnabled { get; }
+    DownloaderDefinition Config { get; }
     
+    /// <summary>
+    /// Проверяет, может ли этот загрузчик обработать URL на основе конфигурации.
+    /// </summary>
     bool CanHandle(string url);
-    Task<DownloadCapability> CheckCapabilityAsync(string url, CancellationToken ct);
-    Task<DownloadResult> DownloadAsync(string url, DownloadOptions options, CancellationToken ct);
+
+    /// <summary>
+    /// Выполняет одну попытку скачивания.
+    /// </summary>
+    Task<DownloadResult> Download(string url, DownloadOptions options, CancellationToken ct);
 }
 
 public interface IMediaDownloaderFactory

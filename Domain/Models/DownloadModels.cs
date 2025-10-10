@@ -9,6 +9,8 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
+using TelegramMediaRelayBot.Infrastructure.Downloaders.Policies;
+
 namespace TelegramMediaRelayBot.Domain.Models;
 
 [Flags]
@@ -42,17 +44,47 @@ public class DownloadResult
     public TimeSpan Duration { get; set; }
     public long? FileSize { get; set; }
     public string? ErrorMessage { get; set; }
+    public int AttemptNumber { get; set; }
+    public NextAttemptModifiers? Modifiers { get; set; }
 }
 
+/// <summary>
+/// Содержит опции для одной конкретной операции скачивания.
+/// </summary>
 public class DownloadOptions
 {
-    public MediaType PreferredMediaType { get; set; } = MediaType.All;
+    /// <summary>
+    /// URL прокси-сервера, который нужно использовать для этой попытки.
+    /// Может быть null, если прокси не нужен.
+    /// </summary>
     public string? ProxyUrl { get; set; }
-    public TimeSpan Timeout { get; set; } = TimeSpan.FromMinutes(10);
-    public int MaxRetries { get; set; } = 3;
-    public Dictionary<string, object>? CustomSettings { get; set; }
+
+    /// <summary>
+    /// Таймаут для этой конкретной операции.
+    /// Nullable, чтобы мы могли понимать, было ли значение установлено.
+    /// </summary>
+    public TimeSpan? Timeout { get; set; }
+
+    /// <summary>
+    /// Клиент Telegram, необходимый для обновления статуса.
+    /// </summary>
     public ITelegramBotClient? BotClient { get; set; }
+
+    /// <summary>
+    /// Сообщение о статусе, которое нужно обновлять.
+    /// </summary>
     public Message? StatusMessage { get; set; }
+
+    /// <summary>
+    /// Делегат, который будет вызываться для каждой строки лога от процесса.
+    /// Позволяет "подписаться" на живые логи.
+    /// </summary>
+    public Action<string>? OnProgress { get; set; }
+
+    /// <summary>
+    /// Результат предыдущей неудачной попытки, если она была.
+    /// </summary>
+    public DownloadResult? LastResult { get; set; }
 }
 
 public class UserPreferences
@@ -65,11 +97,3 @@ public class UserPreferences
     public Dictionary<string, TimeSpan> AverageDownloadTimes { get; set; } = new();
     public Dictionary<string, long> AverageFileSizes { get; set; } = new();
 }
-
-public class CommandResult
-{
-    public int ExitCode { get; set; }
-    public string Output { get; set; } = string.Empty;
-    public string ErrorOutput { get; set; } = string.Empty;
-    public TimeSpan Duration { get; set; }
-} 

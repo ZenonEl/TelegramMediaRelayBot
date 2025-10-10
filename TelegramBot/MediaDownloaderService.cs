@@ -9,173 +9,105 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
+
 using TelegramMediaRelayBot.Domain.Interfaces;
 using TelegramMediaRelayBot.Domain.Models;
-using Microsoft.Extensions.Options;
-using TelegramMediaRelayBot.Config;
+using TelegramMediaRelayBot.Infrastructure.Downloaders.Policies;
 
-
-namespace TelegramMediaRelayBot;
+namespace TelegramMediaRelayBot.TelegramBot;
 
 public class MediaDownloaderService
 {
     private readonly IMediaDownloaderFactory _downloaderFactory;
-    private readonly IOptionsMonitor<BotConfiguration> _botConfig;
-    private readonly IOptionsMonitor<TelegramMediaRelayBot.Config.DownloadingConfiguration> _downloadingConfig;
-    
+    private readonly IProxyPolicyManager _proxyPolicyManager;
+    private readonly IRetryPolicyManager _retryPolicyManager;
+
+    // 1. Конструктор теперь запрашивает все наши "мозги" из DI
     public MediaDownloaderService(
         IMediaDownloaderFactory downloaderFactory,
-        IOptionsMonitor<BotConfiguration> botConfig,
-        IOptionsMonitor<TelegramMediaRelayBot.Config.DownloadingConfiguration> downloadingConfig)
+        IProxyPolicyManager proxyPolicyManager,
+        IRetryPolicyManager retryPolicyManager)
     {
         _downloaderFactory = downloaderFactory;
-        _botConfig = botConfig;
-        _downloadingConfig = downloadingConfig;
+        _proxyPolicyManager = proxyPolicyManager;
+        _retryPolicyManager = retryPolicyManager;
     }
-    
-    public async Task<List<byte[]>?> DownloadMedia(
-        ITelegramBotClient botClient, 
-        string videoUrl, 
-        Message statusMessage, 
-        CancellationToken cancellationToken)
+
+    public async Task<DownloadResult> DownloadMedia(string url, DownloadOptions options, CancellationToken ct)
     {
-        // Используем fallback систему
-        return await DownloadMediaWithFallback(botClient, videoUrl, statusMessage, cancellationToken);
-    }
-    
-    public async Task<List<byte[]>?> DownloadMediaWithFallback(
-        ITelegramBotClient botClient, 
-        string videoUrl, 
-        Message statusMessage, 
-        CancellationToken cancellationToken)
-    {
-        // Префлайт по размеру (если включено). При отмене пользователем не редактируем сообщение
-        if (await ShouldSkipByExternalSizeAsync(videoUrl, cancellationToken))
+        // 2. Находим всех подходящих "рабочих" (загрузчиков) для URL
+        var availableDownloaders = _downloaderFactory.GetDownloadersForUrl(url);
+
+        if (!availableDownloaders.Any())
         {
-            try
-            {
-                await botClient.EditMessageText(
-                    statusMessage.Chat.Id,
-                    statusMessage.MessageId,
-                    $"❌ Файл слишком большой для загрузки источником (>{_downloadingConfig.CurrentValue.ExternalDownloadMaxSizeMb} MB).",
-                    cancellationToken: cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                // ignore when canceled
-            }
-            catch { }
-            return null;
+            return new DownloadResult { Success = false, ErrorMessage = $"No downloader found for URL: {url}" };
         }
 
-        // Получаем все подходящие загрузчики для этого URL
-        var downloaders = _downloaderFactory.GetDownloadersForUrl(videoUrl).ToList();
-        
-        if (!downloaders.Any())
+        DownloadResult lastResult = new() { Success = false };
+
+        // 3. ВНЕШНИЙ ЦИКЛ: Пробуем каждого "рабочего" по очереди
+        foreach (var downloader in availableDownloaders)
         {
-            Log.Error("No downloaders found for {Url}", videoUrl);
-            return null;
-        }
-        
-        Log.Information("Found {Count} downloaders for {Url}: {Names}", 
-            downloaders.Count, videoUrl, string.Join(", ", downloaders.Select(d => d.Name)));
-        
-        foreach (var downloader in downloaders)
-        {
-            if (cancellationToken.IsCancellationRequested)
+            Log.Information("Attempting to download with {DownloaderName}...", downloader.Name);
+            
+            int attempt = 1;
+
+            // 4. ВНУТРЕННИЙ ЦИКЛ: Реализуем "умные" ретраи для одного "рабочего"
+            while (true)
             {
-                // пользователь отменил — выходим из fallback-цепочки
-                return null;
-            }
-            try
-            {
-                Log.Information("Trying downloader {Downloader} for {Url}", downloader.Name, videoUrl);
-                
-                var options = new DownloadOptions
+                // 5. ОПРЕДЕЛЯЕМ ПРОКСИ для текущей попытки
+                // Получаем базовый адрес прокси из политики загрузчика
+                var proxyAddress = _proxyPolicyManager.GetProxyAddress(downloader.Config, url);
+
+                // Если предыдущая попытка провалилась и политика ретраев требует использовать прокси,
+                // это переопределит базовую настройку.
+                if (lastResult.Modifiers?.UseProxyName != null)
                 {
-                    ProxyUrl = _botConfig.CurrentValue.Proxy,
-                    Timeout = TimeSpan.FromMinutes(10),
-                    MaxRetries = 3,
-                    BotClient = botClient,
-                    StatusMessage = statusMessage
-                };
+                    // TODO: Реализовать получение адреса прокси по имени из Modifiers
+                    Log.Information("Retry policy triggered: switching to proxy '{ProxyName}'", lastResult.Modifiers.UseProxyName);
+                    // proxyAddress = ... find proxy address by name ...
+                }
                 
-                var result = await downloader.DownloadAsync(videoUrl, options, cancellationToken);
+                // Обновляем опции для этой конкретной попытки
+                options.ProxyUrl = proxyAddress;
                 
-                if (result.Success)
+                // 6. ВЫПОЛНЯЕМ ОДНУ ПОПЫТКУ СКАЧИВАНИЯ
+                lastResult = await downloader.Download(url, options, ct);
+                lastResult.AttemptNumber = attempt;
+
+                // 7. АНАЛИЗИРУЕМ РЕЗУЛЬТАТ
+                if (lastResult.Success)
                 {
-                    Log.Information("Download successful with {Downloader} for {Url}", downloader.Name, videoUrl);
-                    return result.MediaFiles;
+                    Log.Information("Download successful with {DownloaderName} on attempt {Attempt}", downloader.Name, attempt);
+                    return lastResult; // Успех! Выходим.
+                }
+
+                // Если провал, логируем ошибку
+                Log.Warning("Attempt {Attempt} with {DownloaderName} failed: {Error}", attempt, downloader.Name, lastResult.ErrorMessage);
+                
+                // 8. СПРАШИВАЕМ У ПОЛИТИКИ РЕТРАЕВ, ЧТО ДЕЛАТЬ ДАЛЬШЕ
+                var decision = _retryPolicyManager.Decide(lastResult, attempt);
+                
+                if (decision.ShouldRetry)
+                {
+                    // Нужно повторить. Передаем модификаторы в следующую итерацию.
+                    lastResult.Modifiers = decision.Modifiers;
+                    
+                    Log.Information("Waiting {Delay}s before next attempt...", decision.Delay.TotalSeconds);
+                    await Task.Delay(decision.Delay, ct);
+                    attempt++;
                 }
                 else
                 {
-                    // Если отмена — прекращаем цепочку без предупреждений и ошибок
-                    if (string.Equals(result.ErrorMessage, "Canceled", StringComparison.OrdinalIgnoreCase))
-                    {
-                        Log.Information("Download canceled for {Url}", videoUrl);
-                        return null;
-                    }
-                    Log.Warning("Downloader {Downloader} failed for {Url}: {Error}", 
-                        downloader.Name, videoUrl, result.ErrorMessage);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // user canceled: stop fallback chain silently
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, "Downloader {Downloader} failed for {Url}", downloader.Name, videoUrl);
-                continue;
-            }
-            
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return null;
-            }
-        }
-        
-        // Если дошли сюда без успеха и без явной отмены — считаем, что все загрузчики действительно не смогли
-        Log.Error("All downloaders failed for {Url}", videoUrl);
-        return null;
-    }
-
-    private async Task<bool> ShouldSkipByExternalSizeAsync(string url, CancellationToken ct)
-    {
-        var cfg = _downloadingConfig.CurrentValue;
-        if (!cfg.PreflightEnabled || cfg.ExternalDownloadMaxSizeMb <= 0)
-            return false;
-
-        try
-        {
-            using var handler = new HttpClientHandler { AllowAutoRedirect = true, AutomaticDecompression = System.Net.DecompressionMethods.All };
-            using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(10) };
-
-            using var req = new HttpRequestMessage(HttpMethod.Head, url);
-            using var resp = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
-            if (!resp.IsSuccessStatusCode) return false;
-
-            if (resp.Content.Headers.ContentLength.HasValue)
-            {
-                var bytes = resp.Content.Headers.ContentLength.Value;
-                var mb = bytes / (1024.0 * 1024.0);
-                if (mb > cfg.ExternalDownloadMaxSizeMb)
-                {
-                    Log.Information("Preflight skip: external size {Size:F1}MB exceeds cap {Cap}MB for {Url}", mb, cfg.ExternalDownloadMaxSizeMb, url);
-                    return true;
+                    // Повторять не нужно. Выходим из внутреннего цикла и переходим к следующему загрузчику.
+                    Log.Warning("Retry policy decided not to retry with {DownloaderName}.", downloader.Name);
+                    break;
                 }
             }
         }
-        catch (OperationCanceledException)
-        {
-            Log.Debug("Preflight canceled for {Url}", url);
-        }
-        catch (Exception ex)
-        {
-            Log.Debug(ex, "Preflight HEAD failed for {Url}", url);
-        }
 
-        return false;
+        // 9. Если мы прошли всех "рабочих" и никто не справился
+        Log.Error("All downloaders and retry policies failed for URL: {Url}", url);
+        return new DownloadResult { Success = false, ErrorMessage = "All downloaders failed." };
     }
-} 
+}

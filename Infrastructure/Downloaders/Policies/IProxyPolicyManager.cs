@@ -1,0 +1,18 @@
+using TelegramMediaRelayBot.Config.Downloaders;
+using TelegramMediaRelayBot.Domain.Models;
+
+namespace TelegramMediaRelayBot.Infrastructure.Downloaders.Policies;
+
+/// <summary>
+/// Принимает решение о том, какой прокси-сервер использовать для попытки скачивания.
+/// </summary>
+public interface IProxyPolicyManager
+{
+    /// <summary>
+    /// Определяет, какой прокси использовать, на основе конфигурации загрузчика и URL.
+    /// </summary>
+    /// <param name="downloaderConfig">Конфигурация конкретного загрузчика.</param>
+    /// <param name="url">URL для скачивания.</param>
+    /// <returns>Адрес прокси-сервера или null, если прокси не нужен.</returns>
+    string? GetProxyAddress(DownloaderDefinition downloaderConfig, string url);
+}

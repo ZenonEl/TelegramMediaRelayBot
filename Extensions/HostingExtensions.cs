@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Configuration;
 using TelegramMediaRelayBot.Config;
+using TelegramMediaRelayBot.Config.Downloaders;
 using TelegramMediaRelayBot.TelegramBot;
 using TelegramMediaRelayBot.TelegramBot.Handlers;
 using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
@@ -10,6 +11,8 @@ using FluentValidation;
 using TelegramMediaRelayBot.TelegramBot.Validation;
 using TelegramMediaRelayBot.Infrastructure.Backup;
 using Microsoft.Extensions.Hosting;
+using TelegramMediaRelayBot.Domain.Interfaces;
+using TelegramMediaRelayBot.Infrastructure.Factories;
 using System.Data;
 using FluentMigrator.Runner.Initialization;
 using FluentMigrator.Runner;
@@ -58,6 +61,7 @@ namespace TelegramMediaRelayBot.Extensions
             services.Configure<AccessPolicyConfiguration>(configuration.GetSection("AccessPolicy"));
             services.Configure<TextCleanupConfiguration>(configuration.GetSection("TextCleanup"));
             services.Configure<BackupConfiguration>(configuration.GetSection("Backup"));
+            services.Configure<DownloaderConfigRoot>(configuration);
 
             // Register configuration validators (fail fast on startup)
             services.AddSingleton<IValidateOptions<BotConfiguration>, Config.Validation.BotConfigurationValidator>();
@@ -99,10 +103,10 @@ namespace TelegramMediaRelayBot.Extensions
             services.AddSingleton<IDomainsLoader, DomainsLoader>(); // Assuming DomainsLoader is the implementation
             services.AddSingleton<CallbackQueryHandlersFactory>();
             services.AddSingleton<IUserStateManager, InMemoryUserStateManager>();
+            services.AddSingleton<IMediaDownloaderFactory, MediaDownloaderFactory>();
 
             // Scoped services
             services.AddScoped<IUserFilterService, DefaultUserFilterService>();
-            services.AddScoped<Domain.Interfaces.IMediaDownloaderFactory, Infrastructure.Factories.MediaDownloaderFactory>();
             services.AddScoped<MediaDownloaderService>();
 
             // Register all IBotCallbackQueryHandlers implementations using Scrutor
@@ -112,13 +116,6 @@ namespace TelegramMediaRelayBot.Extensions
                 .AsImplementedInterfaces()
                 .WithTransientLifetime());
 
-            // Register all IMediaDownloader implementations using Scrutor
-            services.Scan(scan => scan
-                .FromAssemblyOf<Domain.Interfaces.IMediaDownloader>()
-                .AddClasses(classes => classes.AssignableTo<Domain.Interfaces.IMediaDownloader>())
-                .AsImplementedInterfaces()
-                .WithScopedLifetime());
-
             // Other Infrastructure Services
             services.AddSingleton<Config.Services.IConfigurationService, Config.Services.ConfigurationService>();
             services.AddSingleton<Config.Services.IDatabaseConfigurationService, Config.Services.DatabaseConfigurationService>();
@@ -126,6 +123,10 @@ namespace TelegramMediaRelayBot.Extensions
             services.AddSingleton<Infrastructure.MediaProcessing.IMediaProcessingService, Infrastructure.MediaProcessing.FfmpegService>();
             services.AddSingleton<TelegramBot.Utils.ITextCleanupService, TelegramBot.Utils.TextCleanupService>();
             services.AddScoped<TelegramBot.Services.IDefaultSummaryService, TelegramBot.Services.DefaultSummaryService>();
+            services.AddSingleton<Infrastructure.Processes.IProcessRunner, Infrastructure.Processes.ProcessRunner>();
+            services.AddSingleton<Infrastructure.Downloaders.Arguments.IArgumentBuilder, Infrastructure.Downloaders.Arguments.ArgumentBuilder>();
+            services.AddSingleton<Infrastructure.Downloaders.Policies.IProxyPolicyManager, Infrastructure.Downloaders.Policies.ProxyPolicyManager>();
+            services.AddSingleton<Infrastructure.Downloaders.Policies.IRetryPolicyManager, Infrastructure.Downloaders.Policies.RetryPolicyManager>();
 
             // Backup Infrastructure
             services.AddSingleton<IBackupProviderFactory, BackupProviderFactory>();

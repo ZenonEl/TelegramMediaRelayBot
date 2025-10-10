@@ -32,6 +32,11 @@ namespace TelegramMediaRelayBot
         {
             var builder = Host.CreateDefaultBuilder(args);
 
+            builder.ConfigureAppConfiguration((hostingContext, config) =>
+            {
+                config.AddYamlFile("downloader-config.yaml", optional: false, reloadOnChange: true);
+            });
+
             // Конфигурируем сервисы и логирование
             builder.ConfigureServices((hostContext, services) =>
             {
