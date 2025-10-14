@@ -14,7 +14,10 @@
         <value>Failed to process the link. Try again later, and if it still doesn't work, the link may not be supported or an error occurred during the video download.</value>
     </data>
     <data name="HereIsYourVideo" xml:space="preserve">
-        <value>Here is your video! </value>
+        <value>ㅤ</value>
+    </data>
+    <data name="InvisibleLetter" xml:space="preserve">
+        <value>ㅤ</value>
     </data>
     <data name="ContactSentVideo" xml:space="preserve">
         <value>{0} sent a video!

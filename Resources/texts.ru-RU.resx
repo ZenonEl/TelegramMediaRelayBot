@@ -16,6 +16,9 @@
     <data name="HereIsYourVideo" xml:space="preserve">
         <value>ㅤ</value>
     </data>
+    <data name="InvisibleLetter" xml:space="preserve">
+        <value>ㅤ</value>
+    </data>
   <data name="PrivacyFilter.Social" xml:space="preserve">
     <value>Социальные</value>
   </data>
