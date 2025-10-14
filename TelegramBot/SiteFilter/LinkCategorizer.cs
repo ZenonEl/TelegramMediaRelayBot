@@ -10,6 +10,7 @@
 // (по вашему выбору) любой более поздней версии.
 
 
+using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace TelegramMediaRelayBot.TelegramBot.SiteFilter;
@@ -19,17 +20,19 @@ public class HashTableLinkCategorizer : ILinkCategorizer
     private readonly HashSet<string> _socialDomains;
     private readonly HashSet<string> _nsfwDomains;
     private readonly HashSet<string> _unifiedDomains;
+    private readonly IUrlParsingService _urlParsingService;
 
-    public HashTableLinkCategorizer(IDomainsLoader domainsLoader)
+    public HashTableLinkCategorizer(IDomainsLoader domainsLoader, IUrlParsingService urlParser)
     {
         _socialDomains = domainsLoader.LoadDomainsFromFile("DomainLists/Social/hosts");
         _nsfwDomains = domainsLoader.LoadDomainsFromFile("DomainLists/NSFW/hosts");
         _unifiedDomains = domainsLoader.LoadDomainsFromFile("DomainLists/UnifiedDomains/hosts");
+        _urlParsingService = urlParser;
     }
 
     public string DetermineCategory(string url)
     {
-        var domain = CommonUtilities.ExtractDomain(url);
+        _urlParsingService.TryExtractLinkAndText(url, out string domain, out string _);
 
         if (_socialDomains.Contains(domain)) return "Social";
         if (_nsfwDomains.Contains(domain)) return "NSFW";

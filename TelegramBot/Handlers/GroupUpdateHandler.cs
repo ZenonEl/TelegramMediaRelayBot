@@ -9,59 +9,82 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Services;
+using TelegramMediaRelayBot.TelegramBot.Sessions;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers;
 
 public class GroupUpdateHandler
 {
-    private TGBot _tgBot;
-    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
+    private readonly DownloadSessionManager _sessionManager;
+    private readonly IUrlParsingService _urlParsingService;
+    private readonly Config.Services.IResourceService _resourceService;
 
+    // 1. Конструктор теперь чистый и не зависит от TGBot
     public GroupUpdateHandler(
-        TGBot tgBot,
-        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
+        DownloadSessionManager sessionManager,
+        IUrlParsingService urlParsingService,
+        Config.Services.IResourceService resourceService)
     {
-        _tgBot = tgBot;
+        _sessionManager = sessionManager;
+        _urlParsingService = urlParsingService;
         _resourceService = resourceService;
     }
 
     public async Task HandleGroupUpdate(Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        string messageText = update.Message!.Text!;
-        if (messageText.Contains("/link"))
+        var message = update.Message!;
+        var messageText = message.Text!;
+
+        if (messageText.StartsWith("/link"))
         {
-            string link;
-            string text = "";
-
-            string trimmedMessage = messageText[5..].Trim();
-
-            int separatorIndex = trimmedMessage.IndexOfAny([' ', '\n']);
-
-            if (separatorIndex != -1)
-            {
-                link = trimmedMessage[..separatorIndex].Trim();
-                text = trimmedMessage[separatorIndex..].Trim();
-            }
-            else
-            {
-                link = trimmedMessage.Trim();
-            }
-
-            if (CommonUtilities.IsLink(link))
-            {
-        Message statusMessage = await botClient.SendMessage(update.Message.Chat.Id, _resourceService.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken).ConfigureAwait(false);
-                _ = _tgBot.HandleMediaRequest(botClient, link, update.Message.Chat.Id, statusMessage: statusMessage, groupChat: true, caption: text);
-            }
-            else
-            {
-        await botClient.SendMessage(update.Message.Chat.Id, _resourceService.GetResourceString("InvalidLinkFormat"), cancellationToken: cancellationToken).ConfigureAwait(false);
-            }
+            await HandleLinkCommand(botClient, message, cancellationToken);
         }
-        else if (messageText == "/help")
+        else if (messageText.StartsWith("/help"))
         {
-            string text = _resourceService.GetResourceString("GroupHelpText");
-        await botClient.SendMessage(update.Message.Chat.Id, text, cancellationToken: cancellationToken).ConfigureAwait(false);
+            var text = _resourceService.GetResourceString("GroupHelpText");
+            await botClient.SendMessage(message.Chat.Id, text, cancellationToken: cancellationToken);
         }
+    }
+
+    private async Task HandleLinkCommand(ITelegramBotClient botClient, Message message, CancellationToken cancellationToken)
+    {
+        // 2. Логика парсинга команды. Можно в будущем вынести в отдельный CommandParser.
+        var parts = message.Text!.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 2)
+        {
+            await botClient.SendMessage(message.Chat.Id, _resourceService.GetResourceString("InvalidLinkFormat"), cancellationToken: cancellationToken);
+            return;
+        }
+        
+        var url = parts[1];
+        var caption = message.ReplyToMessage?.Text ?? string.Empty; // Пример получения подписи из реплая
+        
+        // 3. Используем наш новый сервис для валидации ссылки
+        if (!_urlParsingService.IsLink(url))
+        {
+            await botClient.SendMessage(message.Chat.Id, _resourceService.GetResourceString("InvalidLinkFormat"), cancellationToken: cancellationToken);
+            return;
+        }
+
+        // 4. Вместо вызова HandleMediaRequest, создаем сессию через менеджер.
+        // Для групповых чатов мы не показываем клавиатуру, а сразу запускаем загрузку "только для себя".
+        // (Это предположение, логику можно изменить).
+        
+        var statusMessage = await botClient.SendMessage(message.Chat.Id, 
+            _resourceService.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
+
+        var session = _sessionManager.CreateSession(
+            statusMessageId: statusMessage.MessageId,
+            chatId: message.Chat.Id,
+            url: url,
+            caption: caption,
+            originalMessageDateUtc: message.Date.ToUniversalTime()
+        );
+
+        // TODO: Здесь мы должны запустить саму загрузку, вызвав MediaDownloaderService.
+        // В TGBot мы это делали через _tgBot.HandleMediaRequest, а здесь нужно будет
+        // получить MediaDownloaderService из DI и вызвать его.
+        // Например: _downloaderService.DownloadMedia(url, options, session.SessionCts.Token);
     }
 }

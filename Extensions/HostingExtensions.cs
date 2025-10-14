@@ -25,6 +25,15 @@ using TelegramMediaRelayBot.Database.Repositories.MySql;
 using TelegramMediaRelayBot.Database.Repositories.Sqlite;
 using Dapper;
 using Microsoft.Extensions.Logging;
+using TelegramMediaRelayBot.TelegramBot.States;
+using TelegramBot.Services;
+using TelegramMediaRelayBot.TelegramBot.Services;
+using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.Infrastructure.MediaProcessing;
+using TelegramMediaRelayBot.TelegramBot.Sessions;
+using TelegramMediaRelayBot.Infrastructure.Processes;
+using TelegramMediaRelayBot.Infrastructure.Downloaders.Arguments;
+using TelegramMediaRelayBot.Infrastructure.Downloaders.Policies;
 
 namespace TelegramMediaRelayBot.Extensions
 {
@@ -73,7 +82,7 @@ namespace TelegramMediaRelayBot.Extensions
             services.AddScoped<IValidator<InboxViewRequest>, InboxViewRequestValidator>();
 
             // Service that logs configuration changes (hot reload)
-            services.AddSingleton<Config.Services.ConfigurationChangeLogger>();
+            services.AddSingleton<ConfigurationChangeLogger>();
 
             return services;
         }
@@ -83,61 +92,119 @@ namespace TelegramMediaRelayBot.Extensions
         /// </summary>
         public static IServiceCollection AddApplicationCore(this IServiceCollection services)
         {
-            // Register Telegram.Bot client with a factory
+            // ========================================================================
+            // == CORE SERVICES & HOSTING
+            // ========================================================================
+
             services.AddSingleton<ITelegramBotClient>(provider =>
             {
                 var botConfig = provider.GetRequiredService<IOptions<BotConfiguration>>();
                 if (string.IsNullOrWhiteSpace(botConfig.Value.TelegramBotToken))
-                {
-                    throw new ArgumentException("Telegram Bot Token is not configured.", nameof(BotConfiguration.TelegramBotToken));
-                }
+                    throw new ArgumentException("Telegram Bot Token is not configured.");
                 return new TelegramBotClient(botConfig.Value.TelegramBotToken);
             });
 
-            // Register our main bot class as a Hosted Service
+            // Main background services of the application
             services.AddHostedService<TGBot>();
+            services.AddHostedService<Scheduler>();
+            services.AddHostedService<BackupHostedService>();
 
-            // Other application singletons
-            services.AddSingleton<Scheduler>();
-            services.AddSingleton<ILinkCategorizer, HashTableLinkCategorizer>();
-            services.AddSingleton<IDomainsLoader, DomainsLoader>(); // Assuming DomainsLoader is the implementation
+            // ========================================================================
+            // == HANDLERS & FACTORIES
+            // ========================================================================
+
+            // Core handlers for routing updates
+            services.AddScoped<PrivateUpdateHandler>();
+            services.AddScoped<GroupUpdateHandler>();
+
+            // Factories for creating handlers dynamically
             services.AddSingleton<CallbackQueryHandlersFactory>();
-            services.AddSingleton<IUserStateManager, InMemoryUserStateManager>();
+            services.AddSingleton<StateHandlerFactory>();
             services.AddSingleton<IMediaDownloaderFactory, MediaDownloaderFactory>();
 
-            // Scoped services
-            services.AddScoped<IUserFilterService, DefaultUserFilterService>();
-            services.AddScoped<MediaDownloaderService>();
+            // ========================================================================
+            // == STATE & SESSION MANAGEMENT
+            // ========================================================================
 
-            // Register all IBotCallbackQueryHandlers implementations using Scrutor
+            services.AddSingleton<IUserStateManager, InMemoryUserStateManager>();
+            services.AddSingleton<DownloadSessionManager>();
+            services.AddSingleton<IUserRequestThrottler, UserRequestThrottler>();
+            services.AddSingleton<ILastUserTextCache, LastUserTextCache>();
+
+            // ========================================================================
+            // == DOWNLOADER INFRASTRUCTURE
+            // ========================================================================
+
+            services.AddScoped<MediaDownloaderService>();
+            services.AddSingleton<IProcessRunner, ProcessRunner>();
+            services.AddSingleton<IArgumentBuilder, ArgumentBuilder>();
+            //services.AddScoped<ICookieProvider, CookieProvider>(); // Scoped to manage temp files per request
+
+            // Policies for downloader logic
+            services.AddSingleton<IProxyPolicyManager, ProxyPolicyManager>();
+            services.AddSingleton<IRetryPolicyManager, RetryPolicyManager>();
+
+            // ========================================================================
+            // == APPLICATION & MENU SERVICES
+            // ========================================================================
+
+            // Services that encapsulate business logic, often used by handlers
+            services.AddScoped<IDefaultActionService, DefaultActionService>();
+            services.AddScoped<IContactMenuService, ContactMenuService>();
+            services.AddScoped<IGroupMenuService, GroupMenuService>();
+            services.AddScoped<IUserMenuService, UserMenuService>();
+            services.AddScoped<ICallbackQueryMenuService, CallbackQueryMenuService>();
+            services.AddScoped<IDefaultSummaryService, DefaultSummaryService>();
+            services.AddScoped<IStateBreakService, StateBreakService>();
+            services.AddScoped<ITelegramInteractionService, TelegramInteractionService>();
+
+            // ========================================================================
+            // == UoW SERVICES (DATABASE BUSINESS LOGIC)
+            // ========================================================================
+
+            services.AddScoped<IContactUoW, ContactUoWService>();
+            services.AddScoped<IDefaultActionUoW, DefaultActionUoWService>();
+            services.AddScoped<IGroupUoW, GroupUoWService>();
+            services.AddScoped<IPrivacySettingsUoW, PrivacySettingsUoWService>();
+            services.AddScoped<IPrivacySettingsTargetsUoW, PrivacySettingsTargetsUoWService>();
+
+            // ========================================================================
+            // == MISC INFRASTRUCTURE & UTILITY SERVICES
+            // ========================================================================
+
+            services.AddSingleton<IBackupProviderFactory, BackupProviderFactory>();
+            services.AddSingleton<IBackupOrchestrator, BackupOrchestrator>();
+            services.AddSingleton<IMediaProcessingService, FfmpegService>();
+            services.AddSingleton<ILinkCategorizer, HashTableLinkCategorizer>();
+            services.AddSingleton<IDomainsLoader, DomainsLoader>();
+            services.AddSingleton<IConfigurationService, ConfigurationService>();
+            services.AddSingleton<IDatabaseConfigurationService, DatabaseConfigurationService>();
+            services.AddSingleton<IResourceService, ResourceService>();
+            services.AddSingleton<ITextCleanupService, TextCleanupService>();
+            services.AddScoped<IUserFilterService, DefaultUserFilterService>();
+
+            // Helper services for parsing/formatting (replacement for static utils)
+            services.AddSingleton<IUrlParsingService, UrlParsingService>();
+            services.AddSingleton<ICaptionFormatter, CaptionFormatter>();
+            services.AddSingleton<IMediaTypeResolver, MediaTypeResolver>();
+            services.AddSingleton<IStartParameterParser, StartParameterParser>();
+
+            // ========================================================================
+            // == AUTOMATIC REGISTRATION (SCRUTOR)
+            // ========================================================================
+
+            // Automatically finds and registers all command and state handlers
             services.Scan(scan => scan
                 .FromAssemblyOf<IBotCallbackQueryHandlers>()
                 .AddClasses(classes => classes.AssignableTo<IBotCallbackQueryHandlers>())
                 .AsImplementedInterfaces()
                 .WithTransientLifetime());
 
-            // Other Infrastructure Services
-            services.AddSingleton<Config.Services.IConfigurationService, Config.Services.ConfigurationService>();
-            services.AddSingleton<Config.Services.IDatabaseConfigurationService, Config.Services.DatabaseConfigurationService>();
-            services.AddSingleton<Config.Services.IResourceService, Config.Services.ResourceService>();
-            services.AddSingleton<Infrastructure.MediaProcessing.IMediaProcessingService, Infrastructure.MediaProcessing.FfmpegService>();
-            services.AddSingleton<TelegramBot.Utils.ITextCleanupService, TelegramBot.Utils.TextCleanupService>();
-            services.AddScoped<TelegramBot.Services.IDefaultSummaryService, TelegramBot.Services.DefaultSummaryService>();
-            services.AddSingleton<Infrastructure.Processes.IProcessRunner, Infrastructure.Processes.ProcessRunner>();
-            services.AddSingleton<Infrastructure.Downloaders.Arguments.IArgumentBuilder, Infrastructure.Downloaders.Arguments.ArgumentBuilder>();
-            services.AddSingleton<Infrastructure.Downloaders.Policies.IProxyPolicyManager, Infrastructure.Downloaders.Policies.ProxyPolicyManager>();
-            services.AddSingleton<Infrastructure.Downloaders.Policies.IRetryPolicyManager, Infrastructure.Downloaders.Policies.RetryPolicyManager>();
-
-            // Backup Infrastructure
-            services.AddSingleton<IBackupProviderFactory, BackupProviderFactory>();
-            services.AddSingleton<IBackupOrchestrator, BackupOrchestrator>();
-            services.AddHostedService<BackupHostedService>(); // Используем наш новый IHostedService для бэкапов
-
-            services.AddScoped<IContactUoW, ContactUoWService>();
-            services.AddScoped<IDefaultActionUoW, DefaultActionUoWService>();
-            services.AddScoped<IGroupUoW, GroupUoWService>(); 
-            services.AddScoped<IPrivacySettingsUoW, PrivacySettingsUoWService>();
-            services.AddScoped<IPrivacySettingsTargetsUoW, PrivacySettingsTargetsUoWService>();
+            services.Scan(scan => scan
+                .FromAssemblyOf<IStateHandler>()
+                .AddClasses(classes => classes.AssignableTo<IStateHandler>())
+                .AsImplementedInterfaces()
+                .WithScopedLifetime());
 
             return services;
         }

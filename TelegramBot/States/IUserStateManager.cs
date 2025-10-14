@@ -1,21 +1,22 @@
-// Copyright (C) 2024-2025 ZenonEl
-// GNU AGPL v3 or later
+using TelegramMediaRelayBot.TelegramBot.States; // Добавь этот using
 
 namespace TelegramMediaRelayBot;
 
+// Интерфейс теперь работает с UserStateData
 public interface IUserStateManager
 {
-    bool TryGet(long chatId, out IUserState? state);
-    void Set(long chatId, IUserState state);
+    bool TryGet(long chatId, out UserStateData? state);
+    void Set(long chatId, UserStateData state);
     bool Remove(long chatId);
     bool Contains(long chatId);
 }
 
+// Реализация тоже меняется на UserStateData
 public class InMemoryUserStateManager : IUserStateManager
 {
-    private readonly System.Collections.Concurrent.ConcurrentDictionary<long, IUserState> _states = new();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<long, UserStateData> _states = new();
 
-    public bool TryGet(long chatId, out IUserState? state)
+    public bool TryGet(long chatId, out UserStateData? state)
     {
         if (_states.TryGetValue(chatId, out var s))
         {
@@ -26,7 +27,7 @@ public class InMemoryUserStateManager : IUserStateManager
         return false;
     }
 
-    public void Set(long chatId, IUserState state)
+    public void Set(long chatId, UserStateData state)
     {
         _states[chatId] = state;
     }

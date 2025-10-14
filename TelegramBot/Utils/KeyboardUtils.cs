@@ -85,7 +85,7 @@ public static class KeyboardUtils
         return inlineKeyboard;
     }
 
-    public static Task SendInlineKeyboardMenu(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, string? text = null, int inboxNewCount = 0)
+    public static InlineKeyboardMarkup SendInlineKeyboardMenu(int inboxNewCount = 0)
     {
         var inlineKeyboard = new InlineKeyboardMarkup(new[]
                     {
@@ -121,7 +121,7 @@ public static class KeyboardUtils
                             InlineKeyboardButton.WithCallbackData(GetResourceString("BehindTheScenesButtonText"), "whos_the_genius")
                         }
                     });
-        return CommonUtilities.SendMessage(botClient, update, inlineKeyboard, cancellationToken, text);
+        return inlineKeyboard;
     }
 
     public static InlineKeyboardMarkup GetVideoDistributionKeyboardMarkup(int? messageId = null)

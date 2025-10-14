@@ -10,644 +10,156 @@
 // (по вашему выбору) любой более поздней версии.
 
 
-using Telegram.Bot.Polling;
 using System.Text.RegularExpressions;
 using Telegram.Bot.Types.Enums;
 using TelegramMediaRelayBot.TelegramBot.Utils;
-using TelegramMediaRelayBot.TelegramBot.Handlers;
-using TelegramMediaRelayBot.TelegramBot;
-using TelegramMediaRelayBot.Domain.Models;
-using TelegramMediaRelayBot.TelegramBot.Services;
-using TelegramMediaRelayBot.Database.Interfaces;
-using TelegramMediaRelayBot.Database;
-using TelegramMediaRelayBot.TelegramBot.SiteFilter;
 using Microsoft.Extensions.Hosting;
 using TelegramMediaRelayBot.Config;
 using Microsoft.Extensions.Options;
-
+using TelegramMediaRelayBot.TelegramBot.States;
+using Microsoft.Extensions.DependencyInjection;
+using TelegramMediaRelayBot.TelegramBot.Sessions;
+using TelegramMediaRelayBot.TelegramBot.Services;
+using TelegramBot.Services;
+using TelegramMediaRelayBot.TelegramBot.Handlers;
+using Telegram.Bot.Polling; // <-- Добавь этот using
 
 namespace TelegramMediaRelayBot;
 
 public partial class TGBot : IHostedService
 {
-    private readonly IUserRepository _userRepo;
-    private readonly IUserGetter _userGetter;
-    private readonly CallbackQueryHandlersFactory _handlersFactory;
-    private readonly PrivateUpdateHandler _updateHandler;
-    private readonly IPrivacySettingsGetter _privacySettingsGetter;
-    private readonly ILinkCategorizer _categorizer;
-    private readonly IInboxRepository _inboxRepo;
-    private readonly IUserFilterService _userFilter;
-    private readonly MediaDownloaderService _mediaDownloaderService;
-    private readonly TelegramMediaRelayBot.Infrastructure.MediaProcessing.IMediaProcessingService _mediaProcessingService;
-    private readonly TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService _textCleanupService;
-    private readonly TelegramMediaRelayBot.Config.Services.IConfigurationService _configService;
-    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
-    private readonly IOptions<BotConfiguration> _botConfig;
-    private readonly IOptionsMonitor<MessageDelayConfiguration> _delayConfig;
-    private readonly IOptionsMonitor<TelegramMediaRelayBot.Config.DownloadingConfiguration> _downloadingConfig;
-    public static IUserStateManager StateManager { get; private set; }
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, DateTime> _lastInboxNotifyUtc = new();
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<long, DateTime> _nextSlotByChatId = new();
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<long, (string Text, DateTime At)> _lastTextByChatId = new();
-    public static CancellationToken cancellationToken;
+    private readonly ITelegramBotClient _botClient;
+    private readonly IServiceScopeFactory _scopeFactory;
+    
+    // Наши "мозги"
+    private readonly IUserStateManager _stateManager;
+    private readonly StateHandlerFactory _stateHandlerFactory;
+    private readonly DownloadSessionManager _sessionManager;
+    private readonly ITelegramInteractionService _interactionService;
 
+    // 1. ДОБАВЛЯЕМ НОВЫЕ СЕРВИСЫ для замены static полей
+    private readonly ILastUserTextCache _lastUserTextCache;
+    
     public TGBot(
-        IUserRepository userRepo,
-        IUserGetter userGetters,
-        CallbackQueryHandlersFactory handlersFactory,
-        IContactGetter contactGetterRepository,
-        IDefaultActionGetter defaultActionGetter,
-        IPrivacySettingsGetter privacySettingsGetter,
-        IGroupGetter groupGetter,
-        ILinkCategorizer categorizer,
-        MediaDownloaderService mediaDownloaderService,
-        TelegramMediaRelayBot.Infrastructure.MediaProcessing.IMediaProcessingService mediaProcessingService,
-        TelegramMediaRelayBot.Config.Services.IConfigurationService configService,
-        TelegramMediaRelayBot.Config.Services.IResourceService resourceService,
-        IOptions<BotConfiguration> botConfig,
-        IOptionsMonitor<MessageDelayConfiguration> delayConfig,
-        IOptionsMonitor<TelegramMediaRelayBot.Config.DownloadingConfiguration> downloadingConfig,
+        ITelegramBotClient botClient,
+        IServiceScopeFactory scopeFactory,
         IUserStateManager userStateManager,
-        IUserFilterService userFilterService,
-        IInboxRepository inboxRepository,
-        TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService textCleanupService
-        )
+        StateHandlerFactory stateHandlerFactory,
+        DownloadSessionManager sessionManager,
+        ILastUserTextCache lastUserTextCache,
+        ITelegramInteractionService interactionService)
     {
-        _userRepo = userRepo;
-        _userGetter = userGetters;
-        _handlersFactory = handlersFactory;
-        _configService = configService;
-        _resourceService = resourceService;
-        _privacySettingsGetter = privacySettingsGetter;
-        _categorizer = categorizer;
-        _userFilter = userFilterService;
-        _mediaDownloaderService = mediaDownloaderService;
-        _mediaProcessingService = mediaProcessingService;
-        _textCleanupService = textCleanupService;
-        _inboxRepo = inboxRepository;
-        _botConfig = botConfig;
-        _delayConfig = delayConfig;
-        _downloadingConfig = downloadingConfig;
-
-        _updateHandler = new PrivateUpdateHandler(
-        this,
-        _handlersFactory,
-        contactGetterRepository,
-        defaultActionGetter,
-        _userGetter,
-        groupGetter,
-        _configService,
-        resourceService,
-            _textCleanupService,
-            _inboxRepo
-        );
-
-        StateManager = userStateManager;
+        _botClient = botClient;
+        _scopeFactory = scopeFactory;
+        _stateManager = userStateManager;
+        _stateHandlerFactory = stateHandlerFactory;
+        _sessionManager = sessionManager;
+        _lastUserTextCache = lastUserTextCache;
+        _interactionService = interactionService;
     }
 
-    // Хост вызовет его при запуске приложения.
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        // Просто вызываем наш существующий метод Start
-        return Start();
-    }
+        Log.Information("TGBot Hosted Service is starting.");
 
-    // Хост вызовет его при остановке приложения (Ctrl+C).
-    public Task StopAsync(CancellationToken cancellationToken)
-    {
-        Log.Information("Stopping Telegram Bot.");
-        // Здесь можно добавить логику для корректной остановки, если она нужна
-        return Task.CompletedTask;
-    }
-
-    public async Task Start()
-    {
-        string telegramBotToken = _botConfig.Value.TelegramBotToken;
-        ITelegramBotClient _botClient = new TelegramBotClient(telegramBotToken);
-
-        var me = await _botClient.GetMe();
-        Log.Information($"Hello, I am {me.Id} ready and my name is {me.FirstName}.");
-
-        var cts = new CancellationTokenSource();
-        var receiverOptions = new ReceiverOptions
-        {
-            AllowedUpdates = { }
-        };
-        cancellationToken = cts.Token;
+        var me = _botClient.GetMe(cancellationToken).GetAwaiter().GetResult();
+        Log.Information("Hello, I am {BotId} ready and my name is {BotName}.", me.Id, me.FirstName);
 
         _botClient.StartReceiving(
             updateHandler: UpdateHandler,
-            errorHandler: CommonUtilities.ErrorHandler,
+            errorHandler: _errorHandler, // Убедись, что этот метод доступен
             receiverOptions: new ReceiverOptions { AllowedUpdates = Array.Empty<UpdateType>() },
-            cancellationToken: cts.Token
+            cancellationToken: cancellationToken
         );
+        
+        return Task.CompletedTask;
     }
 
-    public static async Task ProcessState(ITelegramBotClient botClient, Update update)
+    public Task StopAsync(CancellationToken cancellationToken)
     {
-        long chatId = CommonUtilities.GetIDfromUpdate(update);
-        if (CommonUtilities.CheckNonZeroID(chatId)) return;
-
-        if (StateManager.TryGet(chatId, out var userState) && userState is not null)
-        {
-            await userState.ProcessState(botClient, update, cancellationToken);
-        }
-    }
-
-    public TimeSpan ReserveDelaySlot(long chatId, TimeSpan baseDelay)
-    {
-        var now = DateTime.UtcNow;
-        var next = _nextSlotByChatId.TryGetValue(chatId, out var n) ? n : now;
-        var wait = (next > now ? next - now : TimeSpan.Zero) + baseDelay;
-        _nextSlotByChatId[chatId] = now + wait;
-        return wait;
-    }
-
-    public static void RememberLastText(long chatId, string text)
-    {
-        _lastTextByChatId[chatId] = (text, DateTime.UtcNow);
-    }
-
-    public static (bool Found, string Text, DateTime At) TryGetLastText(long chatId)
-    {
-        if (_lastTextByChatId.TryGetValue(chatId, out var v)) return (true, v.Text, v.At);
-        return (false, string.Empty, DateTime.MinValue);
+        Log.Information("TGBot Hosted Service is stopping.");
+        return Task.CompletedTask;
     }
 
     private async Task UpdateHandler(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        long chatId = CommonUtilities.GetIDfromUpdate(update);
-        if (CommonUtilities.CheckNonZeroID(chatId)) return;
+        var chatId = _interactionService.GetChatId(update);
+        if (_checkNonZeroID(chatId)) return;
 
         LogEvent(update, chatId);
 
-        if (CommonUtilities.CheckPrivateChatType(update))
-        {
-            if (await TryProcessState(botClient, update)) return;
-            await HandlePrivateMessageOrCallback(botClient, update, chatId, cancellationToken);
-            return;
-        }
+        await using var scope = _scopeFactory.CreateAsyncScope();
+        var sp = scope.ServiceProvider;
 
-        await HandleGroupMessage(botClient, update, cancellationToken);
-    }
-
-    private async Task<bool> TryProcessState(ITelegramBotClient botClient, Update update)
-    {
-        long chatId = CommonUtilities.GetIDfromUpdate(update);
-        if (StateManager.Contains(chatId))
+        if (_stateManager.TryGet(chatId, out var stateData))
         {
-            await ProcessState(botClient, update);
-            return true;
-        }
-        return false;
-    }
-
-    private async Task HandlePrivateMessageOrCallback(ITelegramBotClient botClient, Update update, long chatId, CancellationToken cancellationToken)
-    {
-        if (update.Message != null && update.Message.Text != null)
-        {
-            if (!await EnsureUserHasAccessOrRegister(botClient, update, chatId, cancellationToken))
+            var handler = _stateHandlerFactory.GetHandler(stateData.StateName);
+            if (handler != null)
             {
+                var result = await handler.Process(stateData, update, botClient, cancellationToken);
+                
+                if (result.NextAction == StateResultAction.Complete) _stateManager.Remove(chatId);
+                else if (result.NextAction == StateResultAction.Continue) _stateManager.Set(chatId, stateData);
+                
                 return;
             }
-
-            await _updateHandler.ProcessMessage(botClient, update, cancellationToken, chatId);
-            return;
         }
 
-        if (update.CallbackQuery != null)
+        if (update.Type == UpdateType.CallbackQuery)
         {
-            await _updateHandler.ProcessCallbackQuery(botClient, update, cancellationToken);
+            var handlersFactory = sp.GetRequiredService<CallbackQueryHandlersFactory>();
+            await handlersFactory.ExecuteAsync(update.CallbackQuery.Data, update, botClient, cancellationToken);
         }
-    }
-
-    private async Task<bool> EnsureUserHasAccessOrRegister(ITelegramBotClient botClient, Update update, long chatId, CancellationToken cancellationToken)
-    {
-        bool hasAccess = _userRepo.CheckUserExists(chatId);
-        if (hasAccess) return true;
-
-        int usersCount = await _userGetter.GetAllUsersCount();
-        string startParameter = CommonUtilities.ParseStartCommand(update.Message!.Text!);
-        bool canStart = (usersCount == 0 || !string.IsNullOrEmpty(startParameter)) && _configService.CanUserStartUsingBot(startParameter, _userGetter);
-
-        if (canStart)
+        else if (update.Type == UpdateType.Message && update.Message?.Text != null)
         {
-            _userRepo.AddUser(update.Message!.Chat.FirstName!, chatId, hasAccess);
-            update.Message!.Text = "/start";
-            return true;
-        }
-
-        if (_botConfig.Value.AccessDeniedMessageContact != " ")
-        {
-            await botClient.SendMessage(
-                chatId,
-                string.Format(_resourceService.GetResourceString("AccessDeniedMessage"), _botConfig.Value.AccessDeniedMessageContact),
-                cancellationToken: cancellationToken,
-                parseMode: ParseMode.Html);
-        }
-
-        return false;
-    }
-
-    private async Task HandleGroupMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
-    {
-        if (update.Message != null && update.Message.Text != null && update.Message.Text.Contains('/'))
-        {
-            GroupUpdateHandler groupUpdateHandler = new GroupUpdateHandler(this, _resourceService);
-            await groupUpdateHandler.HandleGroupUpdate(update, botClient, cancellationToken);
-        }
-    }
-
-public async Task HandleMediaRequest(ITelegramBotClient botClient, string contentUrl, long chatId, Message statusMessage,
-                                            List<long>? targetUserIds = null, bool groupChat = false, string caption = "", CancellationToken? sessionToken = null,
-                                            DateTime? originalMessageDateUtc = null)
-{
-    var effectiveToken = sessionToken ?? CancellationToken.None;
-
-    // 1. Создаем и запускаем наш "подписчик" на логи
-    await using var logUpdater = new TelegramLogUpdater(botClient, statusMessage);
-    logUpdater.Start();
-
-    // 2. Создаем DownloadOptions, передавая туда Action от нашего подписчика
-    var downloadOptions = new DownloadOptions
-    {
-        BotClient = botClient,
-        StatusMessage = statusMessage,
-        // Здесь мы "подписываем" наш ProcessRunner на обновления логов в Telegram
-        OnProgress = logUpdater.HandleLogLine 
-    };
-
-    // 3. Вызываем наш новый, "умный" MediaDownloaderService
-    var downloadResult = await _mediaDownloaderService.DownloadMedia(contentUrl, downloadOptions, effectiveToken);
-    
-    // 4. Проверяем результат
-    if (downloadResult.Success)
-    {
-        Log.Debug($"Downloaded {downloadResult.MediaFiles.Count} files");
-
-        // 5. Постобработка (остается почти без изменений)
-        var processedFiles = await _mediaProcessingService.ApplySizePolicyAsync(
-            downloadResult.MediaFiles,
-            _downloadingConfig.CurrentValue,
-            effectiveToken);
-        Log.Debug("Size policy applied: files before={Before}, after={After}", downloadResult.MediaFiles.Count, processedFiles.Count);
-
-        var safeCaption = TelegramBot.Utils.CommonUtilities.TrimCaptionToLimit(
-            TelegramBot.Utils.CommonUtilities.SanitizeCaptionRemoveHtml(caption));
-            
-        await SendMediaToTelegram(botClient, chatId, processedFiles, statusMessage, targetUserIds, contentUrl, groupChat, safeCaption, effectiveToken, originalMessageDateUtc);
-    }
-    else
-    {
-        // 6. Обработка ошибки
-        if (!effectiveToken.IsCancellationRequested)
-        {
-            // Используем сообщение об ошибке из DownloadResult
-            var errorMessage = _resourceService.GetResourceString("FailedToProcessLink") + $"\n`{downloadResult.ErrorMessage}`";
-            await botClient.EditMessageTextAsync(chatId, statusMessage.MessageId, errorMessage, parseMode: Telegram.Bot.Types.Enums.ParseMode.Markdown);
-        }
-    }
-}
-        private async Task SendMediaToTelegram(ITelegramBotClient botClient, long chatId, List<byte[]> mediaFiles,
-                                                        Message statusMessage, List<long>? targetUserIds, string contentUrl, bool groupChat = false,
-                                                        string caption = "", CancellationToken? sessionToken = null,
-                                                        DateTime? originalMessageDateUtc = null)
-    {
-        var effectiveToken = sessionToken ?? cancellationToken;
-        if (!await ValidateMediaFilesOrReport(botClient, statusMessage, mediaFiles)) return;
-
-        var groupedFiles = GroupMediaFiles(mediaFiles);
-
-        try
-        {
-            await SendGroupedMedia(botClient, chatId, statusMessage, groupedFiles, targetUserIds, contentUrl, groupChat, caption, effectiveToken, originalMessageDateUtc);
-            Log.Debug($"Successfully sent {mediaFiles.Count} files");
-        }
-        catch (Telegram.Bot.Exceptions.ApiRequestException apiEx) when (apiEx.ErrorCode == 413)
-        {
-            Log.Warning(apiEx, "Telegram returned 413. Trying to resend as separate messages");
-            await SendIndividually(botClient, chatId, statusMessage, groupedFiles, contentUrl, caption, effectiveToken);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, $"Failed to send media group");
-            throw;
-        }
-    }
-
-    private async Task SendIndividually(
-        ITelegramBotClient botClient,
-        long chatId,
-        Message statusMessage,
-        Dictionary<TelegramMediaRelayBot.TelegramBot.Utils.MediaFileType, List<byte[]>> groupedFiles,
-        string contentUrl,
-        string caption,
-        CancellationToken? sessionToken = null)
-    {
-        var effectiveToken = sessionToken ?? cancellationToken;
-        foreach (var kv in groupedFiles)
-        {
-            foreach (var file in kv.Value)
+            if (update.Message.Text.StartsWith("/")) { /* TODO */ }
+            else if (_tryExtractLinkAndText(update.Message.Text, out var url, out var caption))
             {
-                try
-                {
-                    var type = CommonUtilities.DetermineFileType(file);
-                    var stream = new MemoryStream(file);
-                    switch (type)
-                    {
-                        case TelegramMediaRelayBot.TelegramBot.Utils.MediaFileType.Photo:
-                            await botClient.SendPhoto(chatId, new InputFileStream(stream, "photo.jpg"), caption: caption, replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId }, disableNotification: true, cancellationToken: effectiveToken);
-                            break;
-                        case TelegramMediaRelayBot.TelegramBot.Utils.MediaFileType.Video:
-                            await botClient.SendVideo(chatId, new InputFileStream(stream, "video.mp4"), caption: caption, replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId }, disableNotification: true, cancellationToken: effectiveToken);
-                            break;
-                        case TelegramMediaRelayBot.TelegramBot.Utils.MediaFileType.Audio:
-                            await botClient.SendAudio(chatId, new InputFileStream(stream, "audio.mp3"), caption: caption, replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId }, disableNotification: true, cancellationToken: effectiveToken);
-                            break;
-                        default:
-                            await botClient.SendDocument(chatId, new InputFileStream(stream, "file.bin"), caption: caption, replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId }, disableNotification: true, cancellationToken: effectiveToken);
-                            break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Warning(ex, "Failed to send individual media item for {Url}", contentUrl);
-                }
+                // ИСПРАВЛЕНИЕ №1: Получаем IResourceService из локального scope
+                var resourceService = sp.GetRequiredService<Config.Services.IResourceService>();
+                await CreateNewDownloadSession(botClient, update, url, caption, resourceService, cancellationToken);
+            }
+            else
+            {
+                // ИСПРАВЛЕНИЕ №3: Используем новый сервис вместо static
+                _lastUserTextCache.Set(chatId, update.Message.Text);
             }
         }
     }
 
-    private async Task<bool> ValidateMediaFilesOrReport(ITelegramBotClient botClient, Message statusMessage, List<byte[]> mediaFiles)
+    private async Task CreateNewDownloadSession(ITelegramBotClient botClient, Update update, string url, string caption, Config.Services.IResourceService resourceService, CancellationToken cancellationToken)
     {
-        // Нет жёсткой отсечки: только информируем общий размер. Ошибку TG перехватываем при отправке
-        var totalSize = mediaFiles.Sum(f => f.Length);
-        var sizeMB = totalSize / (1024.0 * 1024.0);
-        Log.Information("Total file size: {Size:F1}MB (TargetUploadLimitMb={TargetLimit}, Policy={Policy})",
-            sizeMB, _downloadingConfig.CurrentValue.TargetUploadLimitMb, _downloadingConfig.CurrentValue.IfTooLarge);
-        return true;
+        var message = update.Message!;
+        var chatId = message.Chat.Id;
+        
+        var statusMessage = await botClient.SendMessage(
+            chatId: chatId,
+            text: resourceService.GetResourceString("VideoDistributionQuestion"),
+            replyParameters: new ReplyParameters { MessageId = message.MessageId },
+            replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(0),
+            cancellationToken: cancellationToken
+        );
+        
+        await botClient.EditMessageReplyMarkup(
+            chatId: chatId,
+            messageId: statusMessage.MessageId,
+            replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(statusMessage.MessageId),
+            cancellationToken: cancellationToken
+        );
+        
+        _sessionManager.CreateSession(
+            statusMessageId: statusMessage.MessageId,
+            chatId: chatId,
+            url: url,
+            caption: caption,
+            originalMessageDateUtc: message.Date.ToUniversalTime()
+        );
+        // TODO: Логика таймера
     }
 
-    private Dictionary<TelegramMediaRelayBot.TelegramBot.Utils.MediaFileType, List<byte[]>> GroupMediaFiles(List<byte[]> mediaFiles)
+    public void LogEvent(Update update, long chatId)
     {
-        return mediaFiles
-            .GroupBy(CommonUtilities.DetermineFileType)
-            .ToDictionary(g => g.Key, g => g.Reverse().ToList());
-    }
-
-    private async Task SendGroupedMedia(
-        ITelegramBotClient botClient,
-        long chatId,
-        Message statusMessage,
-        Dictionary<TelegramMediaRelayBot.TelegramBot.Utils.MediaFileType, List<byte[]>> groupedFiles,
-        List<long>? targetUserIds,
-        string contentUrl,
-        bool groupChat,
-        string caption,
-        CancellationToken? sessionToken = null,
-        DateTime? originalMessageDateUtc = null)
-    {
-        var effectiveToken = sessionToken ?? cancellationToken;
-        string text = string.Empty;
-        bool lastMediaGroup = false;
-
-        foreach (var fileGroup in groupedFiles.Values)
-        {
-            var mediaGroup = CommonUtilities.CreateMediaGroup(fileGroup);
-
-            for (int i = 0; i < mediaGroup.Count(); i += 10)
-            {
-                var chunk = mediaGroup.Skip(i).Take(10).ToList();
-
-                Message[] mess = await botClient.SendMediaGroup(
-                    chatId: chatId,
-                    media: chunk,
-                    replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
-                    disableNotification: true,
-                    cancellationToken: effectiveToken
-                );
-
-                List<InputMedia> savedMediaGroupIDs = mess.Select<Message, InputMedia>(msg =>
-                                msg.Photo != null ? new InputMediaPhoto(msg.Photo[0].FileId) :
-                                msg.Video != null ? new InputMediaVideo(msg.Video.FileId) :
-                                msg.Audio != null ? new InputMediaAudio(msg.Audio.FileId) :
-                                new InputMediaDocument(msg.Document!.FileId)).ToList();
-
-                var savedMediaRefs = mess.Select(msg =>
-                {
-                    if (msg.Photo != null) return (Kind: nameof(InputMediaPhoto), FileId: msg.Photo[0].FileId);
-                    if (msg.Video != null) return (Kind: nameof(InputMediaVideo), FileId: msg.Video.FileId);
-                    if (msg.Audio != null) return (Kind: nameof(InputMediaAudio), FileId: msg.Audio.FileId);
-                    return (Kind: nameof(InputMediaDocument), FileId: msg.Document!.FileId);
-                }).ToList();
-
-                if (i + 10 >= mediaGroup.Count()) { lastMediaGroup = true; text = caption; }
-
-                if (!groupChat && targetUserIds != null && targetUserIds.Count > 0)
-                {
-                    await SendVideoToContacts(chatId, botClient, statusMessage, targetUserIds,
-                        savedMediaGroupIDs: savedMediaGroupIDs, savedMediaRefs: savedMediaRefs, contentUrl, caption: text,
-                        lastMediaGroup: lastMediaGroup, originalMessageDateUtc: originalMessageDateUtc);
-                }
-
-                await Task.Delay(1000, cancellationToken);
-            }
-        }
-    }
-
-    private async Task SendVideoToContacts(
-        long telegramId,
-        ITelegramBotClient botClient,
-        Message statusMessage,
-        List<long> targetUserIds,
-        List<InputMedia> savedMediaGroupIDs,
-        List<(string Kind, string FileId)> savedMediaRefs,
-        string contentUrl,
-        string caption = "",
-        bool lastMediaGroup = false,
-        DateTime? originalMessageDateUtc = null
-        )
-    {
-        int userId = _userGetter.GetUserIDbyTelegramID(telegramId);
-        bool isDisallowContentForwarding = _privacySettingsGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING);
-
-        List<long> mutedByUserIds = await _userGetter.GetUsersIdForMuteContactIdAsync(userId);
-        List<long> filteredContactUserTGIds = targetUserIds.Except(mutedByUserIds).ToList();
-        List<long> usersAllowedByLink = await _userFilter.FilterUsersByLink(filteredContactUserTGIds, contentUrl, _categorizer);
-
-        Log.Information($"Sending video to ({usersAllowedByLink.Count}) users.");
-        Log.Debug($"User {userId} is muted by: {mutedByUserIds.Count}");
-
-        DateTime now = DateTime.Now;
-        string name = _userGetter.GetUserNameByTelegramID(telegramId);
-                    string text = string.Format(_resourceService.GetResourceString("ContactSentVideo"), 
-                                    name, now.ToString("yyyy_MM_dd_HH_mm_ss"), MyRegex().Replace(name, "_"), caption);
-                    string defaultHash1 = now.ToString("yyyy_MM_dd_HH_mm_ss");
-                    string defaultHash2 = $"{defaultHash1}_{MyRegex().Replace(name, "_")}";
-        int sentCount = 0;
-
-        foreach (long contactUserTgId in usersAllowedByLink)
-        {
-            try
-            {
-
-                int contactUserId = _userGetter.GetUserIDbyTelegramID(contactUserTgId);
-
-                // Inbox gating: if recipient enabled Inbox, store item instead of direct send
-                if (_privacySettingsGetter.GetIsActivePrivacyRule(contactUserId, PrivacyRuleType.INBOX_DELIVERY))
-                {
-                    try
-                    {
-                        // Merge strategy: if latest item from this sender has same Url or same Caption, append media to it
-                        var latest = await _inboxRepo.GetLatestItemForOwnerFromAsync(contactUserId, _userGetter.GetUserIDbyTelegramID(telegramId)).ConfigureAwait(false);
-                        bool merged = false;
-                        if (latest != null)
-                        {
-                            try
-                            {
-                                var doc = System.Text.Json.JsonDocument.Parse(latest.PayloadJson);
-                                string? lastUrl = doc.RootElement.TryGetProperty("Url", out var u) && u.ValueKind == System.Text.Json.JsonValueKind.String ? u.GetString() : null;
-                                string? lastCaption = latest.Caption;
-                                bool sameUrl = !string.IsNullOrWhiteSpace(lastUrl) && string.Equals(lastUrl, contentUrl, StringComparison.OrdinalIgnoreCase);
-                                bool sameCaption = string.Equals(lastCaption ?? string.Empty, caption ?? string.Empty, StringComparison.Ordinal);
-                                if (sameUrl && sameCaption)
-                                {
-                                    var mediaList = new List<object>();
-                                    if (doc.RootElement.TryGetProperty("SavedMedia", out var arr) && arr.ValueKind == System.Text.Json.JsonValueKind.Array)
-                                    {
-                                        foreach (var m in arr.EnumerateArray())
-                                        {
-                                            mediaList.Add(new { Type = m.GetProperty("Type").GetString(), FileId = m.GetProperty("FileId").GetString(), Caption = (string?)null });
-                                        }
-                                    }
-                                    mediaList.AddRange(savedMediaRefs.Select(r => new { Type = r.Kind, FileId = r.FileId, Caption = (string?)null }));
-                                    var mergedPayload = new
-                                    {
-                                        SourceChatId = telegramId,
-                                        SavedMedia = mediaList,
-                                        Url = string.IsNullOrEmpty(lastUrl) ? contentUrl : lastUrl,
-                                        Caption = caption,
-                                        Hashtag = new [] { defaultHash1, defaultHash2 },
-                                        OriginalMessageDateUtc = (originalMessageDateUtc ?? DateTime.UtcNow).ToUniversalTime()
-                                    };
-                                    string mergedJson = System.Text.Json.JsonSerializer.Serialize(mergedPayload);
-                                    merged = await _inboxRepo.UpdatePayloadAsync(latest.Id, mergedJson).ConfigureAwait(false);
-                                    if (merged) Log.Information("Merged into last Inbox item {Id} for user {User}", latest.Id, contactUserId);
-                                }
-                            }
-                            catch { }
-                        }
-                        if (!merged)
-                        {
-                            var payload = new
-                            {
-                                SourceChatId = telegramId,
-                                SavedMedia = savedMediaRefs.Select(r => new { Type = r.Kind, FileId = r.FileId, Caption = (string?)null }).ToList(),
-                                Url = contentUrl,
-                                Caption = caption,
-                                Hashtag = new [] { defaultHash1, defaultHash2 },
-                                OriginalMessageDateUtc = (originalMessageDateUtc ?? DateTime.UtcNow).ToUniversalTime()
-                            };
-                            string payloadJson = System.Text.Json.JsonSerializer.Serialize(payload);
-                            await _inboxRepo.AddItemAsync(contactUserId, _userGetter.GetUserIDbyTelegramID(telegramId), caption, payloadJson, "new");
-                            Log.Information("Added to Inbox for user {User}", contactUserId);
-                            try
-                            {
-                                int newCount = await _inboxRepo.GetNewCountAsync(contactUserId).ConfigureAwait(false);
-                                // Send notification on specific thresholds: 1, 5, 10, 15, 20, 25, etc.
-                                bool shouldNotify = newCount == 1 || (newCount >= 5 && newCount % 5 == 0);
-                                if (shouldNotify)
-                                {
-                                    var nowUtc = DateTime.UtcNow;
-                                    // Debounce per owner: not more than one notify per 5 seconds
-                                    if (!_lastInboxNotifyUtc.TryGetValue(contactUserId, out var last) || (nowUtc - last) > TimeSpan.FromSeconds(5))
-                                    {
-                                        _lastInboxNotifyUtc[contactUserId] = nowUtc;
-                                        string note = string.Format(_resourceService.GetResourceString("InboxNewCountNotify"), newCount);
-                                        await botClient.SendMessage(contactUserTgId, note, cancellationToken: cancellationToken).ConfigureAwait(false);
-                                    }
-                                }
-                            }
-                            catch { }
-                        }
-                        // If merged, не уведомляем повторно
-                        sentCount++; // count as delivered
-                        try
-                        {
-                            await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId,
-                                $"{filteredContactUserTGIds.Count}/{sentCount}",
-                                cancellationToken: cancellationToken);
-                        }
-                        catch { }
-                        continue; // skip direct sending
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error(ex, "Failed to add Inbox item, fallback to direct send");
-                    }
-                }
-
-                Message[] mediaMessages = await botClient.SendMediaGroup(contactUserTgId,
-                                                                        savedMediaGroupIDs.Select(media => (IAlbumInputMedia)media),
-                                                                        disableNotification: true,
-                                                                        protectContent: isDisallowContentForwarding);
-                if (lastMediaGroup)
-                {
-                    await botClient.SendMessage(
-                        chatId: contactUserTgId,
-                        text: text,
-                        parseMode: ParseMode.Html,
-                        replyParameters: new ReplyParameters { MessageId = mediaMessages[0].MessageId },
-                        protectContent: isDisallowContentForwarding
-                    );
-                }
-                sentCount++;
-
-                try
-                {
-                    await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId,
-                        $"{filteredContactUserTGIds.Count}/{sentCount}",
-                        cancellationToken: cancellationToken);
-                }
-                catch (Exception ex)
-                {
-                    Log.Debug(ex, "Error editing message.");
-                }
-                Log.Information($"Sent video to user {contactUserTgId}. Total sent: {sentCount}/{filteredContactUserTGIds.Count}");
-            await Task.Delay(_delayConfig.CurrentValue.ContactSendDelay, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"Failed to send video to user {contactUserTgId}: {ex.Message}");
-            await Task.Delay(_delayConfig.CurrentValue.ContactSendDelay, cancellationToken);
-            }
-        }
-
-        if (filteredContactUserTGIds.Count > 0)
-        {
-            await botClient.SendMessage(telegramId, 
-                                            string.Format(_resourceService.GetResourceString("VideoSentToContacts"), 
-                                            $"{sentCount}/{filteredContactUserTGIds.Count}", now.ToString("yyyy_MM_dd_HH_mm_ss"),
-                                            MyRegex().Replace(name, "_")),
-                                            replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
-                                            parseMode: ParseMode.Html);
-        }
-
-        if (mutedByUserIds.Count > 0)
-        {
-            await botClient.SendMessage(telegramId, 
-                                            string.Format(_resourceService.GetResourceString("MutedByContacts"), mutedByUserIds.Count),
-                                            replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId });
-        }
-
-        await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId,
-                            string.Format(_resourceService.GetResourceString("MessageProcessMediaSend"), sentCount, filteredContactUserTGIds.Count),
-            cancellationToken: cancellationToken);
-    }
-
-    public static void LogEvent(Update update, long chatId)
-    {
-        string currentUserStatus = "";
+        string currentUserStateName = "";
         string logMessageType;
         string logMessageData;
         long userId;
@@ -665,8 +177,8 @@ public async Task HandleMediaRequest(ITelegramBotClient botClient, string conten
                 logMessageType = "Message";
                 logMessageData = update.Message.Text;
                 userId = update.Message.From!.Id;
-                
-                if (!CommonUtilities.CheckPrivateChatType(update))
+
+                if (!_checkPrivateChatType(update))
                 {
                     if (!update.Message.Text.Contains("/link") && !update.Message.Text.Contains("/help")) return;
                 }
@@ -681,15 +193,60 @@ public async Task HandleMediaRequest(ITelegramBotClient botClient, string conten
             return;
         }
 
-        if (StateManager.TryGet(chatId, out IUserState? value))
+        // ИСПРАВЛЕНИЕ №2: Адаптируем под UserStateData
+        if (_stateManager.TryGet(chatId, out var stateData))
         {
-            IUserState userState = value;
-            currentUserStatus = userState.GetCurrentState();
+            currentUserStateName = stateData?.StateName ?? "Unknown";
         }
 
-        Log.Information($"Event: {logMessageType}, UserId: {userId}, ChatId: {chatId}, {logMessageType}: {logMessageData}, State: {currentUserStatus}");
+        Log.Information("Event: {Type}, UserId: {UserId}, ChatId: {ChatId}, Data: {Data}, State: {State}",
+            logMessageType, userId, chatId, logMessageData, currentUserStateName);
     }
 
-    [GeneratedRegex(@"[^a-zA-Zа-яА-Я0-9]")]
-    private static partial Regex MyRegex();
+
+    private bool _checkPrivateChatType(Update update)
+    {
+        if (update.Message != null && update.Message.Chat.Type == ChatType.Private) return true;
+        if (update.CallbackQuery != null && update.CallbackQuery.Message!.Chat.Type == ChatType.Private) return true;
+        return false;
+    }
+
+    private bool _tryExtractLinkAndText(string message, out string link, out string text)
+    {
+        link = string.Empty;
+        text = string.Empty;
+        if (string.IsNullOrWhiteSpace(message)) return false;
+
+        // 1) Ищем первый http(s) URL в любом месте строки
+        var m = Regex.Match(message, @"https?://[^\s]+", RegexOptions.IgnoreCase);
+        if (m.Success)
+        {
+            link = m.Value.TrimEnd('.', ',', ';', '!', '?', ')', ']');
+            // Подписью считаем ХВОСТ после первой ссылки; всё, что ДО ссылки — игнорируем
+            int startAfterUrl = m.Index + m.Length;
+            text = startAfterUrl < message.Length ? message[startAfterUrl..].Trim() : string.Empty;
+            return true;
+        }
+        return false;
+    }
+
+    private Task _errorHandler(ITelegramBotClient _, Exception exception, CancellationToken __)
+    {
+        Log.Error($"Error occurred: {exception.Message}");
+        Log.Error($"Stack trace: {exception.StackTrace}");
+
+        if (exception.InnerException != null)
+        {
+            Log.Error($"Inner exception: {exception.InnerException.Message}");
+            Log.Error($"Inner exception stack trace: {exception.InnerException.StackTrace}");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private bool _checkNonZeroID(long id)
+    {
+        if (id == 0) return true;
+        return false;
+    }
 }

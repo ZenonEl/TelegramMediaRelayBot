@@ -41,6 +41,14 @@ public class SqliteContactRepository(IDbConnection dbConnection) : IContactRepos
         return dbConnection.ExecuteAsync(query, new { senderId, accepterId, status });
     }
 
+    public Task<int> UnMuteUserByMuteId(int muteId)
+    {
+        const string query = @$"
+            UPDATE MutedContacts SET IsActive = 0 WHERE MutedId = @muteId";
+        
+        return dbConnection.ExecuteAsync(query, new { muteId });
+    }
+
     public Task<int> RemoveContactsBatchAsync(int userId, List<int> contactIds)
     {
         // Dapper корректно обработает список в IN (...)

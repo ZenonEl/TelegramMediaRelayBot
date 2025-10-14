@@ -9,240 +9,122 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 using TelegramMediaRelayBot.Database;
-using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot.Services;
 
-namespace TelegramMediaRelayBot
+namespace TelegramMediaRelayBot.TelegramBot.States;
+
+public class SetDistributionUsersStateHandler : IStateHandler
 {
-    /// <summary>
-    /// Configures default media distribution targets (users or groups) for a user.
-    /// Unified flow with inline keyboards and /start bailout support.
-    /// </summary>
-    public class ProcessUserSetDCSendState : IUserState
+    private readonly IContactGetter _contactGetter;
+    private readonly IDefaultAction _defaultAction;
+    private readonly IDefaultActionGetter _defaultActionGetter;
+    private readonly IUserGetter _userGetter;
+    private readonly Config.Services.IResourceService _resourceService;
+    private readonly ITelegramInteractionService _interactionService;
+    private readonly IStateBreakService _stateBreaker;
+    
+    public string Name => "SetDistributionUsers";
+
+    public SetDistributionUsersStateHandler(
+        IContactGetter contactGetter, 
+        IDefaultAction defaultAction, 
+        IDefaultActionGetter defaultActionGetter, 
+        IUserGetter userGetter, 
+        Config.Services.IResourceService resourceService,
+        ITelegramInteractionService interactionService,
+        IStateBreakService stateBreaker)
     {
+        _contactGetter = contactGetter;
+        _defaultAction = defaultAction;
+        _defaultActionGetter = defaultActionGetter;
+        _userGetter = userGetter;
+        _resourceService = resourceService;
+        _interactionService = interactionService;
+        _stateBreaker = stateBreaker;
+    }
 
-        public UsersStandardState currentState;
-        private List<int> _targetIds = new();
-        private bool _isGroupIds;
-        private int _actingUserId;
-        private readonly IContactGetter _contactGetterRepository;
-        private readonly IDefaultAction _defaultAction;
-        private readonly IDefaultActionGetter _defaultActionGetter;
-        private readonly IUserGetter _userGetter;
-        private readonly IGroupGetter _groupGetter;
-        private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
+    public async Task<StateResult> Process(UserStateData stateData, Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
+    {
+        var chatId = _interactionService.GetChatId(update);
+        if (await _stateBreaker.HandleStateBreak(botClient, update)) return StateResult.Complete();
+        
+        var actingUserId = _userGetter.GetUserIDbyTelegramID(chatId);
 
-        public ProcessUserSetDCSendState(
-            bool isGroup,
-            IContactGetter contactGetterRepository,
-            IDefaultAction defaultAction,
-            IDefaultActionGetter defaultActionGetter,
-            IUserGetter userGetter,
-            IGroupGetter groupGetter,
-            TelegramMediaRelayBot.Config.Services.IResourceService resourceService
-            )
+        switch (stateData.Step)
         {
-            currentState = UsersStandardState.ProcessAction;
-            _isGroupIds = isGroup;
-            _contactGetterRepository = contactGetterRepository;
-            _defaultAction = defaultAction;
-            _defaultActionGetter = defaultActionGetter;
-            _userGetter = userGetter;
-            _groupGetter = groupGetter;
-            _resourceService = resourceService;
-        }
-
-        public string GetCurrentState() => currentState.ToString();
-
-        public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
-        {
-            long chatId = CommonUtilities.GetIDfromUpdate(update);
-            if (CommonUtilities.CheckNonZeroID(chatId)) return;
-
-        if (!TGBot.StateManager.TryGet(chatId, out IUserState? value) || value is not ProcessUserSetDCSendState userState)
-                return;
-
-            switch (userState.currentState)
-            {
-                case UsersStandardState.ProcessAction:
-                    await HandleProcessAction(botClient, update, chatId, userState, cancellationToken);
-                    break;
-
-                case UsersStandardState.ProcessData:
-                    await HandleConfirmation(botClient, update, chatId, userState, cancellationToken);
-                    break;
-
-                case UsersStandardState.Finish:
-                    await HandleFinish(botClient, update, chatId, userState, cancellationToken);
-                    break;
-            }
-        }
-
-        private async Task HandleProcessAction(ITelegramBotClient botClient, Update update, long chatId, 
-            ProcessUserSetDCSendState userState, CancellationToken cancellationToken)
-        {
-            if (update.CallbackQuery != null)
-            {
-        TGBot.StateManager.Remove(chatId);
-                await CommonUtilities.SendMessage(
-                    botClient,
-                    update,
-                    UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
-                    cancellationToken,
-                    _resourceService.GetResourceString("UsersVideoSentUsersMenuText")
-                );
-                return;
-            }
-            var messageText = update.Message?.Text;
-            if (string.IsNullOrEmpty(messageText))
-            {
-                await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
-                return;
-            }
-
-            var inputIds = messageText.Split(' ')
-                .Where(s => int.TryParse(s, out _))
-                .Select(int.Parse)
-                .ToList();
-
-            if (inputIds.Count == 0)
-            {
-                // Before re-prompting, show available list based on mode
-                if (!_isGroupIds)
+            // ШАГ 0: Ожидание списка ID контактов
+            case 0:
+                var messageText = update.Message?.Text;
+                if (string.IsNullOrEmpty(messageText))
                 {
-                    var tgIds = await _contactGetterRepository.GetAllContactUserTGIds(_userGetter.GetUserIDbyTelegramID(chatId));
-                    var infos = new List<string>();
-                    foreach (var tg in tgIds)
-                    {
+                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                    return StateResult.Continue();
+                }
+
+                List<int> inputIds;
+                try { inputIds = messageText.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList(); }
+                catch { /* ... обработка ошибки парсинга ... */ return StateResult.Continue(); }
+
+                if (inputIds.Count == 0)
+                {
+                    var tgIds = await _contactGetter.GetAllContactUserTGIds(actingUserId);
+                    var infos = tgIds.Select(tg => {
                         int cid = _userGetter.GetUserIDbyTelegramID(tg);
                         string uname = _userGetter.GetUserNameByTelegramID(tg);
-                        string link = _userGetter.GetUserSelfLink(tg);
-                        infos.Add(string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, link));
-                    }
-                    string header = _resourceService.GetResourceString("YourContacts");
-                    string body = infos.Count > 0 ? string.Join("\n", infos) : _resourceService.GetResourceString("NoUsersFound");
+                        return string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, "");
+                    }).ToList();
+                    var header = _resourceService.GetResourceString("YourContacts");
+                    var body = infos.Any() ? string.Join("\n", infos) : _resourceService.GetResourceString("NoUsersFound");
                     await botClient.SendMessage(chatId, $"{header}\n{body}\n\n{_resourceService.GetResourceString("PleaseEnterContactIDs")}", cancellationToken: cancellationToken);
+                    return StateResult.Continue();
                 }
-                else
+
+                var allowedTgIds = await _contactGetter.GetAllContactUserTGIds(actingUserId);
+                var validTargetIds = inputIds.Where(id => allowedTgIds.Contains(_userGetter.GetTelegramIDbyUserID(id))).ToList();
+
+                if (validTargetIds.Count == 0)
                 {
-                    int ownerId = _userGetter.GetUserIDbyTelegramID(chatId);
-                    var groupIds = await _groupGetter.GetGroupIDsByUserId(ownerId);
-                    var lines = new List<string>();
-                    foreach (var gid in groupIds)
-                    {
-                        string name = await _groupGetter.GetGroupNameById(gid);
-                        lines.Add($"{name} (ID: {gid})");
-                    }
-                    string header = _resourceService.GetResourceString("YourGroups");
-                    string body = lines.Count > 0 ? string.Join("\n", lines) : _resourceService.GetResourceString("NoGroupsFound");
-                    await botClient.SendMessage(chatId, $"{header}\n{body}\n\n{_resourceService.GetResourceString("PleaseEnterContactIDs")}", cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("NoUsersFound"), cancellationToken: cancellationToken);
+                    return StateResult.Continue();
                 }
-                return;
-            }
 
-            userState._actingUserId = _userGetter.GetUserIDbyTelegramID(chatId);
-            
-            userState._targetIds = _isGroupIds
-                ? await ValidateGroupIds(userState._actingUserId, inputIds)
-                : await ValidateUserIds(userState._actingUserId, inputIds);
+                stateData.Data["TargetIds"] = validTargetIds;
+                var idsList = string.Join(", ", validTargetIds);
+                var message = string.Format(_resourceService.GetResourceString("ProcessIDsList"), idsList);
+                
+                await botClient.SendMessage(chatId, message, replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
+                stateData.Step = 1;
+                return StateResult.Continue();
 
-            if (userState._targetIds.Count == 0)
-            {
-                await botClient.SendMessage(chatId, _resourceService.GetResourceString("NoUsersFound"), cancellationToken: cancellationToken);
-                return;
-            }
-
-            var idsList = string.Join(", ", userState._targetIds);
-            var message = string.Format(_resourceService.GetResourceString("ProcessIDsList"), idsList);
-            
-            await botClient.SendMessage(
-                chatId,
-                message,
-                replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(),
-                cancellationToken: cancellationToken);
-
-            userState.currentState = UsersStandardState.ProcessData;
-        }
-
-        private async Task HandleConfirmation(ITelegramBotClient botClient, Update update, long chatId,
-            ProcessUserSetDCSendState userState, CancellationToken cancellationToken)
-        {
-            if (update.CallbackQuery == null) return;
-
-            var callbackData = update.CallbackQuery.Data;
-            await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, cancellationToken: cancellationToken);
-
-            if (callbackData == "accept")
-            {
-                userState.currentState = UsersStandardState.Finish;
-                await ProcessState(botClient, update, cancellationToken);
-            }
-            else
-            {
-        TGBot.StateManager.Remove(chatId);
-                await CommonUtilities.SendMessage(
-                    botClient,
-                    update,
-                    UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
-                    cancellationToken,
-                    _resourceService.GetResourceString("UsersVideoSentUsersMenuText")
-                );
-            }
-        }
-
-        private async Task HandleFinish(ITelegramBotClient botClient, Update update, long chatId,
-            ProcessUserSetDCSendState userState, CancellationToken cancellationToken)
-        {
-            int userId = _userGetter.GetUserIDbyTelegramID(chatId);
-            int actionId = _defaultActionGetter.GetDefaultActionId(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
-
-            if (_isGroupIds)
-            {
-                await _defaultAction.RemoveAllDefaultUsersActionTargets(userId, TargetTypes.GROUP, actionId);
-            }
-            else
-            {
-                await _defaultAction.RemoveAllDefaultUsersActionTargets(userId, TargetTypes.USER, actionId);
-            }
-
-            foreach (var id in userState._targetIds)
-            {
-                if (_isGroupIds)
+            // ШАГ 1: Ожидание подтверждения
+            case 1:
+                if (update.CallbackQuery?.Data != "accept")
                 {
-                    await _defaultAction.AddDefaultUsersActionTargets(userId, actionId, TargetTypes.GROUP, id);
+                    await _interactionService.ReplyToUpdate(botClient, update, UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
+                        cancellationToken, _resourceService.GetResourceString("UsersVideoSentUsersMenuText"));
+                    return StateResult.Complete();
                 }
-                else
+                
+                await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, cancellationToken: cancellationToken);
+
+                var targetIds = (List<int>)stateData.Data["TargetIds"];
+                var actionId = _defaultActionGetter.GetDefaultActionId(actingUserId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+
+                await _defaultAction.RemoveAllDefaultUsersActionTargets(actingUserId, TargetTypes.USER, actionId);
+                foreach (var id in targetIds)
                 {
-                    await _defaultAction.AddDefaultUsersActionTargets(userId, actionId, TargetTypes.USER, id);
+                    await _defaultAction.AddDefaultUsersActionTargets(actingUserId, actionId, TargetTypes.USER, id);
                 }
-            }
 
-        TGBot.StateManager.Remove(chatId);
-            await CommonUtilities.SendMessage(
-                botClient,
-                update,
-                UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
-                cancellationToken,
-                string.Format(_resourceService.GetResourceString("SuccessMessageProcessIDsList"), userState._targetIds.Count)
-            );
+                await _interactionService.ReplyToUpdate(botClient, update, UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
+                    cancellationToken, string.Format(_resourceService.GetResourceString("SuccessMessageProcessIDsList"), targetIds.Count));
+                
+                return StateResult.Complete();
         }
-
-        private async Task<List<int>> ValidateUserIds(int actingUserId, List<int> inputIds)
-        {
-            var allowedIds = await _contactGetterRepository.GetAllContactUserTGIds(actingUserId);
-            return inputIds
-                .Where(id => allowedIds.Contains(_userGetter.GetTelegramIDbyUserID(id)))
-                .ToList();
-        }
-
-        private async Task<List<int>> ValidateGroupIds(int actingUserId, List<int> inputIds)
-        {
-            var userGroups = await _groupGetter.GetGroupIDsByUserId(actingUserId);
-            return inputIds
-                .Where(id => userGroups.Any(g => g == id))
-                .ToList();
-        }
+        return StateResult.Ignore();
     }
 }

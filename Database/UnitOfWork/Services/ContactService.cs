@@ -41,10 +41,16 @@ public class ContactUoWService : IContactUoW
             _repository.DeactivateMutedContactAsync(userId, contactId));
     }
 
+    public Task UnMuteUserByMuteId(int muteId)
+    {
+        return ExecuteInTransactionAsync(() => 
+            _repository.UnMuteUserByMuteId(muteId));
+    }
+
     public Task RemoveContactByStatusAsync(int senderTelegramId, int accepterTelegramId, string? status = null)
     {
-            // Здесь можно добавить логику получения ID по TelegramID, если нужно
-        return ExecuteInTransactionAsync(() => 
+        // Здесь можно добавить логику получения ID по TelegramID, если нужно
+        return ExecuteInTransactionAsync(() =>
             _repository.RemoveContactByStatusAsync(senderTelegramId, accepterTelegramId, status));
     }
     

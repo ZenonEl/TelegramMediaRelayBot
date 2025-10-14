@@ -9,150 +9,138 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
+using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
+namespace TelegramMediaRelayBot.TelegramBot.States;
 
-namespace TelegramMediaRelayBot;
-
-/// <summary>
-/// Processes inbound invites: view, accept, decline. Unified 3-step flow with /start bailout.
-/// </summary>
-public class UserProcessInboundState : IUserState
+public class InboundInviteStateHandler : IStateHandler
 {
-    public UserInboundState currentState;
-    private readonly IContactSetter _contactSetterRepository;
-    private readonly IContactRemover _contactRemoverRepository;
-    private readonly IInboundDBGetter _inboundDBGetter;
+    private readonly IContactSetter _contactSetter;
+    private readonly IContactRemover _contactRemover;
+    private readonly IInboundDBGetter _inboundDbGetter;
     private readonly IUserGetter _userGetter;
-    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
+    private readonly IResourceService _resourceService;
+    private readonly IStateBreakService _stateBreaker;
+    private readonly ITelegramInteractionService _interactionService;
 
-    public UserProcessInboundState(
-        IContactSetter contactSetterRepository, 
-        IContactRemover contactRemoverRepository,
-        IInboundDBGetter inboundDBGetter,
+    public string Name => "InboundInvite";
+
+    public InboundInviteStateHandler(
+        IContactSetter contactSetter,
+        IContactRemover contactRemover,
+        IInboundDBGetter inboundDbGetter,
         IUserGetter userGetter,
-        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
+        IResourceService resourceService,
+        IStateBreakService stateBreaker,
+        ITelegramInteractionService interactionService)
     {
-        currentState = UserInboundState.SelectInvite;
-        _contactSetterRepository = contactSetterRepository;
-        _contactRemoverRepository = contactRemoverRepository;
-        _inboundDBGetter = inboundDBGetter;
+        _contactSetter = contactSetter;
+        _contactRemover = contactRemover;
+        _inboundDbGetter = inboundDbGetter;
         _userGetter = userGetter;
         _resourceService = resourceService;
+        _stateBreaker = stateBreaker;
+        _interactionService = interactionService;
     }
 
-    public static UserInboundState[] GetAllStates()
+    public async Task<StateResult> Process(UserStateData stateData, Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        return (UserInboundState[])Enum.GetValues(typeof(UserInboundState));
-    }
-
-    public string GetCurrentState()
-    {
-        return currentState.ToString();
-    }
-
-    /// <summary>
-    /// Orchestrates inbound invite flow; runs /start bailout prior to branching.
-    /// </summary>
-    public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
-    {
-        long chatId = CommonUtilities.GetIDfromUpdate(update);
-        if (CommonUtilities.CheckNonZeroID(chatId)) return;
-
-        if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
-
-        if (!TGBot.StateManager.TryGet(chatId, out IUserState? value) || value is not UserProcessInboundState userState)
+        var chatId = _interactionService.GetChatId(update);
+        if (await _stateBreaker.HandleStateBreak(botClient, update))
         {
-            return;
+            return StateResult.Complete();
         }
 
-        switch (userState.currentState)
+        // Мы работаем только с CallbackQuery в этом состоянии
+        if (update.CallbackQuery?.Data == null)
         {
-            case UserInboundState.SelectInvite:
-                if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("user_show_inbounds_invite:"))
-                {
-                    string userId = update.CallbackQuery.Data.Split(':')[1];
-                    await CommonUtilities.SendMessage(botClient, update, InBoundKB.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
-                                                cancellationToken, _resourceService.GetResourceString("SelectAction"));
-                    userState.currentState = UserInboundState.ProcessAction;
-                    return;
-                }
-        TGBot.StateManager.Remove(chatId);
-                await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-                break;
-
-            case UserInboundState.ProcessAction:
-                if (update.Message != null && update.Message.Text != null)
-                {
-        TGBot.StateManager.Remove(chatId);
-                    await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-                    return;
-                }
-                else if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("view_inbound_invite_links"))
-                {
-                    await CallbackQueryMenuUtils.ViewInboundInviteLinks(
-                        botClient,
-                        update,
-                        chatId,
-                        _contactSetterRepository,
-                        _contactRemoverRepository,
-                        _inboundDBGetter,
-                        _userGetter,
-                        _resourceService);
-                    return;
-                }
-                else if (update.CallbackQuery != null)
-                {
-                    var data = update.CallbackQuery.Data!;
-                    if (data.StartsWith("user_accept_inbounds_invite:") || data.StartsWith("user_decline_inbounds_invite:"))
-                    {
-                        var userID = data.Split(':')[1];
-                        if (data.StartsWith("user_accept_inbounds_invite:"))
-                        {
-                            await CommonUtilities.SendMessage(
-                                botClient,
-                                update,
-                                KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_accept_invite:{userID}", $"decline_accept_invite:{userID}"),
-                                cancellationToken,
-                                _resourceService.GetResourceString("WaitAcceptInboundInvite"));
-                        }
-                        else
-                        {
-                            await CommonUtilities.SendMessage(
-                                botClient,
-                                update,
-                                KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_decline_invite:{userID}", $"decline_decline_invite:{userID}"),
-                                cancellationToken,
-                                _resourceService.GetResourceString("WaitDeclineInboundInvite"));
-                        }
-                        userState.currentState = UserInboundState.Finish;
-                        break;
-                    }
-                }
-                break;
-
-            case UserInboundState.Finish:
-                if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("accept_accept_invite:"))
-                {
-                    await CallbackQueryMenuUtils.AcceptInboundInvite(update, _contactSetterRepository);
-                }
-                else if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("accept_decline_invite:"))
-                {
-                    await CallbackQueryMenuUtils.DeclineInboundInvite(update, _contactRemoverRepository, _userGetter);
-                }
-                else if (update.CallbackQuery != null && !update.CallbackQuery.Data!.StartsWith("main_menu"))
-                {
-                    string userId = update.CallbackQuery.Data.Split(':')[1];
-                    await CommonUtilities.SendMessage(botClient, update, InBoundKB.GetInBoundActionsKeyboardMarkup(userId, "view_inbound_invite_links"),
-                                                cancellationToken, _resourceService.GetResourceString("SelectAction"));
-                    userState.currentState = UserInboundState.ProcessAction;
-                    return;
-                }
-        TGBot.StateManager.Remove(chatId);
-                await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-                break;
+            return StateResult.Ignore();
         }
+
+        var callbackData = update.CallbackQuery.Data;
+        
+        switch (stateData.Step)
+        {
+            // ========================================================================
+            // ШАГ 0: Выбор конкретного приглашения из списка
+            // ========================================================================
+            case 0:
+                if (callbackData.StartsWith("user_show_inbounds_invite:"))
+                {
+                    var userIdStr = callbackData.Split(':')[1];
+                    // Сохраняем ID пользователя, с которым работаем, в данные состояния
+                    stateData.Data["TargetUserId"] = userIdStr;
+                    
+                    await _interactionService.ReplyToUpdate(botClient, update, InBoundKB.GetInBoundActionsKeyboardMarkup(userIdStr, "view_inbound_invite_links"),
+                                                cancellationToken, _resourceService.GetResourceString("SelectAction"));
+                    
+                    // Переходим на следующий шаг
+                    stateData.Step = 1;
+                    return StateResult.Continue();
+                }
+                // Если пришел другой callback, завершаем сценарий
+                await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, _resourceService.GetResourceString("InvisibleLetter"));
+                return StateResult.Complete();
+
+            // ========================================================================
+            // ШАГ 1: Ожидание действия (Принять/Отклонить)
+            // ========================================================================
+            case 1:
+                if (!stateData.Data.TryGetValue("TargetUserId", out var targetUserIdObj))
+                {
+                    Log.Warning("State 'InboundInvite' is missing 'TargetUserId' at Step 1.");
+                    return StateResult.Complete();
+                }
+                var targetUserId = (string)targetUserIdObj;
+
+                if (callbackData.StartsWith("user_accept_inbounds_invite:"))
+                {
+                    await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_accept_invite:{targetUserId}", $"decline_accept_invite:{targetUserId}"),
+                                                cancellationToken, _resourceService.GetResourceString("WaitAcceptInboundInvite"));
+                    stateData.Step = 2; // Переходим на шаг завершения
+                    return StateResult.Continue();
+                }
+                else if (callbackData.StartsWith("user_decline_inbounds_invite:"))
+                {
+                    await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_decline_invite:{targetUserId}", $"decline_decline_invite:{targetUserId}"),
+                                                cancellationToken, _resourceService.GetResourceString("WaitDeclineInboundInvite"));
+                    stateData.Step = 2; // Переходим на шаг завершения
+                    return StateResult.Continue();
+                }
+                // Если пользователь нажал что-то другое, просто выходим в главное меню
+                await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, _resourceService.GetResourceString("InvisibleLetter"));
+                return StateResult.Complete();
+
+            // ========================================================================
+            // ШАГ 2: Финальное подтверждение и выполнение
+            // ========================================================================
+            case 2:
+                if (callbackData.StartsWith("accept_accept_invite:"))
+                {
+                    // --- ЛОГИКА ИЗ AcceptInboundInvite ---
+                    var senderIdStr = callbackData.Split(':')[1];
+                    var senderTelegramId = long.Parse(senderIdStr);
+                    var accepterTelegramId = update.CallbackQuery.Message!.Chat.Id;
+                    await _contactSetter.SetContactStatus(senderTelegramId, accepterTelegramId, ContactsStatus.ACCEPTED);
+                }
+                else if (callbackData.StartsWith("accept_decline_invite:"))
+                {
+                    // --- ЛОГИКА ИЗ DeclineInboundInvite ---
+                    var senderIdStr = callbackData.Split(':')[1];
+                    var senderId = _userGetter.GetUserIDbyTelegramID(long.Parse(senderIdStr));
+                    var accepterId = _userGetter.GetUserIDbyTelegramID(update.CallbackQuery.Message!.Chat.Id);
+                    await _contactRemover.RemoveContactByStatus(senderId, accepterId, ContactsStatus.WAITING_FOR_ACCEPT);
+                }
+                
+                // Вне зависимости от результата, завершаем сценарий и показываем главное меню
+                await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, _resourceService.GetResourceString("InvisibleLetter"));
+                return StateResult.Complete();
+        }
+
+        return StateResult.Ignore();
     }
 }

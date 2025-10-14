@@ -1,0 +1,149 @@
+# ===================================================================
+# Глобальные Настройки
+# Настройки, которые применяются ко всем загрузчикам, если не переопределены локально.
+# ===================================================================
+GlobalSettings:
+    # Максимальное количество одновременных загрузок во всей системе.
+    MaxConcurrentDownloads: 3
+    # Таймаут по умолчанию для одного шага загрузки (например, для одного ретрая).
+    DefaultTimeout: "00:10:00" # 10 минут
+
+# ===================================================================
+# Настройки Прокси-серверов
+# Список доступных прокси-серверов, на которые могут ссылаться политики.
+# ===================================================================
+Proxies:
+    # --- Прокси для Tor ---
+    # Это имя ("tor_proxy") используется в политиках ниже.
+    -   Name: "tor_proxy"
+        Enabled: true
+        # Адрес SOCKS5-прокси, который предоставляет Tor Browser или Tor-сервис.
+        Address: "socks5://127.0.0.1:9150"
+        # (Задел на будущее) Настройки для управления Tor для смены IP-цепочки.
+        # ControlPort: 9051
+        # ControlPassword: "YourTorPassword"
+
+    # --- Пример выключенного прокси ---
+    # Можно держать в конфиге, но выключать при необходимости.
+    -   Name: "residential_proxy_1"
+        Enabled: false
+        Address: "http://user:pass@geo.iproyal.com:12321"
+
+# ===================================================================
+# Политики Повторных Попыток (Ретраи)
+# Описывают, как система должна реагировать на различные ошибки.
+# Правила проверяются по порядку, применяется первое совпавшее.
+# ===================================================================
+RetryPolicies:
+    # --- Политика для обхода блокировок IP (самая специфичная, поэтому первая) ---
+    -   Name: "IPBlockBypass"
+        # Список подстрок в тексте ошибки, которые активируют это правило.
+        ErrorPatterns:
+            - "Your IP address is blocked"
+            - "HTTP Error 403: Forbidden"
+            - "Access denied"
+            - "Requested post not available" # Добавим ошибку от GalleryDl
+        # Максимальное количество попыток (1 первая + 2 ретрая).
+        MaxAttempts: 3
+        # Задержка перед следующей попыткой.
+        Delay: "00:00:03"
+        # Действие, которое нужно предпринять перед следующей попыткой.
+        # 'UseProxy' - попытаться использовать прокси.
+        Action: UseProxy
+        # Имя прокси из секции Proxies.
+        ProxyName: "tor_proxy"
+
+    # --- Политика для временных сетевых проблем ---
+    -   Name: "NetworkIssues"
+        ErrorPatterns:
+            - "Too Many Requests"
+            - "HTTP Error 429"
+            - "Download timed out"
+        MaxAttempts: 3
+        # Увеличенная задержка для "остывания".
+        Delay: "00:00:30"
+        # Просто повторяем попытку без смены прокси.
+        Action: None
+
+    # --- Политика по умолчанию (ставится последней) ---
+    # Сработает, если ни одно из правил выше не подошло.
+    -   Name: "DefaultRetry"
+        # "*" означает "любая другая ошибка".
+        ErrorPatterns: ["*"]
+        MaxAttempts: 2
+        Delay: "00:00:05"
+        Action: UseProxy
+        ProxyName: "tor_proxy"
+
+
+# ===================================================================
+# Определения Загрузчиков
+# Список всех доступных "инструментов" (загрузчиков) в системе.
+# Фабрика будет выбирать из них на основе приоритета и UrlMatching.
+# ===================================================================
+Downloaders:
+
+    # --- Загрузчик YtDlp (основной для видео) ---
+    -   Name: "YtDlp"
+        Enabled: true
+        Priority: 100
+        ExecutablePath: "yt-dlp"
+
+        # Правила определения, подходит ли этот загрузчик для данного URL.
+        UrlMatching:
+            # Mode: 'Patterns' - Срабатывать только на URL из списка ниже.
+            # Mode: 'Any' - Срабатывать на любой URL.
+            Mode: "Patterns"
+            Patterns:
+                - "vt\\.tiktok\\.com/"
+                - "www\\.tiktok\\.com/"
+                - "youtu\\.be/"
+                - "youtube\\.com/"
+                - "vk\\.com/video"
+                - "vk\\.com/clip"
+
+        # Правила использования прокси для этого загрузчика.
+        ProxyPolicy:
+            # Поведение по умолчанию. 'None' - не использовать прокси.
+            # Можно указать имя прокси, например, "tor_proxy".
+            Default: None
+            # Правила для конкретных доменов (переопределяют Default).
+            SiteSpecific:
+                "tiktok.com": "tor_proxy" # Для TikTok всегда пытаться использовать "tor_proxy".
+                "youtube.com": "tor_proxy"       # 'false' - никогда не использовать прокси для YouTube.
+                "youtu.be": "tor_proxy"       # 'false' - никогда не использовать прокси для YouTube.
+
+        # Шаблон для аргументов командной строки.
+        # {Url}, {OutputPath}, {Proxy}, {Format}, {CookiesPath} - будут подставляться автоматически.
+        ArgumentTemplate: >
+            {Url}
+            --output "{OutputPath}/video.%(ext)s"
+            --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            --proxy "{Proxy}"
+
+    # --- Загрузчик GalleryDl (основной для изображений/галерей) ---
+    -   Name: "GalleryDl"
+        Enabled: true
+        Priority: 90
+        ExecutablePath: "gallery-dl"
+
+        UrlMatching:
+            Mode: "Patterns"
+            Patterns:
+                - "pinterest\\.com/"
+                - "ru\\.pinterest\\.com/"
+                - "pin\\.it/"
+                - "instagram\\.com/"
+                - "vk\\.com/wall-"
+                - "vk\\.com/photo"
+
+        ProxyPolicy:
+            # Для сайтов с картинками чаще нужен прокси.
+            Default: "tor_proxy"
+            SiteSpecific: {}
+
+        ArgumentTemplate: >
+            {Url}
+            -d "{OutputPath}"
+            --proxy "{Proxy}"
+            --cookies "{CookiesPath}"

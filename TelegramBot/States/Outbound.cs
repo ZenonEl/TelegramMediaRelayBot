@@ -11,97 +11,94 @@
 
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
+namespace TelegramMediaRelayBot.TelegramBot.States;
 
-namespace TelegramMediaRelayBot;
-
-/// <summary>
-/// Manages outbound invites: view, revoke, and details. Follows ProcessAction -> Finish.
-/// Adds global /start bailout at the beginning of processing.
-/// </summary>
-public class UserProcessOutboundState : IUserState
+public class OutboundInviteStateHandler : IStateHandler
 {
-    private IContactRemover _contactRepository;
-    private IOutboundDBGetter _outboundDBGetter;
-    private IUserGetter _userGetter;
-    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
-    public UserOutboundState currentState;
+    private readonly IContactRemover _contactRemover;
+    private readonly IOutboundDBGetter _outboundDbGetter;
+    private readonly IUserGetter _userGetter;
+    private readonly Config.Services.IResourceService _resourceService;
+    private readonly ITelegramInteractionService _interactionService;
+    private readonly IStateBreakService _stateBreaker;
+    
+    public string Name => "OutboundInvite";
 
-    public UserProcessOutboundState(
-        IContactRemover contactRepository,
-        IOutboundDBGetter outboundDBGetter,
+    public OutboundInviteStateHandler(
+        IContactRemover contactRemover,
+        IOutboundDBGetter outboundDbGetter,
         IUserGetter userGetter,
-        TelegramMediaRelayBot.Config.Services.IResourceService resourceService)
+        Config.Services.IResourceService resourceService,
+        ITelegramInteractionService interactionService,
+        IStateBreakService stateBreaker)
     {
-        currentState = UserOutboundState.ProcessAction;
-        _contactRepository = contactRepository;
-        _outboundDBGetter = outboundDBGetter;
+        _contactRemover = contactRemover;
+        _outboundDbGetter = outboundDbGetter;
         _userGetter = userGetter;
         _resourceService = resourceService;
+        _interactionService = interactionService;
+        _stateBreaker = stateBreaker;
     }
 
-    public static UserOutboundState[] GetAllStates()
+    public async Task<StateResult> Process(UserStateData stateData, Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        return (UserOutboundState[])Enum.GetValues(typeof(UserOutboundState));
-    }
-
-    public string GetCurrentState()
-    {
-        return currentState.ToString();
-    }
-
-    /// <summary>
-    /// Entry point for processing outbound state updates. Applies /start bailout first.
-    /// </summary>
-    public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
-    {
-        long chatId = CommonUtilities.GetIDfromUpdate(update);
-        if (CommonUtilities.CheckNonZeroID(chatId)) return;
-
-        if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
-
-        if (!TGBot.StateManager.TryGet(chatId, out IUserState? value) || value is not UserProcessOutboundState userState)
+        var chatId = _interactionService.GetChatId(update);
+        if (await _stateBreaker.HandleStateBreak(botClient, update))
         {
-            return;
+            return StateResult.Complete();
         }
 
-        switch (userState.currentState)
+        if (update.CallbackQuery?.Data == null) return StateResult.Ignore();
+        var callbackData = update.CallbackQuery.Data;
+
+        switch (stateData.Step)
         {
-            case UserOutboundState.ProcessAction:
-                if (update.CallbackQuery != null && update.CallbackQuery.Data!.StartsWith("revoke_outbound_invite:"))
+            // ========================================================================
+            // ШАГ 0: Ожидание выбора действия для конкретного приглашения
+            // ========================================================================
+            case 0:
+                if (callbackData.StartsWith("revoke_outbound_invite:"))
                 {
-                    string userId = update.CallbackQuery.Data.Split(':')[1];
-                    await CommonUtilities.SendMessage(botClient, update, OutBoundKB.GetOutBoundActionsKeyboardMarkup(userId, "user_show_outbound_invite:" + chatId),
+                    var userIdStr = callbackData.Split(':')[1];
+                    stateData.Data["TargetUserIdStr"] = userIdStr; // Сохраняем ID цели
+
+                    await _interactionService.ReplyToUpdate(botClient, update, OutBoundKB.GetOutBoundActionsKeyboardMarkup(userIdStr, "user_show_outbound_invite:" + chatId),
                                                 cancellationToken, _resourceService.GetResourceString("DeclineOutBound"));
-                    userState.currentState = UserOutboundState.Finish;
-                    return;
+                    
+                    stateData.Step = 1; // Переходим к подтверждению
+                    return StateResult.Continue();
                 }
-        TGBot.StateManager.Remove(chatId);
-                await CallbackQueryMenuUtils.ViewOutboundInviteLinks(botClient, update, _outboundDBGetter, _userGetter);
-                break;
+                // Если пришел любой другой callback на этом шаге, просто завершаем сценарий.
+                await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, _resourceService.GetResourceString("InvisibleLetter"));
+                return StateResult.Complete();
 
-            case UserOutboundState.Finish:
-                if (update.CallbackQuery != null)
+            // ========================================================================
+            // ШАГ 1: Ожидание финального подтверждения (отозвать или нет)
+            // ========================================================================
+            case 1:
+                if (callbackData.StartsWith("user_show_outbound_invite:"))
                 {
-                    if (update.CallbackQuery.Data!.StartsWith("user_show_outbound_invite:"))
-                    {
-        TGBot.StateManager.Remove(chatId);
-                        await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId, _contactRepository, _outboundDBGetter, _userGetter, _resourceService);
-                        return;
-                    }
-                    else if (update.CallbackQuery.Data!.StartsWith("user_accept_revoke_outbound_invite:"))
-                    {
-                        string userId = update.CallbackQuery.Data.Split(':')[1];
-                        int accepterTelegramID = _userGetter.GetUserIDbyTelegramID(long.Parse(userId));
-                        await _contactRepository.RemoveContactByStatus(_userGetter.GetUserIDbyTelegramID(chatId), accepterTelegramID, ContactsStatus.WAITING_FOR_ACCEPT);
-                    }
+        string userId = update.CallbackQuery!.Data!.Split(':')[1];
+        await _interactionService.ReplyToUpdate(botClient, update, OutBoundKB.GetOutboundActionsKeyboardMarkup(userId), cancellationToken, _resourceService.GetResourceString("OutboundInviteMenu"));
                 }
-        TGBot.StateManager.Remove(chatId);
+                else if (callbackData.StartsWith("user_accept_revoke_outbound_invite:"))
+                {
+                    var userIdStr = callbackData.Split(':')[1];
+                    var accepterId = _userGetter.GetUserIDbyTelegramID(long.Parse(userIdStr));
+                    var senderId = _userGetter.GetUserIDbyTelegramID(chatId);
+                    await _contactRemover.RemoveContactByStatus(senderId, accepterId, ContactsStatus.WAITING_FOR_ACCEPT);
+                }
+
+                // Любое действие на этом шаге завершает сценарий
                 await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
-                await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-                break;
+                await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, _resourceService.GetResourceString("InvisibleLetter"));
+                return StateResult.Complete();
         }
+
+        return StateResult.Ignore();
     }
 }

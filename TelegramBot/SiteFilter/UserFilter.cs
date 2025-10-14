@@ -12,6 +12,7 @@
 
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace TelegramMediaRelayBot.TelegramBot.SiteFilter;
@@ -26,14 +27,17 @@ public class DefaultUserFilterService : IUserFilterService
 {
     private readonly IUserGetter _userGetter;
     private readonly IPrivacySettingsGetter _privacySettingsGetter;
+    private readonly IUrlParsingService _urlParser;
 
     public DefaultUserFilterService(
         IUserGetter userGetter,
-        IPrivacySettingsGetter privacySettingsGetter
+        IPrivacySettingsGetter privacySettingsGetter,
+        IUrlParsingService urlParser
     )
     {
         _userGetter = userGetter;
         _privacySettingsGetter = privacySettingsGetter;
+        _urlParser = urlParser;
     }
 
     public bool ShouldExcludeByCategory(string userFilterValue, string linkCategory)
@@ -54,7 +58,7 @@ public class DefaultUserFilterService : IUserFilterService
     {
         var filteredUsers = new List<long>();
         string linkCategory = categorizer.DetermineCategory(linkUrl);
-        string linkDomain = CommonUtilities.ExtractDomain(linkUrl);
+        _urlParser.TryExtractLinkAndText(linkUrl, out string linkDomain, out string _);
 
         foreach (long userId in userIds)
         {

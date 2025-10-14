@@ -11,323 +11,200 @@
 
 
 using TelegramMediaRelayBot.Database.Interfaces;
-using TelegramMediaRelayBot.TelegramBot;
+using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
+namespace TelegramMediaRelayBot.TelegramBot.States;
 
-namespace TelegramMediaRelayBot;
-
-/// <summary>
-/// Edits user-defined contact groups: add/remove members. Uses inline flows and supports /start bailout.
-/// </summary>
-public class ProcessContactGroupState : IUserState
+public class EditContactGroupStateHandler : IStateHandler
 {
-    public UsersStandardState currentState;
-
-    public string groupInfo = "";
-
-    private string callbackAction = "edit_contact_group";
-    private string backCallback = "";
-    private List<int> contactIDs = [];
-    private int groupId = 0;
-    private List<bool> isDBActionSuccessful = [];
-    private IContactGroupRepository _contactGroupRepository;
+    private readonly IContactGroupRepository _contactGroupRepository;
     private readonly IUserGetter _userGetter;
     private readonly IGroupGetter _groupGetter;
     private readonly IContactGetter _contactGetter;
-    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
+    private readonly Config.Services.IResourceService _resourceService;
+    private readonly ITelegramInteractionService _interactionService;
+    private readonly IStateBreakService _stateBreaker;
 
-    public ProcessContactGroupState(
+    public string Name => "EditContactGroup";
+
+    public EditContactGroupStateHandler(
         IContactGroupRepository contactGroupRepository,
         IUserGetter userGetter,
         IGroupGetter groupGetter,
         IContactGetter contactGetter,
-        TelegramMediaRelayBot.Config.Services.IResourceService resourceService
-        )
+        Config.Services.IResourceService resourceService,
+        ITelegramInteractionService interactionService,
+        IStateBreakService stateBreaker)
     {
-        currentState = UsersStandardState.ProcessAction;
         _contactGroupRepository = contactGroupRepository;
         _userGetter = userGetter;
         _groupGetter = groupGetter;
         _contactGetter = contactGetter;
         _resourceService = resourceService;
+        _interactionService = interactionService;
+        _stateBreaker = stateBreaker;
     }
 
-    public string GetCurrentState()
+    public async Task<StateResult> Process(UserStateData stateData, Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        return currentState.ToString();
-    }
-
-    /// <summary>
-    /// Entry point for group editing flow; runs global /start bailout before branching.
-    /// </summary>
-    public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
-    {
-        long chatId = CommonUtilities.GetIDfromUpdate(update);
-        if (CommonUtilities.CheckNonZeroID(chatId)) return;
-
-        if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
-
-        if (!TGBot.StateManager.TryGet(chatId, out IUserState? value) || value is not ProcessContactGroupState userState)
+        var chatId = _interactionService.GetChatId(update);
+        if (await _stateBreaker.HandleStateBreak(botClient, update))
         {
-            return;
+            return StateResult.Complete();
         }
 
-        switch (userState.currentState)
+        switch (stateData.Step)
         {
-            case UsersStandardState.ProcessAction:
-                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
+            // ========================================================================
+            // ШАГ 0: Выбор действия (добавить/удалить участника)
+            // ========================================================================
+            case 0:
+                if (update.CallbackQuery?.Data == null) return StateResult.Ignore();
+                
+                var callbackAction = update.CallbackQuery.Data;
+                var userId = _userGetter.GetUserIDbyTelegramID(chatId);
+                var groupId = int.Parse(callbackAction.Split(':')[1]);
 
-                bool? isUpdateSuccessful = await ProcessUpdate(botClient, update, cancellationToken);
-                if (isUpdateSuccessful == true)
-                {
-                    userState.currentState = UsersStandardState.ProcessData;
-                }
-                else if (isUpdateSuccessful == null)
-                {
-                    await CommonUtilities.SendMessage(
-                        botClient,
-                        update,
-                        KeyboardUtils.GetReturnButtonMarkup(),
-                        cancellationToken,
-                        _resourceService.GetResourceString("InputErrorMessage"));
-                }
-
-                break;
-
-            case UsersStandardState.ProcessData:
-                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
-                if (update.CallbackQuery != null && update.CallbackQuery.Data == backCallback)
-                {
-                    userState.currentState = UsersStandardState.ProcessAction;
-                    await CommonUtilities.SendMessage(
-                        botClient,
-                        update,
-                        UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
-                        cancellationToken,
-                        $"{groupInfo}\n{_resourceService.GetResourceString("ChooseOptionText")}");
-                    return;
-                }
-
-                bool? isActionSuccessful = await ProcessAction(botClient, update, cancellationToken);
-
-                if (isActionSuccessful == true) 
-                {
-                    userState.currentState = UsersStandardState.Finish;
-                    return;
-                }
-                else if (isActionSuccessful == null)
-                {
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
-                    return;
-                }
-                break;
-
-            case UsersStandardState.Finish:
-                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId, removeReplyMarkup: false)) return;
-                if (update.CallbackQuery != null && update.CallbackQuery.Data == backCallback)
-                {
-                    userState.currentState = UsersStandardState.ProcessAction;
-                    await CommonUtilities.SendMessage(
-                        botClient,
-                        update,
-                        UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
-                        cancellationToken,
-                        $"{groupInfo}\n{_resourceService.GetResourceString("ChooseOptionText")}");
-                    return;
-                }
-                bool? isMessage = null;
-                if (update.Message != null) isMessage = true;
-
-                if (isMessage != true) 
-                {
-                    callbackAction = update.CallbackQuery!.Data!;
-                    ProcessFinish(chatId);
-                    string text = !isDBActionSuccessful.Contains(false) ? _resourceService.GetResourceString("SuccessActionResult") : _resourceService.GetResourceString("ErrorActionResult");
-                    await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, text);
-        TGBot.StateManager.Remove(chatId);
-                    return;
-                }
-                await botClient.SendMessage(chatId, _resourceService.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
-                break;
-        }
-    }
-
-    public async Task<bool?> ProcessUpdate(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
-    {
-        if (update.CallbackQuery != null)
-        {
-            callbackAction = update.CallbackQuery!.Data!;
-        }
-
-        int userId = _userGetter.GetUserIDbyTelegramID(CommonUtilities.GetIDfromUpdate(update));
-        switch (callbackAction)
-        {
-            case "edit_contact_group":
-                if (int.TryParse(update.Message!.Text!, out groupId) && await _groupGetter.GetGroupOwnership(groupId, userId))
-                {
-                    groupInfo = await UsersGroup.GetUserGroupInfoByGroupId(groupId, _groupGetter);
-
-                    IEnumerable<int> allContactsIds = await _groupGetter.GetAllUsersIdsInGroup(groupId);
-                    List<string> allContactsNames = [];
-
-                    foreach (int contactId in allContactsIds)
-                    {
-                        allContactsNames.Add(_userGetter.GetUserNameByID(contactId) + $" (ID: {contactId})");
-                    }
-
-                    string allContactsText;
-                    allContactsText = $"{_resourceService.GetResourceString("AllContactsText")} {string.Join("\n", allContactsNames)}";
-                    
-                    string messageText = $"{groupInfo}\n{allContactsText}\n{_resourceService.GetResourceString("ChooseOptionText")}";
-                    await CommonUtilities.SendMessage(
-                        botClient,
-                        update,
-                        ContactGroup.GetContactGroupEditActionsKeyboardMarkup(groupId),
-                        cancellationToken,
-                        messageText);
-                    return false;
-                }
-                return null;
-            default:
                 if (callbackAction.StartsWith("user_add_contact_to_group:"))
                 {
-                    groupId = int.Parse(callbackAction.Split(':')[1]);
-                    // Display user's contacts for ID selection
-                    int ownerId = _userGetter.GetUserIDbyTelegramID(CommonUtilities.GetIDfromUpdate(update));
-                    List<long> tgIds = await _contactGetter.GetAllContactUserTGIds(ownerId);
-                    List<string> infos = new();
-                    foreach (var tg in tgIds)
-                    {
+                    stateData.Data["GroupId"] = groupId;
+                    stateData.Data["Action"] = "Add";
+
+                    var tgIds = await _contactGetter.GetAllContactUserTGIds(userId);
+                    var infos = tgIds.Select(tg => {
                         int cid = _userGetter.GetUserIDbyTelegramID(tg);
                         string uname = _userGetter.GetUserNameByTelegramID(tg);
-                        string link = _userGetter.GetUserSelfLink(tg);
-                        infos.Add(string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, link));
-                    }
-                    string header = _resourceService.GetResourceString("YourContacts");
-                    string prompt = _resourceService.GetResourceString("InputContactIDsText");
-                    string body = infos.Count > 0 ? string.Join("\n", infos) : _resourceService.GetResourceString("NoUsersFound");
-                    await CommonUtilities.SendMessage(
-                        botClient,
-                        update,
-                        KeyboardUtils.GetReturnButton(),
-                        cancellationToken,
-                        $"{header}\n{body}\n\n{prompt}");
-                    return true;
+                        return string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, "");
+                    }).ToList();
+                    
+                    var header = _resourceService.GetResourceString("YourContacts");
+                    var prompt = _resourceService.GetResourceString("InputContactIDsText");
+                    var body = infos.Any() ? string.Join("\n", infos) : _resourceService.GetResourceString("NoUsersFound");
+                    
+                    await botClient.SendMessage(chatId, $"{header}\n{body}\n\n{prompt}", cancellationToken: cancellationToken);
+                    stateData.Step = 1;
+                    return StateResult.Continue();
                 }
                 else if (callbackAction.StartsWith("user_remove_contact_from_group:"))
                 {
-                    groupId = int.Parse(callbackAction.Split(':')[1]);
-                    // Show current members of the group
-                    IEnumerable<int> members = await _groupGetter.GetAllUsersIdsInGroup(groupId);
-                    List<string> infos = new();
-                    foreach (var cid in members)
-                    {
-                        long tg = _userGetter.GetTelegramIDbyUserID(cid);
+                    stateData.Data["GroupId"] = groupId;
+                    stateData.Data["Action"] = "Remove";
+
+                    var members = await _groupGetter.GetAllUsersIdsInGroup(groupId);
+                    var infos = members.Select(cid => {
                         string uname = _userGetter.GetUserNameByID(cid);
-                        string link = _userGetter.GetUserSelfLink(tg);
-                        infos.Add(string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, link));
+                        return string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, "");
+                    }).ToList();
+
+                    var header = _resourceService.GetResourceString("AllContactsText");
+                    var body = infos.Any() ? string.Join("\n", infos) : _resourceService.GetResourceString("NoUsersFound");
+                    var prompt = _resourceService.GetResourceString("InputContactIDsText");
+                    
+                    await botClient.SendMessage(chatId, $"{header}\n{body}\n\n{prompt}", cancellationToken: cancellationToken);
+                    stateData.Step = 1;
+                    return StateResult.Continue();
+                }
+                
+                return StateResult.Ignore(); // Не наше действие
+
+            // ========================================================================
+            // ШАГ 1: Получение ID контактов и запрос подтверждения
+            // ========================================================================
+            case 1:
+                if (update.Message?.Text == null) return StateResult.Ignore();
+                if (!stateData.Data.TryGetValue("GroupId", out var groupIdObj) || !stateData.Data.TryGetValue("Action", out var actionObj))
+                    return StateResult.Complete();
+
+                groupId = (int)groupIdObj;
+                var action = (string)actionObj;
+                
+                List<int> contactIDs;
+                try
+                {
+                    contactIDs = update.Message.Text.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList();
+                }
+                catch
+                {
+                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken);
+                    return StateResult.Continue(); // Остаемся на том же шаге
+                }
+
+                if (!contactIDs.Any())
+                {
+                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken);
+                    return StateResult.Continue();
+                }
+                
+                stateData.Data["ContactIDs"] = contactIDs;
+
+                var confirmInfos = contactIDs.Select(cid => {
+                    var uname = _userGetter.GetUserNameByID(cid);
+                    return string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, "");
+                }).ToList();
+
+                if (action == "Add")
+                {
+                    var confirmHeader = _resourceService.GetResourceString("ConfirmAddContactsToGroupText");
+                    await botClient.SendMessage(chatId, $"{confirmHeader}\n\n{string.Join("\n", confirmInfos)}",
+                        replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_add"), cancellationToken: cancellationToken);
+                }
+                else // Remove
+                {
+                    var confirmHeader = _resourceService.GetResourceString("ConfirmDeleteContactsFromGroupText");
+                    await botClient.SendMessage(chatId, $"{confirmHeader}\n\n{string.Join("\n", confirmInfos)}",
+                        replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_remove"), cancellationToken: cancellationToken);
+                }
+
+                stateData.Step = 2;
+                return StateResult.Continue();
+
+            // ========================================================================
+            // ШАГ 2: Финальное подтверждение и выполнение
+            // ========================================================================
+            case 2:
+                if (update.CallbackQuery?.Data == null) return StateResult.Ignore();
+
+                var confirmAction = update.CallbackQuery.Data;
+                if (confirmAction == "decline")
+                {
+                    await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, _resourceService.GetResourceString("InvisibleLetter"));
+                    return StateResult.Complete();
+                }
+
+                if (!stateData.Data.TryGetValue("GroupId", out groupIdObj) || !stateData.Data.TryGetValue("ContactIDs", out var contactIdsObj))
+                    return StateResult.Complete();
+                
+                groupId = (int)groupIdObj;
+                var finalContactIds = (List<int>)contactIdsObj;
+                var currentUserId = _userGetter.GetUserIDbyTelegramID(chatId);
+                var success = true;
+
+                if (confirmAction == "accept_add")
+                {
+                    foreach (var cid in finalContactIds)
+                    {
+                        if (!_contactGroupRepository.AddContactToGroup(currentUserId, cid, groupId)) success = false;
                     }
-                    string header = _resourceService.GetResourceString("AllContactsText");
-                    string body = infos.Count > 0 ? string.Join("\n", infos) : _resourceService.GetResourceString("NoUsersFound");
-                    string prompt = _resourceService.GetResourceString("InputContactIDsText");
-                    await botClient.SendMessage(
-                        CommonUtilities.GetIDfromUpdate(update),
-                        $"{header} {body}\n\n{prompt}",
-                        replyMarkup: KeyboardUtils.GetReturnButtonMarkup(),
-                        cancellationToken: cancellationToken);
-                    return true;
                 }
-                return null;
-        }
-    }
-
-    public async Task<bool?> ProcessAction(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
-    {
-        long chatId = CommonUtilities.GetIDfromUpdate(update);
-        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
-
-        try
-        {
-                if (callbackAction.StartsWith("user_add_contact_to_group:"))
-            {
-                groupId = int.Parse(callbackAction.Split(':')[1]);
-                contactIDs = update.Message!.Text!.Split(" ").Select(x => int.Parse(x)).ToList();
-                List<int> allowedIds = [];
-                foreach (int contactId in contactIDs)
+                else if (confirmAction == "accept_remove")
                 {
-                    bool status = _contactGroupRepository.CheckUserAndContactConnect(userId, contactId);
-                    if (status) allowedIds.Add(contactId);
+                    foreach (var cid in finalContactIds)
+                    {
+                        if (!_contactGroupRepository.RemoveContactFromGroup(currentUserId, cid, groupId)) success = false;
+                    }
                 }
-
-                if (allowedIds.Count == 0) return null;
-                // Show confirmation summary with contact short data
-                List<string> confirmInfos = new();
-                foreach (var cid in allowedIds)
+                else
                 {
-                    long tg = _userGetter.GetTelegramIDbyUserID(cid);
-                    string uname = _userGetter.GetUserNameByID(cid);
-                    string link = _userGetter.GetUserSelfLink(tg);
-                    confirmInfos.Add(string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, link));
+                    return StateResult.Ignore();
                 }
-                string confirmHeader = _resourceService.GetResourceString("ConfirmAddContactsToGroupText");
-                await CommonUtilities.SendMessage(
-                    botClient,
-                    update,
-                    KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_add_contact_to_group"),
-                    cancellationToken,
-                    $"{confirmHeader}\n\n{string.Join("\n", confirmInfos)}");
-                contactIDs = allowedIds;
-                return true;
-            }
-            else if (callbackAction.StartsWith("user_remove_contact_from_group:"))
-            {
-                groupId = int.Parse(callbackAction.Split(':')[1]);
-                contactIDs = update.Message!.Text!.Split(" ").Select(x => int.Parse(x)).ToList();
-                // Confirmation summary for removal
-                List<string> confirmInfos = new();
-                foreach (var cid in contactIDs)
-                {
-                    long tg = _userGetter.GetTelegramIDbyUserID(cid);
-                    string uname = _userGetter.GetUserNameByID(cid);
-                    string link = _userGetter.GetUserSelfLink(tg);
-                    confirmInfos.Add(string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, link));
-                }
-                string confirmHeader = _resourceService.GetResourceString("ConfirmDeleteContactsFromGroupText");
-                await CommonUtilities.SendMessage(
-                    botClient,
-                    update,
-                    KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_delete_contact_from_group"),
-                    cancellationToken,
-                    $"{confirmHeader}\n\n{string.Join("\n", confirmInfos)}");
-                return true;
-            }
-            return null;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
 
-    public void ProcessFinish(long chatId)
-    {
-        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+                var resultText = success ? _resourceService.GetResourceString("SuccessActionResult") : _resourceService.GetResourceString("ErrorActionResult");
+                await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, resultText);
+                return StateResult.Complete();
+        }
 
-        if (callbackAction.StartsWith("accept_add_contact_to_group"))
-        {
-            foreach (var contactId in contactIDs)
-            {
-                isDBActionSuccessful.Add(_contactGroupRepository.AddContactToGroup(userId, contactId, groupId));
-            }
-        }
-        else if (callbackAction.StartsWith("accept_delete_contact_from_group"))
-        {
-            foreach (var contactId in contactIDs)
-            {
-                isDBActionSuccessful.Add(_contactGroupRepository.RemoveContactFromGroup(userId, contactId, groupId));
-            }
-        }
+        return StateResult.Ignore();
     }
 }

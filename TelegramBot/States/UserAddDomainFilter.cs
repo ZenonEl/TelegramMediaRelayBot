@@ -9,194 +9,152 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
-using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.TelegramBot.Services;
 
-namespace TelegramMediaRelayBot
+namespace TelegramMediaRelayBot.TelegramBot.States;
+
+public class DomainFilterStateHandler : IStateHandler
 {
-    /// <summary>
-    /// Adds or removes site domain filters for the user's privacy settings.
-    /// Consistent ProcessAction -> ProcessData -> Finish flow, supports /start bailout.
-    /// </summary>
-    public class ProcessUserAddDomainFilterState : IUserState
+    private readonly IPrivacySettingsTargetsSetter _privacyTargetsSetter;
+    private readonly Config.Services.IResourceService _resourceService;
+    private readonly ITelegramInteractionService _interactionService;
+    private readonly IStateBreakService _stateBreaker;
+
+    public string Name => "DomainFilter";
+
+    public DomainFilterStateHandler(
+        IPrivacySettingsTargetsSetter privacyTargetsSetter,
+        Config.Services.IResourceService resourceService,
+        ITelegramInteractionService interactionService,
+        IStateBreakService stateBreaker)
     {
+        _privacyTargetsSetter = privacyTargetsSetter;
+        _resourceService = resourceService;
+        _interactionService = interactionService;
+        _stateBreaker = stateBreaker;
+    }
 
-        public UsersStandardState currentState;
-        private readonly IPrivacySettingsTargetsSetter _privacySettingsTargetsSetter;
-        private readonly int _privacyRuleId;
-        private readonly int _userId;
-        private List<string> _checkedDomains = new();
-        private bool _isRemoveDomains;
-        private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
-
-        public ProcessUserAddDomainFilterState(
-            int privacyRuleId,
-            IPrivacySettingsTargetsSetter privacySettingsTargetsSetter,
-            int userId,
-            bool isRemoveDomains,
-            TelegramMediaRelayBot.Config.Services.IResourceService resourceService
-            )
+    public async Task<StateResult> Process(UserStateData stateData, Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
+    {
+        var chatId = _interactionService.GetChatId(update);
+        if (await _stateBreaker.HandleStateBreak(botClient, update))
         {
-            currentState = UsersStandardState.ProcessAction;
-            _privacySettingsTargetsSetter = privacySettingsTargetsSetter;
-            _privacyRuleId = privacyRuleId;
-            _userId = userId;
-            _isRemoveDomains = isRemoveDomains;
-            _resourceService = resourceService;
+            return StateResult.Complete();
         }
 
-        public string GetCurrentState() => currentState.ToString();
-
-        /// <summary>
-        /// Drives the state machine and applies a global /start bailout before branching.
-        /// </summary>
-        public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+        switch (stateData.Step)
         {
-            long chatId = CommonUtilities.GetIDfromUpdate(update);
-            if (CommonUtilities.CheckNonZeroID(chatId)) return;
-
-            if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId)) return;
-
-            if (!TGBot.StateManager.TryGet(chatId, out IUserState? value) || value is not ProcessUserAddDomainFilterState userState)
-                return;
-
-            switch (userState.currentState)
-            {
-                case UsersStandardState.ProcessAction:
-                    await HandleProcessAction(botClient, update, chatId, userState, cancellationToken);
-                    break;
-
-                case UsersStandardState.ProcessData:
-                    await HandleConfirmation(botClient, update, chatId, userState, cancellationToken);
-                    break;
-
-                case UsersStandardState.Finish:
-                    await HandleFinish(botClient, update, chatId, cancellationToken);
-                    break;
-            }
-        }
-
-        private async Task HandleProcessAction(ITelegramBotClient botClient, Update update, long chatId, 
-            ProcessUserAddDomainFilterState userState, CancellationToken cancellationToken)
-        {
-            if (update.CallbackQuery != null)
-            {
-        TGBot.StateManager.Remove(chatId);
-                await CommonUtilities.SendMessage(
-                    botClient,
-                    update,
-                    UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
-                    cancellationToken,
-                    _resourceService.GetResourceString("UsersVideoSentUsersMenuText")
-                );
-                return;
-            }
-            var messageText = update.Message?.Text;
-            if (string.IsNullOrEmpty(messageText))
-            {
-                await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
-                return;
-            }
-
-            List<string> inputDomains = messageText.Split(' ').ToList();
-
-            if (inputDomains.Count == 0)
-            {
-                await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
-                return;
-            }
-
-            _checkedDomains = ValidateDomains(inputDomains);
-
-            if (_checkedDomains.Count == 0)
-            {
-                await botClient.SendMessage(chatId, _resourceService.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken);
-                return;
-            }
-
-            var domains = string.Join(", ", _checkedDomains);
-            var message = $"{_resourceService.GetResourceString("ConfirmDecision")}:\n\n{domains}";
-            
-            await botClient.SendMessage(
-                chatId,
-                message,
-                replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(),
-                cancellationToken: cancellationToken);
-
-            userState.currentState = UsersStandardState.ProcessData;
-        }
-
-        private async Task HandleConfirmation(ITelegramBotClient botClient, Update update, long chatId,
-            ProcessUserAddDomainFilterState userState, CancellationToken cancellationToken)
-        {
-            if (update.CallbackQuery == null) return;
-
-            var callbackData = update.CallbackQuery.Data;
-            await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, cancellationToken: cancellationToken);
-
-            if (callbackData == "accept")
-            {
-                userState.currentState = UsersStandardState.Finish;
-                await ProcessState(botClient, update, cancellationToken);
-            }
-            else
-            {
-        TGBot.StateManager.Remove(chatId);
-                await CommonUtilities.SendMessage(
-                    botClient,
-                    update,
-                    UsersPrivacyMenuKB.GetSiteFilterKeyboardMarkup(),
-                    cancellationToken,
-                    _resourceService.GetResourceString("SettingsMenuText")
-                );
-            }
-        }
-
-        private async Task HandleFinish(ITelegramBotClient botClient, Update update, long chatId,
-                                        CancellationToken cancellationToken)
-        {
-
-            if (!_isRemoveDomains)
-                foreach(string domain in _checkedDomains)
+            // ========================================================================
+            // ШАГ 0: Ожидание списка доменов от пользователя
+            // ========================================================================
+            case 0:
+                var messageText = update.Message?.Text;
+                if (string.IsNullOrEmpty(messageText))
                 {
-                    await _privacySettingsTargetsSetter.SetPrivacyRuleTarget(_userId, _privacyRuleId, PrivacyRuleType.SITES_BY_DOMAIN_FILTER, domain);
-                }
-            else
-                foreach(string domain in _checkedDomains)
-                {
-                    await _privacySettingsTargetsSetter.SetToRemovePrivacyRuleTarget(_privacyRuleId, domain);
+                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                    return StateResult.Continue();
                 }
 
-        TGBot.StateManager.Remove(chatId);
-            await CommonUtilities.SendMessage(
-                botClient,
-                update,
-                UsersPrivacyMenuKB.GetSiteFilterKeyboardMarkup(),
-                cancellationToken,
-                _resourceService.GetResourceString("SuccessActionResult")
-            );
+                var inputDomains = messageText.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                if (inputDomains.Count == 0)
+                {
+                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                    return StateResult.Continue();
+                }
+
+                var checkedDomains = ValidateDomains(inputDomains);
+                if (checkedDomains.Count == 0)
+                {
+                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken);
+                    return StateResult.Continue();
+                }
+
+                // Сохраняем проверенные домены в состояние
+                stateData.Data["CheckedDomains"] = checkedDomains;
+
+                var domainsListStr = string.Join(", ", checkedDomains);
+                var message = $"{_resourceService.GetResourceString("ConfirmDecision")}:\n\n{domainsListStr}";
+
+                await botClient.SendMessage(chatId, message,
+                    replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
+
+                stateData.Step = 1; // Переходим на шаг подтверждения
+                return StateResult.Continue();
+
+            // ========================================================================
+            // ШАГ 1: Ожидание подтверждения (CallbackQuery)
+            // ========================================================================
+            case 1:
+                if (update.CallbackQuery?.Data == null) return StateResult.Ignore();
+                await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, cancellationToken: cancellationToken);
+
+                if (update.CallbackQuery.Data != "accept")
+                {
+                    await _interactionService.ReplyToUpdate(botClient, update, UsersPrivacyMenuKB.GetSiteFilterKeyboardMarkup(),
+                        cancellationToken, _resourceService.GetResourceString("SettingsMenuText"));
+                    return StateResult.Complete();
+                }
+
+                // Пользователь нажал "accept", выполняем действие
+                if (!stateData.Data.TryGetValue("IsRemove", out var isRemoveObj) ||
+                    !stateData.Data.TryGetValue("PrivacyRuleId", out var ruleIdObj) ||
+                    !stateData.Data.TryGetValue("UserId", out var userIdObj) ||
+                    !stateData.Data.TryGetValue("CheckedDomains", out var domainsObj))
+                {
+                    return StateResult.Complete(); // Ошибка в данных состояния
+                }
+
+                var isRemove = (bool)isRemoveObj;
+                var privacyRuleId = (int)ruleIdObj;
+                var userId = (int)userIdObj;
+                var domainsToProcess = (List<string>)domainsObj;
+
+                if (isRemove)
+                {
+                    foreach (var domain in domainsToProcess)
+                    {
+                        await _privacyTargetsSetter.SetToRemovePrivacyRuleTarget(privacyRuleId, domain);
+                    }
+                }
+                else
+                {
+                    foreach (var domain in domainsToProcess)
+                    {
+                        await _privacyTargetsSetter.SetPrivacyRuleTarget(userId, privacyRuleId, PrivacyRuleType.SITES_BY_DOMAIN_FILTER, domain);
+                    }
+                }
+
+                await _interactionService.ReplyToUpdate(botClient, update, UsersPrivacyMenuKB.GetSiteFilterKeyboardMarkup(),
+                    cancellationToken, _resourceService.GetResourceString("SuccessActionResult"));
+                
+                return StateResult.Complete();
         }
 
-        private List<string> ValidateDomains(List<string> inputDomains)
+        return StateResult.Ignore();
+    }
+
+    // Сохраняем твою оригинальную логику валидации доменов
+    private List<string> ValidateDomains(List<string> inputDomains)
+    {
+        var checkedDomains = new HashSet<string>();
+        foreach (var url in inputDomains)
         {
-            HashSet<string> checkedDomains = new();
-            foreach (string url in inputDomains)
+            var normalizedUrl = url;
+            if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
-                string normalizedUrl = url;
-                if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
-                    !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-                {
-                    normalizedUrl = "https://" + url;
-                }
-
-                if (Uri.TryCreate(normalizedUrl, UriKind.Absolute, out var uri))
-                {
-                    checkedDomains.Add(uri.Host.ToLower());
-                }
+                normalizedUrl = "https://" + url;
             }
-            return checkedDomains.ToList();
+
+            if (Uri.TryCreate(normalizedUrl, UriKind.Absolute, out var uri))
+            {
+                checkedDomains.Add(uri.Host.ToLower());
+            }
         }
+        return checkedDomains.ToList();
     }
 }

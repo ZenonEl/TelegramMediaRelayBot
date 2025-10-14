@@ -10,127 +10,124 @@
 // (по вашему выбору) любой более поздней версии.
 
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 
+namespace TelegramMediaRelayBot.TelegramBot.States;
 
-namespace TelegramMediaRelayBot;
-
-/// <summary>
-/// Unmutes a previously muted contact for the current user. Unified flow:
-/// WaitingForLinkOrID -> WaitingForUnMute -> Finish. Supports /start bailout.
-/// </summary>
-public class ProcessUserUnMuteState : IUserState
+public class UnmuteUserStateHandler : IStateHandler
 {
-    private static readonly System.Resources.ResourceManager _resourceManager = 
-        new System.Resources.ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
-    
-    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
-    public UserUnMuteState currentState;
-
-    private int mutedByUserId { get; set; }
-    private int mutedContactId { get; set; }
     private readonly IContactRemover _contactRemover;
     private readonly IContactGetter _contactGetter;
     private readonly IUserGetter _userGetter;
+    private readonly Config.Services.IResourceService _resourceService;
+    private readonly ITelegramInteractionService _interactionService;
+    private readonly IStateBreakService _stateBreaker;
 
-    public ProcessUserUnMuteState(
+    public string Name => "UnmuteUser";
+
+    public UnmuteUserStateHandler(
         IContactRemover contactRemover,
-        IContactGetter contactGetters,
+        IContactGetter contactGetter,
         IUserGetter userGetter,
-        TelegramMediaRelayBot.Config.Services.IResourceService resourceService
-        )
+        Config.Services.IResourceService resourceService,
+        ITelegramInteractionService interactionService,
+        IStateBreakService stateBreaker)
     {
-        currentState = UserUnMuteState.WaitingForLinkOrID;
         _contactRemover = contactRemover;
-        _contactGetter = contactGetters;
+        _contactGetter = contactGetter;
         _userGetter = userGetter;
         _resourceService = resourceService;
+        _interactionService = interactionService;
+        _stateBreaker = stateBreaker;
     }
 
-    public static UserUnMuteState[] GetAllStates()
+    public async Task<StateResult> Process(UserStateData stateData, Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        return (UserUnMuteState[])Enum.GetValues(typeof(UserUnMuteState));
-    }
-
-    public string GetCurrentState()
-    {
-        return currentState.ToString();
-    }
-
-    /// <summary>
-    /// Processes state transitions and handles global /start bailout before branching.
-    /// </summary>
-    public async Task ProcessState(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
-    {
-        long chatId = CommonUtilities.GetIDfromUpdate(update);
-        if (CommonUtilities.CheckNonZeroID(chatId)) return;
-
-        if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId)) return;
-
-        if (!TGBot.StateManager.TryGet(chatId, out IUserState? value))
+        var chatId = _interactionService.GetChatId(update);
+        if (await _stateBreaker.HandleStateBreak(botClient, update))
         {
-            return;
+            return StateResult.Complete();
         }
 
-        var userState = (ProcessUserUnMuteState)value;
-
-        switch (userState.currentState)
+        switch (stateData.Step)
         {
-            case UserUnMuteState.WaitingForLinkOrID:
+            // ========================================================================
+            // ШАГ 0: Ожидание ID или ссылки от пользователя
+            // ========================================================================
+            case 0:
                 var message = update.Message;
                 if (message == null || string.IsNullOrWhiteSpace(message.Text))
                 {
-                    await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, _resourceService.GetResourceString("InvalidInputValues"));
-                    return;
+                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                    return StateResult.Continue();
                 }
-                int contactId;
-                if (int.TryParse(message.Text, out contactId))
-                {
-                    List<long> allowedIds = await _contactGetter.GetAllContactUserTGIds(_userGetter.GetUserIDbyTelegramID(message.Chat.Id));
-                    string name = _userGetter.GetUserNameByID(contactId);
 
-                    if (name == "" || !allowedIds.Contains(_userGetter.GetTelegramIDbyUserID(contactId)))
+                int contactId;
+                var userId = _userGetter.GetUserIDbyTelegramID(chatId);
+                var allowedIds = await _contactGetter.GetAllContactUserTGIds(userId);
+
+                if (int.TryParse(message.Text, out int parsedId))
+                {
+                    contactId = parsedId;
+                    var contactTelegramId = _userGetter.GetTelegramIDbyUserID(contactId);
+                    var userName = _userGetter.GetUserNameByID(contactId);
+
+                    if (string.IsNullOrEmpty(userName) || !allowedIds.Contains(contactTelegramId))
                     {
-                        await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, _resourceService.GetResourceString("NoUserFoundByID"));
-                        return;
+                        await botClient.SendMessage(chatId, _resourceService.GetResourceString("NoUserFoundByID"), cancellationToken: cancellationToken);
+                        return StateResult.Complete();
                     }
-                    await botClient.SendMessage(chatId, string.Format(_resourceService.GetResourceString("WillWorkWithContact"), contactId, name), cancellationToken: cancellationToken);
                 }
                 else
                 {
-                    string link = message.Text!;
-                    contactId = await _contactGetter.GetContactIDByLinkAsync(link);
-                    List<long> allowedIds = await _contactGetter.GetAllContactUserTGIds(_userGetter.GetUserIDbyTelegramID(message.Chat.Id));
+                    contactId = _contactGetter.GetContactIDByLink(message.Text);
+                    var contactTelegramId = _userGetter.GetTelegramIDbyUserID(contactId);
 
-                    if (contactId == -1 || !allowedIds.Contains(_userGetter.GetTelegramIDbyUserID(contactId)))
+                    if (contactId == -1 || !allowedIds.Contains(contactTelegramId))
                     {
-                        await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, _resourceService.GetResourceString("NoUserFoundByLink"));
-                        return;
+                        await botClient.SendMessage(chatId, _resourceService.GetResourceString("NoUserFoundByLink"), cancellationToken: cancellationToken);
+                        return StateResult.Complete();
                     }
-                    string name = _userGetter.GetUserNameByID(contactId);
-                    await botClient.SendMessage(chatId, string.Format(_resourceService.GetResourceString("WillWorkWithContact"), contactId, name), cancellationToken: cancellationToken);
                 }
-                mutedByUserId = _userGetter.GetUserIDbyTelegramID(chatId);
-                mutedContactId = contactId;
+
+                stateData.Data["MutedByUserId"] = userId;
+                stateData.Data["MutedContactId"] = contactId;
+                
                 await botClient.SendMessage(chatId, _resourceService.GetResourceString("ConfirmDecision"), cancellationToken: cancellationToken);
-                userState.currentState = UserUnMuteState.WaitingForUnMute;
-                break;
 
-            case UserUnMuteState.WaitingForUnMute:
-                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId)) return;
+                stateData.Step = 1;
+                return StateResult.Continue();
 
-                string activeMuteTime = await _contactGetter.GetActiveMuteTimeByContactIDAsync(mutedContactId);
-                string text = string.Format(_resourceService.GetResourceString("UserInMute"), activeMuteTime);
+            // ========================================================================
+            // ШАГ 1: Ожидание подтверждения
+            // ========================================================================
+            case 1:
+                if (!stateData.Data.TryGetValue("MutedContactId", out var contactIdObj)) return StateResult.Complete();
+
+                var activeMuteTime = _contactGetter.GetActiveMuteTimeByContactID((int)contactIdObj);
+                var text = string.Format(_resourceService.GetResourceString("UserInMute"), activeMuteTime);
                 await botClient.SendMessage(chatId, text, cancellationToken: cancellationToken);
-                userState.currentState = UserUnMuteState.Finish;
-                break;
 
-            case UserUnMuteState.Finish:
-                if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId)) return;
-                await _contactRemover.RemoveMutedContact(mutedByUserId, mutedContactId);
-                await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, _resourceService.GetResourceString("UserUnmuted"));
-        TGBot.StateManager.Remove(chatId);
-                break;
+                stateData.Step = 2;
+                return StateResult.Continue();
+
+            // ========================================================================
+            // ШАГ 2: Финальное подтверждение и выполнение
+            // ========================================================================
+            case 2:
+                if (!stateData.Data.TryGetValue("MutedByUserId", out var mutedByObj) ||
+                    !stateData.Data.TryGetValue("MutedContactId", out contactIdObj))
+                {
+                    return StateResult.Complete();
+                }
+                
+                await _contactRemover.RemoveMutedContact((int)mutedByObj, (int)contactIdObj);
+                await _stateBreaker.AlertAndShowMenu(botClient, update, _resourceService.GetResourceString("UserUnmuted"));
+                
+                return StateResult.Complete();
         }
+
+        return StateResult.Ignore();
     }
 }

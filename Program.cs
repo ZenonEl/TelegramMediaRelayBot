@@ -12,14 +12,8 @@
 global using Serilog;
 global using Telegram.Bot;
 global using Telegram.Bot.Types;
-using System.Globalization;
-using FluentMigrator.Runner;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
+global using TelegramMediaRelayBot.Config.Services;
 using Microsoft.Extensions.Configuration;
-using TelegramMediaRelayBot.Database;
-using TelegramMediaRelayBot.TelegramBot;
-using TelegramMediaRelayBot.Config;
 using TelegramMediaRelayBot.Extensions;
 using Microsoft.Extensions.Hosting;
 

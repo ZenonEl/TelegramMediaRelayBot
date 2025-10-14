@@ -1,4 +1,3 @@
-using TelegramMediaRelayBot.Config.Downloaders;
 using TelegramMediaRelayBot.Domain.Models;
 
 namespace TelegramMediaRelayBot.Infrastructure.Downloaders.Policies;

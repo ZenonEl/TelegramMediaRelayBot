@@ -4,6 +4,7 @@ public interface IContactRepository
 {
     Task<int> AddContactAsync(int userId, int contactId, string status);
     Task<int> UpsertMutedContactAsync(int mutedByUserId, int mutedContactId, DateTime muteDate, DateTime? expirationDate);
+    Task<int> UnMuteUserByMuteId(int muteId);
     Task<int> DeactivateMutedContactAsync(int userId, int contactId);
     Task<int> RemoveContactByStatusAsync(int senderId, int accepterId, string? status);
     Task<int> RemoveContactsBatchAsync(int userId, List<int> contactIds);

@@ -27,6 +27,14 @@ namespace TelegramMediaRelayBot.Database.Repositories.MySql
             return dbConnection.ExecuteAsync(query, new { userId, contactId });
         }
 
+        public Task<int> UnMuteUserByMuteId(int muteId)
+        {
+            const string query = @$"
+                UPDATE MutedContacts SET IsActive = 0 WHERE MutedId = @muteId";
+            
+            return dbConnection.ExecuteAsync(query, new { muteId });
+        }
+
         public Task<int> RemoveContactByStatusAsync(int senderId, int accepterId, string? status)
         {
             const string query = @"

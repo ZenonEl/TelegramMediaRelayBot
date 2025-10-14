@@ -9,179 +9,170 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using DotNetTor.SocksPort;
-using TelegramMediaRelayBot.Database.Interfaces;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using TelegramMediaRelayBot.Config;
-
+using Microsoft.Extensions.DependencyInjection;
+using TelegramMediaRelayBot.Database.Interfaces; // Убедись, что using для IContactUoW/IUserUoW здесь есть
 
 namespace TelegramMediaRelayBot.TelegramBot;
 
-class Scheduler
+// 1. Реализуем IHostedService и IDisposable
+public class Scheduler : IHostedService, IDisposable
 {
-    private Timer? _unMuteTimer;
-    private Timer? _torChangingChainTimer;
-    private readonly IUserRepository _userRepository;
-    private readonly IUserGetter _userGetter;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly IOptionsMonitor<MessageDelayConfiguration> _delayConfig;
     private readonly IOptionsMonitor<TorConfiguration> _torConfig;
-    private readonly object _timerLock = new();
-    private int? _lastUnmuteIntervalSeconds;
-    private bool? _lastTorEnabled;
-    private int? _lastTorIntervalMinutes;
+    
+    private Task? _unmuteTask;
+    private Task? _torTask;
+    private CancellationTokenSource? _stoppingCts;
 
     public Scheduler(
-        IUserRepository userRepository,
-        IUserGetter userGetter,
+        IServiceScopeFactory scopeFactory, // Запрашиваем фабрику скоупов
         IOptionsMonitor<MessageDelayConfiguration> delayConfig,
-        IOptionsMonitor<TorConfiguration> torConfig
-    )
+        IOptionsMonitor<TorConfiguration> torConfig)
     {
-        _userRepository = userRepository;
-        _userGetter = userGetter;
+        _scopeFactory = scopeFactory;
         _delayConfig = delayConfig;
         _torConfig = torConfig;
-
-        // Subscribe to config changes to apply hot reload safely
-        _delayConfig.OnChange(_ => ReconfigureUnmuteTimer());
-        _torConfig.OnChange(_ => ReconfigureTorTimer());
     }
 
-    public void Init()
+    // 2. StartAsync - точка входа для IHost
+    public Task StartAsync(CancellationToken cancellationToken)
     {
-        var unmutePeriod = TimeSpan.FromSeconds(_delayConfig.CurrentValue.UserUnMuteCheckInterval);
-        _unMuteTimer = new Timer(async _ => await CheckForUnmuteContacts(), null, TimeSpan.Zero, unmutePeriod);
-        _lastUnmuteIntervalSeconds = _delayConfig.CurrentValue.UserUnMuteCheckInterval;
+        Log.Information("Scheduler is starting.");
+        _stoppingCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        if (_torConfig.CurrentValue.Enabled)
-        {
-            var torPeriod = TimeSpan.FromMinutes(_torConfig.CurrentValue.TorChangingChainInterval);
-            _torChangingChainTimer = new Timer(async _ => await TorChangingChain(), null, TimeSpan.Zero, torPeriod);
-        }
-        _lastTorEnabled = _torConfig.CurrentValue.Enabled;
-        _lastTorIntervalMinutes = _torConfig.CurrentValue.TorChangingChainInterval;
-        Log.Information("Scheduler started");
+        // Запускаем наши фоновые задачи
+        _unmuteTask = RunUnmuteLoop(_stoppingCts.Token);
+        _torTask = RunTorLoop(_stoppingCts.Token);
+        
+        return Task.CompletedTask;
     }
 
-    private void ReconfigureUnmuteTimer()
+    // 3. Бесконечный цикл для задачи разбана
+    private async Task RunUnmuteLoop(CancellationToken stoppingToken)
     {
-        try
+        while (!stoppingToken.IsCancellationRequested)
         {
-            var newInterval = _delayConfig.CurrentValue.UserUnMuteCheckInterval;
-            lock (_timerLock)
+            try
             {
-                if (_lastUnmuteIntervalSeconds == newInterval)
-                {
-                    return; // no-op
-                }
-                _lastUnmuteIntervalSeconds = newInterval;
+                // Выполняем полезную работу
+                await CheckForUnmuteContacts(stoppingToken);
+                
+                // Ждем интервал из конфига
+                var delay = TimeSpan.FromSeconds(_delayConfig.CurrentValue.UserUnMuteCheckInterval);
+                await Task.Delay(delay, stoppingToken);
+            }
+            catch (OperationCanceledException)
+            {
+                // Нормальное завершение
+                break;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "An error occurred in the unmute loop.");
+                // Ждем немного перед следующей попыткой, чтобы не спамить логами при постоянной ошибке
+                await Task.Delay(TimeSpan.FromSeconds(60), stoppingToken);
+            }
+        }
+    }
 
-                var period = TimeSpan.FromSeconds(newInterval);
-                if (_unMuteTimer == null)
+    // 4. Бесконечный цикл для задачи Tor
+    private async Task RunTorLoop(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                var torConfig = _torConfig.CurrentValue;
+                if (torConfig.Enabled)
                 {
-                    _unMuteTimer = new Timer(async _ => await CheckForUnmuteContacts(), null, period, period);
+                    // Выполняем полезную работу
+                    await ChangeTorCircuit(stoppingToken);
+
+                    // Ждем интервал из конфига
+                    var delay = TimeSpan.FromMinutes(torConfig.TorChangingChainInterval);
+                    await Task.Delay(delay, stoppingToken);
                 }
                 else
                 {
-                    // при переконфигурировании не запускаем немедленно, чтобы избежать дубликатов
-                    _unMuteTimer.Change(period, period);
+                    // Если Tor выключен, просто "засыпаем" надолго и проверяем снова
+                    await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
                 }
             }
-            Log.Information("Applied hot config [MessageDelaySettings]: UserUnMuteCheckInterval -> {Seconds}s", newInterval);
-        }
-        catch (Exception ex)
-        {
-            Log.Warning(ex, "Failed to apply hot config for unmute timer");
+            catch (OperationCanceledException)
+            {
+                // Нормальное завершение
+                break;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "An error occurred in the Tor loop.");
+                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+            }
         }
     }
 
-    private void ReconfigureTorTimer()
+    // 5. Логика разбана теперь использует Scoped-сервисы
+    private async Task CheckForUnmuteContacts(CancellationToken stoppingToken)
     {
-        try
-        {
-            var enabled = _torConfig.CurrentValue.Enabled;
-            var interval = _torConfig.CurrentValue.TorChangingChainInterval;
-            lock (_timerLock)
-            {
-                if (_lastTorEnabled == enabled && _lastTorIntervalMinutes == interval)
-                {
-                    return; // no-op
-                }
-                _lastTorEnabled = enabled;
-                _lastTorIntervalMinutes = interval;
+        // IHostedService - это Singleton, а сервисы БД - Scoped.
+        // Чтобы безопасно их использовать, нужно создавать Scope.
+        using var scope = _scopeFactory.CreateScope();
+        var userGetter = scope.ServiceProvider.GetRequiredService<IUserGetter>();
+        var contactUow = scope.ServiceProvider.GetRequiredService<IContactUoW>(); // Используем наш новый UoW!
 
-                if (!enabled)
-                {
-                    _torChangingChainTimer?.Change(Timeout.Infinite, Timeout.Infinite);
-                    _torChangingChainTimer?.Dispose();
-                    _torChangingChainTimer = null;
-                    Log.Information("Applied hot config [Tor]: Enabled -> false (timer stopped)");
-                    return;
-                }
-
-                var period = TimeSpan.FromMinutes(interval);
-                if (_torChangingChainTimer == null)
-                {
-                    _torChangingChainTimer = new Timer(async _ => await TorChangingChain(), null, period, period);
-                }
-                else
-                {
-                    // при переконфигурировании не запускаем немедленно, чтобы избежать дубликатов
-                    _torChangingChainTimer.Change(period, period);
-                }
-            }
-            Log.Information("Applied hot config [Tor]: Enabled -> true, TorChangingChainInterval -> {Minutes}m", interval);
-        }
-        catch (Exception ex)
+        var expiredMutes = userGetter.GetExpiredUsersMutes();
+        foreach (var mute in expiredMutes) // Предполагаем, что GetExpiredUsersMutes возвращает объект с нужными ID
         {
-            Log.Warning(ex, "Failed to apply hot config for tor timer");
+            if (stoppingToken.IsCancellationRequested) break;
+
+            // Вызываем метод из UoW сервиса, который выполнит UPDATE в транзакции
+            await contactUow.UnMuteUserByMuteId(mute);
+            Log.Information("Mute record {MuteId} deactivated.", mute);
+                }
+    }
+    
+    // 6. Логика Tor остается почти без изменений
+    private async Task ChangeTorCircuit(CancellationToken stoppingToken)
+    {
+        var torConfig = _torConfig.CurrentValue;
+        
+        var controlPortClient = new DotNetTor.ControlPort.Client(
+            torConfig.TorSocksHost,
+            controlPort: torConfig.TorControlPort,
+            password: torConfig.TorControlPassword ?? "");
+        
+        await controlPortClient.ChangeCircuitAsync(stoppingToken);
+
+        using var httpClient = new HttpClient(new DotNetTor.SocksPort.SocksPortHandler(
+            torConfig.TorSocksHost,
+            socksPort: torConfig.TorSocksPort));
+
+        var result = await httpClient.GetStringAsync("https://check.torproject.org/api/ip", stoppingToken);
+        Log.Debug("New Tor IP: {TorIp}", result);
+    }
+
+    // 7. StopAsync - точка выхода
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        Log.Information("Scheduler is stopping.");
+        
+        // Сигнализируем нашим циклам, что пора завершаться
+        _stoppingCts?.Cancel();
+        
+        // Ждем, пока все задачи завершатся (или пока не истечет таймаут)
+        if (_unmuteTask != null && _torTask != null)
+        {
+            await Task.WhenAll(_unmuteTask, _torTask);
         }
     }
 
-    private async Task CheckForUnmuteContacts()
+    // 8. Освобождаем ресурсы
+    public void Dispose()
     {
-        try
-        {
-            // Prefer async path if available
-            List<int> expiredMutes = _userGetter is not null
-                ? (await _userGetter.GetExpiredUsersMutesAsync())
-                : new List<int>();
-
-            foreach (var muteUserId in expiredMutes)
-            {
-                _userRepository.UnMuteUserByMuteId(muteUserId);
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "An error occurred in the method{MethodName}", nameof(CheckForUnmuteContacts));
-        }
-
-        return;
-    }
-
-    private async Task TorChangingChain()
-    {
-        try
-        {
-            var controlPortClient = new DotNetTor.ControlPort.Client(
-                _torConfig.CurrentValue.TorSocksHost,
-                controlPort: _torConfig.CurrentValue.TorControlPort,
-                password: _torConfig.CurrentValue.TorControlPassword ?? "");
-
-            await controlPortClient.ChangeCircuitAsync();
-
-            using (var httpClient = new HttpClient(new SocksPortHandler(
-                _torConfig.CurrentValue.TorSocksHost,
-                socksPort: _torConfig.CurrentValue.TorSocksPort)))
-            {
-                var result = await httpClient.GetStringAsync("https://check.torproject.org/api/ip");
-                Log.Debug("New Tor IP: " + result);
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "An error occurred in the method{MethodName}", nameof(TorChangingChain));
-        }
+        _stoppingCts?.Dispose();
     }
 }

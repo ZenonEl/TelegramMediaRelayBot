@@ -9,138 +9,155 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-
-using TelegramMediaRelayBot.TelegramBot.Utils;
-using TelegramMediaRelayBot.Database;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Telegram.Bot.Types.Enums;
+using TelegramBot.Services;
+using TelegramMediaRelayBot.Config;
 using TelegramMediaRelayBot.Database.Interfaces;
-using TelegramMediaRelayBot.Config.Services;
-
+using TelegramMediaRelayBot.TelegramBot.Services;
+using TelegramMediaRelayBot.TelegramBot.Sessions;
+using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers;
 
 public class PrivateUpdateHandler
 {
-    private readonly TGBot _tgBot;
-    private readonly CallbackQueryHandlersFactory _handlersFactory;
-    private readonly IContactGetter _contactGetterRepository;
-    private readonly IDefaultActionGetter _defaultActionGetter;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly DownloadSessionManager _sessionManager;
+    private readonly ILastUserTextCache _lastUserTextCache;
+    private readonly IUserRepository _userRepository;
     private readonly IUserGetter _userGetter;
-    private readonly IGroupGetter _groupGetter;
-    private readonly TelegramMediaRelayBot.Config.Services.IConfigurationService _configService;
-    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService;
-    private readonly TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService _textCleanup;
-    private readonly TelegramMediaRelayBot.Database.Interfaces.IInboxRepository _inbox;
+    private readonly IOptions<BotConfiguration> _botConfig;
+    private readonly IConfigurationService _configService;
+    private readonly IResourceService _resourceService;
+    private readonly IUrlParsingService _urlParser;
+    private readonly IStartParameterParser _startParser;
+    private readonly ITelegramInteractionService _interactionService;
 
     public PrivateUpdateHandler(
-        TGBot tgBot,
-        CallbackQueryHandlersFactory handlersFactory,
-        IContactGetter contactGetterRepository,
-        IDefaultActionGetter defaultActionGetter,
+        IServiceScopeFactory scopeFactory,
+        DownloadSessionManager sessionManager,
+        ILastUserTextCache lastUserTextCache,
+        IUserRepository userRepository,
         IUserGetter userGetter,
-        IGroupGetter groupGetter,
-        TelegramMediaRelayBot.Config.Services.IConfigurationService configService,
-        TelegramMediaRelayBot.Config.Services.IResourceService resourceService,
-        TelegramMediaRelayBot.TelegramBot.Utils.ITextCleanupService textCleanup,
-        TelegramMediaRelayBot.Database.Interfaces.IInboxRepository inbox
-        )
+        IOptions<BotConfiguration> botConfig,
+        IConfigurationService configService,
+        IResourceService resourceService,
+        IUrlParsingService urlParser,
+        IStartParameterParser startParser,
+        ITelegramInteractionService interactionService)
     {
-        _tgBot = tgBot;
-        _handlersFactory = handlersFactory;
-        _contactGetterRepository = contactGetterRepository;
-        _defaultActionGetter = defaultActionGetter;
+        _scopeFactory = scopeFactory;
+        _sessionManager = sessionManager;
+        _lastUserTextCache = lastUserTextCache;
+        _userRepository = userRepository;
         _userGetter = userGetter;
-        _groupGetter = groupGetter;
+        _botConfig = botConfig;
         _configService = configService;
         _resourceService = resourceService;
-        _textCleanup = textCleanup;
-        _inbox = inbox;
+        _urlParser = urlParser;
+        _startParser = startParser;
+        _interactionService = interactionService;
     }
 
-    public async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
+    public async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        string messageText = update.Message!.Text!;
-        string link;
-        string text = "";
+        var message = update.Message!;
+        var chatId = message.Chat.Id;
 
-        if (CommonUtilities.TryExtractLinkAndText(messageText, out var extractedLink, out var extractedText))
+        if (!await EnsureUserHasAccessOrRegister(botClient, update, cancellationToken)) return;
+
+        if (message.Text != null && message.Text.StartsWith("/"))
         {
-            link = extractedLink;
-            text = extractedText;
-            // Очередь задержек: используем базовую задержку default-действия как окно
-            var delayCfg = _tgBot.GetType(); // placeholder
-            int replyToMessageId = update.Message.MessageId;
-            
-            Message statusMessage = await botClient.SendMessage(
-                chatId,
-                _resourceService.GetResourceString("WaitDownloadingVideo"),
-                replyParameters: new ReplyParameters { MessageId = replyToMessageId },
-                cancellationToken: cancellationToken
-            );
+            await HandleCommand(botClient, update, cancellationToken);
+            return;
+        }
+        
+        // Используем наш новый сервис IUrlParsingService
+        if (message.Text != null && _urlParser.TryExtractLinkAndText(message.Text, out var url, out var caption))
+        {
+            // --- ИСПРАВЛЕНИЕ: Логика создания сессии теперь здесь ---
+            var statusMessage = await botClient.SendMessage(chatId, _resourceService.GetResourceString("VideoDistributionQuestion"),
+                replyParameters: new ReplyParameters { MessageId = message.MessageId },
+                replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(0), cancellationToken: cancellationToken);
 
-            await botClient.EditMessageText(
-                statusMessage.Chat.Id,
-                statusMessage.MessageId,
-                _resourceService.GetResourceString("VideoDistributionQuestion"),
+            await botClient.EditMessageReplyMarkup(chatId, statusMessage.MessageId,
                 replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(statusMessage.MessageId),
-                cancellationToken: cancellationToken
-            );
+                cancellationToken: cancellationToken);
 
-            // Больше не чистим стартовый хвост доменными правилами: берём как есть (по договорённости)
-
-            int userId = _userGetter.GetUserIDbyTelegramID(chatId);
-            var state = new ProcessVideoDC(link, statusMessage, text, _tgBot, _contactGetterRepository, _userGetter, _groupGetter, _defaultActionGetter, _resourceService, _textCleanup, update.Message!.Date.ToUniversalTime());
-            TGBot.StateManager.Set(chatId, state);
-            await state.ScheduleDefaultActionFor(botClient, chatId, statusMessage, link, text, cancellationToken);
+            _sessionManager.CreateSession(
+                statusMessageId: statusMessage.MessageId,
+                chatId: chatId, url: url, caption: caption,
+                originalMessageDateUtc: message.Date.ToUniversalTime());
+            
+            // TODO: Логика запуска таймера действия по умолчанию
         }
-        else if (update.Message.Text == "/start")
+        else if (message.Text != null)
         {
-            // Разрешаем пользоваться меню, не прерывая уже идущие отправки
-            if (TGBot.StateManager.TryGet(chatId, out var state) && state is ProcessVideoDC)
-            {
-                // Гасим только авто-таймеры/пенднги, оставляем активные сессии
-                var s = (ProcessVideoDC)state;
-                s.CancelPendingButKeepSessions();
-                // Состояние оставляем в StateManager, чтобы кнопка cancel_download продолжала работать
-            }
-            int userId = _userGetter.GetUserIDbyTelegramID(chatId);
-            int newCount = await _inbox.GetNewCountAsync(userId).ConfigureAwait(false);
-            await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, inboxNewCount: newCount).ConfigureAwait(false);
-        }
-        else if (update.Message.Text == "/help")
-        {
-            string helpText = _resourceService.GetResourceString("HelpText");
-            await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken, helpText).ConfigureAwait(false);
-        }
-        else if (update.Message.Text != null)
-        {
-            // Сохраняем "предыдущий текст" для окна caption, если это не ссылка
-            TGBot.RememberLastText(chatId, update.Message.Text);
-            await botClient.SendMessage(update.Message.Chat.Id, _resourceService.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken).ConfigureAwait(false);
+            _lastUserTextCache.Set(chatId, message.Text);
+            await botClient.SendMessage(chatId, _resourceService.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken);
         }
         else
         {
-            await botClient.SendMessage(update.Message.Chat.Id, _resourceService.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken).ConfigureAwait(false);
+            await botClient.SendMessage(chatId, _resourceService.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken);
         }
     }
 
     public async Task ProcessCallbackQuery(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        var callbackQuery = update.CallbackQuery;
+        await using var scope = _scopeFactory.CreateAsyncScope();
+        var handlersFactory = scope.ServiceProvider.GetRequiredService<CallbackQueryHandlersFactory>();
+        var callbackQuery = update.CallbackQuery!;
+        var data = callbackQuery.Data!;
+        var commandName = data.Contains(':') ? data[..data.IndexOf(':')] + ":" : data;
+        
+        await handlersFactory.ExecuteAsync(commandName, update, botClient, cancellationToken);
+    }
 
-        string data = callbackQuery!.Data!;
-        int colonIndex = data.IndexOf(':');
-        string commandName;
-        if (data.StartsWith("inbox:"))
+    private async Task<bool> EnsureUserHasAccessOrRegister(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    {
+        var chatId = update.Message!.Chat.Id;
+        if (_userRepository.CheckUserExists(chatId)) return true;
+
+        var usersCount = await _userGetter.GetAllUsersCount();
+        // Используем наш новый сервис
+        var startParameter = _startParser.Parse(update.Message.Text!);
+
+        if ((usersCount == 0 || !string.IsNullOrEmpty(startParameter)) && _configService.CanUserStartUsingBot(startParameter, _userGetter))
         {
-            // поддержка inbox:* команд с несколькими сегментами
-            int second = data.IndexOf(':', 6); // позиция после "inbox:"
-            commandName = second > 0 ? data[..(second + 1)] : data + ":";
-        }
-        else
-        {
-            commandName = colonIndex >= 0 ? data[..(colonIndex + 1)] : data;
+            _userRepository.AddUser(update.Message.Chat.FirstName!, chatId, false);
+            update.Message.Text = "/start";
+            return true;
         }
 
-        await _handlersFactory.ExecuteAsync(commandName, update, botClient, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(_botConfig.Value.AccessDeniedMessageContact))
+        {
+            await botClient.SendMessage(chatId,
+                string.Format(_resourceService.GetResourceString("AccessDeniedMessage"), _botConfig.Value.AccessDeniedMessageContact),
+                cancellationToken: cancellationToken, parseMode: ParseMode.Html);
+        }
+        return false;
+    }
+
+    private async Task HandleCommand(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    {
+        await using var scope = _scopeFactory.CreateAsyncScope();
+        var sp = scope.ServiceProvider;
+        var inboxRepo = sp.GetRequiredService<IInboxRepository>();
+        // Используем новый сервис, а не static-хелпер
+        var menuService = sp.GetRequiredService<IUserMenuService>();
+
+        if (update.Message?.Text == "/start")
+        {
+            var userId = _userGetter.GetUserIDbyTelegramID(update.Message.Chat.Id);
+            var newCount = await inboxRepo.GetNewCountAsync(userId);
+            // TODO: Заменить KeyboardUtils на IKeyboardService
+            await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(newCount), cancellationToken);
+        }
+        else if (update.Message?.Text == "/help")
+        {
+            //await menuService.ViewHelpMenu(botClient, update); // Пример вызова нового сервиса
+        }
     }
 }
