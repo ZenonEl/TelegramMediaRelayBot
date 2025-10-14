@@ -10,6 +10,8 @@
 // (по вашему выбору) любой более поздней версии.
 
 
+using Microsoft.Extensions.Options;
+using TelegramMediaRelayBot.Config.Downloaders;
 using TelegramMediaRelayBot.Domain.Interfaces;
 using TelegramMediaRelayBot.Domain.Models;
 using TelegramMediaRelayBot.Infrastructure.Downloaders.Policies;
@@ -21,93 +23,89 @@ public class MediaDownloaderService
     private readonly IMediaDownloaderFactory _downloaderFactory;
     private readonly IProxyPolicyManager _proxyPolicyManager;
     private readonly IRetryPolicyManager _retryPolicyManager;
+    private readonly DownloaderConfigRoot _config; // Получаем доступ ко всей конфигурации
 
-    // 1. Конструктор теперь запрашивает все наши "мозги" из DI
     public MediaDownloaderService(
         IMediaDownloaderFactory downloaderFactory,
         IProxyPolicyManager proxyPolicyManager,
-        IRetryPolicyManager retryPolicyManager)
+        IRetryPolicyManager retryPolicyManager,
+        IOptionsMonitor<DownloaderConfigRoot> configMonitor)
     {
         _downloaderFactory = downloaderFactory;
         _proxyPolicyManager = proxyPolicyManager;
         _retryPolicyManager = retryPolicyManager;
+        _config = configMonitor.CurrentValue;
+        // TODO: Подписаться на OnChange для обновления _config
     }
 
     public async Task<DownloadResult> DownloadMedia(string url, DownloadOptions options, CancellationToken ct)
     {
-        // 2. Находим всех подходящих "рабочих" (загрузчиков) для URL
         var availableDownloaders = _downloaderFactory.GetDownloadersForUrl(url);
-
         if (!availableDownloaders.Any())
         {
             return new DownloadResult { Success = false, ErrorMessage = $"No downloader found for URL: {url}" };
         }
 
-        DownloadResult lastResult = new() { Success = false };
+        var lastErrorResult = new DownloadResult { Success = false, ErrorMessage = "All downloaders failed." };
 
-        // 3. ВНЕШНИЙ ЦИКЛ: Пробуем каждого "рабочего" по очереди
         foreach (var downloader in availableDownloaders)
         {
             Log.Information("Attempting to download with {DownloaderName}...", downloader.Name);
             
+            var attemptResult = new DownloadResult { Success = false };
             int attempt = 1;
 
-            // 4. ВНУТРЕННИЙ ЦИКЛ: Реализуем "умные" ретраи для одного "рабочего"
             while (true)
             {
-                // 5. ОПРЕДЕЛЯЕМ ПРОКСИ для текущей попытки
-                // Получаем базовый адрес прокси из политики загрузчика
+                // Если включен Verbose-режим, передаем OnProgress в опции. Иначе - null.
+                options.OnProgress = _config.GlobalSettings.DownloadProgressLogLevel == ProgressLogLevel.Verbose 
+                    ? options.OnProgress 
+                    : null;
+
                 var proxyAddress = _proxyPolicyManager.GetProxyAddress(downloader.Config, url);
 
-                // Если предыдущая попытка провалилась и политика ретраев требует использовать прокси,
-                // это переопределит базовую настройку.
-                if (lastResult.Modifiers?.UseProxyName != null)
+                if (attemptResult.Modifiers?.UseProxyName != null)
                 {
-                    // TODO: Реализовать получение адреса прокси по имени из Modifiers
-                    Log.Information("Retry policy triggered: switching to proxy '{ProxyName}'", lastResult.Modifiers.UseProxyName);
-                    // proxyAddress = ... find proxy address by name ...
+                    Log.Information("Retry policy triggered: switching to proxy '{ProxyName}'", attemptResult.Modifiers.UseProxyName);
+                    // TODO: Реализовать получение адреса прокси по имени
                 }
                 
-                // Обновляем опции для этой конкретной попытки
                 options.ProxyUrl = proxyAddress;
                 
-                // 6. ВЫПОЛНЯЕМ ОДНУ ПОПЫТКУ СКАЧИВАНИЯ
-                lastResult = await downloader.Download(url, options, ct);
-                lastResult.AttemptNumber = attempt;
-
-                // 7. АНАЛИЗИРУЕМ РЕЗУЛЬТАТ
-                if (lastResult.Success)
-                {
-                    Log.Information("Download successful with {DownloaderName} on attempt {Attempt}", downloader.Name, attempt);
-                    return lastResult; // Успех! Выходим.
-                }
-
-                // Если провал, логируем ошибку
-                Log.Warning("Attempt {Attempt} with {DownloaderName} failed: {Error}", attempt, downloader.Name, lastResult.ErrorMessage);
+                attemptResult = await downloader.Download(url, options, ct);
+                attemptResult.AttemptNumber = attempt;
                 
-                // 8. СПРАШИВАЕМ У ПОЛИТИКИ РЕТРАЕВ, ЧТО ДЕЛАТЬ ДАЛЬШЕ
-                var decision = _retryPolicyManager.Decide(lastResult, attempt);
+                // --- ИСПРАВЛЕНИЕ ЛОГИКИ ---
+                if (attemptResult.Success)
+                {
+                    // УСПЕХ! Немедленно выходим и возвращаем успешный результат.
+                    Log.Information("Download successful with {DownloaderName} on attempt {Attempt}", downloader.Name, attempt);
+                    return attemptResult;
+                }
+                
+                // ПРОВАЛ. Логируем и решаем, что делать дальше.
+                Log.Warning("Attempt {Attempt} with {DownloaderName} failed: {Error}", attempt, downloader.Name, attemptResult.ErrorMessage);
+                lastErrorResult = attemptResult; // Сохраняем последнюю ошибку
+
+                var decision = _retryPolicyManager.Decide(attemptResult, attempt);
                 
                 if (decision.ShouldRetry)
                 {
-                    // Нужно повторить. Передаем модификаторы в следующую итерацию.
-                    lastResult.Modifiers = decision.Modifiers;
-                    
+                    attemptResult.Modifiers = decision.Modifiers;
                     Log.Information("Waiting {Delay}s before next attempt...", decision.Delay.TotalSeconds);
                     await Task.Delay(decision.Delay, ct);
                     attempt++;
                 }
                 else
                 {
-                    // Повторять не нужно. Выходим из внутреннего цикла и переходим к следующему загрузчику.
                     Log.Warning("Retry policy decided not to retry with {DownloaderName}.", downloader.Name);
-                    break;
+                    break; // Выходим из цикла ретраев и переходим к СЛЕДУЮЩЕМУ загрузчику
                 }
             }
         }
 
-        // 9. Если мы прошли всех "рабочих" и никто не справился
+        // Если мы дошли сюда, значит, ВСЕ загрузчики провалились.
         Log.Error("All downloaders and retry policies failed for URL: {Url}", url);
-        return new DownloadResult { Success = false, ErrorMessage = "All downloaders failed." };
+        return lastErrorResult; // Возвращаем ошибку от ПОСЛЕДНЕГО неуспешного загрузчика
     }
 }

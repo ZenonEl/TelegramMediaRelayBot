@@ -10,7 +10,9 @@
 // (по вашему выбору) любой более поздней версии.
 
 
+using System.Text;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot.Models;
 using TelegramMediaRelayBot.TelegramBot.States;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
@@ -25,6 +27,8 @@ public interface IContactMenuService
     Task StartUnmuteContactFlow(ITelegramBotClient botClient, Update update);
     Task ViewContacts(ITelegramBotClient botClient, Update update);
     Task StartEditContactGroupFlow(ITelegramBotClient botClient, Update update);
+    Task<List<ContactViewModel>> GetContactsForDisplay(int userId);
+    Task ShowAvailableContacts(ITelegramBotClient botClient, Update update);
 }
 
 public class ContactMenuService : IContactMenuService
@@ -150,6 +154,56 @@ public class ContactMenuService : IContactMenuService
             : _resourceService.GetResourceString("AltYourGroupsText");
 
         await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), CancellationToken.None, string.Format(_resourceService.GetResourceString("ContactGroupInfoText"), messageText));
+    }
+
+    public async Task<List<ContactViewModel>> GetContactsForDisplay(int userId)
+    {
+        var contactViewModels = new List<ContactViewModel>();
+        var tgIds = await _contactGetter.GetAllContactUserTGIds(userId);
+
+        foreach (var tgId in tgIds)
+        {
+            var contactId = _userGetter.GetUserIDbyTelegramID(tgId);
+            var membershipInfo = await BuildMembershipInfo(userId, contactId); // Используем наш приватный метод
+
+            contactViewModels.Add(new ContactViewModel
+            {
+                Id = contactId,
+                Name = _userGetter.GetUserNameByTelegramID(tgId),
+                Link = _userGetter.GetUserSelfLink(tgId),
+                MembershipInfo = membershipInfo
+            });
+        }
+        return contactViewModels;
+    }
+
+    public async Task ShowAvailableContacts(ITelegramBotClient botClient, Update update)
+    {
+        var chatId = update.CallbackQuery!.Message!.Chat.Id;
+        var userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        
+        // 1. Получаем СТРУКТУРИРОВАННЫЕ ДАННЫЕ
+        List<ContactViewModel> contacts = await GetContactsForDisplay(userId); // Используем наш уже существующий метод
+
+        // 2. ФОРМАТИРУЕМ в красивое сообщение
+        var sb = new StringBuilder();
+        sb.AppendLine(_resourceService.GetResourceString("YourContacts"));
+        
+        if (contacts.Any())
+        {
+            foreach (var contact in contacts)
+            {
+                sb.AppendLine(string.Format(_resourceService.GetResourceString("ContactInfo"), contact.Id, contact.Name, ""));
+            }
+        }
+        else
+        {
+            sb.AppendLine(_resourceService.GetResourceString("NoUsersFound"));
+        }
+        sb.AppendLine($"\n{_resourceService.GetResourceString("PleaseEnterContactIDs")}");
+        
+        // 3. ОТПРАВЛЯЕМ сообщение
+        await botClient.SendMessage(chatId, sb.ToString(), cancellationToken: CancellationToken.None);
     }
 
     private async Task<string> BuildMembershipInfo(int ownerUserId, int contactUserId)

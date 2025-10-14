@@ -10,9 +10,10 @@
 // (по вашему выбору) любой более поздней версии.
 
 
+using System.Text;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot.Models;
 using TelegramMediaRelayBot.TelegramBot.States;
-using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 namespace TelegramMediaRelayBot.TelegramBot.Services;
@@ -20,6 +21,9 @@ namespace TelegramMediaRelayBot.TelegramBot.Services;
 public interface IGroupMenuService
 {
     Task ShowGroupsMenu(ITelegramBotClient botClient, Update update);
+    Task<List<GroupViewModel>> GetGroupsForDisplay(int userId);
+    Task ShowAvailableGroups(ITelegramBotClient botClient, Update update);
+
 }
 
 public class GroupMenuService : IGroupMenuService
@@ -52,11 +56,11 @@ public class GroupMenuService : IGroupMenuService
         // Запускаем универсальное состояние для управления группами
         var newState = new UserStateData { StateName = "ManageGroups" }; // Имя нового универсального обработчика
         _stateManager.Set(chatId, newState);
-        
+
         var groupInfos = await UsersGroup.GetUserGroupInfoByUserId(userId, _groupGetter);
 
-        var messageText = groupInfos.Any() 
-            ? $"{_resourceService.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
+        var messageText = groupInfos.Any()
+            ? $"{_resourceService.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}"
             // Используем _resourceService вместо GetResourceString
             : _resourceService.GetResourceString("AltYourGroupsText");
 
@@ -67,5 +71,53 @@ public class GroupMenuService : IGroupMenuService
             CancellationToken.None,
             messageText
         );
+    }
+
+    public async Task<List<GroupViewModel>> GetGroupsForDisplay(int userId)
+    {
+        var groupIds = await _groupGetter.GetGroupIDsByUserId(userId);
+        var groupViewModels = new List<GroupViewModel>();
+
+        foreach (var groupId in groupIds)
+        {
+            groupViewModels.Add(new GroupViewModel
+            {
+                Id = groupId,
+                Name = await _groupGetter.GetGroupNameById(groupId),
+                Description = await _groupGetter.GetGroupDescriptionById(groupId),
+                MemberCount = await _groupGetter.GetGroupMemberCount(groupId),
+                IsDefault = await _groupGetter.GetIsDefaultGroup(groupId)
+            });
+        }
+        return groupViewModels;
+    }
+
+    public async Task ShowAvailableGroups(ITelegramBotClient botClient, Update update)
+    {
+        var chatId = update.CallbackQuery!.Message!.Chat.Id;
+        var userId = _userGetter.GetUserIDbyTelegramID(chatId);
+
+        // 1. Получаем СТРУКТУРИРОВАННЫЕ ДАННЫЕ
+        List<GroupViewModel> groups = await GetGroupsForDisplay(userId);
+
+        // 2. ФОРМАТИРУЕМ в красивое сообщение
+        var sb = new StringBuilder();
+        sb.AppendLine(_resourceService.GetResourceString("YourGroups"));
+        
+        if (groups.Any())
+        {
+            foreach (var group in groups)
+            {
+                sb.AppendLine($"{group.Name} (ID: {group.Id})");
+            }
+        }
+        else
+        {
+            sb.AppendLine(_resourceService.GetResourceString("NoGroupsFound"));
+        }
+        sb.AppendLine($"\n{_resourceService.GetResourceString("PleaseEnterGroupIDs")}");
+        
+        // 3. ОТПРАВЛЯЕМ сообщение
+        await botClient.SendMessage(chatId, sb.ToString(), cancellationToken: CancellationToken.None);
     }
 }

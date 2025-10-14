@@ -14,10 +14,13 @@ public class DownloaderConfigRoot
 // ===================================================================
 // Глобальные Настройки
 // ===================================================================
+public enum ProgressLogLevel { Normal, Verbose }
+
 public class GlobalSettingsConfig
 {
     public int MaxConcurrentDownloads { get; set; } = 1;
     public TimeSpan DefaultTimeout { get; set; } = TimeSpan.FromMinutes(5);
+    public ProgressLogLevel DownloadProgressLogLevel { get; set; } = ProgressLogLevel.Normal;
 }
 
 // ===================================================================
