@@ -31,7 +31,7 @@ public class GroupUpdateHandler
         _resourceService = resourceService;
     }
 
-    public async Task HandleGroupUpdate(Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
+    public async Task HandleGroupUpdate(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         var message = update.Message!;
         var messageText = message.Text!;
