@@ -4,6 +4,8 @@ using TelegramMediaRelayBot.TelegramBot.SiteFilter;
 using Microsoft.Extensions.Options;
 using TelegramMediaRelayBot.Config;
 using Telegram.Bot.Exceptions;
+using TelegramMediaRelayBot.TelegramBot.Models;
+using TelegramMediaRelayBot.Database;
 
 namespace TelegramMediaRelayBot.TelegramBot.Services;
 
@@ -17,37 +19,37 @@ public interface ITelegramSenderService
 public class TelegramSenderService : ITelegramSenderService
 {
     private readonly IUserGetter _userGetter;
-    private readonly IContactGetter _contactGetter;
-    private readonly IUserFilterService _userFilter;
-    private readonly ILinkCategorizer _categorizer;
     private readonly IInboxService _inboxService;
     private readonly IMediaTypeResolver _mediaTypeResolver;
     private readonly IOptionsMonitor<MessageDelayConfiguration> _delayConfig;
     private readonly IResourceService _resourceService;
-
+    private readonly IUserFilterService _userFilter;
+    private readonly ILinkCategorizer _categorizer;
+    private readonly IPrivacySettingsGetter _privacySettingsGetter;
 
     public TelegramSenderService(
         IUserGetter userGetter,
-        IContactGetter contactGetter,
-        IUserFilterService userFilter,
-        ILinkCategorizer categorizer,
         IInboxService inboxService,
         IMediaTypeResolver mediaTypeResolver,
         IOptionsMonitor<MessageDelayConfiguration> delayConfig,
-        IResourceService resourceService)
+        IResourceService resourceService,
+        IUserFilterService userFilter,
+        ILinkCategorizer categorizer,
+        IPrivacySettingsGetter privacySettingsGetter)
     {
         _userGetter = userGetter;
-        _contactGetter = contactGetter;
-        _userFilter = userFilter;
-        _categorizer = categorizer;
         _inboxService = inboxService;
         _mediaTypeResolver = mediaTypeResolver;
         _delayConfig = delayConfig;
         _resourceService = resourceService;
+        _userFilter = userFilter;
+        _categorizer = categorizer;
+        _privacySettingsGetter = privacySettingsGetter;
     }
 
     public async Task SendMedia(ITelegramBotClient botClient, DownloadSession session, List<byte[]> mediaFiles, List<long>? targetUserIds, CancellationToken cancellationToken)
     {
+        // 1. ЕДИНОКРАТНАЯ ЗАГРУЗКА: Отправляем байты в чат с ботом, чтобы получить FileId
         var uploadedMedia = await UploadToTelegramStorage(botClient, session.ChatId, mediaFiles, cancellationToken);
         if (!uploadedMedia.Any())
         {
@@ -55,17 +57,20 @@ public class TelegramSenderService : ITelegramSenderService
             return;
         }
         
-        if (targetUserIds == null)
+        // Если цели не указаны, отправка только себе уже произошла на шаге 1, просто завершаем.
+        if (targetUserIds == null || !targetUserIds.Any())
         {
-            //await ForwardFromStorage(botClient, session.ChatId, uploadedMedia, session.Caption, cancellationToken);
+            // Можно добавить подпись к последнему отправленному сообщению
             return;
         }
 
+        // 2. ФОРМИРУЕМ СПИСОК ПОЛУЧАТЕЛЕЙ
         var senderUserId = _userGetter.GetUserIDbyTelegramID(session.ChatId);
         var mutedByUserIds = _userGetter.GetUsersIdForMuteContactId(senderUserId);
         var filteredTgIds = targetUserIds.Except(mutedByUserIds).ToList();
         var finalRecipients = await _userFilter.FilterUsersByLink(filteredTgIds, session.Url, _categorizer);
-
+        
+        // 3. РАССЫЛКА ПО FileId
         int sentCount = 0;
         foreach (var recipientTgId in finalRecipients)
         {
@@ -73,84 +78,112 @@ public class TelegramSenderService : ITelegramSenderService
             
             var recipientUserId = _userGetter.GetUserIDbyTelegramID(recipientTgId);
 
-            if (await _inboxService.TryDeliverToInbox(botClient, session, recipientUserId, uploadedMedia))
-            {
-                sentCount++;
-                continue;
-            }
+            // TODO: Логика инбокса должна использовать FileId, а не байты
+            // if (await _inboxService.TryDeliverToInbox(...)) { sentCount++; continue; }
             
-            await ForwardFromStorage(botClient, recipientTgId, uploadedMedia, session.Caption, cancellationToken);
+            // Отправляем медиа по FileId
+            await ForwardFromStorage(botClient, recipientTgId, uploadedMedia, session.Caption, senderUserId, cancellationToken);
             sentCount++;
+            
             await Task.Delay(_delayConfig.CurrentValue.ContactSendDelay, cancellationToken);
         }
-
+        
+        // 4. ФИНАЛЬНЫЙ ОТЧЕТ
         await botClient.SendMessage(session.ChatId, $"Distribution complete. Sent to {sentCount}/{finalRecipients.Count} users.");
     }
 
-    private async Task<List<(string Kind, string FileId)>> UploadToTelegramStorage(ITelegramBotClient botClient, long storageChatId, List<byte[]> mediaFiles, CancellationToken cancellationToken)
+    private async Task<List<TelegramMediaInfo>> UploadToTelegramStorage(ITelegramBotClient botClient, long storageChatId, List<byte[]> mediaFiles, CancellationToken cancellationToken)
     {
-        var mediaGroup = _mediaTypeResolver.CreateMediaGroup(mediaFiles).ToList();
-        if (!mediaGroup.Any()) return new();
+        var uploadedMedia = new List<TelegramMediaInfo>();
         
-        var sentMessages = await SendInChunks(botClient, storageChatId, mediaGroup, null, cancellationToken);
-        
-        return sentMessages.Select(msg => msg.Photo != null ? (nameof(InputMediaPhoto), msg.Photo[0].FileId)
-                                         : (nameof(InputMediaVideo), msg.Video!.FileId)
-                                         // ... и для других типов ...
-                                         ).ToList();
+        // 1. Строго группируем файлы по типам
+        var groupedFiles = mediaFiles
+            .Select(bytes => (Bytes: bytes, Type: _mediaTypeResolver.DetermineFileType(bytes)))
+            .GroupBy(x => x.Type)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Bytes).ToList());
+
+        // 2. Последовательно отправляем каждую группу
+        if (groupedFiles.TryGetValue(TelegramFileType.Photo, out var photos))
+        {
+            var photoGroup = photos.Select(p => (IAlbumInputMedia)new InputMediaPhoto(new InputFileStream(new MemoryStream(p))));
+            var sent = await SendInChunks(botClient, storageChatId, photoGroup.ToList(), null, cancellationToken);
+            uploadedMedia.AddRange(sent.Select(m => new TelegramMediaInfo { FileId = m.Photo!.Last().FileId, Type = TelegramFileType.Photo }));
+        }
+        if (groupedFiles.TryGetValue(TelegramFileType.Video, out var videos))
+        {
+            var videoGroup = videos.Select(v => (IAlbumInputMedia)new InputMediaVideo(new InputFileStream(new MemoryStream(v))));
+            var sent = await SendInChunks(botClient, storageChatId, videoGroup.ToList(), null, cancellationToken);
+            uploadedMedia.AddRange(sent.Select(m => new TelegramMediaInfo { FileId = m.Video!.FileId, Type = TelegramFileType.Video }));
+        }
+        if (groupedFiles.TryGetValue(TelegramFileType.Audio, out var audios))
+        {
+            foreach(var audioBytes in audios)
+            {
+                var sent = await botClient.SendAudio(storageChatId, new InputFileStream(new MemoryStream(audioBytes)), cancellationToken: cancellationToken);
+                uploadedMedia.Add(new TelegramMediaInfo { FileId = sent.Audio!.FileId, Type = TelegramFileType.Audio });
+            }
+        }
+        // ... аналогично для Document ...
+
+        return uploadedMedia;
     }
     
-    private async Task ForwardFromStorage(ITelegramBotClient botClient, long recipientChatId, List<(string Kind, string FileId)> uploadedMedia, string caption, CancellationToken cancellationToken)
+    private async Task ForwardFromStorage(ITelegramBotClient botClient, long recipientChatId, List<TelegramMediaInfo> uploadedMedia, string caption, int senderUserId, CancellationToken cancellationToken)
     {
-        var mediaGroup = new List<IAlbumInputMedia>();
-        foreach (var m in uploadedMedia)
+        var isDisallowContentForwarding = _privacySettingsGetter.GetIsActivePrivacyRule(senderUserId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING);
+
+        // 1. Строго группируем по типам
+        var groupedMedia = uploadedMedia.GroupBy(m => m.Type);
+
+        bool isFirstChunk = true;
+        foreach (var group in groupedMedia)
         {
-            // --- ИСПРАВЛЕНИЕ ОШИБКИ NULLABILITY ---
-            IAlbumInputMedia? media = m.Kind switch
+            if (group.Key == TelegramFileType.Photo || group.Key == TelegramFileType.Video)
             {
-                nameof(InputMediaPhoto) => new InputMediaPhoto(m.FileId),
-                nameof(InputMediaVideo) => new InputMediaVideo(m.FileId),
-                _ => null
-            };
-            if (media != null) mediaGroup.Add(media);
+                var album = group.Select(m => m.Type == TelegramFileType.Photo 
+                    ? (IAlbumInputMedia)new InputMediaPhoto(m.FileId)
+                    : (IAlbumInputMedia)new InputMediaVideo(m.FileId)).ToList();
+                
+                // Прикрепляем caption только к первому элементу самой первой группы
+                if (isFirstChunk && album.Any())
+                {
+                    if (album[0] is InputMediaPhoto p) p.Caption = caption;
+                    else if (album[0] is InputMediaVideo v) v.Caption = caption;
+                    isFirstChunk = false;
+                }
+                
+                await SendInChunks(botClient, recipientChatId, album, caption, cancellationToken, isDisallowContentForwarding);
+            }
+            else if (group.Key == TelegramFileType.Audio)
+            {
+                foreach(var audio in group)
+                {
+                    var audioCaption = isFirstChunk ? caption : null;
+                    await botClient.SendAudio(recipientChatId, audio.FileId, caption: audioCaption, cancellationToken: cancellationToken, protectContent: isDisallowContentForwarding);
+                    isFirstChunk = false;
+                }
+            }
+            // ... аналогично для Document ...
         }
-
-        if (!mediaGroup.Any()) return;
-
-        // Прикрепляем подпись к первому элементу
-        if (mediaGroup[0] is InputMediaPhoto photo) photo.Caption = caption;
-        else if (mediaGroup[0] is InputMediaVideo video) video.Caption = caption;
-
-        await SendInChunks(botClient, recipientChatId, mediaGroup, caption, cancellationToken);
     }
 
-    private async Task<List<Message>> SendInChunks(ITelegramBotClient botClient, long chatId, List<IAlbumInputMedia> media, string? caption, CancellationToken cancellationToken)
+    private async Task<List<Message>> SendInChunks(ITelegramBotClient botClient, long chatId, List<IAlbumInputMedia> media, string? caption, CancellationToken cancellationToken, bool protectContent = false)
     {
         var allSentMessages = new List<Message>();
         for (int i = 0; i < media.Count; i += 10)
         {
             var chunk = media.Skip(i).Take(10).ToList();
+            if (!chunk.Any()) continue;
             
             // Сбрасываем caption для всех, кроме первого элемента первого чанка
             if (i > 0)
             {
-                foreach (var item in chunk)
-                {
-                    if (item is InputMediaPhoto p) p.Caption = null;
-                    else if (item is InputMediaVideo v) v.Caption = null;
-                }
+                if (chunk[0] is InputMediaPhoto p) p.Caption = null;
+                else if (chunk[0] is InputMediaVideo v) v.Caption = null;
             }
             
-            try
-            {
-                var sent = await botClient.SendMediaGroup(chatId, chunk, disableNotification: true, cancellationToken: cancellationToken);
-                allSentMessages.AddRange(sent);
-            }
-            catch (ApiRequestException ex)
-            {
-                Log.Error(ex, "Failed to send media group chunk to {ChatId}. Fallback might be needed.", chatId);
-                // Здесь может быть Fallback на отправку по одному
-            }
+            var sent = await botClient.SendMediaGroup(chatId, chunk, disableNotification: true, protectContent: protectContent, cancellationToken: cancellationToken);
+            allSentMessages.AddRange(sent);
         }
         return allSentMessages;
     }
