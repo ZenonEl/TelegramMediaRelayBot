@@ -8,17 +8,19 @@ namespace TelegramMediaRelayBot.TelegramBot.Services;
 public class TelegramLogUpdater : IAsyncDisposable
 {
     private readonly ITelegramBotClient _botClient;
-    private readonly Message _statusMessage;
+    private readonly MessageId _statusMessage;
+    private readonly ChatId _chatId;
     private readonly CancellationTokenSource _cts;
     private readonly StringBuilder _logBuffer = new();
     private readonly int _updateIntervalMs;
     private Task? _updaterTask;
     private string _lastSentText = "";
 
-    public TelegramLogUpdater(ITelegramBotClient botClient, Message statusMessage, int updateIntervalMs = 2500)
+    public TelegramLogUpdater(ITelegramBotClient botClient, MessageId statusMessage, ChatId chatId, int updateIntervalMs = 2500)
     {
         _botClient = botClient;
         _statusMessage = statusMessage;
+        _chatId = chatId;
         _updateIntervalMs = updateIntervalMs;
         _cts = new CancellationTokenSource();
     }
@@ -58,8 +60,8 @@ public class TelegramLogUpdater : IAsyncDisposable
                 if (textToSend != _lastSentText)
                 {
                     await _botClient.EditMessageText(
-                        _statusMessage.Chat.Id,
-                        _statusMessage.MessageId,
+                        _chatId,
+                        _statusMessage,
                         $"```{textToSend}```", // Отправляем как monospaced-блок
                         parseMode: Telegram.Bot.Types.Enums.ParseMode.MarkdownV2,
                         cancellationToken: _cts.Token

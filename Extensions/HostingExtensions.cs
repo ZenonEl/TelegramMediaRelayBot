@@ -136,6 +136,8 @@ namespace TelegramMediaRelayBot.Extensions
             // ========================================================================
 
             services.AddScoped<MediaDownloaderService>();
+            services.AddScoped<IMediaProcessingFlow, MediaProcessingFlow>();
+            services.AddScoped<ITelegramSenderService, TelegramSenderService>();
             services.AddSingleton<IProcessRunner, ProcessRunner>();
             services.AddSingleton<IArgumentBuilder, ArgumentBuilder>();
             //services.AddScoped<ICookieProvider, CookieProvider>(); // Scoped to manage temp files per request

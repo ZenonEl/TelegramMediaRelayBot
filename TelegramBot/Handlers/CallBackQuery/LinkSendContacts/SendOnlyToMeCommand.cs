@@ -1,4 +1,3 @@
-using TelegramMediaRelayBot.Domain.Models;
 using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Sessions;
 
@@ -7,17 +6,14 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 public class SendOnlyToMeCommand : IBotCallbackQueryHandlers
 {
     private readonly DownloadSessionManager _sessionManager;
-    private readonly MediaDownloaderService _downloaderService;
-    // ... возможно, понадобится ITelegramInteractionService для отправки финального сообщения
+    private readonly IMediaProcessingFlow _mediaFlow;
 
     public string Name => "send_only_to_me:";
 
-    public SendOnlyToMeCommand(
-        DownloadSessionManager sessionManager,
-        MediaDownloaderService downloaderService)
+    public SendOnlyToMeCommand(DownloadSessionManager sessionManager, IMediaProcessingFlow mediaFlow)
     {
         _sessionManager = sessionManager;
-        _downloaderService = downloaderService;
+        _mediaFlow = mediaFlow;
     }
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
@@ -33,11 +29,10 @@ public class SendOnlyToMeCommand : IBotCallbackQueryHandlers
             return;
         }
 
-        await botClient.EditMessageText(session.ChatId, messageId, "Downloading for you...", cancellationToken: ct);
-
-        // Запускаем загрузку без списка целей (что означает "только себе")
-        _ = _downloaderService.DownloadMedia(session.Url, new DownloadOptions(), session.SessionCts.Token);
-        // Мы не ждем (await) завершения, чтобы бот мог принимать другие команды.
-        // TODO: Всю логику после скачивания (отправка, обработка ошибок) нужно будет вызвать по завершению DownloadMedia.
+        // Запускаем весь конвейер в фоновом режиме и забываем о нем.
+        // Передаем null в targetUserIds, что означает "только себе".
+        _ = _mediaFlow.StartFlow(botClient, session, null);
+        
+        await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct);
     }
 }

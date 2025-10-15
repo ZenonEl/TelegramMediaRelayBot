@@ -72,14 +72,10 @@ public class ProcessRunner : IProcessRunner
     {
         try
         {
-            while (!reader.EndOfStream)
+            while (!ct.IsCancellationRequested && await reader.ReadLineAsync(ct) is { } line)
             {
-                var line = await reader.ReadLineAsync(ct);
-                if (line != null)
-                {
-                    lines.Add(line);
-                    onOutput?.Invoke(line); // "Кричим в воздух", если есть подписчик
-                }
+                lines.Add(line);
+                onOutput?.Invoke(line);
             }
         }
         catch (OperationCanceledException) { /* Ожидаемое поведение при отмене */ }

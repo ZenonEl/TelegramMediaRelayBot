@@ -40,12 +40,14 @@ public abstract class BaseMediaDownloader : IMediaDownloader
 
         try
         {
+            var cookiesPath = "";
+            
             var context = new ArgumentBuilderContext
             {
                 Url = url,
                 OutputPath = tempDirPath,
                 ProxyAddress = options.ProxyUrl,
-                CookiesPath = null, // TODO
+                CookiesPath = cookiesPath,
                 FormatSelection = null // TODO
             };
             
