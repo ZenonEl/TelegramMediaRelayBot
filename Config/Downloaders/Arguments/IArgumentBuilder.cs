@@ -44,5 +44,5 @@ public interface IArgumentBuilder
     /// <param name="template">Шаблон из конфигурации (DownloaderDefinition.ArgumentTemplate).</param>
     /// <param name="context">Данные для подстановки.</param>
     /// <returns>Готовая строка аргументов.</returns>
-    string Build(string template, ArgumentBuilderContext context);
+    List<string> Build(List<string> templateList, ArgumentBuilderContext context);
 }

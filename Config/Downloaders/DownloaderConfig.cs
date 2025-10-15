@@ -66,7 +66,7 @@ public class DownloaderDefinition
     public string ExecutablePath { get; set; } = string.Empty;
     public UrlMatchingConfig UrlMatching { get; set; } = new();
     public DownloaderProxyPolicyConfig ProxyPolicy { get; set; } = new();
-    public string ArgumentTemplate { get; set; } = string.Empty;
+    public List<string> ArgumentList { get; set; } = new();
 }
 
 public class UrlMatchingConfig

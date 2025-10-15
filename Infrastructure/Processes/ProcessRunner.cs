@@ -9,12 +9,16 @@ public class ProcessRunner : IProcessRunner
         var startInfo = new ProcessStartInfo
         {
             FileName = options.FileName,
-            Arguments = options.Arguments,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
             CreateNoWindow = true
         };
+
+        foreach (var arg in options.Arguments)
+        {
+            startInfo.ArgumentList.Add(arg);
+        }
 
         using var process = new Process { StartInfo = startInfo };
         var stopwatch = Stopwatch.StartNew();
@@ -37,10 +41,15 @@ public class ProcessRunner : IProcessRunner
         {
             exited = false;
         }
+        catch (OperationCanceledException)
+        {
+            exited = false;
+        }
+
 
         if (!exited)
         {
-            try { process.Kill(true); } // true - убить дерево процессов
+            try { process.Kill(true); }
             catch (Exception ex) { Log.Warning(ex, "Failed to kill process tree for {FileName}", options.FileName); }
         }
 

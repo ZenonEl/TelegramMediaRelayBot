@@ -25,7 +25,7 @@ public class ProcessRunOptions
     /// <summary>
     /// Аргументы командной строки.
     /// </summary>
-    public string Arguments { get; init; } = string.Empty;
+    public List<string> Arguments { get; init; } = new();
 
     /// <summary>
     /// Максимальное время выполнения.

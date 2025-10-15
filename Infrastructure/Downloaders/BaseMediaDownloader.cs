@@ -29,19 +29,10 @@ public abstract class BaseMediaDownloader : IMediaDownloader
 
     public virtual bool CanHandle(string url)
     {
-        if (Config.UrlMatching.Mode == UrlMatchingMode.Any)
-        {
-            return true;
-        }
-        
-        // TODO: Реализовать проверку по Regex-паттернам
-        // Для этого нужно будет скомпилировать Regex'ы один раз при создании класса.
-        // Пока что возвращаем true для простоты.
-        var patterns = Config.UrlMatching.Patterns;
-        return patterns.Any(p => Regex.IsMatch(url, p, RegexOptions.IgnoreCase));
+        if (Config.UrlMatching.Mode == UrlMatchingMode.Any) return true;
+        return Config.UrlMatching.Patterns.Any(p => Regex.IsMatch(url, p, RegexOptions.IgnoreCase));
     }
 
-    // ИСПРАВЛЕНИЕ: Имя метода теперь 'Download', как в интерфейсе.
     public async Task<DownloadResult> Download(string url, DownloadOptions options, CancellationToken ct)
     {
         var tempDirPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
@@ -58,7 +49,7 @@ public abstract class BaseMediaDownloader : IMediaDownloader
                 FormatSelection = null // TODO
             };
             
-            var arguments = ArgumentBuilder.Build(Config.ArgumentTemplate, context);
+            List<string> arguments = ArgumentBuilder.Build(Config.ArgumentList, context);
             
             var processOptions = new ProcessRunOptions
             {
@@ -69,7 +60,7 @@ public abstract class BaseMediaDownloader : IMediaDownloader
             };
 
             Log.Information("Starting download with {Downloader} for {Url}", Name, url);
-            Log.Debug("Arguments: {Arguments}", arguments);
+            Log.Debug("Arguments: {Arguments}", string.Join(" ", arguments));
 
             var commandResult = await ProcessRunner.RunAsync(processOptions, ct);
             
@@ -89,9 +80,7 @@ public abstract class BaseMediaDownloader : IMediaDownloader
         catch (Exception ex)
         {
             Log.Error(ex, "Download failed for {Downloader}", Name);
-            // Важно пробрасывать OperationCanceledException, чтобы "умные" ретраи поняли, что пользователь отменил операцию.
             if (ex is OperationCanceledException) throw; 
-            
             return new DownloadResult { Success = false, ErrorMessage = ex.Message };
         }
         finally

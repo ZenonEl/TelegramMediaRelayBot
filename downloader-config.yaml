@@ -18,7 +18,7 @@ Proxies:
     -   Name: "tor_proxy"
         Enabled: true
         # Адрес SOCKS5-прокси, который предоставляет Tor Browser или Tor-сервис.
-        Address: "socks5://127.0.0.1:9150"
+        Address: "socks5://127.0.0.1:9050"
         # (Задел на будущее) Настройки для управления Tor для смены IP-цепочки.
         # ControlPort: 9051
         # ControlPassword: "YourTorPassword"
@@ -115,11 +115,15 @@ Downloaders:
 
         # Шаблон для аргументов командной строки.
         # {Url}, {OutputPath}, {Proxy}, {Format}, {CookiesPath} - будут подставляться автоматически.
-        ArgumentTemplate: >
-            {Url}
-            --output "{OutputPath}/video.%(ext)s"
-            --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            --proxy "{Proxy}"
+        ArgumentList:
+            - "{Url}"
+            - "--output"
+            - "{OutputPath}/video.%(ext)s"
+            - "--proxy"
+            - "{Proxy}"
+            - "--cookies"
+            - "{CookiesPath}"
+
 
     # --- Загрузчик GalleryDl (основной для изображений/галерей) ---
     -   Name: "GalleryDl"
@@ -142,8 +146,13 @@ Downloaders:
             Default: "tor_proxy"
             SiteSpecific: {}
 
-        ArgumentTemplate: >
-            {Url}
-            -d "{OutputPath}"
-            --proxy "{Proxy}"
-            --cookies "{CookiesPath}"
+        ArgumentList:
+            - "{Url}"
+            - "-d"
+            - "{OutputPath}"
+            - "-D"
+            - "{OutputPath}"
+            - "--proxy"
+            - "{Proxy}"
+            - "--cookies"
+            - "{CookiesPath}"

@@ -1,62 +1,54 @@
-using System.Text;
-
 namespace TelegramMediaRelayBot.Infrastructure.Downloaders.Arguments;
 
 public class ArgumentBuilder : IArgumentBuilder
 {
-    public string Build(string template, ArgumentBuilderContext context)
+    public List<string> Build(List<string> templateList, ArgumentBuilderContext context)
     {
-        var sb = new StringBuilder(template);
+        var finalArgs = new List<string>();
 
-        // Основные подстановки
-        sb.Replace("{Url}", context.Url); // URL обычно не нужно экранировать
-        sb.Replace("{OutputPath}", SanitizePath(context.OutputPath));
-
-        // Опциональные параметры
-        HandleOptionalArgument(sb, "--proxy", "{Proxy}", context.ProxyAddress);
-        HandleOptionalArgument(sb, "--cookies", "{CookiesPath}", context.CookiesPath);
-        HandleOptionalArgument(sb, "--format", "{Format}", context.FormatSelection);
-        
-        return sb.ToString().Replace("  ", " ").Trim();
-    }
-
-    /// <summary>
-    /// Обрабатывает опциональный аргумент. Если значение есть - подставляет. Если нет - удаляет флаг.
-    /// </summary>
-    private void HandleOptionalArgument(StringBuilder sb, string flag, string placeholder, string? value)
-    {
-        if (sb.ToString().Contains(flag)) // Проверяем, есть ли вообще флаг в шаблоне
+        for (int i = 0; i < templateList.Count; i++)
         {
-            if (!string.IsNullOrEmpty(value))
+            string currentToken = templateList[i];
+
+            if (currentToken == "--proxy" || currentToken == "--cookies" || currentToken == "--output" || currentToken == "--user-agent")
             {
-                // Значение есть, заменяем плейсхолдер
-                sb.Replace(placeholder, SanitizePath(value));
+                string valueToken = (i + 1 < templateList.Count) ? templateList[i + 1] : string.Empty;
+                string value = GetValueForToken(valueToken, context);
+                Log.Debug("Value for token {Token}: {Value}", currentToken, value);
+
+                if (!string.IsNullOrEmpty(value))
+                {
+                    finalArgs.Add(currentToken);
+                    finalArgs.Add(value);
+                }
+
+                i++;
             }
             else
             {
-                // Значения нет, удаляем флаг целиком
-                sb.Replace(flag, string.Empty);
-                sb.Replace(placeholder, string.Empty);
+                string value = GetValueForToken(currentToken, context);
+                if (!string.IsNullOrEmpty(value))
+                {
+                    finalArgs.Add(value);
+                }
             }
         }
-        else if (!string.IsNullOrEmpty(value))
-        {
-             // Если флага в шаблоне нет, но значение передано (для гибкости), добавляем в конец
-            sb.Append($" {flag} {SanitizePath(value)}");
-        }
+
+        Log.Debug("Final arguments: {Args}", string.Join(" ", finalArgs));
+        return finalArgs;
     }
-    
-    /// <summary>
-    /// Безопасно экранирует путь для командной строки.
-    /// </summary>
-    private string SanitizePath(string path)
+
+    private string GetValueForToken(string token, ArgumentBuilderContext context)
     {
-        // Если путь уже в кавычках, ничего не делаем
-        if (path.StartsWith('"') && path.EndsWith('"'))
+        return token switch
         {
-            return path;
-        }
-        // Добавляем кавычки, чтобы обработать пути с пробелами
-        return $"\"{path}\"";
+            "{Url}" => context.Url,
+            "{OutputPath}/video.%(ext)s" => context.OutputPath+"/video.%(ext)s",
+            "{OutputPath}" => context.OutputPath,
+            "{Proxy}" => context.ProxyAddress ?? string.Empty,
+            "{CookiesPath}" => context.CookiesPath ?? string.Empty,
+            "{Format}" => context.FormatSelection ?? string.Empty,
+            _ => token
+        };
     }
 }
