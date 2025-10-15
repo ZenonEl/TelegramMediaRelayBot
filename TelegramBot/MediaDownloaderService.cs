@@ -57,55 +57,48 @@ public class MediaDownloaderService
 
             while (true)
             {
-                // Если включен Verbose-режим, передаем OnProgress в опции. Иначе - null.
-                options.OnProgress = _config.GlobalSettings.DownloadProgressLogLevel == ProgressLogLevel.Verbose 
-                    ? options.OnProgress 
-                    : null;
-
                 var proxyAddress = _proxyPolicyManager.GetProxyAddress(downloader.Config, url);
-
+                
                 if (attemptResult.Modifiers?.UseProxyName != null)
                 {
-                    Log.Information("Retry policy triggered: switching to proxy '{ProxyName}'", attemptResult.Modifiers.UseProxyName);
-                    // TODO: Реализовать получение адреса прокси по имени
+                    // ... логика смены прокси ...
                 }
                 
+                // --- ГЛАВНОЕ ИЗМЕНЕНИЕ ---
+                // Мы больше НЕ трогаем options.OnProgress.
+                // Мы просто передаем ОРИГИНАЛЬНЫЙ объект options дальше.
                 options.ProxyUrl = proxyAddress;
+                options.LastResult = attemptResult;
                 
                 attemptResult = await downloader.Download(url, options, ct);
                 attemptResult.AttemptNumber = attempt;
                 
-                // --- ИСПРАВЛЕНИЕ ЛОГИКИ ---
                 if (attemptResult.Success)
                 {
-                    // УСПЕХ! Немедленно выходим и возвращаем успешный результат.
                     Log.Information("Download successful with {DownloaderName} on attempt {Attempt}", downloader.Name, attempt);
                     return attemptResult;
                 }
                 
-                // ПРОВАЛ. Логируем и решаем, что делать дальше.
                 Log.Warning("Attempt {Attempt} with {DownloaderName} failed: {Error}", attempt, downloader.Name, attemptResult.ErrorMessage);
-                lastErrorResult = attemptResult; // Сохраняем последнюю ошибку
+                lastErrorResult = attemptResult;
 
-                var decision = _retryPolicyManager.Decide(attemptResult, attempt);
+                var decision = _retryPolicyManager.Decide(lastErrorResult, attempt);
                 
                 if (decision.ShouldRetry)
                 {
                     attemptResult.Modifiers = decision.Modifiers;
-                    Log.Information("Waiting {Delay}s before next attempt...", decision.Delay.TotalSeconds);
                     await Task.Delay(decision.Delay, ct);
                     attempt++;
                 }
                 else
                 {
                     Log.Warning("Retry policy decided not to retry with {DownloaderName}.", downloader.Name);
-                    break; // Выходим из цикла ретраев и переходим к СЛЕДУЮЩЕМУ загрузчику
+                    break;
                 }
             }
         }
-
-        // Если мы дошли сюда, значит, ВСЕ загрузчики провалились.
+        
         Log.Error("All downloaders and retry policies failed for URL: {Url}", url);
-        return lastErrorResult; // Возвращаем ошибку от ПОСЛЕДНЕГО неуспешного загрузчика
+        return lastErrorResult;
     }
 }

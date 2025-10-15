@@ -7,6 +7,7 @@ GlobalSettings:
     MaxConcurrentDownloads: 3
     # Таймаут по умолчанию для одного шага загрузки (например, для одного ретрая).
     DefaultTimeout: "00:10:00" # 10 минут
+    DownloadProgressLogLevel: Verbose
 
 # ===================================================================
 # Настройки Прокси-серверов
@@ -140,6 +141,8 @@ Downloaders:
                 - "instagram\\.com/"
                 - "vk\\.com/wall-"
                 - "vk\\.com/photo"
+                - "vt\\.tiktok\\.com/"
+                - "www\\.tiktok\\.com/"
 
         ProxyPolicy:
             # Для сайтов с картинками чаще нужен прокси.

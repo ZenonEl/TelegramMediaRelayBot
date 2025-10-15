@@ -39,8 +39,7 @@ public class MediaProcessingFlow : IMediaProcessingFlow
             await botClient.EditMessageText(session.ChatId, session.StatusMessageId, "Downloading...", cancellationToken: session.SessionCts.Token);
             
             await using var logUpdater = new TelegramLogUpdater(botClient, session.StatusMessageId, session.ChatId);
-            logUpdater.Start();
-            
+
             var options = new DownloadOptions { OnProgress = logUpdater.HandleLogLine };
             var downloadResult = await _downloaderService.DownloadMedia(session.Url, options, session.SessionCts.Token);
 
@@ -59,7 +58,7 @@ public class MediaProcessingFlow : IMediaProcessingFlow
             // --- ЭТАП 3: ОТПРАВКА ---
             await botClient.EditMessageText(session.ChatId, session.StatusMessageId, "Sending media...", cancellationToken: session.SessionCts.Token);
 
-            await _senderService.SendMedia(botClient, session, processedFiles, targetUserIds);
+            await _senderService.SendMedia(botClient, session, processedFiles, targetUserIds, session.SessionCts.Token);
 
             // --- ЭТАП 4: ЗАВЕРШЕНИЕ ---
             await botClient.EditMessageText(session.ChatId, session.StatusMessageId, "Done!", cancellationToken: CancellationToken.None); // Используем CancellationToken.None, чтобы сообщение об успехе точно отправилось

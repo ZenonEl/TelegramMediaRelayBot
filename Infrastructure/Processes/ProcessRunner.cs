@@ -1,9 +1,20 @@
 using System.Diagnostics;
+using Microsoft.Extensions.Options;
+using TelegramMediaRelayBot.Config.Downloaders;
 
 namespace TelegramMediaRelayBot.Infrastructure.Processes;
 
 public class ProcessRunner : IProcessRunner
 {
+    // --- НОВЫЕ ПОЛЯ И КОНСТРУКТОР ---
+    private readonly DownloaderConfigRoot _config;
+
+    public ProcessRunner(IOptionsMonitor<DownloaderConfigRoot> configMonitor)
+    {
+        _config = configMonitor.CurrentValue;
+        // TODO: Подписаться на OnChange
+    }
+
     public async Task<CommandResult> RunAsync(ProcessRunOptions options, CancellationToken ct)
     {
         var startInfo = new ProcessStartInfo
@@ -70,12 +81,19 @@ public class ProcessRunner : IProcessRunner
 
     private async Task ReadStreamAsync(StreamReader reader, List<string> lines, Action<string>? onOutput, CancellationToken ct)
     {
+        var enableProgressOutput = onOutput != null && _config.GlobalSettings.DownloadProgressLogLevel == ProgressLogLevel.Verbose;
+        
         try
         {
             while (!ct.IsCancellationRequested && await reader.ReadLineAsync(ct) is { } line)
             {
                 lines.Add(line);
-                onOutput?.Invoke(line);
+                
+                // Вызываем "подписчика" только если разрешено
+                if (enableProgressOutput)
+                {
+                    onOutput?.Invoke(line);
+                }
             }
         }
         catch (OperationCanceledException) { /* Ожидаемое поведение при отмене */ }

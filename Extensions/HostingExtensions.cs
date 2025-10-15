@@ -116,6 +116,7 @@ namespace TelegramMediaRelayBot.Extensions
             // Core handlers for routing updates
             services.AddScoped<PrivateUpdateHandler>();
             services.AddScoped<GroupUpdateHandler>();
+            services.AddScoped<ITelegramSenderService, TelegramSenderService>();
 
             // Factories for creating handlers dynamically
             services.AddSingleton<CallbackQueryHandlersFactory>();
@@ -184,6 +185,7 @@ namespace TelegramMediaRelayBot.Extensions
             services.AddSingleton<IResourceService, ResourceService>();
             services.AddSingleton<ITextCleanupService, TextCleanupService>();
             services.AddScoped<IUserFilterService, DefaultUserFilterService>();
+            services.AddScoped<IInboxService, InboxService>();
 
             // Helper services for parsing/formatting (replacement for static utils)
             services.AddSingleton<IUrlParsingService, UrlParsingService>();

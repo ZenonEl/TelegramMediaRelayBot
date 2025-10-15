@@ -2,6 +2,7 @@ using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Exceptions;
+using Telegram.Bot.Types.Enums;
 
 namespace TelegramMediaRelayBot.TelegramBot.Services;
 
@@ -23,11 +24,7 @@ public class TelegramLogUpdater : IAsyncDisposable
         _chatId = chatId;
         _updateIntervalMs = updateIntervalMs;
         _cts = new CancellationTokenSource();
-    }
-
-    public void Start()
-    {
-        _updaterTask = Task.Run(UpdateMessageLoop);
+        _updaterTask = Task.Run(UpdateMessageLoop, _cts.Token);
     }
 
     public void HandleLogLine(string line)
@@ -46,28 +43,31 @@ public class TelegramLogUpdater : IAsyncDisposable
             {
                 await Task.Delay(_updateIntervalMs, _cts.Token);
 
-                string textToSend;
+                string newContent;
                 lock (_logBuffer)
                 {
                     if (_logBuffer.Length == 0) continue;
-                    textToSend = _logBuffer.ToString();
-                    _logBuffer.Clear(); // Очищаем буфер после того, как забрали из него текст
+                    newContent = _logBuffer.ToString();
                 }
+
+                // --- ИСПРАВЛЕНИЕ ---
+                // 1. Убираем очистку буфера здесь. Будем очищать только после успешной отправки.
+                // _logBuffer.Clear(); 
                 
-                // Обрезаем, если текст слишком длинный
-                if (textToSend.Length > 4000) textToSend = textToSend[^4000..];
+                // 2. Обрезаем до того, как обернуть в ```, чтобы избежать проблем с форматированием
+                if (newContent.Length > 4000) newContent = "...\n" + newContent[^4000..];
                 
-                if (textToSend != _lastSentText)
-                {
-                    await _botClient.EditMessageText(
-                        _chatId,
-                        _statusMessage,
-                        $"```{textToSend}```", // Отправляем как monospaced-блок
-                        parseMode: Telegram.Bot.Types.Enums.ParseMode.MarkdownV2,
-                        cancellationToken: _cts.Token
-                    );
-                    _lastSentText = textToSend;
-                }
+                var textToSend = $"```{newContent}```";
+                
+                if (textToSend == _lastSentText) continue;
+
+                await _botClient.EditMessageText(
+                    _chatId, _statusMessage, textToSend,
+                    parseMode: ParseMode.MarkdownV2, cancellationToken: _cts.Token);
+                
+                _lastSentText = textToSend;
+                // Очищаем буфер только после успешной отправки
+                lock (_logBuffer) { _logBuffer.Clear(); }
             }
             catch (ApiRequestException ex) when (ex.Message.Contains("message is not modified"))
             {
