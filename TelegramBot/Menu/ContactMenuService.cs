@@ -203,7 +203,7 @@ public class ContactMenuService : IContactMenuService
         sb.AppendLine($"\n{_resourceService.GetResourceString("PleaseEnterContactIDs")}");
         
         // 3. ОТПРАВЛЯЕМ сообщение
-        await botClient.SendMessage(chatId, sb.ToString(), cancellationToken: CancellationToken.None);
+        await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetCancelKeyboardMarkup(update.CallbackQuery.Message.Id), cancellationToken: CancellationToken.None, text: sb.ToString());
     }
 
     private async Task<string> BuildMembershipInfo(int ownerUserId, int contactUserId)

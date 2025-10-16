@@ -16,7 +16,7 @@ public class MediaProcessingFlow : IMediaProcessingFlow
 {
     private readonly MediaDownloaderService _downloaderService;
     private readonly IMediaProcessingService _mediaProcessor;
-    private readonly ITelegramSenderService _senderService; // Наш новый сервис отправки
+    private readonly ITelegramSenderService _senderService;
     private readonly IOptionsMonitor<DownloadingConfiguration> _downloadingConfig;
 
     public MediaProcessingFlow(
@@ -47,7 +47,7 @@ public class MediaProcessingFlow : IMediaProcessingFlow
             {
                 var errorMessage = $"Download failed:\n`{downloadResult.ErrorMessage}`";
                 await botClient.EditMessageText(session.ChatId, session.StatusMessageId, errorMessage, parseMode: ParseMode.Markdown);
-                return; // Завершаем флоу
+                return;
             }
 
             // --- ЭТАП 2: ПОСТОБРАБОТКА ---

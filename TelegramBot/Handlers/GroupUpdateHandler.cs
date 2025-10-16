@@ -74,7 +74,7 @@ public class GroupUpdateHandler
         var statusMessage = await botClient.SendMessage(message.Chat.Id, 
             _resourceService.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
 
-        var session = _sessionManager.CreateSession(
+        DownloadSession session = _sessionManager.CreateSession(
             statusMessageId: statusMessage.MessageId,
             chatId: message.Chat.Id,
             url: url,

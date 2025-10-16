@@ -61,12 +61,9 @@ public class MediaDownloaderService
                 
                 if (attemptResult.Modifiers?.UseProxyName != null)
                 {
-                    // ... логика смены прокси ...
+                    // TODO ... логика смены прокси ...
                 }
                 
-                // --- ГЛАВНОЕ ИЗМЕНЕНИЕ ---
-                // Мы больше НЕ трогаем options.OnProgress.
-                // Мы просто передаем ОРИГИНАЛЬНЫЙ объект options дальше.
                 options.ProxyUrl = proxyAddress;
                 options.LastResult = attemptResult;
                 

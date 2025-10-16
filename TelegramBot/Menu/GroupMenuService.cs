@@ -61,7 +61,6 @@ public class GroupMenuService : IGroupMenuService
 
         var messageText = groupInfos.Any()
             ? $"{_resourceService.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}"
-            // Используем _resourceService вместо GetResourceString
             : _resourceService.GetResourceString("AltYourGroupsText");
 
         await _interactionService.ReplyToUpdate(
@@ -115,7 +114,7 @@ public class GroupMenuService : IGroupMenuService
         {
             sb.AppendLine(_resourceService.GetResourceString("NoGroupsFound"));
         }
-        sb.AppendLine($"\n{_resourceService.GetResourceString("PleaseEnterGroupIDs")}");
+        sb.AppendLine($"\n{_resourceService.GetResourceString("PleaseEnterGroupIDs")}"); //TODO поправить вид сообщения с айди и его удаление
         
         // 3. ОТПРАВЛЯЕМ сообщение
         await botClient.SendMessage(chatId, sb.ToString(), cancellationToken: CancellationToken.None);

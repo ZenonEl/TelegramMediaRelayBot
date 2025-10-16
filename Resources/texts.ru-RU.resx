@@ -785,7 +785,11 @@ PS: квадратные скобки не нужны :)</value>
         <value>Действие (полностью/частично) не было выполнено</value>
     </data>
     <data name="ProcessIDsList" xml:space="preserve">
-        <value>Указанные ID:\n{0}\n\nПродолжить?</value>
+        <value>Указанные ID:
+
+{0}
+
+Продолжить?</value>
     </data>
     <data name="SuccessMessageProcessIDsList" xml:space="preserve">
         <value>Успешно обработано: {0}</value>

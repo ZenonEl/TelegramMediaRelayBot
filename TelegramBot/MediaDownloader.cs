@@ -35,7 +35,7 @@ public partial class TGBot : IHostedService
     {
         Log.Information("TGBot Hosted Service is starting.");
 
-        var me = _botClient.GetMeAsync(cancellationToken).GetAwaiter().GetResult();
+        var me = _botClient.GetMe(cancellationToken).GetAwaiter().GetResult();
         Log.Information("Hello, I am {BotId} ready and my name is {BotName}.", me.Id, me.FirstName);
 
         _botClient.StartReceiving(
@@ -70,8 +70,6 @@ public partial class TGBot : IHostedService
 
         // Логирование переносим сюда, так как нам нужен stateManager из scope
         LogEvent(update, chatId, stateManager);
-
-        // --- НОВАЯ, ЕДИНАЯ ЛОГИКА МАРШРУТИЗАЦИИ ---
 
         // 1. Проверяем, не находится ли пользователь в состоянии
         if (stateManager.TryGet(chatId, out var stateData))

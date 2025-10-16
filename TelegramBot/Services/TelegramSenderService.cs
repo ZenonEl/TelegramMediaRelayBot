@@ -58,9 +58,9 @@ public class TelegramSenderService : ITelegramSenderService
         }
         
         // Если цели не указаны, отправка только себе уже произошла на шаге 1, просто завершаем.
-        if (targetUserIds == null || !targetUserIds.Any())
+        if (targetUserIds == null || targetUserIds.Count == 0)
         {
-            // Можно добавить подпись к последнему отправленному сообщению
+            await botClient.SendMessage(session.ChatId, session.Caption, cancellationToken: cancellationToken);
             return;
         }
 
@@ -123,7 +123,7 @@ public class TelegramSenderService : ITelegramSenderService
                 uploadedMedia.Add(new TelegramMediaInfo { FileId = sent.Audio!.FileId, Type = TelegramFileType.Audio });
             }
         }
-        // ... аналогично для Document ...
+        // TODO ... аналогично для Document ...
 
         return uploadedMedia;
     }
@@ -163,7 +163,7 @@ public class TelegramSenderService : ITelegramSenderService
                     isFirstChunk = false;
                 }
             }
-            // ... аналогично для Document ...
+            // TODO ... аналогично для Document ...
         }
     }
 

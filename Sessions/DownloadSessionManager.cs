@@ -15,7 +15,7 @@ public class DownloadSessionManager
     /// </summary>
     public DownloadSession CreateSession(int statusMessageId, long chatId, string url, string caption, DateTime originalMessageDateUtc)
     {
-        var session = new DownloadSession
+        DownloadSession session = new DownloadSession
         {
             StatusMessageId = statusMessageId,
             ChatId = chatId,
@@ -39,7 +39,7 @@ public class DownloadSessionManager
     /// </summary>
     public void CancelDefaultAction(int statusMessageId)
     {
-        if (_sessions.TryGetValue(statusMessageId, out var session) && session.DefaultActionCts != null)
+        if (_sessions.TryGetValue(statusMessageId, out DownloadSession session) && session.DefaultActionCts != null)
         {
             try { session.DefaultActionCts.Cancel(); } catch { }
             session.DefaultActionCts.Dispose();
@@ -53,7 +53,7 @@ public class DownloadSessionManager
     /// </summary>
     public bool CancelSession(int statusMessageId)
     {
-        if (_sessions.TryGetValue(statusMessageId, out var session))
+        if (_sessions.TryGetValue(statusMessageId, out DownloadSession session))
         {
             try { session.SessionCts.Cancel(); } catch { }
             Log.Information("Canceled session {MessageId} by user request.", statusMessageId);
@@ -67,7 +67,7 @@ public class DownloadSessionManager
     /// </summary>
     public void CompleteSession(int statusMessageId)
     {
-        if (_sessions.TryRemove(statusMessageId, out var session))
+        if (_sessions.TryRemove(statusMessageId, out DownloadSession session))
         {
             session.DefaultActionCts?.Dispose();
             session.SessionCts.Dispose();
