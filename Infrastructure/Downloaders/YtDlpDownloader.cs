@@ -19,42 +19,31 @@ public class YtDlpDownloader : BaseMediaDownloader
 
     protected override async Task<DownloadResult> ProcessSuccessResult(string tempDirPath, CommandResult commandResult, CancellationToken ct)
     {
-        // YtDlp скачивает один файл, нам нужно его найти.
+        string[] files = Directory.GetFiles(tempDirPath);
         
-        // Сначала ищем путь в логах
-        var filePath = ExtractFilePath(commandResult.Output);
-
-        // Если не нашли, ищем самый большой медиа-файл в папке
-        if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath))
+        if (files.Length == 0)
         {
-            var bestFile = new DirectoryInfo(tempDirPath)
-                .GetFiles()
-                .OrderByDescending(f => f.Length)
-                .FirstOrDefault();
-            
-            filePath = bestFile?.FullName;
+            return new DownloadResult { Success = false, ErrorMessage = "No files were downloaded by yt-dlp." };
         }
 
-        if (string.IsNullOrEmpty(filePath))
+        Array.Reverse(files);
+
+        List<byte[]> mediaFiles = [];
+        long totalSize = 0;
+
+        foreach (string file in files)
         {
-            return new DownloadResult { Success = false, ErrorMessage = "Could not find downloaded file." };
+            byte[] fileBytes = await System.IO.File.ReadAllBytesAsync(file, ct);
+            mediaFiles.Add(fileBytes);
+            totalSize += fileBytes.Length;
         }
-        
-        var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath, ct);
 
         return new DownloadResult
         {
             Success = true,
-            MediaFiles = new List<byte[]> { fileBytes },
-            MediaType = MediaType.Video, // TODO: Улучшить определение типа
-            FileSize = fileBytes.Length
+            MediaFiles = mediaFiles,
+            MediaType = MediaType.Video, // TODO: Улучшить
+            FileSize = totalSize
         };
-    }
-
-    private string? ExtractFilePath(string output)
-    {
-        // TODO: Взять паттерн из конфига
-        var match = Regex.Match(output, "\\[download\\] Destination: (.+)");
-        return match.Success ? match.Groups[1].Value.Trim() : null;
     }
 }

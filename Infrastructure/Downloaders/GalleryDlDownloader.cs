@@ -17,25 +17,22 @@ public class GalleryDlDownloader : BaseMediaDownloader
 
     protected override async Task<DownloadResult> ProcessSuccessResult(string tempDirPath, CommandResult commandResult, CancellationToken ct)
     {
-        // --- ИСПРАВЛЕНИЕ ---
-        // 1. Получаем файлы не как строки, а как объекты FileInfo
-        var fileInfos = new DirectoryInfo(tempDirPath).GetFiles();
-        
-        // 2. СОРТИРУЕМ их по времени создания, чтобы гарантировать правильный порядок
-        var sortedFiles = fileInfos.OrderBy(f => f.CreationTimeUtc).ToList();
-        
-        if (sortedFiles.Count == 0)
+        // GalleryDl может скачать много файлов, собираем все.
+        var files = Directory.GetFiles(tempDirPath);
+
+        if (files.Length == 0)
         {
             return new DownloadResult { Success = false, ErrorMessage = "No files were downloaded." };
         }
 
+        Array.Reverse(files);
+
         var mediaFiles = new List<byte[]>();
         long totalSize = 0;
 
-        foreach (var fileInfo in sortedFiles)
+        foreach (var file in files)
         {
-            // 3. Читаем файлы в правильном порядке
-            var fileBytes = await System.IO.File.ReadAllBytesAsync(fileInfo.FullName, ct);
+            var fileBytes = await System.IO.File.ReadAllBytesAsync(file, ct);
             mediaFiles.Add(fileBytes);
             totalSize += fileBytes.Length;
         }
@@ -44,7 +41,7 @@ public class GalleryDlDownloader : BaseMediaDownloader
         {
             Success = true,
             MediaFiles = mediaFiles,
-            MediaType = MediaType.Image,
+            MediaType = MediaType.Image, // TODO: Улучшить определение типа
             FileSize = totalSize
         };
     }
