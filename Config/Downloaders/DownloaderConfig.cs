@@ -73,6 +73,7 @@ public class UrlMatchingConfig
 {
     public UrlMatchingMode Mode { get; set; }
     public List<string> Patterns { get; set; } = new();
+    public string? PatternsFile { get; set; }
 }
 
 public enum UrlMatchingMode

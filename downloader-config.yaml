@@ -102,6 +102,7 @@ Downloaders:
                 - "youtube\\.com/"
                 - "vk\\.com/video"
                 - "vk\\.com/clip"
+            PatternsFile: "DownloaderPatterns/ytdlp.txt"
 
         # Правила использования прокси для этого загрузчика.
         ProxyPolicy:

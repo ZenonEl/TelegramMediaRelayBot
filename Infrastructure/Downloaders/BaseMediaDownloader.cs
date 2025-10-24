@@ -16,7 +16,9 @@ public abstract class BaseMediaDownloader : IMediaDownloader
     public string Name => Config.Name;
     public bool IsEnabled => Config.Enabled;
     public int Priority => Config.Priority;
-    
+    private readonly List<Regex> _urlRegexPatterns = new();
+    private readonly HashSet<string> _urlHostPatterns = new();
+
     protected BaseMediaDownloader(
         DownloaderDefinition config,
         IProcessRunner processRunner,
@@ -25,12 +27,38 @@ public abstract class BaseMediaDownloader : IMediaDownloader
         Config = config;
         ProcessRunner = processRunner;
         ArgumentBuilder = argumentBuilder;
+
+        foreach (var pattern in Config.UrlMatching.Patterns)
+        {
+            if (IsSimpleHostPattern(pattern))
+            {
+                _urlHostPatterns.Add(pattern.Replace("\\.", ".").ToLower());
+            }
+            else
+            {
+                _urlRegexPatterns.Add(new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase));
+            }
+        }
     }
+    private bool IsSimpleHostPattern(string pattern) => !pattern.Any(c => ".^$*+?()[{".Contains(c));
 
     public virtual bool CanHandle(string url)
     {
         if (Config.UrlMatching.Mode == UrlMatchingMode.Any) return true;
-        return Config.UrlMatching.Patterns.Any(p => Regex.IsMatch(url, p, RegexOptions.IgnoreCase));
+
+        var uri = new Uri(url);
+        
+        if (_urlHostPatterns.Contains(uri.Host.ToLower()))
+        {
+            return true;
+        }
+
+        if (_urlRegexPatterns.Any(regex => regex.IsMatch(url)))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     public async Task<DownloadResult> Download(string url, DownloadOptions options, CancellationToken ct)

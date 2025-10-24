@@ -15,6 +15,7 @@ using Telegram.Bot.Types.Enums;
 using TelegramBot.Services;
 using TelegramMediaRelayBot.Config;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.Domain.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Sessions;
 using TelegramMediaRelayBot.TelegramBot.Utils;
@@ -34,6 +35,7 @@ public class PrivateUpdateHandler
     private readonly IUrlParsingService _urlParser;
     private readonly IStartParameterParser _startParser;
     private readonly ITelegramInteractionService _interactionService;
+    private readonly IMediaDownloaderFactory _downloaderFactory;
 
     public PrivateUpdateHandler(
         IServiceScopeFactory scopeFactory,
@@ -46,7 +48,8 @@ public class PrivateUpdateHandler
         IResourceService resourceService,
         IUrlParsingService urlParser,
         IStartParameterParser startParser,
-        ITelegramInteractionService interactionService)
+        ITelegramInteractionService interactionService,
+        IMediaDownloaderFactory downloaderFactory)
     {
         _scopeFactory = scopeFactory;
         _sessionManager = sessionManager;
@@ -59,6 +62,7 @@ public class PrivateUpdateHandler
         _urlParser = urlParser;
         _startParser = startParser;
         _interactionService = interactionService;
+        _downloaderFactory = downloaderFactory;
     }
 
     public async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
@@ -73,11 +77,17 @@ public class PrivateUpdateHandler
             await HandleCommand(botClient, update, cancellationToken);
             return;
         }
-        
-        // Используем наш новый сервис IUrlParsingService
+
         if (message.Text != null && _urlParser.TryExtractLinkAndText(message.Text, out var url, out var caption))
         {
-            // --- ИСПРАВЛЕНИЕ: Логика создания сессии теперь здесь ---
+            IEnumerable<IMediaDownloader> downloaders = _downloaderFactory.GetDownloadersForUrl(url);
+            if (!downloaders.Any())
+            {
+                //TODO Отправка текста что ссылка не поддерживается
+                Log.Debug("No suitable downloader found for URL: {Url}. Ignoring.", url);
+                return;
+            }
+
             var statusMessage = await botClient.SendMessage(chatId, _resourceService.GetResourceString("VideoDistributionQuestion"),
                 replyParameters: new ReplyParameters { MessageId = message.MessageId },
                 replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(0), cancellationToken: cancellationToken);

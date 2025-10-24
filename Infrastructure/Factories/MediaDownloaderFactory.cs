@@ -9,6 +9,7 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using TelegramMediaRelayBot.Config.Downloaders;
 using TelegramMediaRelayBot.Domain.Interfaces;
@@ -24,18 +25,21 @@ public class MediaDownloaderFactory : IMediaDownloaderFactory
     private readonly IProcessRunner _processRunner;
     private readonly IArgumentBuilder _argumentBuilder;
     private readonly List<IMediaDownloader> _downloaders;
+    private readonly IServiceProvider _serviceProvider;
 
     public MediaDownloaderFactory(
         // 1. Получаем всю нашу строго типизированную конфигурацию через IOptionsMonitor
         IOptionsMonitor<DownloaderConfigRoot> configMonitor,
         // 2. Получаем наши новые сервисы из DI
         IProcessRunner processRunner,
-        IArgumentBuilder argumentBuilder)
+        IArgumentBuilder argumentBuilder,
+        IServiceProvider serviceProvider)
     {
         // IOptionsMonitor позволяет отслеживать изменения в downloader-config.yaml "на лету"
         _config = configMonitor.CurrentValue;
         _processRunner = processRunner;
         _argumentBuilder = argumentBuilder;
+        _serviceProvider = serviceProvider;
         
         // 3. Создаем экземпляры загрузчиков при старте
         _downloaders = new List<IMediaDownloader>();
@@ -58,27 +62,45 @@ public class MediaDownloaderFactory : IMediaDownloaderFactory
     {
         foreach (var downloaderDef in _config.Downloaders)
         {
-            if (!downloaderDef.Enabled) continue;
+            // --- НОВАЯ ЛОГИКА ЗАГРУЗКИ ПАТТЕРНОВ ---
+            LoadPatternsFromFile(downloaderDef.UrlMatching);
 
-            // 5. Здесь мы решаем, какой класс создать, на основе имени в конфиге
+            // Используем ActivatorUtilities для создания экземпляров с передачей зависимостей из DI
             IMediaDownloader? downloader = downloaderDef.Name switch
             {
-                "YtDlp" => new YtDlpDownloader(downloaderDef, _processRunner, _argumentBuilder),
-                "GalleryDl" => new GalleryDlDownloader(downloaderDef, _processRunner, _argumentBuilder),
-                // Можно будет легко добавить новый:
-                // "NewCoolDownloader" => new NewCoolDownloader(downloaderDef, ...),
+                "YtDlp" => ActivatorUtilities.CreateInstance<YtDlpDownloader>(_serviceProvider, downloaderDef),
+                "GalleryDl" => ActivatorUtilities.CreateInstance<GalleryDlDownloader>(_serviceProvider, downloaderDef),
                 _ => null
             };
 
-            if (downloader != null)
-            {
-                _downloaders.Add(downloader);
-                Log.Debug("Initialized downloader: {DownloaderName}", downloader.Name);
-            }
+            if (downloader != null) _downloaders.Add(downloader);
         }
     }
-    
-    // Старые методы интерфейса теперь работают с нашим кешированным списком _downloaders
+
+    private void LoadPatternsFromFile(UrlMatchingConfig urlMatchingConfig)
+    {
+        if (string.IsNullOrWhiteSpace(urlMatchingConfig.PatternsFile)) return;
+        
+        try
+        {
+            var path = Path.Combine(AppContext.BaseDirectory, urlMatchingConfig.PatternsFile);
+            if (System.IO.File.Exists(path))
+            {
+                var patternsFromFile = System.IO.File.ReadAllLines(path)
+                    .Select(line => line.Trim())
+                    .Where(line => !string.IsNullOrEmpty(line) && !line.StartsWith('#'))
+                    .ToList();
+                
+                urlMatchingConfig.Patterns.AddRange(patternsFromFile);
+                Log.Debug("Loaded {Count} URL patterns from file: {File}", patternsFromFile.Count, path);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to load URL patterns from file: {File}", urlMatchingConfig.PatternsFile);
+        }
+    }
+
     public IMediaDownloader GetDownloader(string url)
     {
         var downloader = _downloaders
@@ -94,7 +116,7 @@ public class MediaDownloaderFactory : IMediaDownloaderFactory
         Log.Information("Selected downloader {Downloader} for {Url}", downloader.Name, url);
         return downloader;
     }
-    
+
     public IEnumerable<IMediaDownloader> GetDownloadersForUrl(string url)
     {
         return _downloaders
