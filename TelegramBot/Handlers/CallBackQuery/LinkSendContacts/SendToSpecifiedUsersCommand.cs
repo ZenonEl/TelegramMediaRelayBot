@@ -29,6 +29,7 @@ public class SendToSpecifiedUsersCommand : IBotCallbackQueryHandlers
         long chatId = callbackQuery.Message!.Chat.Id;
 
         _sessionManager.CancelDefaultAction(messageId);
+        _sessionManager.MarkAsProcessing(messageId);
 
         UserStateData newState = new UserStateData
         {

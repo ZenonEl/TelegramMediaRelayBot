@@ -22,6 +22,7 @@ public interface IUserMenuService
 {
     // Методы из класса Users
     Task ViewSettings(ITelegramBotClient botClient, Update update);
+    Task ViewHelpMenu(ITelegramBotClient botClient, Update update);
     Task ViewDefaultActionsMenu(ITelegramBotClient botClient, Update update);
     Task ViewPrivacyMenu(ITelegramBotClient botClient, Update update, string statusMessage = "");
     Task ViewLinkPrivacyMenu(ITelegramBotClient botClient, Update update);
@@ -77,6 +78,12 @@ public class UserMenuService : IUserMenuService
     {
         return _interactionService.ReplyToUpdate(botClient, update, UsersKB.GetSettingsKeyboardMarkup(),
             CancellationToken.None, _resourceService.GetResourceString("SettingsMenuText"));
+    }
+
+    public Task ViewHelpMenu(ITelegramBotClient botClient, Update update)
+    {
+        return _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetReturnButtonMarkup("main_menu"),
+            CancellationToken.None, _resourceService.GetResourceString("HelpText"));
     }
 
     public Task ViewDefaultActionsMenu(ITelegramBotClient botClient, Update update)

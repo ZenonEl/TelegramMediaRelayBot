@@ -30,22 +30,17 @@ public class SendOnlyToMeCommand : IBotCallbackQueryHandlers
             return;
         }
 
+        _sessionManager.MarkAsProcessing(messageId);
         await botClient.EditMessageText(session.ChatId, messageId, "Processing...", cancellationToken: ct);
         
-        // --- ГЛАВНОЕ ИСПРАВЛЕНИЕ ---
-        // Запускаем фоновую задачу, которая СОЗДАЕТ СВОЙ SCOPE
         _ = Task.Run(async () =>
         {
-            // 1. Создаем свой собственный, независимый scope
             await using (AsyncServiceScope scope = _scopeFactory.CreateAsyncScope())
             {
-                // 2. Получаем "свежий" IMediaProcessingFlow из этого scope
                 IMediaProcessingFlow mediaFlow = scope.ServiceProvider.GetRequiredService<IMediaProcessingFlow>();
-                
-                // 3. Выполняем всю долгую операцию внутри scope
                 await mediaFlow.StartFlow(botClient, session, null);
             }
-        }, session.SessionCts.Token); // Используем CancellationToken из сессии
+        }, session.SessionCts.Token);
         
         await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct);
     }

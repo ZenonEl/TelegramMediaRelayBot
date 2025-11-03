@@ -30,7 +30,7 @@ public class SendToDefaultGroupsCommand : IBotCallbackQueryHandlers
     {
         CallbackQuery callbackQuery = update.CallbackQuery!;
         int messageId = int.Parse(callbackQuery.Data!.Split(':')[1]);
-        
+
         _sessionManager.CancelDefaultAction(messageId);
 
         if (!_sessionManager.TryGetSession(messageId, out DownloadSession? session))
@@ -38,15 +38,16 @@ public class SendToDefaultGroupsCommand : IBotCallbackQueryHandlers
             await botClient.AnswerCallbackQuery(callbackQuery.Id, "Session expired.", true, cancellationToken: ct);
             return;
         }
-        
+
         int userId = _userGetter.GetUserIDbyTelegramID(session.ChatId);
         List<int> userIdsInGroups = await _groupGetter.GetAllUsersInDefaultEnabledGroups(userId);
         List<long> targetTgIds = userIdsInGroups.Select(id => _userGetter.GetTelegramIDbyUserID(id)).ToList();
-        
+
+        _sessionManager.MarkAsProcessing(messageId);
         await botClient.EditMessageText(session.ChatId, messageId, 
             $"Starting distribution to default groups ({targetTgIds.Count} users)...", 
             cancellationToken: ct);
-        
+
         _ = Task.Run(async () =>
         {
             await using (AsyncServiceScope scope = _scopeFactory.CreateAsyncScope())
@@ -55,7 +56,6 @@ public class SendToDefaultGroupsCommand : IBotCallbackQueryHandlers
                 await mediaFlow.StartFlow(botClient, session, targetTgIds);
             }
         }, session.SessionCts.Token);
-        
         await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct);
     }
 }

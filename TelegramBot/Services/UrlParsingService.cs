@@ -24,15 +24,19 @@ public class UrlParsingService : IUrlParsingService
         text = string.Empty;
         if (string.IsNullOrWhiteSpace(message)) return false;
 
-        var m = Regex.Match(message, @"https?://[^\s]+", RegexOptions.IgnoreCase);
-        if (m.Success)
-        {
-            link = m.Value.TrimEnd('.', ',', ';', '!', '?', ')', ']');
-            int startAfterUrl = m.Index + m.Length;
-            text = startAfterUrl < message.Length ? message[startAfterUrl..].Trim() : string.Empty;
-            return true;
-        }
-        return false;
+        Match match = Regex.Match(message, @"https?://[^\s]+", RegexOptions.IgnoreCase);
+        if (!match.Success) return false;
+        
+        link = match.Value.TrimEnd('.', ',', ';', '!', '?', ')', ']');
+        
+        string textBefore = message.Substring(0, match.Index).Trim();
+        string textAfter = (match.Index + match.Length < message.Length)
+            ? message.Substring(match.Index + match.Length).Trim()
+            : string.Empty;
+
+        text = $"{textBefore} {textAfter}".Trim();
+        
+        return true;
     }
 
     public string ExtractDomain(string url)

@@ -24,26 +24,22 @@ namespace TelegramMediaRelayBot
     {
         public static async Task Main(string[] args)
         {
-            var builder = Host.CreateDefaultBuilder(args);
+            IHostBuilder builder = Host.CreateDefaultBuilder(args);
 
             builder.ConfigureAppConfiguration((hostingContext, config) =>
             {
                 config.AddYamlFile("downloader-config.yaml", optional: false, reloadOnChange: true);
             });
 
-            // Конфигурируем сервисы и логирование
             builder.ConfigureServices((hostContext, services) =>
             {
-                // TODO: Здесь будем регистрировать остальные сервисы
                 services.AddConfigurationServices(hostContext.Configuration);
                 services.AddApplicationCore();
                 services.AddPersistenceServices(hostContext.Configuration);
-                // services.AddTelegramBot(...);
-                // services.AddBackupServices(...);
             })
-            .AddSerilogLogging(); // Применяем нашу конфигурацию Serilog
+            .AddSerilogLogging();
 
-            var host = builder.Build();
+            IHost host = builder.Build();
 
             await host.ApplyDatabaseMigrationsAsync();
 

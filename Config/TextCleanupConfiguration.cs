@@ -3,16 +3,8 @@
 
 namespace TelegramMediaRelayBot.Config;
 
-public class TextCleanupConfiguration
+public class TextCleanupConfig
 {
-    public bool Enabled { get; set; } = true;
-    public List<TextCleanupRule> Rules { get; set; } = new();
+    public List<string> Patterns { get; set; } = new();
+    public string? PatternsFile { get; set; }
 }
-
-public class TextCleanupRule
-{
-    public List<string> Domains { get; set; } = new();
-    public string Pattern { get; set; } = string.Empty;
-    public string Replacement { get; set; } = string.Empty;
-}
-

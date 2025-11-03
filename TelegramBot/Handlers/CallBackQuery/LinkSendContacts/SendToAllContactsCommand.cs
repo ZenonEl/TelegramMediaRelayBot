@@ -30,7 +30,7 @@ public class SendToAllContactsCommand : IBotCallbackQueryHandlers
     {
         CallbackQuery callbackQuery = update.CallbackQuery!;
         int messageId = int.Parse(callbackQuery.Data!.Split(':')[1]);
-        
+
         _sessionManager.CancelDefaultAction(messageId);
 
         if (!_sessionManager.TryGetSession(messageId, out DownloadSession? session))
@@ -39,15 +39,14 @@ public class SendToAllContactsCommand : IBotCallbackQueryHandlers
             return;
         }
 
-        // Собираем "сырой" список целей
         int userId = _userGetter.GetUserIDbyTelegramID(session.ChatId);
         List<long> allContactTgIds = await _contactGetter.GetAllContactUserTGIds(userId);
-        
+
+        _sessionManager.MarkAsProcessing(messageId);
         await botClient.EditMessageText(session.ChatId, messageId, 
             $"Starting distribution to all contacts ({allContactTgIds.Count})...", 
             cancellationToken: ct);
-        
-        // Запускаем фоновую задачу со своим scope
+
         _ = Task.Run(async () =>
         {
             await using (AsyncServiceScope scope = _scopeFactory.CreateAsyncScope())
@@ -56,7 +55,6 @@ public class SendToAllContactsCommand : IBotCallbackQueryHandlers
                 await mediaFlow.StartFlow(botClient, session, allContactTgIds);
             }
         }, session.SessionCts.Token);
-        
         await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct);
     }
 }

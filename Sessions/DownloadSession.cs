@@ -11,6 +11,7 @@ public class DownloadSession
     public string Caption { get; set; }
     public DateTime OriginalMessageDateUtc { get; set; }
     public DateTime CreatedAtUtc { get; init; } = DateTime.UtcNow;
+    public bool IsProcessing { get; set; } = false;
 
     /// <summary>
     /// CancellationTokenSource для отмены автоматического действия по умолчанию.

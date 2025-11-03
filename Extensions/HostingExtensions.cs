@@ -28,7 +28,6 @@ using Microsoft.Extensions.Logging;
 using TelegramMediaRelayBot.TelegramBot.States;
 using TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Services;
-using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.Infrastructure.MediaProcessing;
 using TelegramMediaRelayBot.TelegramBot.Sessions;
 using TelegramMediaRelayBot.Infrastructure.Processes;
@@ -68,7 +67,7 @@ namespace TelegramMediaRelayBot.Extensions
             services.Configure<DownloadingConfiguration>(configuration.GetSection("Downloading"));
             services.Configure<TorConfiguration>(configuration.GetSection("Tor"));
             services.Configure<AccessPolicyConfiguration>(configuration.GetSection("AccessPolicy"));
-            services.Configure<TextCleanupConfiguration>(configuration.GetSection("TextCleanup"));
+            services.Configure<TextCleanupConfig>(configuration.GetSection("TextCleanup"));
             services.Configure<BackupConfiguration>(configuration.GetSection("Backup"));
             services.Configure<DownloaderConfigRoot>(configuration);
 
@@ -302,31 +301,31 @@ namespace TelegramMediaRelayBot.Extensions
             services.AddScoped<IContactAdder, SqliteContactAdder>();
             services.AddScoped<IContactRemover, SqliteContactRemover>();
             services.AddScoped<IContactSetter, SqliteContactSetter>();
-            services.AddScoped<IContactGetter, SqliteContactGetter>(); // Убедись, что этот класс рефакторен
+            services.AddScoped<IContactGetter, SqliteContactGetter>();
 
             // --- Группы ---
             services.AddScoped<IGroupRepository, SqliteGroupRepository>();
             services.AddScoped<IGroupSetter, SqliteGroupSetter>();
-            services.AddScoped<IGroupGetter, SqliteGroupGetter>(); // Убедись, что этот класс рефакторен
+            services.AddScoped<IGroupGetter, SqliteGroupGetter>();
 
             // --- Действия по умолчанию ---
             services.AddScoped<IDefaultAction, SqliteDefaultAction>();
             services.AddScoped<IDefaultActionSetter, SqliteDefaultActionSetter>();
-            services.AddScoped<IDefaultActionGetter, SqliteDefaultActionGetter>(); // Убедись, что этот класс рефакторен
+            services.AddScoped<IDefaultActionGetter, SqliteDefaultActionGetter>();
 
             // --- Настройки Приватности ---
             services.AddScoped<IPrivacySettingsSetter, SqlitePrivacySettingsSetter>();
-            services.AddScoped<IPrivacySettingsGetter, SqlitePrivacySettingsGetter>(); // Убедись, что этот класс рефакторен
+            services.AddScoped<IPrivacySettingsGetter, SqlitePrivacySettingsGetter>();
             services.AddScoped<IPrivacySettingsTargetsSetter, SqlitePrivacySettingsTargetsSetter>();
-            services.AddScoped<IPrivacySettingsTargetsGetter, SqlitePrivacySettingsTargetsGetter>(); // Убедись, что этот класс рефакторен
+            services.AddScoped<IPrivacySettingsTargetsGetter, SqlitePrivacySettingsTargetsGetter>();
             
             // --- Остальные ---
-            services.AddScoped<IUserRepository, SqliteUserRepository>(); // Убедись, что этот класс рефакторен
-            services.AddScoped<IUserGetter, SqliteUserGetter>(); // Убедись, что этот класс рефакторен
-            services.AddScoped<IContactGroupRepository, SqliteContactGroupRepository>(); // Убедись, что этот класс рефакторен
+            services.AddScoped<IUserRepository, SqliteUserRepository>();
+            services.AddScoped<IUserGetter, SqliteUserGetter>();
+            services.AddScoped<IContactGroupRepository, SqliteContactGroupRepository>();
             services.AddScoped<IOutboundDBGetter, SqliteOutboundDBGetter>();
             services.AddScoped<IInboundDBGetter, SqliteInboundDBGetter>();
-            services.AddScoped<IInboxRepository, SqliteInboxRepository>(); // Убедись, что этот класс рефакторен
+            services.AddScoped<IInboxRepository, SqliteInboxRepository>();
 
             return services;
         }
@@ -367,31 +366,31 @@ namespace TelegramMediaRelayBot.Extensions
             services.AddScoped<IContactAdder, MySqlContactAdder>();
             services.AddScoped<IContactRemover, MySqlContactRemover>();
             services.AddScoped<IContactSetter, MySqlContactSetter>();
-            services.AddScoped<IContactGetter, MySqlContactGetter>(); // Убедись, что этот класс рефакторен
+            services.AddScoped<IContactGetter, MySqlContactGetter>();
             
             // --- Группы ---
             services.AddScoped<IGroupRepository, MySqlGroupRepository>();
             services.AddScoped<IGroupSetter, MySqlGroupSetter>();
-            services.AddScoped<IGroupGetter, MySqlGroupGetter>(); // Убедись, что этот класс рефакторен
+            services.AddScoped<IGroupGetter, MySqlGroupGetter>();
 
             // --- Действия по умолчанию ---
             services.AddScoped<IDefaultAction, MySqlDefaultAction>();
             services.AddScoped<IDefaultActionSetter, MySqlDefaultActionSetter>();
-            services.AddScoped<IDefaultActionGetter, MySqlDefaultActionGetter>(); // Убедись, что этот класс рефакторен
+            services.AddScoped<IDefaultActionGetter, MySqlDefaultActionGetter>();
 
             // --- Настройки Приватности ---
             services.AddScoped<IPrivacySettingsSetter, MySqlPrivacySettingsSetter>();
-            services.AddScoped<IPrivacySettingsGetter, MySqlPrivacySettingsGetter>(); // Убедись, что этот класс рефакторен
+            services.AddScoped<IPrivacySettingsGetter, MySqlPrivacySettingsGetter>();
             services.AddScoped<IPrivacySettingsTargetsSetter, MySqlPrivacySettingsTargetsSetter>();
-            services.AddScoped<IPrivacySettingsTargetsGetter, MySqlPrivacySettingsTargetsGetter>(); // Убедись, что этот класс рефакторен
+            services.AddScoped<IPrivacySettingsTargetsGetter, MySqlPrivacySettingsTargetsGetter>();
             
             // --- Остальные ---
-            services.AddScoped<IUserRepository, MySqlUserRepository>(); // Убедись, что этот класс рефакторен
-            services.AddScoped<IUserGetter, MySqlUserGetter>(); // Убедись, что этот класс рефакторен
-            services.AddScoped<IContactGroupRepository, MySqlContactGroupRepository>(); // Убедись, что этот класс рефакторен
+            services.AddScoped<IUserRepository, MySqlUserRepository>();
+            services.AddScoped<IUserGetter, MySqlUserGetter>();
+            services.AddScoped<IContactGroupRepository, MySqlContactGroupRepository>();
             services.AddScoped<IOutboundDBGetter, MySqlOutboundDBGetter>();
             services.AddScoped<IInboundDBGetter, MySqlInboundDBGetter>();
-            services.AddScoped<IInboxRepository, MySqlInboxRepository>(); // Убедись, что этот класс рефакторен
+            services.AddScoped<IInboxRepository, MySqlInboxRepository>();
 
             return services;
         }
@@ -470,7 +469,6 @@ public static async Task ApplyDatabaseMigrationsAsync(this IHost host)
 
         logger.LogWarning("--- STARTING MIGRATION ---");
         
-        // Теперь запускаем мигратор. Он увидит, что все в порядке.
         migrationRunner.MigrateUp();
         
         logger.LogWarning("--- MIGRATION FINISHED ---");
@@ -478,9 +476,10 @@ public static async Task ApplyDatabaseMigrationsAsync(this IHost host)
     catch (Exception ex)
     {
         logger.LogError(ex, "An error occurred during migration!");
-        throw; // Пробрасываем исключение, чтобы приложение не запустилось с ошибкой.
+        throw;
     }
-}        /// Extracts and formats the connection string from configuration.
+}       
+        /// Extracts and formats the connection string from configuration.
         /// (This is the refactored version of your original method)
         /// </summary>
         private static string GetConnectionString(string dbType, IConfiguration configuration)

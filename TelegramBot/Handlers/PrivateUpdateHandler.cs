@@ -14,6 +14,7 @@ using Microsoft.Extensions.Options;
 using Telegram.Bot.Types.Enums;
 using TelegramBot.Services;
 using TelegramMediaRelayBot.Config;
+using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Domain.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
@@ -36,6 +37,7 @@ public class PrivateUpdateHandler
     private readonly IStartParameterParser _startParser;
     private readonly ITelegramInteractionService _interactionService;
     private readonly IMediaDownloaderFactory _downloaderFactory;
+    private readonly IDefaultActionGetter _defaultActionGetter;
 
     public PrivateUpdateHandler(
         IServiceScopeFactory scopeFactory,
@@ -49,7 +51,8 @@ public class PrivateUpdateHandler
         IUrlParsingService urlParser,
         IStartParameterParser startParser,
         ITelegramInteractionService interactionService,
-        IMediaDownloaderFactory downloaderFactory)
+        IMediaDownloaderFactory downloaderFactory,
+        IDefaultActionGetter defaultActionGetter)
     {
         _scopeFactory = scopeFactory;
         _sessionManager = sessionManager;
@@ -63,6 +66,7 @@ public class PrivateUpdateHandler
         _startParser = startParser;
         _interactionService = interactionService;
         _downloaderFactory = downloaderFactory;
+        _defaultActionGetter = defaultActionGetter;
     }
 
     public async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
@@ -88,7 +92,7 @@ public class PrivateUpdateHandler
                 return;
             }
 
-            var statusMessage = await botClient.SendMessage(chatId, _resourceService.GetResourceString("VideoDistributionQuestion"),
+            Message statusMessage = await botClient.SendMessage(chatId, _resourceService.GetResourceString("VideoDistributionQuestion"),
                 replyParameters: new ReplyParameters { MessageId = message.MessageId },
                 replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(0), cancellationToken: cancellationToken);
 
@@ -96,12 +100,34 @@ public class PrivateUpdateHandler
                 replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(statusMessage.MessageId),
                 cancellationToken: cancellationToken);
 
-            _sessionManager.CreateSession(
+            DownloadSession session = _sessionManager.CreateSession(
                 statusMessageId: statusMessage.MessageId,
                 chatId: chatId, url: url, caption: caption,
                 originalMessageDateUtc: message.Date.ToUniversalTime());
             
-            // TODO: Логика запуска таймера действия по умолчанию
+            _sessionManager.ScheduleDefaultAction(botClient, session);
+        }
+        else if (message.Text != null && _sessionManager.GetLatestPendingSession(chatId) != null)
+        {
+            DownloadSession? session = _sessionManager.GetLatestPendingSession(chatId);
+            int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+            string defaultAction = await _defaultActionGetter.GetDefaultActionByUserIDAndTypeAsync(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+            int actionCondition = 30;
+
+            if (defaultAction != UsersAction.OFF && defaultAction != UsersAction.NO_VALUE)
+                int.TryParse(defaultAction.Split(";")[1], out actionCondition);
+            var window = TimeSpan.FromSeconds(actionCondition);
+
+            if (session != null && (DateTime.UtcNow - session.CreatedAtUtc) <= window)
+            {
+                _sessionManager.UpdateCaption(session.StatusMessageId, message.Text);
+                await botClient.SendMessage(message.Chat.Id, "Caption updated.");
+            }
+            else
+            {
+                _lastUserTextCache.Set(chatId, message.Text);
+                await botClient.SendMessage(chatId, _resourceService.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken);
+            }
         }
         else if (message.Text != null)
         {
@@ -155,19 +181,17 @@ public class PrivateUpdateHandler
         await using var scope = _scopeFactory.CreateAsyncScope();
         var sp = scope.ServiceProvider;
         var inboxRepo = sp.GetRequiredService<IInboxRepository>();
-        // Используем новый сервис, а не static-хелпер
         var menuService = sp.GetRequiredService<IUserMenuService>();
 
         if (update.Message?.Text == "/start")
         {
             var userId = _userGetter.GetUserIDbyTelegramID(update.Message.Chat.Id);
             var newCount = await inboxRepo.GetNewCountAsync(userId);
-            // TODO: Заменить KeyboardUtils на IKeyboardService
             await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(newCount), cancellationToken);
         }
         else if (update.Message?.Text == "/help")
         {
-            //await menuService.ViewHelpMenu(botClient, update); // Пример вызова нового сервиса
+            await menuService.ViewHelpMenu(botClient, update);
         }
     }
 }

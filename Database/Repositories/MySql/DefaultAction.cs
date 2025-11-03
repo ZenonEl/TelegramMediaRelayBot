@@ -11,7 +11,6 @@
 
 using Dapper;
 using System.Data;
-using MySql.Data.MySqlClient;
 using TelegramMediaRelayBot.Database.Interfaces;
 
 
