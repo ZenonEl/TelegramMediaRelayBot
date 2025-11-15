@@ -53,7 +53,7 @@ public class SendToDefaultGroupsCommand : IBotCallbackQueryHandlers
             await using (AsyncServiceScope scope = _scopeFactory.CreateAsyncScope())
             {
                 IMediaProcessingFlow mediaFlow = scope.ServiceProvider.GetRequiredService<IMediaProcessingFlow>();
-                await mediaFlow.StartFlow(botClient, session, targetTgIds);
+                await mediaFlow.StartFlow(botClient, update, session, targetTgIds);
             }
         }, session.SessionCts.Token);
         await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct);

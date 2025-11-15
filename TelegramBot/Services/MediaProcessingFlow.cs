@@ -10,7 +10,7 @@ namespace TelegramMediaRelayBot.TelegramBot.Services;
 
 public interface IMediaProcessingFlow
 {
-    Task StartFlow(ITelegramBotClient botClient, DownloadSession session, List<long>? targetUserIds = null);
+    Task StartFlow(ITelegramBotClient botClient, Update update, DownloadSession session, List<long>? targetUserIds = null);
 }
 
 public class MediaProcessingFlow : IMediaProcessingFlow
@@ -38,7 +38,7 @@ public class MediaProcessingFlow : IMediaProcessingFlow
         _captionGenerator = captionGenerator;
     }
 
-    public async Task StartFlow(ITelegramBotClient botClient, DownloadSession session, List<long>? targetUserIds = null)
+    public async Task StartFlow(ITelegramBotClient botClient, Update update, DownloadSession session, List<long>? targetUserIds = null)
     {
         try
         {
@@ -67,10 +67,7 @@ public class MediaProcessingFlow : IMediaProcessingFlow
             var senderName = _userGetter.GetUserNameByTelegramID(session.ChatId);
             session.Caption = _captionGenerator.Generate(session, senderName);
 
-            await _senderService.SendMedia(botClient, session, processedFiles, targetUserIds, session.SessionCts.Token);
-
-            // --- ЭТАП 4: ЗАВЕРШЕНИЕ ---
-            await botClient.EditMessageText(session.ChatId, session.StatusMessageId, "Done!", cancellationToken: CancellationToken.None); // Используем CancellationToken.None, чтобы сообщение об успехе точно отправилось
+            await _senderService.SendMedia(botClient, update, session, processedFiles, targetUserIds, session.SessionCts.Token);
         }
         catch (OperationCanceledException)
         {

@@ -52,7 +52,7 @@ public class SendToAllContactsCommand : IBotCallbackQueryHandlers
             await using (AsyncServiceScope scope = _scopeFactory.CreateAsyncScope())
             {
                 IMediaProcessingFlow mediaFlow = scope.ServiceProvider.GetRequiredService<IMediaProcessingFlow>();
-                await mediaFlow.StartFlow(botClient, session, allContactTgIds);
+                await mediaFlow.StartFlow(botClient, update, session, allContactTgIds);
             }
         }, session.SessionCts.Token);
         await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct);

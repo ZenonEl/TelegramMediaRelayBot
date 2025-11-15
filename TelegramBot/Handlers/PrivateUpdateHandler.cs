@@ -105,7 +105,7 @@ public class PrivateUpdateHandler
                 chatId: chatId, url: url, caption: caption,
                 originalMessageDateUtc: message.Date.ToUniversalTime());
             
-            _sessionManager.ScheduleDefaultAction(botClient, session);
+            _sessionManager.ScheduleDefaultAction(botClient, update, session);
         }
         else if (message.Text != null && _sessionManager.GetLatestPendingSession(chatId) != null)
         {

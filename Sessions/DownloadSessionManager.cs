@@ -119,7 +119,7 @@ public class DownloadSessionManager
     /// <summary>
     /// Запускает таймер для выполнения действия по умолчанию для сессии.
     /// </summary>
-    public void ScheduleDefaultAction(ITelegramBotClient botClient, DownloadSession session)
+    public void ScheduleDefaultAction(ITelegramBotClient botClient, Update update, DownloadSession session)
     {
         session.DefaultActionCts = new CancellationTokenSource();
         CancellationToken cancellationToken = session.DefaultActionCts.Token;
@@ -155,7 +155,7 @@ public class DownloadSessionManager
 
                     List<long> targetUserIds = await GetDefaultActionTargets(userGetter, scope.ServiceProvider, userId, action);
 
-                    await mediaFlow.StartFlow(botClient, session, targetUserIds);
+                    await mediaFlow.StartFlow(botClient, update, session, targetUserIds);
                 }
                 catch (OperationCanceledException)
                 {

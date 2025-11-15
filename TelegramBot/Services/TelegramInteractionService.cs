@@ -27,11 +27,24 @@ public class TelegramInteractionService : ITelegramInteractionService
         if (chatId == 0) return Task.CompletedTask;
 
         // Если это ответ на нажатие кнопки, редактируем исходное сообщение
-        if (update.Type == UpdateType.CallbackQuery)
+        try
         {
-            return botClient.EditMessageText(
+            if (update.Type == UpdateType.CallbackQuery)
+            {
+                return botClient.EditMessageText(
+                    chatId: chatId,
+                    messageId: update.CallbackQuery!.Message!.MessageId,
+                    text: text,
+                    replyMarkup: replyMarkup,
+                    cancellationToken: cancellationToken,
+                    parseMode: ParseMode.Html
+                );
+            }
+        }
+        catch
+        {
+            return botClient.SendMessage(
                 chatId: chatId,
-                messageId: update.CallbackQuery!.Message!.MessageId,
                 text: text,
                 replyMarkup: replyMarkup,
                 cancellationToken: cancellationToken,

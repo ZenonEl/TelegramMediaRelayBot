@@ -3,7 +3,6 @@ using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.SiteFilter;
 using Microsoft.Extensions.Options;
 using TelegramMediaRelayBot.Config;
-using Telegram.Bot.Exceptions;
 using TelegramMediaRelayBot.TelegramBot.Models;
 using TelegramMediaRelayBot.Database;
 
@@ -11,9 +10,10 @@ namespace TelegramMediaRelayBot.TelegramBot.Services;
 
 public interface ITelegramSenderService
 {
-    Task SendMedia(ITelegramBotClient botClient, DownloadSession session, 
-                   List<byte[]> mediaFiles, List<long>? targetUserIds, 
-                   CancellationToken cancellationToken);
+    Task SendMedia(ITelegramBotClient botClient, Update update,
+                    DownloadSession session, 
+                    List<byte[]> mediaFiles, List<long>? targetUserIds, 
+                    CancellationToken cancellationToken);
 }
 
 public class TelegramSenderService : ITelegramSenderService
@@ -26,6 +26,8 @@ public class TelegramSenderService : ITelegramSenderService
     private readonly IUserFilterService _userFilter;
     private readonly ILinkCategorizer _categorizer;
     private readonly IPrivacySettingsGetter _privacySettingsGetter;
+    private readonly ITelegramInteractionService _interactionService;
+
 
     public TelegramSenderService(
         IUserGetter userGetter,
@@ -35,7 +37,8 @@ public class TelegramSenderService : ITelegramSenderService
         IResourceService resourceService,
         IUserFilterService userFilter,
         ILinkCategorizer categorizer,
-        IPrivacySettingsGetter privacySettingsGetter)
+        IPrivacySettingsGetter privacySettingsGetter,
+        ITelegramInteractionService interactionService)
     {
         _userGetter = userGetter;
         _inboxService = inboxService;
@@ -45,9 +48,10 @@ public class TelegramSenderService : ITelegramSenderService
         _userFilter = userFilter;
         _categorizer = categorizer;
         _privacySettingsGetter = privacySettingsGetter;
+        _interactionService = interactionService;
     }
 
-    public async Task SendMedia(ITelegramBotClient botClient, DownloadSession session, List<byte[]> mediaFiles, List<long>? targetUserIds, CancellationToken cancellationToken)
+    public async Task SendMedia(ITelegramBotClient botClient, Update update, DownloadSession session, List<byte[]> mediaFiles, List<long>? targetUserIds, CancellationToken cancellationToken)
     {
         // 1. ЕДИНОКРАТНАЯ ЗАГРУЗКА: Отправляем байты в чат с ботом, чтобы получить FileId
         List<TelegramMediaInfo> uploadedMedia = await UploadToTelegramStorage(botClient, session.ChatId, mediaFiles, cancellationToken);
@@ -91,8 +95,10 @@ public class TelegramSenderService : ITelegramSenderService
             await Task.Delay(_delayConfig.CurrentValue.ContactSendDelay, cancellationToken);
         }
         
-        // 4. ФИНАЛЬНЫЙ ОТЧЕТ
-        await botClient.SendMessage(session.ChatId, $"Distribution complete. Sent to {sentCount}/{finalRecipients.Count} users.");
+        string caption = "";
+        if (session.Caption != null) caption = session.Caption.Substring(0, Math.Min(100, session.Caption.Length)) + 
+                                                (session.Caption.Length > 200 ? "..." : "");
+        await _interactionService.ReplyToUpdate(botClient, update, text: $"Distribution complete. Sent to {sentCount}/{finalRecipients.Count} users. Caption: {caption}");
     }
 
     private async Task<List<TelegramMediaInfo>> UploadToTelegramStorage(ITelegramBotClient botClient, long storageChatId, List<byte[]> mediaFiles, CancellationToken cancellationToken)
@@ -155,8 +161,14 @@ public class TelegramSenderService : ITelegramSenderService
                 // Прикрепляем caption только к первому элементу самой первой группы
                 if (isFirstChunk && album.Any())
                 {
-                    if (album[0] is InputMediaPhoto p) p.Caption = currentCaption;
-                    else if (album[0] is InputMediaVideo v) v.Caption = currentCaption;
+                    if (album[0] is InputMediaPhoto p) {
+                        p.Caption = currentCaption;
+                        p.ParseMode = Telegram.Bot.Types.Enums.ParseMode.Html;
+                    } 
+                    else if (album[0] is InputMediaVideo v) {
+                        v.Caption = currentCaption;
+                        v.ParseMode = Telegram.Bot.Types.Enums.ParseMode.Html;
+                    } 
                     isFirstChunk = false;
                 }
                 

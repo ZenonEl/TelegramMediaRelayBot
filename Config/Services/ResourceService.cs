@@ -26,6 +26,7 @@ public class ResourceService : IResourceService
     }
 
     /// <inheritdoc />
+    [Obsolete("Используйте специализированные сервисы, например IUiResourceService")]
     public string GetResourceString(string key)
     {
         return _resourceManager.GetString(key) ?? key;

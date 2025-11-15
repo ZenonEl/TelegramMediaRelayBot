@@ -38,7 +38,7 @@ public class SendOnlyToMeCommand : IBotCallbackQueryHandlers
             await using (AsyncServiceScope scope = _scopeFactory.CreateAsyncScope())
             {
                 IMediaProcessingFlow mediaFlow = scope.ServiceProvider.GetRequiredService<IMediaProcessingFlow>();
-                await mediaFlow.StartFlow(botClient, session, null);
+                await mediaFlow.StartFlow(botClient, update, session, null);
             }
         }, session.SessionCts.Token);
         

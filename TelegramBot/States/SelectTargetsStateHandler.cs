@@ -148,7 +148,7 @@ public class SelectTargetsStateHandler : IStateHandler
                 }
 
                 // Запускаем главный конвейер
-                _ = _mediaFlow.StartFlow(botClient, session, finalTargetTgIds);
+                _ = _mediaFlow.StartFlow(botClient, update, session, finalTargetTgIds);
 
                 await botClient.EditMessageText(chatId, session.StatusMessageId,
                     $"Starting distribution to {finalTargetTgIds.Count} selected targets...",

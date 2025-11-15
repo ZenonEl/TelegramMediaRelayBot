@@ -21,13 +21,13 @@ public class CaptionGenerationService : ICaptionGenerationService
         string sanitizedName = _hashtagSanitizer.Replace(senderName, "_");
         string timestamp = session.OriginalMessageDateUtc.ToString("yyyy_MM_dd_HH_mm_ss");
 
-        sb.AppendLine(senderName);
-        sb.AppendLine($"#{timestamp}");
+        sb.AppendLine($"<code>{sanitizedName}</code>");
+        sb.AppendLine($"<code>#{timestamp}</code>");
         sb.AppendLine($"#{timestamp}_{sanitizedName}");
 
         if (!string.IsNullOrWhiteSpace(session.Caption))
         {
-            sb.AppendLine(); // Пустая строка-разделитель
+            sb.AppendLine();
             sb.Append(session.Caption);
         }
 
