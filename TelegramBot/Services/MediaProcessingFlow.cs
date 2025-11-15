@@ -4,6 +4,7 @@ using TelegramMediaRelayBot.Infrastructure.MediaProcessing;
 using Microsoft.Extensions.Options;
 using TelegramMediaRelayBot.Config;
 using Telegram.Bot.Types.Enums;
+using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.TelegramBot.Services;
 
@@ -18,17 +19,23 @@ public class MediaProcessingFlow : IMediaProcessingFlow
     private readonly IMediaProcessingService _mediaProcessor;
     private readonly ITelegramSenderService _senderService;
     private readonly IOptionsMonitor<DownloadingConfiguration> _downloadingConfig;
+    private readonly IUserGetter _userGetter;
+    private readonly ICaptionGenerationService _captionGenerator;
 
     public MediaProcessingFlow(
         MediaDownloaderService downloaderService,
         IMediaProcessingService mediaProcessor,
         ITelegramSenderService senderService,
-        IOptionsMonitor<DownloadingConfiguration> downloadingConfig)
+        IOptionsMonitor<DownloadingConfiguration> downloadingConfig,
+        IUserGetter userGetter,
+        ICaptionGenerationService captionGenerator)
     {
         _downloaderService = downloaderService;
         _mediaProcessor = mediaProcessor;
         _senderService = senderService;
         _downloadingConfig = downloadingConfig;
+        _userGetter = userGetter;
+        _captionGenerator = captionGenerator;
     }
 
     public async Task StartFlow(ITelegramBotClient botClient, DownloadSession session, List<long>? targetUserIds = null)
@@ -57,6 +64,8 @@ public class MediaProcessingFlow : IMediaProcessingFlow
 
             // --- ЭТАП 3: ОТПРАВКА ---
             await botClient.EditMessageText(session.ChatId, session.StatusMessageId, "Sending media...", cancellationToken: session.SessionCts.Token);
+            var senderName = _userGetter.GetUserNameByTelegramID(session.ChatId);
+            session.Caption = _captionGenerator.Generate(session, senderName);
 
             await _senderService.SendMedia(botClient, session, processedFiles, targetUserIds, session.SessionCts.Token);
 

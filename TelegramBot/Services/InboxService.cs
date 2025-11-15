@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot.Models;
 using TelegramMediaRelayBot.TelegramBot.Sessions;
 
 namespace TelegramMediaRelayBot.TelegramBot.Services;
@@ -12,7 +13,7 @@ public interface IInboxService
     /// Пытается доставить медиа через Инбокс.
     /// </summary>
     /// <returns>True, если медиа было успешно добавлено в инбокс (и не требует прямой отправки).</returns>
-    Task<bool> TryDeliverToInbox(ITelegramBotClient botClient, DownloadSession session, int recipientUserId, List<(string Kind, string FileId)> savedMediaRefs);
+    Task<bool> TryDeliverToInbox(ITelegramBotClient botClient, DownloadSession session, int recipientUserId, List<TelegramMediaInfo> savedMediaRefs);
 }
 
 public class InboxService : IInboxService
@@ -31,13 +32,13 @@ public class InboxService : IInboxService
         _resourceService = resourceService;
     }
 
-    public async Task<bool> TryDeliverToInbox(ITelegramBotClient botClient, DownloadSession session, int recipientUserId, List<(string Kind, string FileId)> savedMediaRefs)
+    public async Task<bool> TryDeliverToInbox(ITelegramBotClient botClient, DownloadSession session, int recipientUserId, List<TelegramMediaInfo> savedMediaRefs)
     {
         if (!_privacyGetter.GetIsActivePrivacyRule(recipientUserId, PrivacyRuleType.INBOX_DELIVERY))
         {
             return false;
         }
-        
+        // TODO: Логика инбокса должна использовать FileId, а не байты 
         try
         {
             var senderUserId = _userGetter.GetUserIDbyTelegramID(session.ChatId);

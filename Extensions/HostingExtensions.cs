@@ -183,6 +183,7 @@ namespace TelegramMediaRelayBot.Extensions
             services.AddSingleton<IDatabaseConfigurationService, DatabaseConfigurationService>();
             services.AddSingleton<IResourceService, ResourceService>();
             services.AddSingleton<ITextCleanupService, TextCleanupService>();
+            services.AddSingleton<ICaptionGenerationService, CaptionGenerationService>();
             services.AddScoped<IUserFilterService, DefaultUserFilterService>();
             services.AddScoped<IInboxService, InboxService>();
 
