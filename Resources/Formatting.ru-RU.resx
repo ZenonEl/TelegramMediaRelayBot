@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <data name="Formatting.Caption.Header" xml:space="preserve">
+        <value>{0} отправил медиа!
+&lt;code&gt;#{1}&lt;/code&gt;
+#{1}_{2}
+
+{3}
+        </value>
+        <!-- Старое имя: ContactSentVideo -->
+    </data>
+    <data name="Formatting.Caption.WithText" xml:space="preserve">
+        <value>С текстом:
+
+</value>
+        <!-- Старое имя: WithText -->
+    </data>
+</root>

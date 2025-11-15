@@ -19,9 +19,13 @@ namespace TelegramMediaRelayBot.Config.Services;
 public class ResourceService : IResourceService
 {
     private readonly ResourceManager _resourceManager;
+    private readonly IUiResourceService _uiResources;
 
-    public ResourceService()
+    public ResourceService(
+        IUiResourceService uiResources
+    )
     {
+        _uiResources = uiResources;
         _resourceManager = new ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
     }
 
@@ -29,6 +33,28 @@ public class ResourceService : IResourceService
     [Obsolete("Используйте специализированные сервисы, например IUiResourceService")]
     public string GetResourceString(string key)
     {
+        if (_uiResources.TryGetString(key, out string? value))
+        {
+            return value;
+        }
         return _resourceManager.GetString(key) ?? key;
     }
 } 
+
+public class UiResourceService : IUiResourceService
+{
+    private readonly ResourceManager _resourceManager;
+
+    public UiResourceService()
+    {
+        _resourceManager = new ResourceManager("TelegramMediaRelayBot.Resources.UI", typeof(Program).Assembly);
+    }
+
+    public string GetString(string key) => _resourceManager.GetString(key) ?? $"[[{key}]]";
+
+    public bool TryGetString(string key, out string? value)
+    {
+        value = _resourceManager.GetString(key);
+        return value != null;
+    }
+}

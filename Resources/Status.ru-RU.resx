@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <data name="Status.ProcessingLink" xml:space="preserve">
+        <value>Подождите, идет обработка ссылки...</value>
+        <!-- Старое имя: WaitDownloadingVideo -->
+    </data>
+    <data name="Status.SendingInProgress" xml:space="preserve">
+        <value>Начало рассылки контактам...</value>
+        <!-- Старое имя: WaitSendingVideo -->
+    </data>
+    <data name="Status.SendingComplete" xml:space="preserve">
+        <value>Рассылка окончена!</value>
+        <!-- Старое имя: VideoSuccessfullySent -->
+    </data>
+    <data name="Status.SendingToAllComplete" xml:space="preserve">
+        <value>Медиа успешно отправлено всем ({0}) контактам.
+
+&lt;code&gt;#{1}&lt;/code&gt;
+#{1}_{2}</value>
+        <!-- Старое имя: VideoSentToContacts -->
+    </data>
+    <data name="Status.UploadingToTelegram" xml:space="preserve">
+        <value>Отправка медиа в телеграм...</value>
+        <!-- Старое имя: WaitForUpload -->
+    </data>
+    <data name="Status.DistributionComplete" xml:space="preserve">
+        <value>Рассылка окончена. Отправлено {0}/{1}</value>
+        <!-- Старое имя: MessageProcessMediaSend -->
+    </data>
+    <data name="Status.Distribution.MutedBySome" xml:space="preserve">
+        <value>Вы находитесь в муте у некоторых контактов ({0}).</value>
+        <!-- Старое имя: MutedByContacts -->
+    </data>
+    <data name="Status.AddContact.UserFound" xml:space="preserve">
+        <value>По этой ссылке найден один человек.</value>
+        <!-- Старое имя: UserFoundByLink -->
+    </data>
+</root>

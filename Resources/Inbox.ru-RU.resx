@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <data name="Inbox.NewCountNotify" xml:space="preserve">
+        <value>У вас {0} непрочитанных во Входящих.</value>
+        <!-- Старое имя: InboxNewCountNotify -->
+    </data>
+    <data name="Inbox.Filter.All" xml:space="preserve">
+        <value>Все</value>
+    </data>
+    <data name="Inbox.Filter.Unread" xml:space="preserve">
+        <value>• Непрочитанные</value>
+    </data>
+    <data name="Inbox.Button.Senders" xml:space="preserve">
+        <value>Отправители</value>
+        <!-- Старое имя: Inbox.SendersButton -->
+    </data>
+    <data name="Inbox.Button.MarkAllRead" xml:space="preserve">
+        <value>✓ Отметить все прочитанными</value>
+        <!-- Старое имя: Inbox.MarkAllRead -->
+    </data>
+    <data name="Inbox.Button.MarkAllUnread" xml:space="preserve">
+        <value>↺ Отметить все непрочитанными</value>
+        <!-- Старое имя: Inbox.MarkAllUnread -->
+    </data>
+    <data name="Inbox.Button.DeleteRead" xml:space="preserve">
+        <value>Удалить прочитанные</value>
+        <!-- Старое имя: Inbox.DeleteRead -->
+    </data>
+    <data name="Inbox.Button.DeleteUnread" xml:space="preserve">
+        <value>Удалить непрочитанные</value>
+        <!-- Старое имя: Inbox.DeleteUnread -->
+    </data>
+    <data name="Inbox.Sender.Button.MarkRead" xml:space="preserve">
+        <value>✓ Отметить этого отправителя прочитанным</value>
+        <!-- Старое имя: Inbox.Sender.MarkRead -->
+    </data>
+    <data name="Inbox.Sender.Button.MarkUnread" xml:space="preserve">
+        <value>↺ Отметить этого отправителя непрочитанным</value>
+        <!-- Старое имя: Inbox.Sender.MarkUnread -->
+    </data>
+    <data name="Inbox.Sender.Button.ShowAll" xml:space="preserve">
+        <value>Показать его входящие (все)</value>
+        <!-- Старое имя: Inbox.Sender.ShowAll -->
+    </data>
+    <data name="Inbox.Sender.Button.ShowUnread" xml:space="preserve">
+        <value>Показать его входящие (непрочитанные)</value>
+        <!-- Старое имя: Inbox.Sender.ShowUnread -->
+    </data>
+    <data name="Inbox.Sender.Button.DeleteRead" xml:space="preserve">
+        <value>Удалить прочитанные этого отправителя</value>
+        <!-- Старое имя: Inbox.Sender.DeleteRead -->
+    </data>
+    <data name="Inbox.Sender.Button.DeleteUnread" xml:space="preserve">
+        <value>Удалить непрочитанные этого отправителя</value>
+        <!-- Старое имя: Inbox.Sender.DeleteUnread -->
+    </data>
+    <data name="Inbox.List.Header.Empty" xml:space="preserve">
+        <value>Ваш список входящих
+Пока пусто</value>
+        <!-- Старое имя: InboxListEmpty -->
+    </data>
+    <data name="Inbox.List.Header.Page" xml:space="preserve">
+        <value>Ваш список входящих
+Текущий лист: {0}</value>
+        <!-- Старое имя: InboxListCurrentPage -->
+    </data>
+    <data name="Inbox.View.ItemNotFound" xml:space="preserve">
+        <value>Не найдено</value>
+        <!-- Старое имя: InboxItemNotFound -->
+    </data>
+    <data name="Inbox.View.InfoTemplate" xml:space="preserve">
+        <value>От: {0}
+&lt;code&gt;#{1}&lt;/code&gt;
+#{2}
+
+{3}</value>
+    </data>
+</root>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <data name="Error.Generic" xml:space="preserve">
+        <value>И что мне с этим делать?</value>
+        <!-- Старое имя: WhatShouldIDoWithThis -->
+    </data>
+    <data name="Error.InvalidLinkFormat" xml:space="preserve">
+        <value>И что мне с этим делать? Не тот формат ссылки.</value>
+        <!-- Старое имя: InvalidLinkFormat -->
+    </data>
+    <data name="Error.LinkProcessingFailed" xml:space="preserve">
+        <value>Не удалось обработать ссылку. Попробуйте запрос позже через время, если не помогло — значит ссылка не поддерживается или происходит ошибка на каком то этапе при скачивании медиа.</value>
+        <!-- Старое имя: FailedToProcessLink -->
+    </data>
+    <data name="Error.UserNotFoundByLink" xml:space="preserve">
+        <value>По этой ссылке никто не найден.</value>
+        <!-- Старое имя: NoUserFoundByLink -->
+    </data>
+    <data name="Error.UserNotFoundById" xml:space="preserve">
+        <value>По этому ID никто не найден.</value>
+        <!-- Старое имя: NoUserFoundByID -->
+    </data>
+    <data name="Error.Mute.InvalidTimeFormat" xml:space="preserve">
+        <value>Пожалуйста, введите время мута в секундах или дату в формате ГГГГ-ММ-ДД ЧЧ:ММ:СС. Или напишите 'Бессрочно'.</value>
+        <!-- Старое имя: InvalidMuteTimeFormat -->
+    </data>
+    <data name="Error.Mute.NotActive" xml:space="preserve">
+        <value>Контакт сейчас не находится в состоянии мута</value>
+        <!-- Старое имя: NoActiveMute -->
+    </data>
+    <data name="Error.Input.InvalidValues" xml:space="preserve">
+        <value>Некорректный ввод. Пожалуйста, введите значения, разделенные пробелами.</value>
+        <!-- Старое имя: InvalidInputValues -->
+    </data>
+    <data name="Error.Input.NoUsersFound" xml:space="preserve">
+        <value>Пользователи с указанными ID не найдены.</value>
+        <!-- Старое имя: NoUsersFound -->
+    </data>
+    <data name="Error.Cancel.NothingToCancel" xml:space="preserve">
+        <value>Нечего отменять</value>
+        <!-- Старое имя: NothingToCancelMessage -->
+    </data>
+    <data name="Error.DomainFilter.NotEnabled" xml:space="preserve">
+        <value>Сначала нужно хотя бы раз включить фильтр по домену</value>
+        <!-- Старое имя: DomainFilterNotEnabledError -->
+    </data>
+    <data name="Error.DomainFilter.NoDomains" xml:space="preserve">
+        <value>Сначала нужно добавить хотя бы один домен</value>
+        <!-- Старое имя: NoDomainsAddedError -->
+    </data>
+    <data name="Error.AccessDenied" xml:space="preserve">
+        <value>В данный момент, новым пользователям, доступ к боту ограничен.
+Если желаете получить к нему доступ, можете связаться со &lt;a href="{0}"&gt;мной тут&lt;/a&gt;
+    </value>
+        <!-- Старое имя: AccessDeniedMessage -->
+    </data>
+    <data name="Error.Input.Generic" xml:space="preserve">
+        <value>Произошла ошибка, убедитесь что вы ввели корректные данные</value>
+        <!-- Старое имя: InputErrorMessage -->
+    </data>
+    <data name="Error.ActionFailed" xml:space="preserve">
+        <value>Действие (полностью/частично) не было выполнено</value>
+        <!-- Старое имя: ErrorActionResult -->
+    </data>
+</root>

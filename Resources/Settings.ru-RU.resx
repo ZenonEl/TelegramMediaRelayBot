@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <data name="Settings.Privacy.PrefaceTemplate" xml:space="preserve">
+        <value><b>Приватность:</b> {0}
+{1}
+{2}
+
+</value>
+        <!-- Старое имя: PrivacyPrefaceTemplate -->
+    </data>
+    <data name="Settings.Inbox.Title" xml:space="preserve">
+        <value>Inbox настройки</value>
+        <!-- Старое имя: InboxSettingsTitle -->
+    </data>
+    <data name="Settings.Inbox.On" xml:space="preserve">
+        <value>Inbox: ON</value>
+        <!-- Старое имя: InboxOn -->
+    </data>
+    <data name="Settings.Inbox.Off" xml:space="preserve">
+        <value>Inbox: OFF</value>
+        <!-- Старое имя: InboxOff -->
+    </data>
+    <data name="Settings.DomainFilter.On" xml:space="preserve">
+        <value>Domains: ON</value>
+        <!-- Старое имя: DomainsFilterOn -->
+    </data>
+    <data name="Settings.DomainFilter.Off" xml:space="preserve">
+        <value>Domains: OFF</value>
+        <!-- Старое имя: DomainsFilterOff -->
+    </data>
+    <data name="Settings.WhoCanFindMe.Nobody" xml:space="preserve">
+        <value>Никто</value>
+    </data>
+    <data name="Settings.WhoCanFindMe.General" xml:space="preserve">
+        <value>Только общие контакты</value>
+    </data>
+    <data name="Settings.WhoCanFindMe.All" xml:space="preserve">
+        <value>Все</value>
+    </data>
+    <data name="Settings.Menu.Title" xml:space="preserve">
+        <value>Доступные настройки:</value>
+        <!-- Старое имя: SettingsMenuText -->
+    </data>
+    <data name="Settings.DefaultActions.Title" xml:space="preserve">
+        <value>Доступные действия по умолчанию:</value>
+        <!-- Старое имя: DefaultActionsMenuText -->
+    </data>
+    <data name="Settings.DefaultVideoActions.Title" xml:space="preserve">
+        <value>Доступные действия для настройки действий по умолчанию при обработке ссылок:</value>
+        <!-- Старое имя: VideoDefaultActionsMenuText -->
+    </data>
+    <data name="Settings.DefaultVideoActions.Summary.Header" xml:space="preserve">
+        <value>Текущая рассылка по умолчанию</value>
+        <!-- Старое имя: Summary.Defaults.Header -->
+    </data>
+    <data name="Settings.DefaultVideoActions.Summary.Action" xml:space="preserve">
+        <value>Действие</value>
+        <!-- Старое имя: Summary.Defaults.Action -->
+    </data>
+    <data name="Settings.DefaultVideoActions.Summary.Timeout" xml:space="preserve">
+        <value>Таймаут</value>
+        <!-- Старое имя: Summary.Defaults.Timeout -->
+    </data>
+    <data name="Settings.DefaultVideoActions.Summary.Users" xml:space="preserve">
+        <value>Пользователи</value>
+        <!-- Старое имя: Summary.Defaults.Users -->
+    </data>
+    <data name="Settings.DefaultVideoActions.Summary.Groups" xml:space="preserve">
+        <value>Группы</value>
+        <!-- Старое имя: Summary.Defaults.Groups -->
+    </data>
+    <data name="Settings.DefaultVideoRecipients.Title" xml:space="preserve">
+        <value>Доступные действия для настройки рассылки по умолчанию:</value>
+        <!-- Старое имя: UsersVideoSentUsersMenuText -->
+    </data>
+    <data name="Settings.AutoSendTime.Title" xml:space="preserve">
+        <value>Доступные настройки для ожидания, перед рассылкой по умолчанию:</value>
+        <!-- Старое имя: AutoSendVideoTimeMenuText -->
+    </data>
+    <data name="Settings.SearchPrivacy.Title" xml:space="preserve">
+        <value>Выберите, кто может искать/добавлять вас в свои контакты</value>
+        <!-- Старое имя: SearchPrivacyText -->
+    </data>
+    <data name="Settings.SiteFilter.Menu.Title" xml:space="preserve">
+        <value>Стоп лист сайтов</value>
+        <!-- Старое имя: SiteStopList -->
+    </data>
+    <data name="Settings.SiteFilter.Button.Social" xml:space="preserve">
+        <value>Фильтр на соцсети</value>
+        <!-- Старое имя: SocialFilterButton -->
+    </data>
+    <data name="Settings.SiteFilter.Button.NSFW" xml:space="preserve">
+        <value>Фильтр на NSFW</value>
+        <!-- Старое имя: NSFWFilterButton -->
+    </data>
+    <data name="Settings.SiteFilter.Button.Unified" xml:space="preserve">
+        <value>Общий фильтр</value>
+        <!-- Старое имя: UnifiedFilterButton -->
+    </data>
+    <data name="Settings.SiteFilter.Button.Domain" xml:space="preserve">
+        <value>Фильтр по домену</value>
+        <!-- Старое имя: DomainFilterButton -->
+    </data>
+    <data name="Settings.SiteFilter.Button.ConfigureDomains" xml:space="preserve">
+        <value>Настроить домены</value>
+        <!-- Старое имя: ConfigureDomainsButton -->
+    </data>
+    <data name="Settings.SiteFilter.Button.AddDomain" xml:space="preserve">
+        <value>Добавить домен</value>
+        <!-- Старое имя: AddDomainButton -->
+    </data>
+    <data name="Settings.SiteFilter.Button.RemoveDomain" xml:space="preserve">
+        <value>Удалить домен</value>
+        <!-- Старое имя: RemoveDomainButton -->
+    </data>
+    <data name="Settings.Link.Menu.Title" xml:space="preserve">
+        <value>Вы можете выбрать, то как поступить с вашими текущими контактами при создании новой личной ссылки</value>
+        <!-- Старое имя: SelfLinkRefreshMenuText -->
+    </data>
+    <data name="Settings.Link.Button.KeepAll" xml:space="preserve">
+        <value>Сохранить все контакты</value>
+        <!-- Старое имя: SelfLinkRefreshButtonTextOption1 -->
+    </data>
+    <data name="Settings.Link.Button.DeleteAll" xml:space="preserve">
+        <value>Удалить все контакты</value>
+        <!-- Старое имя: SelfLinkRefreshButtonTextOption2 -->
+    </data>
+    <data name="Settings.Link.Button.KeepSelected" xml:space="preserve">
+        <value>Оставить только выбранные контакты</value>
+        <!-- Старое имя: SelfLinkRefreshButtonTextOption3 -->
+    </data>
+    <data name="Settings.Link.Button.DeleteSelected" xml:space="preserve">
+        <value>Удалить только выбранные контакты</value>
+        <!-- Старое имя: SelfLinkRefreshButtonTextOption4 -->
+    </data>
+    <data name="Settings.Forwarding.Title" xml:space="preserve">
+        <value>Пересылка контента</value>
+        <!-- Старое имя: AllowContentForwardingBtn -->
+    </data>
+    <data name="Settings.Forwarding.Description" xml:space="preserve">
+        <value>Включение запрета пересылки контента, который вы отправляете другим</value>
+        <!-- Старое имя: AllowForwardContentRuleText -->
+    </data>
+    <data name="Settings.PrivacyFilter.Social" xml:space="preserve">
+        <value>Социальные</value>
+    </data>
+    <data name="Settings.PrivacyFilter.NSFW" xml:space="preserve">
+        <value>NSFW</value>
+    </data>
+    <data name="Settings.PrivacyFilter.Unified" xml:space="preserve">
+        <value>Объединённые</value>
+    </data>
+</root>

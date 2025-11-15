@@ -23,4 +23,10 @@ public interface IResourceService
     /// <returns>Localized string</returns>
     [Obsolete("Используйте специализированные сервисы, например IUiResourceService")]
     string GetResourceString(string key);
-} 
+}
+
+public interface IUiResourceService
+{
+    string GetString(string key);
+    bool TryGetString(string key, out string? value);
+}
