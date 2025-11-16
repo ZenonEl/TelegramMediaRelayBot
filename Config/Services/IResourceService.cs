@@ -30,3 +30,51 @@ public interface IUiResourceService
     string GetString(string key);
     bool TryGetString(string key, out string? value);
 }
+
+public interface IErrorsResourceService
+{
+    string GetString(string key);
+    bool TryGetString(string key, out string? value);
+}
+
+public interface IFormattingResourceService
+{
+    string GetString(string key);
+    bool TryGetString(string key, out string? value);
+}
+
+public interface IHelpResourceService
+{
+    string GetString(string key);
+    bool TryGetString(string key, out string? value);
+}
+
+public interface IInboxResourceService
+{
+    string GetString(string key);
+    bool TryGetString(string key, out string? value);
+}
+
+public interface ISettingsResourceService
+{
+    string GetString(string key);
+    bool TryGetString(string key, out string? value);
+}
+
+public interface IStatesResourceService
+{
+    string GetString(string key);
+    bool TryGetString(string key, out string? value);
+}
+
+public interface IStatusResourceService
+{
+    string GetString(string key);
+    bool TryGetString(string key, out string? value);
+}
+
+public interface IStatusRuRuResourceService
+{
+    string GetString(string key);
+    bool TryGetString(string key, out string? value);
+}

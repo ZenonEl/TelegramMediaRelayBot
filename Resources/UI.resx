@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <data name="UI.ConfirmDecision" xml:space="preserve">
+        <value>Confirm your decision (otherwise type /start)</value>
+        <!-- Old name: ConfirmDecision -->
+    </data>
+    <data name="UI.ChooseAction" xml:space="preserve">
+        <value>Choose an action:</value>
+        <!-- Old name: OutboundInviteMenu -->
+    </data>
+    <data name="UI.ChooseActionForRequest" xml:space="preserve">
+        <value>Choose an action for the request:</value>
+        <!-- Old name: SelectAction -->
+    </data>
+
+    <!-- List Headers -->
+    <data name="UI.Header.YourContacts" xml:space="preserve">
+        <value>Your contacts:</value>
+        <!-- Old name: YourContacts -->
+    </data>
+    <data name="UI.Header.YourInboundInvitations" xml:space="preserve">
+        <value>Your inbound invitations:</value>
+        <!-- Old name: YourInboundInvitations -->
+    </data>
+    <data name="UI.Header.YourOutboundInvitations" xml:space="preserve">
+        <value>Your contact addition requests:</value>
+        <!-- Old name: YourOutboundInvitations -->
+    </data>
+    <data name="UI.Header.GroupMembers" xml:space="preserve">
+        <value>List of members:</value>
+        <!-- Old name: AllContactsText -->
+    </data>
+    <!-- Formatted Output -->
+    <data name="UI.Format.ContactInfo" xml:space="preserve">
+        <value>
+Contact with ID: {0}
+Name: {1}
+Link: <code>{2}</code></value>
+        <!-- Old name: ContactInfo -->
+    </data>
+    <data name="UI.Format.UserLink" xml:space="preserve">
+        <value>Your link for someone who already uses the bot:
+<code>{0}</code>
+Invitation link for someone to start using the bot:</value>
+        <!-- Old name: YourLink -->
+    </data>
+    <!-- Broadcast Menu Buttons -->
+    <data name="UI.Button.SendToAll" xml:space="preserve">
+        <value>To all contacts</value>
+        <!-- Old name: SendToAllContactsButtonText -->
+    </data>
+    <data name="UI.Button.SendToDefaultGroups" xml:space="preserve">
+        <value>To default groups</value>
+        <!-- Old name: SendToDefaultGroupsButtonText -->
+    </data>
+    <data name="UI.Button.SendToSpecifiedGroups" xml:space="preserve">
+        <value>Only to selected groups</value>
+        <!-- Old name: SendToSpecifiedGroupsButtonText -->
+    </data>
+    <data name="UI.Button.SendToSpecifiedUsers" xml:space="preserve">
+        <value>Only to selected users</value>
+        <!-- Old name: SendToSpecifiedUsersButtonText -->
+    </data>
+    <data name="UI.Button.SendOnlyToMe" xml:space="preserve">
+        <value>Only to me</value>
+        <!-- Old name: SendOnlyToMeButtonText -->
+    </data>
+    <data name="UI.Button.EditContactName" xml:space="preserve">
+        <value>Edit contact name</value>
+        <!-- Old name: EditContactNameButtonText -->
+    </data>
+    <data name="UI.Button.EditContactGroups" xml:space="preserve">
+        <value>Edit group membership</value>
+        <!-- Old name: EditContactGroupButtonText -->
+    </data>
+    <data name="UI.Button.DeleteContact" xml:space="preserve">
+        <value>Delete contact</value>
+        <!-- Old name: DeleteContactButtonText -->
+    </data>
+    <data name="UI.Button.AddMembers" xml:space="preserve">
+        <value>Add member(s)</value>
+        <!-- Old name: AddContactsButtonText -->
+    </data>
+    <data name="UI.Button.RemoveMembers" xml:space="preserve">
+        <value>Remove member(s)</value>
+        <!-- Old name: RemoveContactsButtonText -->
+    </data>
+    <data name="UI.Button.Indefinitely" xml:space="preserve">
+        <value>Indefinitely</value>
+        <!-- Old name: IndefinitelyButtonText -->
+    </data>
+    <data name="UI.Button.Next" xml:space="preserve">
+        <value>Next</value>
+        <!-- Old name: NextButtonText -->
+    </data>
+    <data name="UI.Button.Enable" xml:space="preserve">
+        <value>On</value>
+        <!-- Old name: Enable -->
+    </data>
+    <data name="UI.Button.Disable" xml:space="preserve">
+        <value>Off</value>
+        <!-- Old name: Disable -->
+    </data>
+    <data name="UI.Label.Link" xml:space="preserve">
+        <value>Link</value>
+        <!-- Old name: LinkText -->
+    </data>
+    <data name="UI.Label.Name" xml:space="preserve">
+        <value>Name</value>
+        <!-- Old name: NameText -->
+    </data>
+    <data name="UI.Button.Yes" xml:space="preserve">
+        <value>Yes</value>
+        <!-- Old name: YesButtonText -->
+    </data>
+    <data name="UI.Button.No" xml:space="preserve">
+        <value>No</value>
+        <!-- Old name: NoButtonText -->
+    </data>
+    <data name="UI.Button.BackToMenu" xml:space="preserve">
+        <value>Back to menu</value>
+        <!-- Old name: BackButtonText -->
+    </data>
+    <data name="UI.Button.Delete" xml:space="preserve">
+        <value>Delete</value>
+        <!-- Old name: InboxDeleteButtonText -->
+    </data>
+    <data name="UI.Button.MuteUser" xml:space="preserve">
+        <value>Mute user</value>
+        <!-- Old name: MuteUserButtonText -->
+    </data>
+    <data name="UI.Button.UnmuteUser" xml:space="preserve">
+        <value>Unmute user</value>
+        <!-- Old name: UnmuteUserButtonText -->
+    </data>
+    <data name="UI.Button.AddContact" xml:space="preserve">
+        <value>Add contact</value>
+        <!-- Old name: AddContactButtonText -->
+    </data>
+    <data name="UI.Button.MyLink" xml:space="preserve">
+        <value>My link</value>
+        <!-- Old name: MyLinkButtonText -->
+    </data>
+    <data name="UI.Button.ViewInboundInvites" xml:space="preserve">
+        <value>View inbound requests</value>
+        <!-- Old name: ViewInboundInvitesButtonText -->
+    </data>
+    <data name="UI.Button.ViewOutboundInvites" xml:space="preserve">
+        <value>View outbound requests</value>
+        <!-- Old name: ViewOutboundInvitesButtonText -->
+    </data>
+    <data name="UI.Button.ViewAllContacts" xml:space="preserve">
+        <value>View all my contacts</value>
+        <!-- Old name: ViewAllContactsButtonText -->
+    </data>
+    <data name="UI.Button.ViewMyGroups" xml:space="preserve">
+        <value>View all my groups</value>
+        <!-- Old name: UsersGroupButtonText -->
+    </data>
+    <data name="UI.Button.BehindTheScenes" xml:space="preserve">
+        <value>Behind the scenes</value>
+        <!-- Old name: BehindTheScenesButtonText -->
+    </data>
+    <!-- ... existing lines ... -->
+    <data name="UI.Button.Accept" xml:space="preserve">
+        <value>Accept contact request</value>
+        <!-- Old name: AcceptButtonText -->
+    </data>
+    <data name="UI.Button.Decline" xml:space="preserve">
+        <value>Cancel contact request</value>
+        <!-- Old name: DeclineButtonText -->
+    </data>
+    <data name="UI.Button.Settings" xml:space="preserve">
+        <value>Settings</value>
+        <!-- Old name: SettingsButtonText -->
+    </data>
+    <data name="UI.Button.Inbox" xml:space="preserve">
+        <value>Inbox</value>
+        <!-- Old name: InboxButtonText -->
+    </data>
+    <data name="UI.Button.OpenInbox" xml:space="preserve">
+        <value>Open Inbox</value>
+        <!-- Old name: OpenInboxButtonText -->
+    </data>
+    <data name="UI.Button.Help" xml:space="preserve">
+        <value>Help</value>
+        <!-- Old name: HelpButtonText -->
+    </data>
+    <data name="UI.Button.DefaultActions" xml:space="preserve">
+        <value>Default actions</value>
+        <!-- Old name: DefaultActionsButtonText -->
+    </data>
+    <data name="UI.Button.PrivacyAndSafety" xml:space="preserve">
+        <value>Privacy | Security</value>
+        <!-- Old name: PrivacyButtonText -->
+    </data>
+    <data name="UI.Button.DefaultVideoActions" xml:space="preserve">
+        <value>Default media distribution actions</value>
+        <!-- Old name: DefaultVideoActionsButtonText -->
+    </data>
+    <data name="UI.Button.VideoRecipients" xml:space="preserve">
+        <value>Who to distribute media to</value>
+        <!-- Old name: VideoRecipientsButtonText -->
+    </data>
+    <data name="UI.Button.AutoSendTime" xml:space="preserve">
+        <value>Auto-send media time</value>
+        <!-- Old name: AutoSendTimeButtonText -->
+    </data>
+    <data name="UI.Button.AllContacts" xml:space="preserve">
+        <value>To all contacts</value>
+        <!-- Old name: AllContactsButtonText -->
+    </data>
+    <data name="UI.Button.DefaultGroups" xml:space="preserve">
+        <value>To default groups</value>
+        <!-- Old name: DefaultGroupsButtonText -->
+    </data>
+    <data name="UI.Button.SpecifiedContacts" xml:space="preserve">
+        <value>To selected contacts</value>
+        <!-- Old name: SpecifiedContactsButtonText -->
+    </data>
+    <data name="UI.Button.SpecifiedGroups" xml:space="preserve">
+        <value>To selected groups</value>
+        <!-- Old name: SpecifiedGroupsButtonText -->
+    </data>
+    <data name="UI.Button.OnlyMe" xml:space="preserve">
+        <value>Only to me</value>
+        <!-- Old name: OnlyMeButtonText -->
+    </data>
+    <data name="UI.Button.DisableAutoSend" xml:space="preserve">
+        <value>Disable auto-distribution</value>
+        <!-- Old name: DisableAutoSendButtonText -->
+    </data>
+    <data name="UI.Button.CreateGroup" xml:space="preserve">
+        <value>Create new group</value>
+        <!-- Old name: CreateGroupButtonText -->
+    </data>
+    <data name="UI.Button.EditGroup" xml:space="preserve">
+        <value>Edit group</value>
+        <!-- Old name: EditGroupButtonText -->
+    </data>
+    <data name="UI.Button.ChangeName" xml:space="preserve">
+        <value>Change name</value>
+        <!-- Old name: ChangeNameText -->
+    </data>
+    <data name="UI.Button.ChangeDescription" xml:space="preserve">
+        <value>Change description</value>
+        <!-- Old name: ChangeDescriptionText -->
+    </data>
+    <data name="UI.Button.ToggleDefault" xml:space="preserve">
+        <value>Toggle default value</value>
+        <!-- Old name: ChangeIsDefaultEnabledText -->
+    </data>
+    <data name="UI.Button.DeleteGroup" xml:space="preserve">
+        <value>Delete group</value>
+        <!-- Old name: DeleteGroupButtonText -->
+    </data>
+    <data name="UI.Button.RefreshSelfLink" xml:space="preserve">
+        <value>Regenerate personal link</value>
+        <!-- Old name: SelfLinkRefreshButtonText -->
+    </data>
+    <data name="UI.Label.Groups" xml:space="preserve">
+        <value>Groups:</value>
+        <!-- Old name: ContactGroupsLabel -->
+    </data>
+    <data name="UI.Header.YourGroups" xml:space="preserve">
+        <value>Your contact groups:</value>
+        <!-- Old name: YourGroupsText -->
+    </data>
+    <data name="UI.Info.NoGroups" xml:space="preserve">
+        <value>You don't have any groups yet.</value>
+        <!-- Old name: AltYourGroupsText -->
+    </data>
+    <data name="UI.Format.GroupInfo" xml:space="preserve">
+        <value>
+📌 <b>Name:</b> {0}
+🆔 <b>ID:</b> {1}
+📝 <b>Description:</b> {2}
+👥 <b>Members:</b> {3}
+🌟 <b>Default distribution:</b> {4}
+----------------------------------------------------
+        </value>
+        <!-- Old name: GroupInfoText -->
+    </data>
+    <data name="UI.ChooseOption" xml:space="preserve">
+        <value>Choose an option:</value>
+        <!-- Old name: ChooseOptionText -->
+    </data>
+    <data name="UI.Success" xml:space="preserve">
+        <value>The action was completed successfully</value>
+        <!-- Old name: SuccessActionResult -->
+    </data>
+    <data name="UI.InvisibleLetter" xml:space="preserve">
+        <value>ㅤ</value>
+        <!-- Old names: HereIsYourVideo, InvisibleLetter -->
+    </data>
+    <data name="UI.Distribution.Question" xml:space="preserve">
+        <value>Who should receive the media?</value>
+        <!-- Old name: VideoDistributionQuestion -->
+    </data>
+</root>

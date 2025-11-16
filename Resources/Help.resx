@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <data name="Help.Main" xml:space="preserve">
+        <value>
+🌐 <b>Adding contacts — create your own mini digital network</b>
+How to connect members of your media circle:
+1. 🔄 <b>Initiate contact</b>
+   Send the `/start` command and click the "Add contact" button in the menu.
+   → The bot will ask for the user's <b>unique link</b> in the format:
+   `1234ab56-cde-78fg-01hi-2j34k56790`
+2. <b>🔗 Exchange IDs</b>
+   - You can find your link in the "My link" section.
+   - Share it with future contacts — for example, via QR code or private message.
+3. <b>🤝 Confirm contact</b>
+   - Click the "Add contact" button.
+   - Paste the received link into the input field and send it to the bot.
+   - If everything is correct, you will see a brief user profile.
+   - You can return to the main menu and continue using the bot as usual.
+4. <b>⏳ Waiting for a response</b>
+   - Your request will be sent to the recipient, and they will receive a notification.
+   - Once they accept the invitation (via the "View inbound requests" section), you can start exchanging content with each other.
+   <b>And don't be afraid to use groups: Contacts can and should be grouped into different categories like `Colleagues`, `Friends`, `Bird Lovers Society 🐦‍⬛️` — for targeted distribution to multiple contacts at once.</b>
+---
+<b>🚀 Downloading and forwarding content — magic in three steps</b>
+📥 Working with links
+Simply send the bot a <b>link + description (if needed, and be sure to start it on a new line)</b> in the format:
+<pre>https://youtu.be/your_super_video
+Check out this cosmic dance of the northern lights!
+🌌 #nature #wow
+</pre>
+<b>If you use a description, it must be on a new line!</b>
+- You can also send the description in a separate follow-up message — it will overwrite the caption from the link message.
+→ The bot will do the rest:
+1. Identify the platform — whether it's YouTube, TikTok, Instagram, or any other service.
+2. Download the content in optimal quality (with the option to customize according to your preferences in the configuration).
+3. Forward the media exactly where and to whom it needs to go. ✨
+🔄 <b>Automatic distribution</b>
+- Your file will be instantly sent to all specified contacts from your list.
+   Conditions:
+      Contacts must be in your list.
+      You must not be muted by these contacts.
+      Distribution settings must be configured correctly.
+📨 <b>Inbox</b>
+- Enable in: Settings → Privacy | Security → Inbox.
+- New content will go to the Inbox instead of being sent instantly. Features: All/Unread, Senders; bulk mark as read/unread; bulk deletion; local actions by sender.
+<b>Tip: Use hashtags in your descriptions!</b>
+   This will make it easy to find content in your chat history. For example, search by tags like #cats or #work_is_not_a_wolf.
+   Built-in hashtags also work, but your own are more convenient and personalized.
+---
+✨ <b>The project is constantly evolving:</b> new features appear like mushrooms after the rain! 🍄
+To stay updated and not miss anything important:
+- <b>Follow my account</b> on <a href="https://mastodon.ml/@ZenonEl">Mastodon</a>.
+- Or just ask for news from the person who invited you to this exciting digital media cycle! 😉
+🔗 Supported platforms:
+- yt-dlp: <a href="https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md">list</a>
+- gallery-dl: <a href="https://github.com/mikf/gallery-dl/blob/master/docs/supportedsites.md">list</a>
+📚 Useful project links:
+- Website: <a href="https://zenonel.github.io/TelegramMediaRelayBot-Site/docs">zenonel.github.io/TelegramMediaRelayBot-Site</a>
+- Repository: <a href="https://github.com/ZenonEl/TelegramMediaRelayBot">GitHub</a>
+P.S.
+<b>Don't hesitate</b> to write to me on Mastodon!
+        </value>
+        <!-- Old name: HelpText -->
+    </data>
+    <data name="Help.Group" xml:space="preserve">
+        <value>Just send me the command:
+/link [tt_video_link]
+PS: Square brackets are not needed :)</value>
+        <!-- Old name: GroupHelpText -->
+    </data>
+    <data name="Help.AboutTheAuthor" xml:space="preserve">
+        <value>Hello everyone! I'm ZenonEl, the creator of this bag of code and algorithms.
+<a href="https://github.com/ZenonEl/">My GitHub</a>
+<a href="https://zenonel.github.io/TelegramMediaRelayBot-Site/ru">Website-documentation for this bag of algorithms</a>
+I also want to remind you that there is a /help command and support for group chats. Otherwise, the idea to create this bot came to me when my friends were once again forced to manually send media from TikTok (which I don't use) by downloading it and sending it... then deleting the media from their phones... In short, I thought it would be great to simplify all these monotonous actions for them, so I decided to create this bot. Now, thanks to it, I can run a simple bot even on my PC. Set up a list of contacts from whom I want to receive videos, and that's it — I've made life easier for myself and my friends. Convenient! Enjoy using it!</value>
+        <!-- Old name: WhosTheGeniusText -->
+    </data>
+</root>

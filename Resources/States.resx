@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <!-- State: Adding a contact -->
+    <data name="State.AddContact.Prompt.EnterLink" xml:space="preserve">
+        <value>Specify the person's link:</value>
+        <!-- Old name: SpecifyContactLink -->
+    </data>
+    <data name="State.AddContact.Success" xml:space="preserve">
+        <value>Now wait for the contact to also add you to their list.</value>
+        <!-- Old name: WaitForContactConfirmation -->
+    </data>
+    <data name="State.AddContact.Notification" xml:space="preserve">
+        <value>User {0} wants to add you to their contacts.</value>
+        <!-- Old name: UserWantsToAddYou -->
+    </data>
+    <data name="State.AddContact.Confirm.Addition" xml:space="preserve">
+        <value>Confirm the addition (otherwise type /start):</value>
+        <!-- Old name: ConfirmAdditionText -->
+    </data>
+    <data name="State.AddContact.Confirm.WorkWith" xml:space="preserve">
+        <value>Will we work with this contact?
+ID: {0}
+Name: {1}?</value>
+        <!-- Old name: WillWorkWithContact -->
+    </data>
+    <!-- State: Inbound invitations -->
+    <data name="State.InboundInvite.Confirm.Accept" xml:space="preserve">
+        <value>Are you sure you want to accept the request? (otherwise type /start)</value>
+        <!-- Old name: WaitAcceptInboundInvite -->
+    </data>
+    <data name="State.InboundInvite.Confirm.Decline" xml:space="preserve">
+        <value>Are you sure you want to decline the request? (otherwise type /start)</value>
+        <!-- Old name: WaitDeclineInboundInvite -->
+    </data>
+    <!-- State: Outbound invitations -->
+    <data name="State.OutboundInvite.Confirm.Decline" xml:space="preserve">
+        <value>Are you sure you want to cancel your request to this person?</value>
+        <!-- Old name: DeclineOutBound -->
+    </data>
+    <!-- State: Editing groups -->
+    <data name="State.EditGroup.Prompt.EnterId" xml:space="preserve">
+        <value>{0}
+Specify the group ID to work with:</value>
+        <!-- Old name: ContactGroupInfoText -->
+    </data>
+    <!-- State: Editing contact groups -->
+    <data name="State.EditContactGroup.Prompt.EnterIds" xml:space="preserve">
+        <value>Send the contact ID(s)</value>
+        <!-- Old name: InputContactIDsText -->
+    </data>
+    <data name="State.EditContactGroup.Confirm.Add" xml:space="preserve">
+        <value>Are you sure you want to add these contacts to the group?</value>
+        <!-- Old name: ConfirmAddContactsToGroupText -->
+    </data>
+    <data name="State.EditContactGroup.Confirm.Remove" xml:space="preserve">
+        <value>Are you sure you want to remove these contacts from the group?</value>
+        <!-- Old name: ConfirmDeleteContactsFromGroupText -->
+    </data>
+
+    <!-- State: Removing a contact -->
+    <data name="State.RemoveContact.Prompt.EnterIds" xml:space="preserve">
+        <value>Specify the contact IDs to remove:</value>
+        <!-- Old name: InputContactId -->
+    </data>
+    <data name="State.RemoveContact.Prompt.EnterIds.Generic" xml:space="preserve">
+        <value>Please enter one or more contact IDs, separated by spaces.</value>
+        <!-- Old name: PleaseEnterContactIDs -->
+    </data>
+    <data name="State.RemoveContact.Confirm.Removal" xml:space="preserve">
+        <value>Are you sure you want to remove the following users from your contacts?</value>
+        <!-- Old name: ConfirmRemovalMessage -->
+    </data>
+    <data name="State.RemoveContact.Success" xml:space="preserve">
+        <value>The removal process is complete.</value>
+        <!-- Old name: RemovalProcessCompleted -->
+    </data>
+    <!-- State: Mute/Unmute -->
+    <data name="State.Mute.Instruction" xml:space="preserve">
+        <value>To mute a person (you will not receive media from them), you need to specify either their ID or their link.</value>
+        <!-- Old name: MuteUserInstructions -->
+    </data>
+    <data name="State.Mute.Prompt.EnterTime" xml:space="preserve">
+        <value>To convert seconds to other time units, use the following ratios:
+1 minute = 60 seconds, 1 hour = 3600 seconds, 1 day = 86400 seconds.
+Enter the mute time in seconds or a date in the format YYYY-MM-DD HH:MM:SS:</value>
+        <!-- Old name: MuteTimeInstructions -->
+    </data>
+    <data name="State.Mute.Confirm.Final" xml:space="preserve">
+        <value>Check your decision and confirm it if you are sure this is what you need (otherwise type /start)</value>
+        <!-- Old name: ConfirmFinalDecision -->
+    </data>
+    <data name="State.Mute.Success" xml:space="preserve">
+        <value>Mute is set.</value>
+        <!-- Old name: MuteSet -->
+    </data>
+    <data name="State.Mute.Info.WillBeUnmuted" xml:space="preserve">
+        <value>The user will be unmuted at {0:yyyy-MM-dd HH:mm:ss} (in {1} seconds).</value>
+        <!-- Old name: UserWillBeUnmuted -->
+    </data>
+    <data name="State.Mute.Info.WillBeUnmutedAt" xml:space="preserve">
+        <value>The user will be unmuted at {0:yyyy-MM-dd HH:mm:ss}.</value>
+        <!-- Old name: UserWillBeUnmutedAt -->
+    </data>
+    <data name="State.Mute.Info.Indefinite" xml:space="preserve">
+        <value>The user will be muted indefinitely.</value>
+        <!-- Old name: UserWillBeMutedIndefinitely -->
+    </data>
+    <data name="State.Unmute.Instruction" xml:space="preserve">
+        <value>To unmute a person (you will receive media from them again), you need to specify either their ID or their link.</value>
+        <!-- Old name: UnmuteUserInstructions -->
+    </data>
+    <data name="State.Unmute.Confirm.IsMuted" xml:space="preserve">
+        <value>The user is muted until: {0}
+Do you really want to unmute them? If not, type /start</value>
+        <!-- Old name: UserInMute -->
+    </data>
+    <data name="State.Unmute.Success" xml:space="preserve">
+        <value>The user is unmuted.</value>
+        <!-- Old name: UserUnmuted -->
+    </data>
+    <data name="State.DefaultAction.AutoSendTimeChanged" xml:space="preserve">
+        <value>The media sending time has been changed to </value>
+        <!-- Old name: AutoSendTimeChangedMessage -->
+    </data>
+    <data name="State.DefaultAction.AutoSendTimeNotChanged" xml:space="preserve">
+        <value>The media sending time has not been changed.</value>
+        <!-- Old name: AutoSendTimeNotChangedMessage -->
+    </data>
+    <data name="State.DefaultAction.ActionChanged" xml:space="preserve">
+        <value>The default action has been successfully changed.</value>
+        <!-- Old name: DefaultActionChangedMessage -->
+    </data>
+    <data name="State.DefaultAction.ActionNotChanged" xml:space="preserve">
+        <value>The default action has not been changed.</value>
+        <!-- Old name: DefaultActionNotChangedMessage -->
+    </data>
+    <data name="State.DefaultAction.TimeoutMessage" xml:space="preserve">
+        <value>⏳ Sending by default...</value>
+        <!-- Old name: DefaultActionTimeoutMessage -->
+    </data>
+    <data name="State.CanceledByUser" xml:space="preserve">
+        <value>❎ Canceled by user</value>
+        <!-- Old name: CanceledByUserMessage -->
+    </data>
+    <data name="State.ContactLinks.ConfirmList" xml:space="preserve">
+        <value>To process:
+{0}
+Confirm?</value>
+    </data>
+    <data name="State.CreateGroup.Prompt.EnterName" xml:space="preserve">
+        <value>Come up with a group name and send it to me:</value>
+        <!-- Old name: NewGroupText -->
+    </data>
+    <data name="State.EditGroup.Prompt.EnterId" xml:space="preserve">
+        <value>Write me the group ID to edit:</value>
+        <!-- Old name: EditInputText -->
+    </data>
+    <data name="State.EditGroup.Prompt.EnterName" xml:space="preserve">
+        <value>Write me the new group name:</value>
+        <!-- Old name: NewGroupNameText -->
+    </data>
+    <data name="State.EditGroup.Prompt.EnterDescription" xml:space="preserve">
+        <value>Write me the new group description:</value>
+        <!-- Old name: NewGroupDescriptionText -->
+    </data>
+    <data name="State.DeleteGroup.Prompt.EnterId" xml:space="preserve">
+        <value>Write me the group ID to delete:</value>
+        <!-- Old name: DeleteInputText -->
+    </data>
+    <data name="State.AddDomain.Prompt.EnterDomains" xml:space="preserve">
+        <value>Enter the domains you want to add</value>
+        <!-- Old name: EnterDomainsToAddPrompt -->
+    </data>
+    <data name="State.RemoveDomain.Prompt.EnterDomains" xml:space="preserve">
+        <value>Enter the domains you want to remove</value>
+        <!-- Old name: EnterDomainsToRemovePrompt -->
+    </data>
+    <data name="State.UpdateLink.Confirm.KeepContacts" xml:space="preserve">
+        <value>Are you sure you want to create a new personal link and keep connections with your current contacts?</value>
+        <!-- Old name: UpdateLinkKeepContactsConfirmation -->
+    </data>
+    <data name="State.UpdateLink.Warning.NewContacts" xml:space="preserve">
+        <value>Be careful! Actions cannot be undone! All contacts will be deleted! You will get a new link, and you cannot be found by the old one!
+Are you sure you want to continue?</value>
+        <!-- Old name: UpdateLinkNewContactsWarning -->
+    </data>
+    <data name="State.UpdateLink.Prompt.EnterIds" xml:space="preserve">
+        <value>Enter the IDs of your contacts</value>
+        <!-- Old name: EnterContactIdsPrompt -->
+    </data>
+    <data name="State.Confirm.ProcessList" xml:space="preserve">
+        <value>Specified IDs:
+{0}
+Continue?</value>
+        <!-- Old name: ProcessIDsList -->
+    </data>
+    <data name="State.Success.ItemsProcessed" xml:space="preserve">
+        <value>Successfully processed: {0}</value>
+        <!-- Old name: SuccessMessageProcessIDsList -->
+    </data>
+</root>

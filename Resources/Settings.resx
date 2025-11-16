@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <data name="Settings.Privacy.PrefaceTemplate" xml:space="preserve">
+        <value><b>Privacy:</b> {0}
+{1}
+{2}
+</value>
+        <!-- Old name: PrivacyPrefaceTemplate -->
+    </data>
+    <data name="Settings.Inbox.Title" xml:space="preserve">
+        <value>Inbox settings</value>
+        <!-- Old name: InboxSettingsTitle -->
+    </data>
+    <data name="Settings.Inbox.On" xml:space="preserve">
+        <value>Inbox: ON</value>
+        <!-- Old name: InboxOn -->
+    </data>
+    <data name="Settings.Inbox.Off" xml:space="preserve">
+        <value>Inbox: OFF</value>
+        <!-- Old name: InboxOff -->
+    </data>
+    <data name="Settings.DomainFilter.On" xml:space="preserve">
+        <value>Domains: ON</value>
+        <!-- Old name: DomainsFilterOn -->
+    </data>
+    <data name="Settings.DomainFilter.Off" xml:space="preserve">
+        <value>Domains: OFF</value>
+        <!-- Old name: DomainsFilterOff -->
+    </data>
+    <data name="Settings.WhoCanFindMe.Nobody" xml:space="preserve">
+        <value>Nobody</value>
+    </data>
+    <data name="Settings.WhoCanFindMe.General" xml:space="preserve">
+        <value>Only mutual contacts</value>
+    </data>
+    <data name="Settings.WhoCanFindMe.All" xml:space="preserve">
+        <value>Everyone</value>
+    </data>
+    <data name="Settings.Menu.Title" xml:space="preserve">
+        <value>Available settings:</value>
+        <!-- Old name: SettingsMenuText -->
+    </data>
+    <data name="Settings.DefaultActions.Title" xml:space="preserve">
+        <value>Available default actions:</value>
+        <!-- Old name: DefaultActionsMenuText -->
+    </data>
+    <data name="Settings.DefaultVideoActions.Title" xml:space="preserve">
+        <value>Available actions for configuring default link handling:</value>
+        <!-- Old name: VideoDefaultActionsMenuText -->
+    </data>
+    <data name="Settings.DefaultVideoActions.Summary.Header" xml:space="preserve">
+        <value>Current default distribution</value>
+        <!-- Old name: Summary.Defaults.Header -->
+    </data>
+    <data name="Settings.DefaultVideoActions.Summary.Action" xml:space="preserve">
+        <value>Action</value>
+        <!-- Old name: Summary.Defaults.Action -->
+    </data>
+    <data name="Settings.DefaultVideoActions.Summary.Timeout" xml:space="preserve">
+        <value>Timeout</value>
+        <!-- Old name: Summary.Defaults.Timeout -->
+    </data>
+    <data name="Settings.DefaultVideoActions.Summary.Users" xml:space="preserve">
+        <value>Users</value>
+        <!-- Old name: Summary.Defaults.Users -->
+    </data>
+    <data name="Settings.DefaultVideoActions.Summary.Groups" xml:space="preserve">
+        <value>Groups</value>
+        <!-- Old name: Summary.Defaults.Groups -->
+    </data>
+    <data name="Settings.DefaultVideoRecipients.Title" xml:space="preserve">
+        <value>Available actions for configuring default distribution:</value>
+        <!-- Old name: UsersVideoSentUsersMenuText -->
+    </data>
+    <data name="Settings.AutoSendTime.Title" xml:space="preserve">
+        <value>Available settings for delay before default distribution:</value>
+        <!-- Old name: AutoSendVideoTimeMenuText -->
+    </data>
+    <data name="Settings.SearchPrivacy.Title" xml:space="preserve">
+        <value>Choose who can search/add you to their contacts</value>
+        <!-- Old name: SearchPrivacyText -->
+    </data>
+    <data name="Settings.SiteFilter.Menu.Title" xml:space="preserve">
+        <value>Site stoplist</value>
+        <!-- Old name: SiteStopList -->
+    </data>
+    <data name="Settings.SiteFilter.Button.Social" xml:space="preserve">
+        <value>Social media filter</value>
+        <!-- Old name: SocialFilterButton -->
+    </data>
+    <data name="Settings.SiteFilter.Button.NSFW" xml:space="preserve">
+        <value>NSFW filter</value>
+        <!-- Old name: NSFWFilterButton -->
+    </data>
+    <data name="Settings.SiteFilter.Button.Unified" xml:space="preserve">
+        <value>Unified filter</value>
+        <!-- Old name: UnifiedFilterButton -->
+    </data>
+    <data name="Settings.SiteFilter.Button.Domain" xml:space="preserve">
+        <value>Domain filter</value>
+        <!-- Old name: DomainFilterButton -->
+    </data>
+    <data name="Settings.SiteFilter.Button.ConfigureDomains" xml:space="preserve">
+        <value>Configure domains</value>
+        <!-- Old name: ConfigureDomainsButton -->
+    </data>
+    <data name="Settings.SiteFilter.Button.AddDomain" xml:space="preserve">
+        <value>Add domain</value>
+        <!-- Old name: AddDomainButton -->
+    </data>
+    <data name="Settings.SiteFilter.Button.RemoveDomain" xml:space="preserve">
+        <value>Remove domain</value>
+        <!-- Old name: RemoveDomainButton -->
+    </data>
+    <data name="Settings.Link.Menu.Title" xml:space="preserve">
+        <value>You can choose what to do with your current contacts when creating a new personal link</value>
+        <!-- Old name: SelfLinkRefreshMenuText -->
+    </data>
+    <data name="Settings.Link.Button.KeepAll" xml:space="preserve">
+        <value>Keep all contacts</value>
+        <!-- Old name: SelfLinkRefreshButtonTextOption1 -->
+    </data>
+    <data name="Settings.Link.Button.DeleteAll" xml:space="preserve">
+        <value>Delete all contacts</value>
+        <!-- Old name: SelfLinkRefreshButtonTextOption2 -->
+    </data>
+    <data name="Settings.Link.Button.KeepSelected" xml:space="preserve">
+        <value>Keep only selected contacts</value>
+        <!-- Old name: SelfLinkRefreshButtonTextOption3 -->
+    </data>
+    <data name="Settings.Link.Button.DeleteSelected" xml:space="preserve">
+        <value>Delete only selected contacts</value>
+        <!-- Old name: SelfLinkRefreshButtonTextOption4 -->
+    </data>
+    <data name="Settings.Forwarding.Title" xml:space="preserve">
+        <value>Content forwarding</value>
+        <!-- Old name: AllowContentForwardingBtn -->
+    </data>
+    <data name="Settings.Forwarding.Description" xml:space="preserve">
+        <value>Enable or disable the restriction on forwarding content you send to others</value>
+        <!-- Old name: AllowForwardContentRuleText -->
+    </data>
+    <data name="Settings.PrivacyFilter.Social" xml:space="preserve">
+        <value>Social</value>
+    </data>
+    <data name="Settings.PrivacyFilter.NSFW" xml:space="preserve">
+        <value>NSFW</value>
+    </data>
+    <data name="Settings.PrivacyFilter.Unified" xml:space="preserve">
+        <value>Unified</value>
+    </data>
+</root>

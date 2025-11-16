@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <data name="Formatting.Caption.Header" xml:space="preserve">
+        <value>{0} sent media!
+<code>#{1}</code>
+#{1}_{2}
+{3}
+        </value>
+        <!-- Old name: ContactSentVideo -->
+    </data>
+    <data name="Formatting.Caption.WithText" xml:space="preserve">
+        <value>With text:
+</value>
+        <!-- Old name: WithText -->
+    </data>
+</root>

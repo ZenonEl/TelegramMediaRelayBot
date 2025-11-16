@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <data name="Error.Generic" xml:space="preserve">
+        <value>What am I supposed to do with this?</value>
+        <!-- Old name: WhatShouldIDoWithThis -->
+    </data>
+    <data name="Error.InvalidLinkFormat" xml:space="preserve">
+        <value>What am I supposed to do with this? The link format is incorrect.</value>
+        <!-- Old name: InvalidLinkFormat -->
+    </data>
+    <data name="Error.LinkProcessingFailed" xml:space="preserve">
+        <value>Failed to process the link. Try again later. If the issue persists, the link may not be supported or an error occurred during media download.</value>
+        <!-- Old name: FailedToProcessLink -->
+    </data>
+    <data name="Error.UserNotFoundByLink" xml:space="preserve">
+        <value>No user found with this link.</value>
+        <!-- Old name: NoUserFoundByLink -->
+    </data>
+    <data name="Error.UserNotFoundById" xml:space="preserve">
+        <value>No user found with this ID.</value>
+        <!-- Old name: NoUserFoundByID -->
+    </data>
+    <data name="Error.Mute.InvalidTimeFormat" xml:space="preserve">
+        <value>Please enter the mute duration in seconds or a date in the format YYYY-MM-DD HH:MM:SS. Or type 'Indefinitely'.</value>
+        <!-- Old name: InvalidMuteTimeFormat -->
+    </data>
+    <data name="Error.Mute.NotActive" xml:space="preserve">
+        <value>The contact is not currently muted.</value>
+        <!-- Old name: NoActiveMute -->
+    </data>
+    <data name="Error.Input.InvalidValues" xml:space="preserve">
+        <value>Invalid input. Please enter values separated by spaces.</value>
+        <!-- Old name: InvalidInputValues -->
+    </data>
+    <data name="Error.Input.NoUsersFound" xml:space="preserve">
+        <value>No users found with the specified IDs.</value>
+        <!-- Old name: NoUsersFound -->
+    </data>
+    <data name="Error.Cancel.NothingToCancel" xml:space="preserve">
+        <value>Nothing to cancel.</value>
+        <!-- Old name: NothingToCancelMessage -->
+    </data>
+    <data name="Error.DomainFilter.NotEnabled" xml:space="preserve">
+        <value>You need to enable the domain filter at least once first.</value>
+        <!-- Old name: DomainFilterNotEnabledError -->
+    </data>
+    <data name="Error.DomainFilter.NoDomains" xml:space="preserve">
+        <value>You need to add at least one domain first.</value>
+        <!-- Old name: NoDomainsAddedError -->
+    </data>
+    <data name="Error.AccessDenied" xml:space="preserve">
+        <value>Access to the bot is currently restricted for new users.
+If you wish to gain access, you can contact me <a href="{0}">here</a></value>
+        <!-- Old name: AccessDeniedMessage -->
+    </data>
+    <data name="Error.Input.Generic" xml:space="preserve">
+        <value>An error occurred. Please ensure you entered the correct data.</value>
+        <!-- Old name: InputErrorMessage -->
+    </data>
+    <data name="Error.ActionFailed" xml:space="preserve">
+        <value>The action was not completed (fully/partially).</value>
+        <!-- Old name: ErrorActionResult -->
+    </data>
+</root>

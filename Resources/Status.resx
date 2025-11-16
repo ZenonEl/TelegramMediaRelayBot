@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <data name="Status.ProcessingLink" xml:space="preserve">
+        <value>Please wait, the link is being processed...</value>
+        <!-- Old name: WaitDownloadingVideo -->
+    </data>
+    <data name="Status.SendingInProgress" xml:space="preserve">
+        <value>Starting distribution to contacts...</value>
+        <!-- Old name: WaitSendingVideo -->
+    </data>
+    <data name="Status.SendingComplete" xml:space="preserve">
+        <value>Distribution complete!</value>
+        <!-- Old name: VideoSuccessfullySent -->
+    </data>
+    <data name="Status.SendingToAllComplete" xml:space="preserve">
+        <value>Media successfully sent to all ({0}) contacts.
+<code>#{1}</code>
+#{1}_{2}</value>
+        <!-- Old name: VideoSentToContacts -->
+    </data>
+    <data name="Status.UploadingToTelegram" xml:space="preserve">
+        <value>Uploading media to Telegram...</value>
+        <!-- Old name: WaitForUpload -->
+    </data>
+    <data name="Status.DistributionComplete" xml:space="preserve">
+        <value>Distribution complete. Sent {0}/{1}</value>
+        <!-- Old name: MessageProcessMediaSend -->
+    </data>
+    <data name="Status.Distribution.MutedBySome" xml:space="preserve">
+        <value>You are muted by some contacts ({0}).</value>
+        <!-- Old name: MutedByContacts -->
+    </data>
+    <data name="Status.AddContact.UserFound" xml:space="preserve">
+        <value>One person found with this link.</value>
+        <!-- Old name: UserFoundByLink -->
+    </data>
+</root>
