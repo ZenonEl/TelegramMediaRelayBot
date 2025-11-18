@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using TelegramMediaRelayBot.Config;
 using Telegram.Bot.Types.Enums;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace TelegramMediaRelayBot.TelegramBot.Services;
 
@@ -15,6 +16,7 @@ public interface IMediaProcessingFlow
 
 public class MediaProcessingFlow : IMediaProcessingFlow
 {
+    private readonly DownloadSessionManager _sessionManager;
     private readonly MediaDownloaderService _downloaderService;
     private readonly IMediaProcessingService _mediaProcessor;
     private readonly ITelegramSenderService _senderService;
@@ -23,6 +25,7 @@ public class MediaProcessingFlow : IMediaProcessingFlow
     private readonly ICaptionGenerationService _captionGenerator;
 
     public MediaProcessingFlow(
+        DownloadSessionManager sessionManager,
         MediaDownloaderService downloaderService,
         IMediaProcessingService mediaProcessor,
         ITelegramSenderService senderService,
@@ -30,6 +33,7 @@ public class MediaProcessingFlow : IMediaProcessingFlow
         IUserGetter userGetter,
         ICaptionGenerationService captionGenerator)
     {
+        _sessionManager = sessionManager;
         _downloaderService = downloaderService;
         _mediaProcessor = mediaProcessor;
         _senderService = senderService;
@@ -43,27 +47,37 @@ public class MediaProcessingFlow : IMediaProcessingFlow
         try
         {
             // --- ЭТАП 1: СКАЧИВАНИЕ ---
-            await botClient.EditMessageText(session.ChatId, session.StatusMessageId, "Downloading...", cancellationToken: session.SessionCts.Token);
+            await botClient.EditMessageText(
+                chatId: session.ChatId,
+                messageId: session.StatusMessageId,
+                text: "Downloading...",
+                replyMarkup: KeyboardUtils.GetCancelKeyboardMarkup(session.StatusMessageId),
+                cancellationToken: session.SessionCts.Token
+            );
             
-            await using var logUpdater = new TelegramLogUpdater(botClient, session.StatusMessageId, session.ChatId);
+            await using TelegramLogUpdater logUpdater = new TelegramLogUpdater(botClient, session.StatusMessageId, session.ChatId);
 
-            var options = new DownloadOptions { OnProgress = logUpdater.HandleLogLine };
-            var downloadResult = await _downloaderService.DownloadMedia(session.Url, options, session.SessionCts.Token);
+            DownloadOptions options = new DownloadOptions { OnProgress = logUpdater.HandleLogLine };
+            DownloadResult downloadResult = await _downloaderService.DownloadMedia(session.Url, options, session.SessionCts.Token);
 
             if (!downloadResult.Success)
             {
-                var errorMessage = $"Download failed:\n`{downloadResult.ErrorMessage}`";
+                string errorMessage = $"Download failed:\n`{downloadResult.ErrorMessage}`";
                 await botClient.EditMessageText(session.ChatId, session.StatusMessageId, errorMessage, parseMode: ParseMode.Markdown);
                 return;
             }
 
             // --- ЭТАП 2: ПОСТОБРАБОТКА ---
-            await botClient.EditMessageText(session.ChatId, session.StatusMessageId, "Processing media...", cancellationToken: session.SessionCts.Token);
+            await botClient.EditMessageText(session.ChatId, session.StatusMessageId, "Processing media...",
+                                            replyMarkup: KeyboardUtils.GetCancelKeyboardMarkup(session.StatusMessageId),
+                                            cancellationToken: session.SessionCts.Token);
 
             var processedFiles = await _mediaProcessor.ApplySizePolicyAsync(downloadResult.MediaFiles, _downloadingConfig.CurrentValue, session.SessionCts.Token);
 
             // --- ЭТАП 3: ОТПРАВКА ---
-            await botClient.EditMessageText(session.ChatId, session.StatusMessageId, "Sending media...", cancellationToken: session.SessionCts.Token);
+            await botClient.EditMessageText(session.ChatId, session.StatusMessageId, "Sending media...",
+                                            replyMarkup: KeyboardUtils.GetCancelKeyboardMarkup(session.StatusMessageId),
+                                            cancellationToken: session.SessionCts.Token);
             var senderName = _userGetter.GetUserNameByTelegramID(session.ChatId);
             session.Caption = _captionGenerator.Generate(session, senderName);
 
@@ -77,6 +91,10 @@ public class MediaProcessingFlow : IMediaProcessingFlow
         {
             Log.Error(ex, "An error occurred in the media processing flow for session {MessageId}", session.StatusMessageId);
             await botClient.EditMessageText(session.ChatId, session.StatusMessageId, $"An unexpected error occurred:\n`{ex.Message}`", parseMode: ParseMode.Markdown);
+        }
+        finally
+        {
+            _sessionManager.CompleteSession(session.StatusMessageId);
         }
     }
 }

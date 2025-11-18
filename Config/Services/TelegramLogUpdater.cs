@@ -3,6 +3,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types.Enums;
+using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace TelegramMediaRelayBot.TelegramBot.Services;
 
@@ -63,7 +64,8 @@ public class TelegramLogUpdater : IAsyncDisposable
 
                 await _botClient.EditMessageText(
                     _chatId, _statusMessage, textToSend,
-                    parseMode: ParseMode.MarkdownV2, cancellationToken: _cts.Token);
+                    parseMode: ParseMode.MarkdownV2, cancellationToken: _cts.Token,
+                    replyMarkup: KeyboardUtils.GetCancelKeyboardMarkup(_statusMessage));
                 
                 _lastSentText = textToSend;
                 // Очищаем буфер только после успешной отправки

@@ -103,7 +103,7 @@ public class PrivateUpdateHandler
             DownloadSession session = _sessionManager.CreateSession(
                 statusMessageId: statusMessage.MessageId,
                 chatId: chatId, url: url, caption: caption,
-                originalMessageDateUtc: message.Date.ToUniversalTime());
+                originalMessageDateUtc: message.Date);
             
             _sessionManager.ScheduleDefaultAction(botClient, update, session);
         }

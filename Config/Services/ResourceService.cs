@@ -33,10 +33,6 @@ public class ResourceService : IResourceService
     [Obsolete("Используйте специализированные сервисы, например IUiResourceService")]
     public string GetResourceString(string key)
     {
-        if (_uiResources.TryGetString(key, out string? value))
-        {
-            return value;
-        }
         return _resourceManager.GetString(key) ?? key;
     }
 } 

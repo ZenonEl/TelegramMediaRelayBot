@@ -98,7 +98,7 @@ public class TelegramSenderService : ITelegramSenderService
         string caption = "";
         if (session.Caption != null) caption = session.Caption.Substring(0, Math.Min(100, session.Caption.Length)) + 
                                                 (session.Caption.Length > 200 ? "..." : "");
-        await _interactionService.ReplyToUpdate(botClient, update, text: $"Distribution complete. Sent to {sentCount}/{finalRecipients.Count} users. Caption: {caption}");
+        await _interactionService.ReplyToUpdate(botClient, update, text: $"Distribution complete. Sent to {sentCount}/{finalRecipients.Count} users. Caption:\n{caption}");
     }
 
     private async Task<List<TelegramMediaInfo>> UploadToTelegramStorage(ITelegramBotClient botClient, long storageChatId, List<byte[]> mediaFiles, CancellationToken cancellationToken)
