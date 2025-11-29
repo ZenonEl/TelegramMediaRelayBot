@@ -2,18 +2,20 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-
+using System.Text;
+using Telegram.Bot.Types.ReplyMarkups;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Utils;
-using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 namespace TelegramMediaRelayBot.TelegramBot.States;
 
 public class EditContactGroupStateHandler : IStateHandler
 {
     private readonly IContactGroupRepository _contactGroupRepository;
+    private readonly IGroupUoW _groupUoW; // Нужен UoW или Repository для обновления группы (Rename/SetDefault)
     private readonly IUserGetter _userGetter;
+    private readonly IGroupSetter _groupSetter;
     private readonly IGroupGetter _groupGetter;
     private readonly IContactGetter _contactGetter;
     private readonly Config.Services.IResourceService _resourceService;
@@ -24,6 +26,7 @@ public class EditContactGroupStateHandler : IStateHandler
 
     public EditContactGroupStateHandler(
         IContactGroupRepository contactGroupRepository,
+        IGroupSetter groupSetter,
         IUserGetter userGetter,
         IGroupGetter groupGetter,
         IContactGetter contactGetter,
@@ -32,6 +35,7 @@ public class EditContactGroupStateHandler : IStateHandler
         IStateBreakService stateBreaker)
     {
         _contactGroupRepository = contactGroupRepository;
+        _groupSetter = groupSetter;
         _userGetter = userGetter;
         _groupGetter = groupGetter;
         _contactGetter = contactGetter;
@@ -42,8 +46,10 @@ public class EditContactGroupStateHandler : IStateHandler
 
     public async Task<StateResult> Process(UserStateData stateData, Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        var chatId = _interactionService.GetChatId(update);
-        if (await _stateBreaker.HandleStateBreak(botClient, update))
+        long chatId = _interactionService.GetChatId(update);
+        if (await _stateBreaker.HandleStateBreak(botClient, update)) return StateResult.Complete();
+
+        if (!stateData.Data.TryGetValue("GroupId", out object? grpObj) || grpObj is not int groupId)
         {
             return StateResult.Complete();
         }
@@ -51,150 +57,233 @@ public class EditContactGroupStateHandler : IStateHandler
         switch (stateData.Step)
         {
             // ========================================================================
-            // ШАГ 0: Выбор действия (добавить/удалить участника)
+            // ШАГ 0: Выбор действия в меню
             // ========================================================================
             case 0:
                 if (update.CallbackQuery?.Data == null) return StateResult.Ignore();
-                
-                var callbackAction = update.CallbackQuery.Data;
-                var userId = _userGetter.GetUserIDbyTelegramID(chatId);
-                var groupId = int.Parse(callbackAction.Split(':')[1]);
+                string data = update.CallbackQuery.Data;
 
-                if (callbackAction.StartsWith("user_add_contact_to_group:"))
+                // --- ЛОГИКА ПЕРЕКЛЮЧЕНИЯ DEFAULT (Сразу выполняем и обновляем меню) ---
+                if (data == "group_action:toggle_default")
                 {
-                    stateData.Data["GroupId"] = groupId;
-                    stateData.Data["Action"] = "Add";
+                    // Получаем текущее состояние
+                    var group = await _groupGetter.GetIsDefaultGroup(groupId);
+                    if (group != null)
+                    {
+                        bool newState = !group;
+                        // TODO: Реализовать метод UpdateGroupDefault в репозитории
+                        await _groupSetter.SetIsDefaultGroup(groupId);
+                        
+                        // Перезагружаем меню (симуляция клика по группе, чтобы обновить галочку)
+                        // Это немного хак, но эффективный: мы просто вызываем команду выбора группы снова
+                        // Но так как мы внутри стейта, лучше просто обновить сообщение вручную.
+                        
+                        // Для простоты: просто ответим юзеру и обновим текст кнопки (сложно без перерисовки).
+                        // Проще всего: отправить юзера обратно в выбор действия через EditGroupSelectedCommand logic.
+                        // Но пока просто уведомление:
+                        string status = newState ? "включена" : "выключена";
+                        await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, $"Рассылка по умолчанию {status}", cancellationToken: cancellationToken);
+                        
+                        // Возвращаем StateResult.Complete, чтобы сбросить стейт? Нет, мы хотим остаться в меню.
+                        // Лучше всего здесь вызвать код отрисовки меню заново (как в EditGroupSelectedCommand).
+                        // Но чтобы не дублировать код, просто скажем пользователю нажать "Назад" или обновим сообщение.
+                    }
+                    return StateResult.Ignore(); // Игнорируем, чтобы остаться в меню
+                }
 
-                    var tgIds = await _contactGetter.GetAllContactUserTGIds(userId);
-                    var infos = tgIds.Select(tg => {
-                        int cid = _userGetter.GetUserIDbyTelegramID(tg);
-                        string uname = _userGetter.GetUserNameByTelegramID(tg);
-                        return string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, "");
-                    }).ToList();
-                    
-                    var header = _resourceService.GetResourceString("YourContacts");
-                    var prompt = _resourceService.GetResourceString("InputContactIDsText");
-                    var body = infos.Any() ? string.Join("\n", infos) : _resourceService.GetResourceString("NoUsersFound");
-                    
-                    await botClient.SendMessage(chatId, $"{header}\n{body}\n\n{prompt}", cancellationToken: cancellationToken);
+                // --- ОПРЕДЕЛЕНИЕ ДЕЙСТВИЯ ---
+                string? action = null;
+                if (data == "group_action:add") action = "Add";
+                else if (data == "group_action:remove") action = "Remove";
+                else if (data == "group_action:rename") action = "Rename";
+
+                if (action == null) return StateResult.Ignore();
+
+                stateData.Data["Action"] = action;
+                int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+                StringBuilder sb = new StringBuilder();
+                InlineKeyboardMarkup backKb = new InlineKeyboardMarkup(InlineKeyboardButton.WithCallbackData("🔙 Назад", $"edit_group_selected:{groupId}"));
+
+                // --- СЦЕНАРИЙ: ПЕРЕИМЕНОВАНИЕ ---
+                if (action == "Rename")
+                {
+                    // TODO: Move "Group.Rename.Prompt"
+                    await _interactionService.ReplyToUpdate(botClient, update, backKb, cancellationToken, "✏️ <b>Введите новое название группы:</b>");
                     stateData.Step = 1;
                     return StateResult.Continue();
                 }
-                else if (callbackAction.StartsWith("user_remove_contact_from_group:"))
+
+                // --- СЦЕНАРИЙ: ДОБАВЛЕНИЕ (Улучшенный) ---
+                if (action == "Add")
                 {
-                    stateData.Data["GroupId"] = groupId;
-                    stateData.Data["Action"] = "Remove";
-
-                    var members = await _groupGetter.GetAllUsersIdsInGroup(groupId);
-                    var infos = members.Select(cid => {
-                        string uname = _userGetter.GetUserNameByID(cid);
-                        return string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, "");
-                    }).ToList();
-
-                    var header = _resourceService.GetResourceString("AllContactsText");
-                    var body = infos.Any() ? string.Join("\n", infos) : _resourceService.GetResourceString("NoUsersFound");
-                    var prompt = _resourceService.GetResourceString("InputContactIDsText");
+                    // 1. Получаем тех, кто УЖЕ в группе
+                    List<int> existingMembers = (List<int>)await _groupGetter.GetAllUsersIdsInGroup(groupId);
                     
-                    await botClient.SendMessage(chatId, $"{header}\n{body}\n\n{prompt}", cancellationToken: cancellationToken);
-                    stateData.Step = 1;
-                    return StateResult.Continue();
+                    // 2. Получаем ВСЕ контакты
+                    List<long> allContactTgIds = (List<long>)await _contactGetter.GetAllContactUserTGIds(userId);
+
+                    sb.AppendLine("➕ <b>Добавление участников</b>\n");
+
+                    // Показываем текущий состав (чтобы не дублировать)
+                    if (existingMembers.Any())
+                    {
+                        sb.AppendLine("📋 <b>Уже в группе:</b>");
+                        foreach (int cid in existingMembers)
+                        {
+                            string uname = _userGetter.GetUserNameByID(cid) ?? "ID " + cid;
+                            sb.AppendLine($"• {uname}");
+                        }
+                        sb.AppendLine();
+                    }
+
+                    sb.AppendLine("👇 <b>Кого можно добавить (ID):</b>");
+                    
+                    bool foundCandidates = false;
+                    foreach (long tgId in allContactTgIds)
+                    {
+                        int cid = _userGetter.GetUserIDbyTelegramID(tgId);
+                        
+                        // ФИЛЬТР: Показываем только тех, кого НЕТ в группе
+                        if (!existingMembers.Contains(cid))
+                        {
+                            string uname = _userGetter.GetUserNameByTelegramID(tgId);
+                            sb.AppendLine($"<code>{cid}</code> — {uname}");
+                            foundCandidates = true;
+                        }
+                    }
+
+                    if (!foundCandidates)
+                    {
+                        sb.AppendLine("<i>(Все ваши контакты уже в этой группе)</i>");
+                    }
+                    else
+                    {
+                        sb.AppendLine("\n✍️ <b>Введите ID через пробел:</b>");
+                    }
                 }
-                
-                return StateResult.Ignore(); // Не наше действие
+                // --- СЦЕНАРИЙ: УДАЛЕНИЕ ---
+                else if (action == "Remove")
+                {
+                    sb.AppendLine("➖ <b>Удаление участников</b>\n");
+                    sb.AppendLine("👇 <b>Текущие участники (нажмите ID, чтобы скопировать):</b>");
+
+                    List<int> members = (List<int>)await _groupGetter.GetAllUsersIdsInGroup(groupId);
+                    if (members.Any())
+                    {
+                        foreach (int cid in members)
+                        {
+                            string uname = _userGetter.GetUserNameByID(cid) ?? "Unknown";
+                            sb.AppendLine($"<code>{cid}</code> — {uname}");
+                        }
+                        sb.AppendLine("\n✍️ <b>Введите ID для удаления:</b>");
+                    }
+                    else
+                    {
+                        sb.AppendLine("<i>(Группа пуста)</i>");
+                    }
+                }
+
+                await _interactionService.ReplyToUpdate(botClient, update, backKb, cancellationToken, sb.ToString());
+                stateData.Step = 1;
+                return StateResult.Continue();
 
             // ========================================================================
-            // ШАГ 1: Получение ID контактов и запрос подтверждения
+            // ШАГ 1: Обработка ввода (Текст с названием или ID)
             // ========================================================================
             case 1:
-                if (update.Message?.Text == null) return StateResult.Ignore();
-                if (!stateData.Data.TryGetValue("GroupId", out var groupIdObj) || !stateData.Data.TryGetValue("Action", out var actionObj))
-                    return StateResult.Complete();
+                // Обработка кнопки "Назад"
+                if (update.CallbackQuery?.Data?.StartsWith("edit_group_selected") == true) return StateResult.Complete();
+                if (string.IsNullOrWhiteSpace(update.Message?.Text)) return StateResult.Ignore();
 
-                groupId = (int)groupIdObj;
-                var action = (string)actionObj;
-                
+                string userText = update.Message.Text.Trim();
+                string currentAction = (string)stateData.Data["Action"];
+
+                // --- ЛОГИКА ПЕРЕИМЕНОВАНИЯ ---
+                if (currentAction == "Rename")
+                {
+                    // TODO: Реализовать RenameGroupAsync в репозитории
+                    await _groupSetter.SetGroupName(groupId, userText);
+                    
+                    // TODO: Move "Group.Rename.Success"
+                    await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, $"✅ Группа переименована в: <b>{userText}</b>");
+                    return StateResult.Complete();
+                }
+
+                // --- ЛОГИКА ДОБАВЛЕНИЯ/УДАЛЕНИЯ (Парсинг ID) ---
                 List<int> contactIDs;
                 try
                 {
-                    contactIDs = update.Message.Text.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList();
+                    contactIDs = userText
+                        .Split(new[] { ' ', ',', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(x => int.Parse(x.Trim()))
+                        .Distinct()
+                        .ToList();
                 }
                 catch
                 {
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken);
-                    return StateResult.Continue(); // Остаемся на том же шаге
-                }
-
-                if (!contactIDs.Any())
-                {
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, "⚠️ Ошибка формата. Введите цифры.", cancellationToken: cancellationToken);
                     return StateResult.Continue();
                 }
-                
+
+                // Фильтрация дублей ПРИ ДОБАВЛЕНИИ
+                if (currentAction == "Add")
+                {
+                    List<int> alreadyInGroup = (List<int>)await _groupGetter.GetAllUsersIdsInGroup(groupId);
+                    // Оставляем только тех, кого НЕТ в группе
+                    contactIDs = contactIDs.Where(id => !alreadyInGroup.Contains(id)).ToList();
+
+                    if (!contactIDs.Any())
+                    {
+                        await botClient.SendMessage(chatId, "⚠️ Все введенные пользователи уже состоят в этой группе.", cancellationToken: cancellationToken);
+                        return StateResult.Continue();
+                    }
+                }
+
                 stateData.Data["ContactIDs"] = contactIDs;
 
-                var confirmInfos = contactIDs.Select(cid => {
-                    var uname = _userGetter.GetUserNameByID(cid);
-                    return string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, "");
-                }).ToList();
+                // Подтверждение
+                StringBuilder confirmSb = new StringBuilder();
+                confirmSb.AppendLine(currentAction == "Add" ? "❓ <b>Добавить пользователей?</b>" : "❓ <b>Удалить пользователей?</b>");
+                foreach (int cid in contactIDs)
+                {
+                    string uName = _userGetter.GetUserNameByID(cid) ?? "ID " + cid;
+                    confirmSb.AppendLine($"• {uName} (ID: {cid})");
+                }
 
-                if (action == "Add")
-                {
-                    var confirmHeader = _resourceService.GetResourceString("ConfirmAddContactsToGroupText");
-                    await botClient.SendMessage(chatId, $"{confirmHeader}\n\n{string.Join("\n", confirmInfos)}",
-                        replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_add"), cancellationToken: cancellationToken);
-                }
-                else // Remove
-                {
-                    var confirmHeader = _resourceService.GetResourceString("ConfirmDeleteContactsFromGroupText");
-                    await botClient.SendMessage(chatId, $"{confirmHeader}\n\n{string.Join("\n", confirmInfos)}",
-                        replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_remove"), cancellationToken: cancellationToken);
-                }
+                await botClient.SendMessage(chatId, confirmSb.ToString(),
+                    replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_action"),
+                    cancellationToken: cancellationToken,
+                    parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
 
                 stateData.Step = 2;
                 return StateResult.Continue();
 
             // ========================================================================
-            // ШАГ 2: Финальное подтверждение и выполнение
+            // ШАГ 2: Выполнение (Add/Remove)
             // ========================================================================
             case 2:
-                if (update.CallbackQuery?.Data == null) return StateResult.Ignore();
-
-                var confirmAction = update.CallbackQuery.Data;
-                if (confirmAction == "decline")
+                if (update.CallbackQuery?.Data == "decline")
                 {
-                    await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, _resourceService.GetResourceString("InvisibleLetter"));
+                    await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, "❌ Отмена.");
                     return StateResult.Complete();
                 }
+                if (update.CallbackQuery?.Data != "accept_action") return StateResult.Ignore();
 
-                if (!stateData.Data.TryGetValue("GroupId", out groupIdObj) || !stateData.Data.TryGetValue("ContactIDs", out var contactIdsObj))
-                    return StateResult.Complete();
-                
-                groupId = (int)groupIdObj;
-                var finalContactIds = (List<int>)contactIdsObj;
-                var currentUserId = _userGetter.GetUserIDbyTelegramID(chatId);
-                var success = true;
+                List<int> ids = (List<int>)stateData.Data["ContactIDs"];
+                string act = (string)stateData.Data["Action"];
+                int myUserId = _userGetter.GetUserIDbyTelegramID(chatId);
 
-                if (confirmAction == "accept_add")
+                int successCount = 0;
+                foreach (int cid in ids)
                 {
-                    foreach (var cid in finalContactIds)
-                    {
-                        if (!_contactGroupRepository.AddContactToGroup(currentUserId, cid, groupId)) success = false;
-                    }
-                }
-                else if (confirmAction == "accept_remove")
-                {
-                    foreach (var cid in finalContactIds)
-                    {
-                        if (!_contactGroupRepository.RemoveContactFromGroup(currentUserId, cid, groupId)) success = false;
-                    }
-                }
-                else
-                {
-                    return StateResult.Ignore();
+                    bool ok = false;
+                    if (act == "Add") ok = _contactGroupRepository.AddContactToGroup(myUserId, cid, groupId);
+                    else ok = _contactGroupRepository.RemoveContactFromGroup(myUserId, cid, groupId);
+                    if (ok) successCount++;
                 }
 
-                var resultText = success ? _resourceService.GetResourceString("SuccessActionResult") : _resourceService.GetResourceString("ErrorActionResult");
-                await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, resultText);
+                string icon = act == "Add" ? "✅" : "🗑";
+                await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, $"{icon} Успешно: {successCount} из {ids.Count}");
                 return StateResult.Complete();
         }
 

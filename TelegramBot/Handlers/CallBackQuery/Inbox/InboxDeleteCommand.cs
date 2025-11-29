@@ -21,7 +21,7 @@ public class InboxDeleteCommand : IBotCallbackQueryHandlers
         await _inbox.DeleteAsync(id).ConfigureAwait(false);
         // go back to list
         update.CallbackQuery!.Data = $"inbox:list:{page}";
-        await _factory.ExecuteAsync("inbox:list:", update, botClient, ct).ConfigureAwait(false);
+        await _factory.ExecuteAsync(update, botClient, ct).ConfigureAwait(false);
     }
 }
 

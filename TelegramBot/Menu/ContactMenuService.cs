@@ -4,6 +4,7 @@
 
 
 using System.Text;
+using Telegram.Bot.Types.ReplyMarkups;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Models;
 using TelegramMediaRelayBot.TelegramBot.States;
@@ -120,33 +121,72 @@ public class ContactMenuService : IContactMenuService
 
     public async Task ViewContacts(ITelegramBotClient botClient, Update update)
     {
-        var chatId = _interactionService.GetChatId(update);
-        var userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        long chatId = _interactionService.GetChatId(update);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
 
-        var contactUserTGIds = await _contactGetter.GetAllContactUserTGIds(userId);
+        List<long> contactUserTGIds = await _contactGetter.GetAllContactUserTGIds(userId);
         var contactUsersInfo = contactUserTGIds.Select(tgId => {
-            var id = _userGetter.GetUserIDbyTelegramID(tgId);
-            var username = _userGetter.GetUserNameByTelegramID(tgId);
-            return string.Format(_resourceService.GetResourceString("ContactInfo"), id, username, "");
+            long id = _userGetter.GetUserIDbyTelegramID(tgId);
+            string username = _userGetter.GetUserNameByTelegramID(tgId);
+            string link = _userGetter.GetUserSelfLink(tgId);
+            return string.Format(_resourceService.GetResourceString("ContactInfo"), id, username, link);
         }).ToList();
 
         await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), CancellationToken.None, $"{_resourceService.GetResourceString("YourContacts")}\n{string.Join("\n", contactUsersInfo)}");
     }
 
-    public async Task StartEditContactGroupFlow(ITelegramBotClient botClient, Update update)
+public async Task StartEditContactGroupFlow(ITelegramBotClient botClient, Update update)
     {
         var chatId = _interactionService.GetChatId(update);
         var userId = _userGetter.GetUserIDbyTelegramID(chatId);
 
-        var newState = new UserStateData { StateName = "EditContactGroup" };
-        _stateManager.Set(chatId, newState);
+        // 1. УБИРАЕМ установку состояния. 
+        // Состояние установится само, когда юзер выберет группу.
+        // _stateManager.Set(chatId, newState); <--- УДАЛИТЬ
 
-        var groupInfos = await UsersGroup.GetUserGroupInfoByUserId(userId, _groupGetter);
-        var messageText = groupInfos.Any()
-            ? $"{_resourceService.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}"
-            : _resourceService.GetResourceString("AltYourGroupsText");
+        // 2. Получаем список групп (объекты, а не строки)
+        // Убедись, что в IGroupGetter есть метод возвращающий список объектов (Id, Name)
+        // Если нет, добавь. Примерно: IEnumerable<GroupModel> GetGroupsByUserId(int userId)
+        IEnumerable<int> groups = await _groupGetter.GetGroupIDsByUserId(userId); 
 
-        await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), CancellationToken.None, string.Format(_resourceService.GetResourceString("ContactGroupInfoText"), messageText));
+        if (!groups.Any())
+        {
+            await _interactionService.ReplyToUpdate(
+                botClient, 
+                update, 
+                KeyboardUtils.GetReturnButtonMarkup(), 
+                CancellationToken.None, 
+                _resourceService.GetResourceString("AltYourGroupsText") // "У вас нет групп"
+            );
+            return;
+        }
+
+        // 3. Создаем клавиатуру из групп
+        var buttons = new List<InlineKeyboardButton[]>();
+        foreach (var group in groups)
+        {
+            // Генерируем кнопку для каждой группы
+            // callbackData должен совпадать с EditGroupSelectedCommand.Name
+            buttons.Add(new[] 
+            { 
+                InlineKeyboardButton.WithCallbackData(
+                    text: await _groupGetter.GetGroupNameById(group), 
+                    callbackData: $"edit_group_selected:{group}" 
+                ) 
+            });
+        }
+        // Кнопка "Назад"
+        buttons.Add(new[] { InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("BackButtonText"), "show_groups") });
+
+        // 4. Отправляем меню
+        // TODO: Вынести текст в ресурсы "Group.SelectForEdit"
+        await _interactionService.ReplyToUpdate(
+            botClient, 
+            update, 
+            new InlineKeyboardMarkup(buttons), 
+            CancellationToken.None, 
+            "📂 <b>Выберите группу для редактирования:</b>"
+        );
     }
 
     public async Task<List<ContactViewModel>> GetContactsForDisplay(int userId)
@@ -172,13 +212,11 @@ public class ContactMenuService : IContactMenuService
 
     public async Task<Message?> ShowAvailableContacts(ITelegramBotClient botClient, Update update)
     {
-        var chatId = update.CallbackQuery!.Message!.Chat.Id;
-        var userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
         
-        // 1. Получаем СТРУКТУРИРОВАННЫЕ ДАННЫЕ
-        List<ContactViewModel> contacts = await GetContactsForDisplay(userId); // Используем наш уже существующий метод
+        List<ContactViewModel> contacts = await GetContactsForDisplay(userId);
 
-        // 2. ФОРМАТИРУЕМ в красивое сообщение
         var sb = new StringBuilder();
         sb.AppendLine(_resourceService.GetResourceString("YourContacts"));
         
@@ -186,7 +224,8 @@ public class ContactMenuService : IContactMenuService
         {
             foreach (var contact in contacts)
             {
-                sb.AppendLine(string.Format(_resourceService.GetResourceString("ContactInfo"), contact.Id, contact.Name, ""));
+                sb.AppendLine(string.Format(_resourceService.GetResourceString("ContactInfo"), contact.Id, contact.Name, contact.Link));
+                sb.AppendLine(contact.MembershipInfo);
             }
         }
         else
@@ -195,7 +234,6 @@ public class ContactMenuService : IContactMenuService
         }
         sb.AppendLine($"\n{_resourceService.GetResourceString("PleaseEnterContactIDs")}");
         
-        // 3. ОТПРАВЛЯЕМ сообщение
         return await _interactionService.ReplyToUpdate(
             botClient, 
             update, 

@@ -8,7 +8,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers;
 
-
 public class CallbackQueryHandlersFactory
 {
     private readonly IServiceProvider _provider;
@@ -18,26 +17,24 @@ public class CallbackQueryHandlersFactory
         _provider = provider;
     }
 
-    public IBotCallbackQueryHandlers GetCommand(string commandName)
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        // Fallback: resolve in a temporary scope for single call usage
-        using var scope = _provider.CreateScope();
-        var commands = scope.ServiceProvider.GetServices<IBotCallbackQueryHandlers>();
-        var command = commands.FirstOrDefault(c => c.Name == commandName);
-        if (command is null)
-        {
-            throw new Exception($"CallbackQuery command: {commandName} not found");
-        }
-        return command;
-    }
+        var data = update.CallbackQuery?.Data;
+        if (string.IsNullOrEmpty(data)) return;
 
-    public async Task ExecuteAsync(string commandName, Update update, ITelegramBotClient botClient, CancellationToken ct)
-    {
         using var scope = _provider.CreateScope();
-        var handler = scope.ServiceProvider
-            .GetServices<IBotCallbackQueryHandlers>()
-            .FirstOrDefault(c => c.Name == commandName)
-            ?? throw new Exception($"CallbackQuery command: {commandName} not found");
+        var handlers = scope.ServiceProvider.GetServices<IBotCallbackQueryHandlers>();
+
+        var handler = handlers
+            .Where(h => data.StartsWith(h.Name, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(h => h.Name.Length)
+            .FirstOrDefault();
+
+        if (handler == null)
+        {
+            throw new Exception($"CallbackQuery handler not found for data: {data}");
+        }
+
         await handler.ExecuteAsync(update, botClient, ct);
     }
 }

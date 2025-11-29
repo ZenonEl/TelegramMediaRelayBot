@@ -21,6 +21,6 @@ public class OpenInboxCommand : IBotCallbackQueryHandlers
         // Вместо создания нового экземпляра, мы просто "перенаправляем" вызов,
         // подменив данные в CallbackQuery. Фабрика сама найдет и создаст нужный InboxListCommand.
         update.CallbackQuery!.Data = "inbox:list:1";
-        await _factory.ExecuteAsync("inbox:list:", update, botClient, ct);
+        await _factory.ExecuteAsync(update, botClient, ct);
     }
 }

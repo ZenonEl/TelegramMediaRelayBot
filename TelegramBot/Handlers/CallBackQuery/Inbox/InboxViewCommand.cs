@@ -68,9 +68,21 @@ public class InboxViewCommand : IBotCallbackQueryHandlers
             if (t.Contains("audio")) { audios.Add(m.FileId); continue; }
             documents.Add(m.FileId);
         }
-        if (photoVideo.Count > 0)
+        for (int i = 0; i < photoVideo.Count; i += 10)
         {
-            await botClient.SendMediaGroup(chatId, photoVideo, disableNotification: true, cancellationToken: ct).ConfigureAwait(false);
+            var chunk = photoVideo.Skip(i).Take(10).ToList();
+            if (chunk.Any())
+            {
+                try 
+                {
+                    await botClient.SendMediaGroup(chatId, chunk, disableNotification: true, cancellationToken: ct).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    // Логируем ошибку, но не прерываем выполнение, чтобы отправить остальные типы (аудио/доки)
+                    Log.Error(ex, "Failed to send inbox media album chunk.");
+                }
+            }
         }
         foreach (var a in audios)
         {

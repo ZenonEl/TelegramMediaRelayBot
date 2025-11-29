@@ -139,9 +139,8 @@ public class PrivateUpdateHandler
         var handlersFactory = scope.ServiceProvider.GetRequiredService<CallbackQueryHandlersFactory>();
         var callbackQuery = update.CallbackQuery!;
         var data = callbackQuery.Data!;
-        var commandName = data.Contains(':') ? data[..data.IndexOf(':')] + ":" : data;
-        
-        await handlersFactory.ExecuteAsync(commandName, update, botClient, cancellationToken);
+
+        await handlersFactory.ExecuteAsync(update, botClient, cancellationToken);
     }
 
     private async Task<bool> EnsureUserHasAccessOrRegister(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
