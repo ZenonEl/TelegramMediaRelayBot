@@ -30,7 +30,7 @@ public class InboxMarkBulkCommand : IBotCallbackQueryHandlers
             await _inbox.SetStatusForOwnerAsync(userId, fromStatus, toStatus).ConfigureAwait(false);
             update.CallbackQuery!.Data = $"inbox:list:{page}:{filter}".TrimEnd(':');
             await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, _resourceService.GetResourceString("SuccessActionResult"), cancellationToken: ct).ConfigureAwait(false);
-            await new InboxListCommand(_userGetter, _inbox, new InboxListRequestValidator()).ExecuteAsync(update, botClient, ct);
+            await new InboxListCommand(_userGetter, _inbox, _resourceService, new InboxListRequestValidator()).ExecuteAsync(update, botClient, ct);
             return;
         }
         string toStatusKey = parts[2];

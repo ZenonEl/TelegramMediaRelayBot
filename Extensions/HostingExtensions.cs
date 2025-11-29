@@ -32,7 +32,6 @@ using Microsoft.Extensions.Logging;
 using TelegramMediaRelayBot.TelegramBot.States;
 using TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Services;
-using TelegramMediaRelayBot.Infrastructure.MediaProcessing;
 using TelegramMediaRelayBot.TelegramBot.Sessions;
 using TelegramMediaRelayBot.Infrastructure.Processes;
 using TelegramMediaRelayBot.Infrastructure.Downloaders.Arguments;
@@ -165,7 +164,6 @@ public static class HostingExtensions
         // ========================================================================
 
         // Services that encapsulate business logic, often used by handlers
-        services.AddScoped<IDefaultActionService, DefaultActionService>();
         services.AddScoped<IContactMenuService, ContactMenuService>();
         services.AddScoped<IGroupMenuService, GroupMenuService>();
         services.AddScoped<IUserMenuService, UserMenuService>();

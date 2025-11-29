@@ -4,7 +4,6 @@
 
 using TelegramMediaRelayBot.Domain.Models;
 using TelegramMediaRelayBot.TelegramBot.Sessions;
-using TelegramMediaRelayBot.Infrastructure.MediaProcessing;
 using Microsoft.Extensions.Options;
 using TelegramMediaRelayBot.Config;
 using Telegram.Bot.Types.Enums;
@@ -30,7 +29,6 @@ public class MediaProcessingFlow : IMediaProcessingFlow
         DownloadSessionManager sessionManager,
         MediaDownloaderService downloaderService,
         ITelegramSenderService senderService,
-        IOptionsMonitor<DownloadingConfiguration> downloadingConfig,
         IUserGetter userGetter,
         ICaptionGenerationService captionGenerator)
     {

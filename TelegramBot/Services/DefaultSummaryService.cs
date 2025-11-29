@@ -26,12 +26,13 @@ public sealed class DefaultSummaryService : IDefaultSummaryService
 	private readonly IPrivacySettingsGetter _privacyGetter;
 	private readonly IResourceService _resourceService;
 
-	public DefaultSummaryService(IUserGetter userGetter, IDefaultActionGetter defaultGetter, IGroupGetter groupGetter, IPrivacySettingsGetter privacyGetter)
+	public DefaultSummaryService(IUserGetter userGetter, IDefaultActionGetter defaultGetter, IGroupGetter groupGetter, IResourceService resourceService, IPrivacySettingsGetter privacyGetter)
 	{
 		_userGetter = userGetter;
 		_defaultGetter = defaultGetter;
 		_groupGetter = groupGetter;
 		_privacyGetter = privacyGetter;
+		_resourceService = resourceService;
 	}
 
 	public async Task<string> BuildDefaultsSummary(Update update)

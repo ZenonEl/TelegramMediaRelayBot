@@ -22,11 +22,12 @@ public class InboxListCommand : IBotCallbackQueryHandlers
     private readonly IResourceService _resourceService;
     private readonly IValidator<InboxListRequest> _listValidator;
     private const int PageSize = 10;
-    public InboxListCommand(IUserGetter userGetter, IInboxRepository inbox, IValidator<InboxListRequest> listValidator)
+    public InboxListCommand(IUserGetter userGetter, IInboxRepository inbox, IResourceService resourceService, IValidator<InboxListRequest> listValidator)
     {
         _userGetter = userGetter;
         _inbox = inbox;
         _listValidator = listValidator;
+        _resourceService = resourceService;
     }
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
