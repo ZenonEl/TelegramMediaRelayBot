@@ -9,13 +9,6 @@
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Remove="tests/**/*.cs" />
-    <None Remove="tests/**/*.cs" />
-    <EmbeddedResource Remove="tests/**/*.cs" />
-  </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="DotNetTor" Version="2.3.3" />
@@ -42,6 +35,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="downloader-config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="downloader-config.yaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Secrets\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="docs\**\*">

@@ -48,3 +48,4 @@ todo
 /cookies
 *.log
 downloader-config.yaml
+Secrets/

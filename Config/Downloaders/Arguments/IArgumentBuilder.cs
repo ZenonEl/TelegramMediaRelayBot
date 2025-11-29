@@ -39,10 +39,14 @@ public class ArgumentBuilderContext
 public interface IArgumentBuilder
 {
     /// <summary>
-    /// Строит строку аргументов на основе шаблона и контекста.
+    /// Строит список аргументов, заменяя токены значениями из контекста.
     /// </summary>
-    /// <param name="template">Шаблон из конфигурации (DownloaderDefinition.ArgumentTemplate).</param>
-    /// <param name="context">Данные для подстановки.</param>
-    /// <returns>Готовая строка аргументов.</returns>
-    List<string> Build(List<string> templateList, ArgumentBuilderContext context);
+    /// <param name="argumentTemplates">Шаблоны аргументов из конфига.</param>
+    /// <param name="context">Контекст с путями и ссылками.</param>
+    /// <param name="authConfig">Конфигурация авторизации (опционально).</param>
+    /// <returns>Готовый список аргументов для процесса.</returns>
+    List<string> Build(
+        List<string> argumentTemplates, 
+        ArgumentBuilderContext context, 
+        AuthenticationConfig? authConfig = null);
 }

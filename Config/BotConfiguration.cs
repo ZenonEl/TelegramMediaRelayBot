@@ -99,7 +99,7 @@ public class AllowRulesConfiguration
 /// </summary>
 public class DownloaderSettingsConfiguration
 {
-    public string ConfigFilePath { get; set; } = "./downloader-config.json";
+    public string ConfigFilePath { get; set; } = "./downloader-config.yaml";
     public bool AutoLearningEnabled { get; set; } = true;
     public int MaxFrequentDomains { get; set; } = 20;
     public TimeSpan CacheTimeout { get; set; } = TimeSpan.FromMinutes(30);
