@@ -33,6 +33,11 @@ using TelegramMediaRelayBot.TelegramBot.Sessions;
 using TelegramMediaRelayBot.Infrastructure.Processes;
 using TelegramMediaRelayBot.Infrastructure.Downloaders.Arguments;
 using TelegramMediaRelayBot.Infrastructure.Downloaders.Policies;
+using TelegramMediaRelayBot.Infrastructure.Pipeline.Orchestrators;
+using TelegramMediaRelayBot.Infrastructure.Downloaders.Pipeline;
+using TelegramMediaRelayBot.Services;
+using TelegramMediaRelayBot.Infrastructure.Services;
+using TelegramMediaRelayBot.Infrastructure.Pipeline.PostProcessors;
 
 namespace TelegramMediaRelayBot.Extensions;
 
@@ -116,7 +121,6 @@ public static class HostingExtensions
         // Factories for creating handlers dynamically
         services.AddSingleton<CallbackQueryHandlersFactory>();
         services.AddSingleton<StateHandlerFactory>();
-        services.AddSingleton<IMediaDownloaderFactory, MediaDownloaderFactory>();
 
         // ========================================================================
         // == STATE & SESSION MANAGEMENT
@@ -128,19 +132,29 @@ public static class HostingExtensions
         services.AddSingleton<ILastUserTextCache, LastUserTextCache>();
 
         // ========================================================================
-        // == DOWNLOADER INFRASTRUCTURE
+        // == DOWNLOADER INFRASTRUCTURE (PIPELINE V2)
         // ========================================================================
 
-        services.AddScoped<MediaDownloaderService>();
-        services.AddScoped<IMediaProcessingFlow, MediaProcessingFlow>();
-        services.AddScoped<ITelegramSenderService, TelegramSenderService>();
+        // 1. Basic Infrastructure
+        services.AddSingleton<ICredentialProvider, CredentialProvider>();
         services.AddSingleton<IProcessRunner, ProcessRunner>();
-        services.AddSingleton<IArgumentBuilder, ArgumentBuilder>();
-        //services.AddScoped<ICookieProvider, CookieProvider>(); // Scoped to manage temp files per request
 
-        // Policies for downloader logic
+        // 2. Components & Strategies
+        services.AddSingleton<IArgumentBuilder, ArgumentBuilder>();
         services.AddSingleton<IProxyPolicyManager, ProxyPolicyManager>();
         services.AddSingleton<IRetryPolicyManager, RetryPolicyManager>();
+        services.AddSingleton<IRetryOrchestrator, RetryOrchestrator>();
+
+        // 3. Post-Processors
+        services.AddSingleton<IConcurrencyLimiter, ConcurrencyLimiter>();
+        services.AddSingleton<IPostProcessor, VideoSplitterPostProcessor>();
+        services.AddSingleton<IPostProcessor, FfmpegPostProcessor>();
+
+        // 4. Factory & Consumers
+        services.AddSingleton<IMediaDownloaderFactory, MediaDownloaderFactory>();
+        
+        services.AddScoped<MediaDownloaderService>();
+        services.AddScoped<IMediaProcessingFlow, MediaProcessingFlow>();
 
         // ========================================================================
         // == APPLICATION & MENU SERVICES
@@ -172,11 +186,12 @@ public static class HostingExtensions
 
         services.AddSingleton<IBackupProviderFactory, BackupProviderFactory>();
         services.AddSingleton<IBackupOrchestrator, BackupOrchestrator>();
-        services.AddSingleton<IMediaProcessingService, FfmpegService>();
         services.AddSingleton<ILinkCategorizer, HashTableLinkCategorizer>();
         services.AddSingleton<IDomainsLoader, DomainsLoader>();
         services.AddSingleton<IConfigurationService, ConfigurationService>();
         services.AddSingleton<IDatabaseConfigurationService, DatabaseConfigurationService>();
+
+        // Resources (Localization)
         services.AddSingleton<IUiResourceService, UiResourceService>();
         services.AddSingleton<IErrorsResourceService, ErrorsResourceService>();
         services.AddSingleton<IFormattingResourceService, FormattingResourceService>();
@@ -186,12 +201,13 @@ public static class HostingExtensions
         services.AddSingleton<IStatesResourceService, StatesResourceService>();
         services.AddSingleton<IStatusResourceService, StatusResourceService>();
         services.AddSingleton<IResourceService, ResourceService>();
+
         services.AddSingleton<ITextCleanupService, TextCleanupService>();
         services.AddSingleton<ICaptionGenerationService, CaptionGenerationService>();
         services.AddScoped<IUserFilterService, DefaultUserFilterService>();
         services.AddScoped<IInboxService, InboxService>();
 
-        // Helper services for parsing/formatting (replacement for static utils)
+        // Helper services for parsing/formatting
         services.AddSingleton<IUrlParsingService, UrlParsingService>();
         services.AddSingleton<ICaptionFormatter, CaptionFormatter>();
         services.AddSingleton<IMediaTypeResolver, MediaTypeResolver>();
@@ -201,7 +217,6 @@ public static class HostingExtensions
         // == AUTOMATIC REGISTRATION (SCRUTOR)
         // ========================================================================
 
-        // Automatically finds and registers all command and state handlers
         services.Scan(scan => scan
             .FromAssemblyOf<IBotCallbackQueryHandlers>()
             .AddClasses(classes => classes.AssignableTo<IBotCallbackQueryHandlers>())

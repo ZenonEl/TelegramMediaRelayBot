@@ -18,16 +18,13 @@ public class MediaProcessingFlow : IMediaProcessingFlow
 {
     private readonly DownloadSessionManager _sessionManager;
     private readonly MediaDownloaderService _downloaderService;
-    private readonly IMediaProcessingService _mediaProcessor;
     private readonly ITelegramSenderService _senderService;
-    private readonly IOptionsMonitor<DownloadingConfiguration> _downloadingConfig;
     private readonly IUserGetter _userGetter;
     private readonly ICaptionGenerationService _captionGenerator;
 
     public MediaProcessingFlow(
         DownloadSessionManager sessionManager,
         MediaDownloaderService downloaderService,
-        IMediaProcessingService mediaProcessor,
         ITelegramSenderService senderService,
         IOptionsMonitor<DownloadingConfiguration> downloadingConfig,
         IUserGetter userGetter,
@@ -35,9 +32,7 @@ public class MediaProcessingFlow : IMediaProcessingFlow
     {
         _sessionManager = sessionManager;
         _downloaderService = downloaderService;
-        _mediaProcessor = mediaProcessor;
         _senderService = senderService;
-        _downloadingConfig = downloadingConfig;
         _userGetter = userGetter;
         _captionGenerator = captionGenerator;
     }
