@@ -1,10 +1,9 @@
 // Copyright (C) 2024-2025 ZenonEl
-// GNU AGPL v3 or later
+// Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+// See LICENSE file in the project root for full license information.
 
-using FluentMigrator.Runner;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace TelegramMediaRelayBot.Database;
 
