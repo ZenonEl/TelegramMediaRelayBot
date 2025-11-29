@@ -9,12 +9,14 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using TelegramMediaRelayBot.Config.Downloaders;
 using TelegramMediaRelayBot.Domain.Interfaces;
-using TelegramMediaRelayBot.Infrastructure.Downloaders;
 using TelegramMediaRelayBot.Infrastructure.Downloaders.Arguments;
+using TelegramMediaRelayBot.Infrastructure.Downloaders.Pipeline;
+using TelegramMediaRelayBot.Infrastructure.Downloaders.Policies;
+using TelegramMediaRelayBot.Infrastructure.Pipeline;
+using TelegramMediaRelayBot.Infrastructure.Pipeline.Executors;
 using TelegramMediaRelayBot.Infrastructure.Processes;
 
 namespace TelegramMediaRelayBot.Infrastructure.Factories;
@@ -24,31 +26,37 @@ public class MediaDownloaderFactory : IMediaDownloaderFactory
     private DownloaderConfigRoot _config;
     private readonly IProcessRunner _processRunner;
     private readonly IArgumentBuilder _argumentBuilder;
+    private readonly IRetryOrchestrator _retryOrchestrator;
+    private readonly ICredentialProvider _credentialProvider;
+    private readonly IProxyPolicyManager _proxyManager;
+    private readonly IEnumerable<IPostProcessor> _allPostProcessors;
+
     private readonly List<IMediaDownloader> _downloaders;
-    private readonly IServiceProvider _serviceProvider;
 
     public MediaDownloaderFactory(
-        // 1. Получаем всю нашу строго типизированную конфигурацию через IOptionsMonitor
         IOptionsMonitor<DownloaderConfigRoot> configMonitor,
-        // 2. Получаем наши новые сервисы из DI
         IProcessRunner processRunner,
         IArgumentBuilder argumentBuilder,
-        IServiceProvider serviceProvider)
+        IRetryOrchestrator retryOrchestrator,
+        ICredentialProvider credentialProvider,
+        IProxyPolicyManager proxyManager,
+        IEnumerable<IPostProcessor> allPostProcessors)
     {
-        // IOptionsMonitor позволяет отслеживать изменения в downloader-config.yaml "на лету"
         _config = configMonitor.CurrentValue;
+        
         _processRunner = processRunner;
         _argumentBuilder = argumentBuilder;
-        _serviceProvider = serviceProvider;
-        
-        // 3. Создаем экземпляры загрузчиков при старте
+        _retryOrchestrator = retryOrchestrator;
+        _credentialProvider = credentialProvider;
+        _proxyManager = proxyManager;
+        _allPostProcessors = allPostProcessors;
+
         _downloaders = new List<IMediaDownloader>();
         InitializeDownloaders();
 
-        // 4. (Опционально) Подписываемся на изменения конфига, чтобы пересоздавать загрузчики при Hot Reload
         configMonitor.OnChange(newConfig =>
         {
-            Log.Information("Downloader configuration changed. Reloading downloaders...");
+            Log.Information("Configuration changed. Rebuilding pipeline...");
             lock (_downloaders)
             {
                 _config = newConfig;
@@ -60,20 +68,29 @@ public class MediaDownloaderFactory : IMediaDownloaderFactory
 
     private void InitializeDownloaders()
     {
-        foreach (var downloaderDef in _config.Downloaders)
+        foreach (var def in _config.Downloaders)
         {
-            // --- НОВАЯ ЛОГИКА ЗАГРУЗКИ ПАТТЕРНОВ ---
-            LoadPatternsFromFile(downloaderDef.UrlMatching);
+            LoadPatternsFromFile(def.UrlMatching);
 
-            // Используем ActivatorUtilities для создания экземпляров с передачей зависимостей из DI
-            IMediaDownloader? downloader = downloaderDef.Name switch
+            IDownloadExecutor executor = new CliDownloadExecutor(def, _processRunner, _argumentBuilder);
+
+            var selectedProcessors = _allPostProcessors
+                .Where(p => def.PostProcessors.Contains(p.Name, StringComparer.OrdinalIgnoreCase))
+                .ToList();
+
+            var pipeline = new PipelineMediaDownloader(
+                def,
+                executor,
+                _retryOrchestrator,
+                selectedProcessors,
+                _credentialProvider,
+                _proxyManager
+            );
+
+            if (def.Enabled)
             {
-                "YtDlp" => ActivatorUtilities.CreateInstance<YtDlpDownloader>(_serviceProvider, downloaderDef),
-                "GalleryDl" => ActivatorUtilities.CreateInstance<GalleryDlDownloader>(_serviceProvider, downloaderDef),
-                _ => null
-            };
-
-            if (downloader != null) _downloaders.Add(downloader);
+                _downloaders.Add(pipeline);
+            }
         }
     }
 

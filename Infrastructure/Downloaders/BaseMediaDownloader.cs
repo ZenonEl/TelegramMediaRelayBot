@@ -28,37 +28,68 @@ public abstract class BaseMediaDownloader : IMediaDownloader
         ProcessRunner = processRunner;
         ArgumentBuilder = argumentBuilder;
 
+        _urlRegexPatterns = new List<Regex>();
+        _urlHostPatterns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var pattern in Config.UrlMatching.Patterns)
         {
-            if (IsSimpleHostPattern(pattern))
+            if (pattern.Contains("\\") || pattern.Contains("^") || pattern.Contains("$"))
             {
-                _urlHostPatterns.Add(pattern.Replace("\\.", ".").ToLower());
+                try 
+                {
+                    _urlRegexPatterns.Add(new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase));
+                }
+                catch 
+                {
+                    Log.Verbose("regexError");
+                }
             }
             else
             {
-                _urlRegexPatterns.Add(new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase));
+                _urlHostPatterns.Add(pattern);
             }
         }
     }
-    private bool IsSimpleHostPattern(string pattern) => !pattern.Any(c => ".^$*+?()[{".Contains(c));
 
-    public virtual bool CanHandle(string url)
+    private bool IsMatchingPattern(string url)
     {
-        if (Config.UrlMatching.Mode == UrlMatchingMode.Any) return true;
+        if (string.IsNullOrWhiteSpace(url)) return false;
 
-        var uri = new Uri(url);
-        
-        if (_urlHostPatterns.Contains(uri.Host.ToLower()))
+        try
         {
-            return true;
+            var uri = new Uri(url);
+
+            if (_urlHostPatterns.Contains(uri.Host))
+            {
+                return true;
+            }
+
+            if (_urlRegexPatterns.Any(regex => regex.IsMatch(url)))
+            {
+                return true;
+            }
         }
-
-        if (_urlRegexPatterns.Any(regex => regex.IsMatch(url)))
+        catch (UriFormatException)
         {
-            return true;
+            return false;
         }
 
         return false;
+    }
+
+    public virtual bool CanHandle(string url)
+    {
+        if (Config.UrlMatching.Mode == UrlMatchingMode.Any) 
+            return true;
+
+        bool isMatch = IsMatchingPattern(url);
+
+        return Config.UrlMatching.Mode switch
+        {
+            UrlMatchingMode.Whitelist => isMatch,
+            UrlMatchingMode.Blacklist => !isMatch,
+            _ => false
+        };
     }
 
     public async Task<DownloadResult> Download(string url, DownloadOptions options, CancellationToken ct)
