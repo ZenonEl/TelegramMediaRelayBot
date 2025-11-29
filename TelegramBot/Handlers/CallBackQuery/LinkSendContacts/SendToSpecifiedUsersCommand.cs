@@ -35,19 +35,27 @@ public class SendToSpecifiedUsersCommand : IBotCallbackQueryHandlers
         _sessionManager.CancelDefaultAction(messageId);
         _sessionManager.MarkAsProcessing(messageId);
 
+        var sentMessage = await _contactMenuService.ShowAvailableContacts(botClient, update);
+
+        var stateDataDict = new Dictionary<string, object>
+        {
+            { "TargetType", "Users" },
+            { "SessionMessageId", messageId } 
+        };
+
+        if (sentMessage != null)
+        {
+            stateDataDict.Add("ContactListId", sentMessage.MessageId);
+        } //TODO сделать тоже самое и для групп
+
         UserStateData newState = new UserStateData
         {
             StateName = "SelectTargets",
             Step = 0,
-            Data = new()
-            {
-                { "TargetType", "Users" },
-                { "SessionMessageId", messageId } 
-            }
+            Data = stateDataDict
         };
         _stateManager.Set(chatId, newState);
-        
-        await _contactMenuService.ShowAvailableContacts(botClient, update);
+
         await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct);
     }
 }

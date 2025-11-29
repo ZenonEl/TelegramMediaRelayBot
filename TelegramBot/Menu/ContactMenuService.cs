@@ -21,7 +21,7 @@ public interface IContactMenuService
     Task ViewContacts(ITelegramBotClient botClient, Update update);
     Task StartEditContactGroupFlow(ITelegramBotClient botClient, Update update);
     Task<List<ContactViewModel>> GetContactsForDisplay(int userId);
-    Task ShowAvailableContacts(ITelegramBotClient botClient, Update update);
+    Task<Message?> ShowAvailableContacts(ITelegramBotClient botClient, Update update);
 }
 
 public class ContactMenuService : IContactMenuService
@@ -170,7 +170,7 @@ public class ContactMenuService : IContactMenuService
         return contactViewModels;
     }
 
-    public async Task ShowAvailableContacts(ITelegramBotClient botClient, Update update)
+    public async Task<Message?> ShowAvailableContacts(ITelegramBotClient botClient, Update update)
     {
         var chatId = update.CallbackQuery!.Message!.Chat.Id;
         var userId = _userGetter.GetUserIDbyTelegramID(chatId);
@@ -196,7 +196,13 @@ public class ContactMenuService : IContactMenuService
         sb.AppendLine($"\n{_resourceService.GetResourceString("PleaseEnterContactIDs")}");
         
         // 3. ОТПРАВЛЯЕМ сообщение
-        await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetCancelKeyboardMarkup(update.CallbackQuery.Message.Id), cancellationToken: CancellationToken.None, text: sb.ToString());
+        return await _interactionService.ReplyToUpdate(
+            botClient, 
+            update, 
+            KeyboardUtils.GetCancelKeyboardMarkup(update.CallbackQuery.Message.Id), 
+            cancellationToken: CancellationToken.None, 
+            text: sb.ToString()
+        );
     }
 
     private async Task<string> BuildMembershipInfo(int ownerUserId, int contactUserId)

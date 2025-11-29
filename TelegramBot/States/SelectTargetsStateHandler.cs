@@ -6,7 +6,6 @@ using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Sessions;
 using TelegramMediaRelayBot.TelegramBot.Utils;
-using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 namespace TelegramMediaRelayBot.TelegramBot.States;
 
@@ -55,6 +54,7 @@ public class SelectTargetsStateHandler : IStateHandler
             await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetVideoDistributionKeyboardMarkup(sessionId), cancellationToken, _resourceService.GetResourceString("VideoRecipientsButtonText"));
             return StateResult.Complete();
         }
+        int contactListId = 0;
 
         switch (stateData.Step)
         {
@@ -74,9 +74,8 @@ public class SelectTargetsStateHandler : IStateHandler
                     return StateResult.Continue();
                 }
 
-                // ... (вся твоя логика парсинга и валидации inputIds остается без изменений) ...
                 List<int> validTargetIds = await ParseAndValidateIds(chatId, messageText, stateData);
-                if (validTargetIds == null) return StateResult.Continue(); // Ошибка парсинга/валидации
+                if (validTargetIds == null) return StateResult.Continue();
 
                 stateData.Data["SelectedTargetIds"] = validTargetIds;
 
@@ -98,9 +97,22 @@ public class SelectTargetsStateHandler : IStateHandler
             case 1:
                 if (update.CallbackQuery?.Data != "accept")
                 {
-                    // Если нажали не "Да", то мы считаем это отменой (логика "Назад" обработана выше)
+                    if (stateData.Data.TryGetValue("ContactListId", out var _contactListId))
+                    {
+                        contactListId = Convert.ToInt32(_contactListId); 
+                    }
+
                     int sessionId = int.Parse(update.CallbackQuery.Data.Split(':')[1]);
-                    await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetVideoDistributionKeyboardMarkup(sessionId), cancellationToken, _resourceService.GetResourceString("VideoRecipientsButtonText"));
+
+                    await _interactionService.ReplyToUpdate(
+                        botClient,
+                        update,
+                        KeyboardUtils.GetVideoDistributionKeyboardMarkup(sessionId),
+                        cancellationToken,
+                        _resourceService.GetResourceString("VideoRecipientsButtonText"),
+                        messageIdToEdit: contactListId
+                    );
+                    
                     return StateResult.Complete();
                 }
 
@@ -151,12 +163,20 @@ public class SelectTargetsStateHandler : IStateHandler
                     finalTargetTgIds = uniqueTgIds.ToList();
                 }
 
-                // Запускаем главный конвейер
-                _ = _mediaFlow.StartFlow(botClient, update, session, finalTargetTgIds);
+                if (stateData.Data.TryGetValue("ContactListId", out var __contactListId))
+                {
+                    contactListId = Convert.ToInt32(__contactListId); 
+                }
+                var statusMsg = await _interactionService.ReplyToUpdate(
+                    botClient,
+                    update,
+                    $"🚀 Starting distribution to {finalTargetTgIds.Count} selected targets...", //TODO текст в коде
+                    cancellationToken: cancellationToken,
+                    messageIdToEdit: contactListId
+                );
+                session.StatusMessageId = statusMsg.MessageId;
 
-                await botClient.EditMessageText(chatId, session.StatusMessageId,
-                    $"Starting distribution to {finalTargetTgIds.Count} selected targets...",
-                    cancellationToken: cancellationToken);
+                _ = _mediaFlow.StartFlow(botClient, update, session, finalTargetTgIds);
 
                 await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, cancellationToken: cancellationToken);
                 return StateResult.Complete();

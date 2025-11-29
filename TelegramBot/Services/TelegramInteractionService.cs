@@ -10,7 +10,16 @@ namespace TelegramMediaRelayBot.TelegramBot.Services;
 public interface ITelegramInteractionService
 {
     long GetChatId(Update update);
-    Task ReplyToUpdate(ITelegramBotClient botClient, Update update, InlineKeyboardMarkup? replyMarkup = null, CancellationToken cancellationToken = default, string text = "ㅤ");
+    
+    Task<Message?> ReplyToUpdate(
+        ITelegramBotClient botClient, 
+        Update update, 
+        InlineKeyboardMarkup? replyMarkup = null, 
+        CancellationToken cancellationToken = default, 
+        string text = "ㅤ",
+        int messageIdToEdit = 0,
+        ParseMode parseMode = ParseMode.Html
+    );
 }
 
 public class TelegramInteractionService : ITelegramInteractionService
@@ -25,49 +34,63 @@ public class TelegramInteractionService : ITelegramInteractionService
         };
     }
 
-    public Task ReplyToUpdate(ITelegramBotClient botClient, Update update, InlineKeyboardMarkup? replyMarkup = null, CancellationToken cancellationToken = default, string text = "")
+    public async Task<Message?> ReplyToUpdate(
+        ITelegramBotClient botClient, 
+        Update update, 
+        InlineKeyboardMarkup? replyMarkup = null, 
+        CancellationToken cancellationToken = default, 
+        string text = "",
+        int messageIdToEdit = 0,
+        ParseMode parseMode = ParseMode.Html)
     {
         var chatId = GetChatId(update);
-        if (chatId == 0) return Task.CompletedTask;
+        if (chatId == 0) return null;
 
-        // Если это ответ на нажатие кнопки, редактируем исходное сообщение
-        try
+        int targetMessageId = 0;
+
+        if (messageIdToEdit > 0)
         {
-            if (update.Type == UpdateType.CallbackQuery)
+            targetMessageId = messageIdToEdit;
+        }
+        else if (update.Type == UpdateType.CallbackQuery)
+        {
+            targetMessageId = update.CallbackQuery!.Message!.MessageId;
+        }
+
+        if (targetMessageId > 0)
+        {
+            try
             {
-                return botClient.EditMessageText(
+                return await botClient.EditMessageText(
                     chatId: chatId,
-                    messageId: update.CallbackQuery!.Message!.MessageId,
+                    messageId: targetMessageId,
                     text: text,
                     replyMarkup: replyMarkup,
                     cancellationToken: cancellationToken,
-                    parseMode: ParseMode.Html
+                    parseMode: parseMode
                 );
             }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("message is not modified"))
+                {
+                    return null; 
+                }
+            }
+        }
+        try
+        {
+            return await botClient.SendMessage(
+                chatId: chatId,
+                text: text,
+                replyMarkup: replyMarkup,
+                cancellationToken: cancellationToken,
+                parseMode: parseMode
+            );
         }
         catch
         {
-            return botClient.SendMessage(
-                chatId: chatId,
-                text: text,
-                replyMarkup: replyMarkup,
-                cancellationToken: cancellationToken,
-                parseMode: ParseMode.Html
-            );
+            return null;
         }
-        
-        // Если это обычное сообщение, отправляем новое
-        if (update.Type == UpdateType.Message)
-        {
-            return botClient.SendMessage(
-                chatId: chatId,
-                text: text,
-                replyMarkup: replyMarkup,
-                cancellationToken: cancellationToken,
-                parseMode: ParseMode.Html
-            );
-        }
-
-        return Task.CompletedTask;
     }
 }

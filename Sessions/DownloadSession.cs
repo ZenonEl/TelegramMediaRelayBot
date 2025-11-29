@@ -9,7 +9,7 @@ namespace TelegramMediaRelayBot.TelegramBot.Sessions;
 /// </summary>
 public class DownloadSession
 {
-    public int StatusMessageId { get; init; }
+    public int StatusMessageId { get; set; }
     public long ChatId { get; init; }
     public string Url { get; set; }
     public string Caption { get; set; }

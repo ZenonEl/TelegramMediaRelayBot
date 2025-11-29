@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using TelegramMediaRelayBot.Config;
 using TelegramMediaRelayBot.TelegramBot.Models;
 using TelegramMediaRelayBot.Database;
+using Microsoft.AspNetCore.Routing.Tree;
 
 namespace TelegramMediaRelayBot.TelegramBot.Services;
 
@@ -68,7 +69,7 @@ public class TelegramSenderService : ITelegramSenderService
         // Если цели не указаны, отправка только себе уже произошла на шаге 1, просто завершаем.
         if (targetUserIds == null || targetUserIds.Count == 0)
         {
-            await botClient.SendMessage(session.ChatId, session.Caption, cancellationToken: cancellationToken);
+            await _interactionService.ReplyToUpdate(botClient, update, text: session.Caption, cancellationToken: cancellationToken);
             return;
         }
 
@@ -102,8 +103,8 @@ public class TelegramSenderService : ITelegramSenderService
         string caption = "";
         if (session.Caption != null) caption = session.Caption.Substring(0, Math.Min(100, session.Caption.Length)) + 
                                                 (session.Caption.Length > 200 ? "..." : "");
-        await _interactionService.ReplyToUpdate(botClient, update, text: $"Distribution complete. Sent to {sentCount}/{finalRecipients.Count} users. Caption:\n{caption}");
-    }
+        await _interactionService.ReplyToUpdate(botClient, update, text: $"Distribution complete. Sent to {sentCount}/{finalRecipients.Count} users. Caption:\n{caption}", messageIdToEdit: session.StatusMessageId);
+    } //TODO текст в коде
 
     private async Task<List<TelegramMediaInfo>> UploadToTelegramStorage(ITelegramBotClient botClient, long storageChatId, List<byte[]> mediaFiles, CancellationToken cancellationToken)
     {
