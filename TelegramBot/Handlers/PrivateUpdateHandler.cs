@@ -126,17 +126,17 @@ public class PrivateUpdateHandler
             else
             {
                 _lastUserTextCache.Set(chatId, message.Text);
-                await botClient.SendMessage(chatId, _resourceService.GetResourceString("testssss"), cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, _resourceService.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken);
             }
         }
         else if (message.Text != null)
         {
             _lastUserTextCache.Set(chatId, message.Text);
-            await botClient.SendMessage(chatId, _resourceService.GetResourceString("testssss"), cancellationToken: cancellationToken);
+            await botClient.SendMessage(chatId, _resourceService.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken);
         }
         else
         {
-            await botClient.SendMessage(chatId, _resourceService.GetResourceString("testssss"), cancellationToken: cancellationToken);
+            await botClient.SendMessage(chatId, _resourceService.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken);
         }
     }
 

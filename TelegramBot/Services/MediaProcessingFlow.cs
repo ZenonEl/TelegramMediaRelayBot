@@ -72,7 +72,7 @@ public class MediaProcessingFlow : IMediaProcessingFlow
                                             replyMarkup: KeyboardUtils.GetCancelKeyboardMarkup(session.StatusMessageId),
                                             cancellationToken: session.SessionCts.Token);
 
-            var processedFiles = await _mediaProcessor.ApplySizePolicyAsync(downloadResult.MediaFiles, _downloadingConfig.CurrentValue, session.SessionCts.Token);
+            List<byte[]> processedFiles = downloadResult.MediaFiles;
 
             // --- ЭТАП 3: ОТПРАВКА ---
             await botClient.EditMessageText(session.ChatId, session.StatusMessageId, "Sending media...",

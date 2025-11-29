@@ -211,25 +211,82 @@ public class TelegramSenderService : ITelegramSenderService
         }
     }
 
-    private async Task<List<Message>> SendInChunks(ITelegramBotClient botClient, long chatId, List<IAlbumInputMedia> media, CancellationToken cancellationToken, bool protectContent = false)
+private async Task<List<Message>> SendInChunks(ITelegramBotClient botClient, long chatId, List<IAlbumInputMedia> media, CancellationToken cancellationToken, bool protectContent = false)
     {
         var allSentMessages = new List<Message>();
-        for (int i = 0; i < media.Count; i += 10)
+        const long MaxRequestSize = 49 * 1024 * 1024; // max 50 MB
+        const int MaxCount = 10;
+
+        var currentChunk = new List<IAlbumInputMedia>();
+        long currentChunkSize = 0;
+
+        foreach (var item in media)
         {
-            var chunk = media.Skip(i).Take(10).ToList();
-            if (!chunk.Any()) continue;
-            
-            // Сбрасываем caption для всех, кроме первого элемента первого чанка
-            if (i > 0)
+            long itemSize = GetMediaSize(item);
+
+            bool willExceedSize = (currentChunkSize + itemSize) > MaxRequestSize;
+            bool willExceedCount = currentChunk.Count >= MaxCount;
+
+            if ((willExceedSize || willExceedCount) && currentChunk.Any())
             {
-                if (chunk[0] is InputMediaPhoto p) p.Caption = null;
-                else if (chunk[0] is InputMediaVideo v) v.Caption = null;
+                await SendCurrentChunkAsync();
             }
-            
-            var sent = await botClient.SendMediaGroup(chatId, chunk, disableNotification: true, protectContent: protectContent, cancellationToken: cancellationToken);
-            allSentMessages.AddRange(sent);
+
+            currentChunk.Add(item);
+            currentChunkSize += itemSize;
         }
+
+        if (currentChunk.Any())
+        {
+            await SendCurrentChunkAsync();
+        }
+
         return allSentMessages;
+
+        async Task SendCurrentChunkAsync()
+        {
+            for (int i = 1; i < currentChunk.Count; i++)
+            {
+                if (currentChunk[i] is InputMediaPhoto p) p.Caption = null;
+                else if (currentChunk[i] is InputMediaVideo v) v.Caption = null;
+            }
+
+            try 
+            {
+                var sent = await botClient.SendMediaGroup(
+                    chatId, 
+                    currentChunk, 
+                    disableNotification: true, 
+                    protectContent: protectContent, 
+                    cancellationToken: cancellationToken
+                );
+                allSentMessages.AddRange(sent);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to send media chunk. Count: {Count}, TotalSize: {Size:F2} MB", 
+                    currentChunk.Count, currentChunkSize / 1024.0 / 1024.0);
+                throw;
+            }
+            finally
+            {
+                currentChunk.Clear();
+                currentChunkSize = 0;
+            }
+        }
+    }
+
+    private long GetMediaSize(IAlbumInputMedia media)
+    {
+        if (media is InputMediaVideo video && video.Media is InputFileStream vidStream)
+        {
+            return vidStream.Content.Length;
+        }
+        if (media is InputMediaPhoto photo && photo.Media is InputFileStream photoStream)
+        {
+            return photoStream.Content.Length;
+        }
+        return 0;
     }
 
     private List<string> SplitCaption(string caption)

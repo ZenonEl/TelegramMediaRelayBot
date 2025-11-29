@@ -49,3 +49,4 @@ todo
 *.log
 downloader-config.yaml
 Secrets/
+/DownloaderPatterns

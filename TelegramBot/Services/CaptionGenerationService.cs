@@ -11,8 +11,7 @@ public interface ICaptionGenerationService
 
 public class CaptionGenerationService : ICaptionGenerationService
 {
-    // Регулярное выражение для очистки имени для хештега
-    private static readonly Regex _hashtagSanitizer = new(@"[^a-zA-Z0-9_]", RegexOptions.Compiled);
+    private static readonly Regex _hashtagSanitizer = new(@"[^\p{L}0-9_]", RegexOptions.Compiled);
 
     public string Generate(DownloadSession session, string senderName)
     {
