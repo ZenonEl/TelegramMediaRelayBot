@@ -42,31 +42,58 @@ public class InboxService : IInboxService
         {
             return false;
         }
-        // TODO: Логика инбокса должна использовать FileId, а не байты 
+
         try
         {
             var senderUserId = _userGetter.GetUserIDbyTelegramID(session.ChatId);
+            var senderName = _userGetter.GetUserNameByTelegramID(session.ChatId);
 
-            // --- ТВОЯ ЛОГИКА "СЛИЯНИЯ" ---
-            var latestItem = await _inboxRepo.GetLatestItemForOwnerFromAsync(recipientUserId, senderUserId);
-            if (latestItem != null)
+            var mediaItems = savedMediaRefs.Select(m => new 
             {
-                // ... (здесь будет твоя логика парсинга JSON и проверки на sameUrl/sameCaption)
-                // Если удалось "слить", то return true;
+                Type = m.Type.ToString(),
+                FileId = m.FileId,
+                Caption = (string?)null
+            }).ToList();
+
+            var now = DateTime.UtcNow;
+            string dateCode = now.ToString("yyyy_MM_dd_HH_mm_ss");
+            string userHash = $"{dateCode}_{senderName}";
+            var hashtags = new List<string> { dateCode, userHash };
+
+            string cleanCaption = session.Caption ?? string.Empty;
+            
+            if (!string.IsNullOrEmpty(cleanCaption))
+            {
+                var lines = cleanCaption.Split('\n');
+                if (lines.Length >= 3 && 
+                    lines[0].TrimStart().StartsWith("<code>") && 
+                    lines[1].TrimStart().StartsWith("<code>") && 
+                    lines[2].TrimStart().StartsWith("#"))
+                {
+                    cleanCaption = string.Join("\n", lines.Skip(3)).Trim();
+                }
             }
 
-            // Если "слить" не удалось, создаем новый элемент
-            var payload = new { /* ... */ };
-            string payloadJson = JsonSerializer.Serialize(payload);
+            var payload = new
+            {
+                SourceChatId = session.ChatId,
+                SavedMedia = mediaItems,
+                Url = session.Url,
+                Caption = cleanCaption, 
+                Hashtag = hashtags,
+                OriginalMessageDateUtc = now.ToString("O")
+            };
+
+            string payloadJson = System.Text.Json.JsonSerializer.Serialize(payload);
+
             await _inboxRepo.AddItemAsync(recipientUserId, senderUserId, session.Caption, payloadJson, "new");
-            Log.Information("Added to Inbox for user {User}", recipientUserId);
-            
+            Log.Information("Added to Inbox for user {User}. Items count: {Count}", recipientUserId, mediaItems.Count);
             await NotifyRecipientIfNeeded(botClient, recipientUserId);
             return true;
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Failed to add Inbox item, fallback to direct send");
+            Log.Error(ex, "Failed to add Inbox item for user {User}", recipientUserId);
             return false;
         }
     }
