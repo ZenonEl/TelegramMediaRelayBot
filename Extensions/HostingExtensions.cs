@@ -164,6 +164,7 @@ public static class HostingExtensions
         // ========================================================================
 
         // Services that encapsulate business logic, often used by handlers
+        services.AddSingleton<IUserTimeService, UserTimeService>();
         services.AddScoped<IContactMenuService, ContactMenuService>();
         services.AddScoped<IGroupMenuService, GroupMenuService>();
         services.AddScoped<IUserMenuService, UserMenuService>();

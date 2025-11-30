@@ -22,7 +22,7 @@ public class Scheduler : IHostedService, IDisposable
     private CancellationTokenSource? _stoppingCts;
 
     public Scheduler(
-        IServiceScopeFactory scopeFactory, // Запрашиваем фабрику скоупов
+        IServiceScopeFactory scopeFactory,
         IOptionsMonitor<MessageDelayConfiguration> delayConfig,
         IOptionsMonitor<TorConfiguration> torConfig)
     {
@@ -115,14 +115,13 @@ public class Scheduler : IHostedService, IDisposable
         // Чтобы безопасно их использовать, нужно создавать Scope.
         using var scope = _scopeFactory.CreateScope();
         var userGetter = scope.ServiceProvider.GetRequiredService<IUserGetter>();
-        var contactUow = scope.ServiceProvider.GetRequiredService<IContactUoW>(); // Используем наш новый UoW!
+        var contactUow = scope.ServiceProvider.GetRequiredService<IContactUoW>();
 
         var expiredMutes = userGetter.GetExpiredUsersMutes();
-        foreach (var mute in expiredMutes) // Предполагаем, что GetExpiredUsersMutes возвращает объект с нужными ID
+        foreach (var mute in expiredMutes)
         {
             if (stoppingToken.IsCancellationRequested) break;
 
-            // Вызываем метод из UoW сервиса, который выполнит UPDATE в транзакции
             await contactUow.UnMuteUserByMuteId(mute);
             Log.Information("Mute record {MuteId} deactivated.", mute);
                 }

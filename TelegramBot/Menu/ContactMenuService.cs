@@ -88,52 +88,58 @@ public class ContactMenuService : IContactMenuService
     {
         long chatId = _interactionService.GetChatId(update);
         int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        List<ContactViewModel> contacts = await GetContactsForDisplay(userId); 
 
-        UserStateData newState = new UserStateData { StateName = "MuteUser", Step = 0 };
-        _stateManager.Set(chatId, newState);
-
-        List<long> tgIds = (await _contactGetter.GetAllContactUserTGIds(userId)).ToList();
-        List<string> infoList = new List<string>();
-
-        foreach (long tg in tgIds)
+        if (!contacts.Any())
         {
-            int id = _userGetter.GetUserIDbyTelegramID(tg);
-            string uname = _userGetter.GetUserNameByTelegramID(tg);
-            string membership = await BuildMembershipInfo(userId, id);
-
-            string info = string.Format(_resourceService.GetResourceString("ContactInfo"), id, uname, "") + 
-                                (string.IsNullOrEmpty(membership) ? "" : $"\n{membership}");
-            infoList.Add(info);
+            // TODO Move: "Contacts.Empty"
+            await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), CancellationToken.None, "У вас нет контактов.");
+            return;
         }
 
-        string text = $"{_resourceService.GetResourceString("MuteUserInstructions")}\n\n{_resourceService.GetResourceString("YourContacts")}\n{string.Join("\n", infoList)}";
-        await botClient.SendMessage(chatId, text, cancellationToken: CancellationToken.None);
+        var buttons = new List<InlineKeyboardButton[]>();
+        foreach (var c in contacts)
+        {
+            buttons.Add(new[] 
+            { 
+                InlineKeyboardButton.WithCallbackData($"🔇 {c.Name}", $"mute_contact_select:{c.Id}") 
+            });
+        }
+        
+        buttons.Add(new[] { KeyboardUtils.GetReturnButton("main_menu") });
+
+        // TODO Move: "Mute.Menu.Prompt"
+        await _interactionService.ReplyToUpdate(botClient, update, new InlineKeyboardMarkup(buttons), CancellationToken.None, "👇 <b>Выберите, кого заглушить:</b>");
     }
     
     public async Task StartUnmuteContactFlow(ITelegramBotClient botClient, Update update)
     {
-        long chatId = _interactionService.GetChatId(update);
-        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        var chatId = _interactionService.GetChatId(update);
+        var userId = _userGetter.GetUserIDbyTelegramID(chatId);
 
-        UserStateData newState = new UserStateData { StateName = "UnmuteUser", Step = 0 };
-        _stateManager.Set(chatId, newState);
-        
-        List<long> tgIds = (await _contactGetter.GetAllContactUserTGIds(userId)).ToList();
-        List<string> infoList = new List<string>();
+        IEnumerable<int> mutedIds = await _contactGetter.GetMutedContactIds(userId);
 
-        foreach (var tg in tgIds)
+        if (!mutedIds.Any())
         {
-            int id = _userGetter.GetUserIDbyTelegramID(tg);
-            string uname = _userGetter.GetUserNameByTelegramID(tg);
-            string membership = await BuildMembershipInfo(userId, id);
-            
-            string info = string.Format(_resourceService.GetResourceString("ContactInfo"), id, uname, "") + 
-                            (string.IsNullOrEmpty(membership) ? "" : $"\n{membership}");
-            infoList.Add(info);
+            // TODO Move: "Unmute.Empty"
+            await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), CancellationToken.None, "✅ У вас нет заглушенных контактов.");
+            return;
         }
 
-        string text = $"{_resourceService.GetResourceString("UnmuteUserInstructions")}\n\n{_resourceService.GetResourceString("YourContacts")}\n{string.Join("\n", infoList)}";
-        await botClient.SendMessage(chatId, text, cancellationToken: CancellationToken.None);
+        var buttons = new List<InlineKeyboardButton[]>();
+        foreach (int id in mutedIds)
+        {
+            string name = _userGetter.GetUserNameByID(id) ?? "Unknown";
+            buttons.Add(new[] 
+            { 
+                InlineKeyboardButton.WithCallbackData($"🔊 {name}", $"unmute_contact_select:{id}") 
+            });
+        }
+        
+        buttons.Add(new[] { KeyboardUtils.GetReturnButton("main_menu") });
+
+        // TODO Move: "Unmute.Menu.Prompt"
+        await _interactionService.ReplyToUpdate(botClient, update, new InlineKeyboardMarkup(buttons), CancellationToken.None, "👇 <b>Выберите, кого размутить:</b>");
     }
 
     public async Task ViewContacts(ITelegramBotClient botClient, Update update)
