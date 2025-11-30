@@ -9,7 +9,6 @@ using Microsoft.Extensions.Options;
 using TelegramMediaRelayBot.Config;
 using TelegramMediaRelayBot.TelegramBot.Models;
 using TelegramMediaRelayBot.Database;
-using Microsoft.AspNetCore.Routing.Tree;
 
 namespace TelegramMediaRelayBot.TelegramBot.Services;
 
@@ -92,24 +91,28 @@ public class TelegramSenderService : ITelegramSenderService
                 sentCount++;
                 continue;
             }
-            
+
             // Отправляем медиа по FileId
             await ForwardFromStorage(botClient, recipientTgId, uploadedMedia, session.Caption, senderUserId, cancellationToken);
             sentCount++;
             
             await Task.Delay(_delayConfig.CurrentValue.ContactSendDelay, cancellationToken);
         }
-        
+
         string caption = "";
-        if (session.Caption != null) caption = session.Caption.Substring(0, Math.Min(100, session.Caption.Length)) + 
-                                                (session.Caption.Length > 200 ? "..." : "");
+        string previewCaption = session.Caption ?? string.Empty;
+        
+        if (previewCaption.Length > 100)
+        {
+            previewCaption = previewCaption.Substring(0, 100) + "...";
+        }
         await _interactionService.ReplyToUpdate(botClient, update, text: $"Distribution complete. Sent to {sentCount}/{finalRecipients.Count} users. Caption:\n{caption}", messageIdToEdit: session.StatusMessageId);
     } //TODO текст в коде
 
     private async Task<List<TelegramMediaInfo>> UploadToTelegramStorage(ITelegramBotClient botClient, long storageChatId, List<byte[]> mediaFiles, CancellationToken cancellationToken)
     {
         var uploadedMedia = new List<TelegramMediaInfo>();
-        
+
         // 1. Строго группируем файлы по типам
         var groupedFiles = mediaFiles
             .Select(bytes => (Bytes: bytes, Type: _mediaTypeResolver.DetermineFileType(bytes)))

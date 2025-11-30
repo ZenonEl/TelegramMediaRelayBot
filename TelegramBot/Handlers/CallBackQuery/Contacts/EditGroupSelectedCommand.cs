@@ -67,41 +67,48 @@ public class EditGroupSelectedCommand : IBotCallbackQueryHandlers
 
         // Формируем статус для кнопки "По умолчанию"
         // TODO: Move "Group.IsDefault.On" / "Off"
-        string defaultStatusIcon = await _groupGetter.GetIsDefaultGroup(groupId) ? "✅" : "❌";
-        string defaultBtnText = $"📢 Рассылка по умолчанию: {defaultStatusIcon}";
+        string defaultBtnText = $"📢 Рассылка по умолчанию";
 
         InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup(new[]
         {
+            // Строка 1: Основные настройки
             new[] 
             {
                 // TODO: Move "Group.Action.Rename"
-                InlineKeyboardButton.WithCallbackData("✏️ Переименовать", "group_action:rename"),
-                // TODO: Move "Group.Action.ToggleDefault"
+                InlineKeyboardButton.WithCallbackData("✏️ Имя", "group_action:rename"),
+                // --- НОВАЯ КНОПКА ---
+                // TODO: Move "Group.Action.Description"
+                InlineKeyboardButton.WithCallbackData("📝 Описание", "group_action:desc")
+            },
+            // Строка 2: Настройка рассылки
+            new[]
+            {
                 InlineKeyboardButton.WithCallbackData(defaultBtnText, "group_action:toggle_default")
             },
+            // Строка 3: Управление участниками
             new[] 
             {
-                // TODO: Move "Group.AddMember"
-                InlineKeyboardButton.WithCallbackData("➕ Добавить участника", "group_action:add"),
-                // TODO: Move "Group.RemoveMember"
-                InlineKeyboardButton.WithCallbackData("➖ Удалить участника", "group_action:remove")
+                InlineKeyboardButton.WithCallbackData("➕ Участник", "group_action:add"),
+                InlineKeyboardButton.WithCallbackData("➖ Участник", "group_action:remove")
             },
+            // Строка 4: Назад
             new[] 
             { 
+                // ВАЖНО: Эта кнопка ведет на команду show_groups.
+                // Чтобы фикс сработал, ShowGroupsCommand должен сбрасывать стейт (см. Шаг 4).
                 KeyboardUtils.GetReturnButton("show_groups")
             }
         });
 
         // TODO: Move "Group.EditMenu.Title"
-        string text = $"📂 <b>Редактирование группы: {groupName}</b>\n\nЧто вы хотите сделать?";
+        string groupDescription = await _groupGetter.GetGroupDescriptionById(groupId);
+        string descriptionText = string.IsNullOrWhiteSpace(groupDescription) ? "<i>Нет описания</i>" : groupDescription;
+        // TODO: Move text template
+        string text = $"📂 <b>Группа: {groupName}</b>\n" +
+                    $"📄 Описание: {descriptionText}\n\n" +
+                    $"Что изменить?";
 
-        await _interactionService.ReplyToUpdate(
-            botClient, 
-            update, 
-            keyboard, 
-            ct, 
-            text
-        );
+        await _interactionService.ReplyToUpdate(botClient, update, keyboard, ct, text);
 
         await botClient.AnswerCallbackQuery(callback.Id, cancellationToken: ct);
     }

@@ -13,7 +13,6 @@ namespace TelegramMediaRelayBot.TelegramBot.States;
 public class EditContactGroupStateHandler : IStateHandler
 {
     private readonly IContactGroupRepository _contactGroupRepository;
-    private readonly IGroupUoW _groupUoW; // Нужен UoW или Repository для обновления группы (Rename/SetDefault)
     private readonly IUserGetter _userGetter;
     private readonly IGroupSetter _groupSetter;
     private readonly IGroupGetter _groupGetter;
@@ -67,28 +66,16 @@ public class EditContactGroupStateHandler : IStateHandler
                 if (data == "group_action:toggle_default")
                 {
                     // Получаем текущее состояние
-                    var group = await _groupGetter.GetIsDefaultGroup(groupId);
-                    if (group != null)
+                    var group = await _groupGetter.GetGroupNameById(groupId);
+                    if (group != string.Empty)
                     {
-                        bool newState = !group;
+                        bool newState = !await _groupGetter.GetIsDefaultGroup(groupId);
                         // TODO: Реализовать метод UpdateGroupDefault в репозитории
                         await _groupSetter.SetIsDefaultGroup(groupId);
-                        
-                        // Перезагружаем меню (симуляция клика по группе, чтобы обновить галочку)
-                        // Это немного хак, но эффективный: мы просто вызываем команду выбора группы снова
-                        // Но так как мы внутри стейта, лучше просто обновить сообщение вручную.
-                        
-                        // Для простоты: просто ответим юзеру и обновим текст кнопки (сложно без перерисовки).
-                        // Проще всего: отправить юзера обратно в выбор действия через EditGroupSelectedCommand logic.
-                        // Но пока просто уведомление:
                         string status = newState ? "включена" : "выключена";
                         await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, $"Рассылка по умолчанию {status}", cancellationToken: cancellationToken);
-                        
-                        // Возвращаем StateResult.Complete, чтобы сбросить стейт? Нет, мы хотим остаться в меню.
-                        // Лучше всего здесь вызвать код отрисовки меню заново (как в EditGroupSelectedCommand).
-                        // Но чтобы не дублировать код, просто скажем пользователю нажать "Назад" или обновим сообщение.
                     }
-                    return StateResult.Ignore(); // Игнорируем, чтобы остаться в меню
+                    return StateResult.Ignore();
                 }
 
                 // --- ОПРЕДЕЛЕНИЕ ДЕЙСТВИЯ ---
@@ -96,6 +83,7 @@ public class EditContactGroupStateHandler : IStateHandler
                 if (data == "group_action:add") action = "Add";
                 else if (data == "group_action:remove") action = "Remove";
                 else if (data == "group_action:rename") action = "Rename";
+                else if (data == "group_action:desc") action = "Description"; 
 
                 if (action == null) return StateResult.Ignore();
 
@@ -103,6 +91,17 @@ public class EditContactGroupStateHandler : IStateHandler
                 int userId = _userGetter.GetUserIDbyTelegramID(chatId);
                 StringBuilder sb = new StringBuilder();
                 InlineKeyboardMarkup backKb = new InlineKeyboardMarkup(InlineKeyboardButton.WithCallbackData("🔙 Назад", $"edit_group_selected:{groupId}"));
+
+                if (action == "Description")
+                {
+                    // TODO: Move "Group.Description.Prompt"
+                    string prompt = "📝 <b>Введите новое описание группы:</b>\n" +
+                                    "<i>Отправьте точку (.), чтобы удалить описание.</i>";
+                                    
+                    await _interactionService.ReplyToUpdate(botClient, update, backKb, cancellationToken, prompt);
+                    stateData.Step = 1;
+                    return StateResult.Continue();
+                }
 
                 // --- СЦЕНАРИЙ: ПЕРЕИМЕНОВАНИЕ ---
                 if (action == "Rename")
@@ -197,6 +196,20 @@ public class EditContactGroupStateHandler : IStateHandler
 
                 string userText = update.Message.Text.Trim();
                 string currentAction = (string)stateData.Data["Action"];
+
+                // --- НОВАЯ ЛОГИКА ДЛЯ СОХРАНЕНИЯ ОПИСАНИЯ ---
+                if (currentAction == "Description")
+                {
+                    string newDescription = userText == "." ? string.Empty : userText;
+                    await _groupSetter.SetGroupDescription(groupId, newDescription);
+                    // TODO: Move "Group.Description.Success"
+                    string msg = string.IsNullOrEmpty(newDescription) 
+                        ? "🗑 Описание удалено." 
+                        : "✅ Описание обновлено.";
+                        
+                    await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, msg);
+                    return StateResult.Complete();
+                }
 
                 // --- ЛОГИКА ПЕРЕИМЕНОВАНИЯ ---
                 if (currentAction == "Rename")

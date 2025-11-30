@@ -135,7 +135,7 @@ public class ContactMenuService : IContactMenuService
         await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), CancellationToken.None, $"{_resourceService.GetResourceString("YourContacts")}\n{string.Join("\n", contactUsersInfo)}");
     }
 
-public async Task StartEditContactGroupFlow(ITelegramBotClient botClient, Update update)
+    public async Task StartEditContactGroupFlow(ITelegramBotClient botClient, Update update)
     {
         var chatId = _interactionService.GetChatId(update);
         var userId = _userGetter.GetUserIDbyTelegramID(chatId);

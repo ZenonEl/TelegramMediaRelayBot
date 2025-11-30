@@ -85,7 +85,6 @@ public class ShowGroupsCommand : IBotCallbackQueryHandlers
 
     public Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        // Заменяем static вызов на вызов сервиса
         return _groupMenuService.ShowGroupsMenu(botClient, update);
     }
 }

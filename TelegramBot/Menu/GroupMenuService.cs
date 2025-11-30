@@ -47,7 +47,7 @@ public class GroupMenuService : IGroupMenuService
         var userId = _userGetter.GetUserIDbyTelegramID(chatId);
 
         // Запускаем универсальное состояние для управления группами
-        var newState = new UserStateData { StateName = "ManageGroups" }; // Имя нового универсального обработчика
+        var newState = new UserStateData { StateName = "ManageGroups", Step = 0 }; // Имя нового универсального обработчика
         _stateManager.Set(chatId, newState);
 
         var groupInfos = await UsersGroup.GetUserGroupInfoByUserId(userId, _groupGetter);

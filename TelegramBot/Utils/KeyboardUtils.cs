@@ -151,13 +151,13 @@ public static class KeyboardUtils
         return value;
     }
 
-    public static InlineKeyboardMarkup GetCancelKeyboardMarkup(int? messageId = null)
+    public static InlineKeyboardMarkup GetCancelKeyboardMarkup(int? messageId = null, string callback = "cancel_download")
     {
         var cancelText = TextOrDefault("CancelButtonText", "Отменить");
-        string suffix = messageId.HasValue ? $":{messageId.Value}" : string.Empty;
+        callback = messageId.HasValue ? $"{callback}:{messageId.Value}" : callback;
         var inlineKeyboard = new InlineKeyboardMarkup(new[]
                     {
-                        new[] { InlineKeyboardButton.WithCallbackData(cancelText, "cancel_download" + suffix) }
+                        new[] { InlineKeyboardButton.WithCallbackData(cancelText, callback) }
                     });
         return inlineKeyboard;
     }
