@@ -16,13 +16,15 @@ namespace TelegramMediaRelayBot.Database.Repositories.MySql
             return dbConnection.ExecuteAsync(query, new { userId, contactId, status });
         }
 
-        public Task<int> UpsertMutedContactAsync(int mutedByUserId, int mutedContactId, DateTime muteDate, DateTime? expirationDate)
+        public async Task<int> UpsertMutedContactAsync(int mutedByUserId, int mutedContactId, DateTime? expirationDate)
         {
-            const string query = @"
-                INSERT INTO MutedContacts (MutedByUserId, MutedContactId, MuteDate, ExpirationDate)
-                VALUES (@mutedByUserId, @mutedContactId, @muteDate, @expirationDate)
-                ON DUPLICATE KEY UPDATE MuteDate = @muteDate, ExpirationDate = @expirationDate, IsActive = 1";
-            return dbConnection.ExecuteAsync(query, new { mutedByUserId, mutedContactId, muteDate, expirationDate });
+            const string cleanupSql = "DELETE FROM MutedContacts WHERE MutedByUserId = @mutedByUserId AND MutedContactId = @mutedContactId";
+            await dbConnection.ExecuteAsync(cleanupSql, new { mutedByUserId, mutedContactId });
+            const string insertSql = @"
+                INSERT INTO MutedContacts (MutedByUserId, MutedContactId, MuteDate, ExpirationDate, IsActive)
+                VALUES (@mutedByUserId, @mutedContactId, UTC_TIMESTAMP(), @expirationDate, 1)";
+                
+            return await dbConnection.ExecuteAsync(insertSql, new { mutedByUserId, mutedContactId, expirationDate });
         }
 
         public Task<int> DeactivateMutedContactAsync(int userId, int contactId)

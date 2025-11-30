@@ -4,7 +4,6 @@
 
 using Dapper;
 using System.Data;
-using Microsoft.Data.Sqlite;
 using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.Database.Repositories.Sqlite;
@@ -125,6 +124,17 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
             return new List<int>();
         }
     }
+
+    public async Task<IEnumerable<int>> GetMutedContactIds(int userId)
+        {
+            const string query = @"
+                SELECT MutedContactId 
+                FROM MutedContacts 
+                WHERE MutedByUserId = @userId 
+                AND (ExpirationDate IS NULL OR ExpirationDate > datetime('now'))";
+
+            return (await dbConnection.QueryAsync<int>(query, new { userId })).ToList();
+        }
 
     public string GetActiveMuteTimeByContactID(int contactID)
     {

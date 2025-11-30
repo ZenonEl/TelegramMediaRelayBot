@@ -134,6 +134,17 @@ public class MySqlContactGetter(IDbConnection dbConnection, TelegramMediaRelayBo
         }
     }
 
+    public async Task<IEnumerable<int>> GetMutedContactIds(int userId)
+        {
+            const string query = @"
+                SELECT MutedContactId 
+                FROM MutedContacts 
+                WHERE MutedByUserId = @userId 
+                AND (ExpirationDate IS NULL OR ExpirationDate > UTC_TIMESTAMP())";
+
+            return (await dbConnection.QueryAsync<int>(query, new { userId })).ToList();
+        }
+
     public string GetActiveMuteTimeByContactID(int contactID)
     {
         try

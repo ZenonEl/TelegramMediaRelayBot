@@ -36,7 +36,7 @@ public class ContactUoWService : IContactUoW
     public Task MuteContactAsync(int mutedByUserId, int mutedContactId, DateTime? expirationDate)
     {
         return ExecuteInTransactionAsync(() => 
-            _repository.UpsertMutedContactAsync(mutedByUserId, mutedContactId, DateTime.UtcNow, expirationDate));
+            _repository.UpsertMutedContactAsync(mutedByUserId, mutedContactId, expirationDate));
     }
 
     public Task UnmuteContactAsync(int userId, int contactId)

@@ -182,7 +182,7 @@ public class MySqlUserGetter(IDbConnection dbConnection) : IUserGetter
         const string query = @"
             SELECT MutedId 
             FROM MutedContacts 
-            WHERE ExpirationDate <= NOW() 
+            WHERE ExpirationDate <= UTC_TIMESTAMP()
             AND IsActive = 1";
 
         try
@@ -203,7 +203,7 @@ public class MySqlUserGetter(IDbConnection dbConnection) : IUserGetter
         const string query = @"
             SELECT MutedId 
             FROM MutedContacts 
-            WHERE ExpirationDate <= NOW() 
+            WHERE ExpirationDate <= UTC_TIMESTAMP()
             AND IsActive = 1";
 
         try
