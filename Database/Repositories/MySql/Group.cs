@@ -18,7 +18,7 @@ public class MySqlGroupGetter(IDbConnection dbConnection) : IGroupGetter
             WHERE UserId = @userId";
 
 
-        return await dbConnection.QueryAsync<int>(query, new { userId });
+        return (await dbConnection.QueryAsync<int>(query, new { userId })).ToList();
     }
 
     public async Task<bool> GetGroupOwnership(int groupId, int userId)
@@ -84,8 +84,7 @@ public class MySqlGroupGetter(IDbConnection dbConnection) : IGroupGetter
             FROM GroupMembers 
             WHERE GroupId = @groupId";
 
-
-        return await dbConnection.QueryAsync<int>(query, new { groupId });
+        return (await dbConnection.QueryAsync<int>(query, new { groupId })).ToList();
     }
 
     public async Task<IEnumerable<int>> GetDefaultEnabledGroupIds(int userId)
@@ -95,8 +94,7 @@ public class MySqlGroupGetter(IDbConnection dbConnection) : IGroupGetter
             FROM UsersGroups
             WHERE UserId = @userId AND IsDefaultEnabled = 1";
 
-
-        return await dbConnection.QueryAsync<int>(query, new { userId });
+        return (await dbConnection.QueryAsync<int>(query, new { userId })).ToList();
     }
 
     public async Task<IEnumerable<int>> GetAllUsersInGroup(int groupId, int userId)
@@ -106,15 +104,14 @@ public class MySqlGroupGetter(IDbConnection dbConnection) : IGroupGetter
             FROM GroupMembers
             WHERE GroupId = @groupId AND UserId = @userId";
 
-
-        return await dbConnection.QueryAsync<int>(query, new { groupId, userId });
+        return (await dbConnection.QueryAsync<int>(query, new { groupId, userId })).ToList();
     }
 
 
     public async Task<List<int>> GetAllUsersInDefaultEnabledGroups(int userId)
     {
         IEnumerable<int> groupIds = await GetDefaultEnabledGroupIds(userId);
-        List<int> userIds = [];
+        List<int> userIds = new List<int>();
 
         foreach (int groupId in groupIds)
         {

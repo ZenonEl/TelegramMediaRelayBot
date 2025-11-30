@@ -89,26 +89,6 @@ public class ShowGroupsCommand : IBotCallbackQueryHandlers
     }
 }
 
-public class EditContactGroupCommand : IBotCallbackQueryHandlers
-{
-    private readonly IUserStateManager _stateManager;
-    private readonly IGroupMenuService _groupMenuService; // Используем сервис
-    public string Name => "edit_contact_group";
-
-    public EditContactGroupCommand(IUserStateManager stateManager, IGroupMenuService groupMenuService)
-    {
-        _stateManager = stateManager;
-        _groupMenuService = groupMenuService;
-    }
-    
-    public Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
-    {
-        // Передаем всю логику в сервис
-        //return _groupMenuService.(botClient, update); 
-        return Task.CompletedTask;
-    }
-}
-
 public class ViewContactsCommand : IBotCallbackQueryHandlers
 {
     private readonly IContactMenuService _contactMenuService;

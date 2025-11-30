@@ -64,7 +64,6 @@ public static class KeyboardUtils
                         new[]
                         {
                             InlineKeyboardButton.WithCallbackData(GetResourceString("EditContactNameButtonText"), "edit_contact_name"),
-                            InlineKeyboardButton.WithCallbackData(GetResourceString("EditContactGroupButtonText"), "edit_contact_group"),
                         },
                         new[]
                         {

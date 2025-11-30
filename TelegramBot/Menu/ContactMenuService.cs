@@ -60,62 +60,79 @@ public class ContactMenuService : IContactMenuService
 
     public async Task StartDeleteContactFlow(ITelegramBotClient botClient, Update update)
     {
-        var chatId = _interactionService.GetChatId(update);
-        var userId = _userGetter.GetUserIDbyTelegramID(chatId);
-        
-        var newState = new UserStateData { StateName = "RemoveContacts", Step = 0 };
+        long chatId = _interactionService.GetChatId(update);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+
+        UserStateData newState = new UserStateData { StateName = "RemoveContacts", Step = 0 };
         _stateManager.Set(chatId, newState);
 
-        var tgIds = await _contactGetter.GetAllContactUserTGIds(userId);
-        var infos = await Task.WhenAll(tgIds.Select(async tg =>
+        List<long> tgIds = (await _contactGetter.GetAllContactUserTGIds(userId)).ToList();
+        List<string> infoList = new List<string>();
+
+        foreach (var tg in tgIds)
         {
-            var id = _userGetter.GetUserIDbyTelegramID(tg);
-            var uname = _userGetter.GetUserNameByTelegramID(tg);
-            var membership = await BuildMembershipInfo(userId, id);
-            return string.Format(_resourceService.GetResourceString("ContactInfo"), id, uname, "") + (string.IsNullOrEmpty(membership) ? "" : $"\n{membership}");
-        }));
+            int id = _userGetter.GetUserIDbyTelegramID(tg);
+            string uname = _userGetter.GetUserNameByTelegramID(tg);
+            string membership = await BuildMembershipInfo(userId, id);
+            
+            string info = string.Format(_resourceService.GetResourceString("ContactInfo"), id, uname, "") + 
+                            (string.IsNullOrEmpty(membership) ? "" : $"\n{membership}");
+            infoList.Add(info);
+        }
         
-        var prompt = $"{_resourceService.GetResourceString("YourContacts")}\n{string.Join("\n", infos)}\n\n{_resourceService.GetResourceString("InputContactId")}";
+        string prompt = $"{_resourceService.GetResourceString("YourContacts")}\n{string.Join("\n", infoList)}\n\n{_resourceService.GetResourceString("InputContactId")}";
         await botClient.SendMessage(chatId, prompt, cancellationToken: CancellationToken.None);
     }
 
     public async Task StartMuteContactFlow(ITelegramBotClient botClient, Update update)
     {
-        var chatId = _interactionService.GetChatId(update);
-        var userId = _userGetter.GetUserIDbyTelegramID(chatId);
-        
-        var newState = new UserStateData { StateName = "MuteUser", Step = 0 };
+        long chatId = _interactionService.GetChatId(update);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+
+        UserStateData newState = new UserStateData { StateName = "MuteUser", Step = 0 };
         _stateManager.Set(chatId, newState);
 
-        var tgIds = await _contactGetter.GetAllContactUserTGIds(userId);
-        var infos = await Task.WhenAll(tgIds.Select(async tg => {
-            var id = _userGetter.GetUserIDbyTelegramID(tg);
-            var uname = _userGetter.GetUserNameByTelegramID(tg);
-            var membership = await BuildMembershipInfo(userId, id);
-            return string.Format(_resourceService.GetResourceString("ContactInfo"), id, uname, "") + (string.IsNullOrEmpty(membership) ? "" : $"\n{membership}");
-        }));
-        
-        var text = $"{_resourceService.GetResourceString("MuteUserInstructions")}\n\n{_resourceService.GetResourceString("YourContacts")}\n{string.Join("\n", infos)}";
+        List<long> tgIds = (await _contactGetter.GetAllContactUserTGIds(userId)).ToList();
+        List<string> infoList = new List<string>();
+
+        foreach (long tg in tgIds)
+        {
+            int id = _userGetter.GetUserIDbyTelegramID(tg);
+            string uname = _userGetter.GetUserNameByTelegramID(tg);
+            string membership = await BuildMembershipInfo(userId, id);
+
+            string info = string.Format(_resourceService.GetResourceString("ContactInfo"), id, uname, "") + 
+                                (string.IsNullOrEmpty(membership) ? "" : $"\n{membership}");
+            infoList.Add(info);
+        }
+
+        string text = $"{_resourceService.GetResourceString("MuteUserInstructions")}\n\n{_resourceService.GetResourceString("YourContacts")}\n{string.Join("\n", infoList)}";
         await botClient.SendMessage(chatId, text, cancellationToken: CancellationToken.None);
     }
     
     public async Task StartUnmuteContactFlow(ITelegramBotClient botClient, Update update)
     {
-        var chatId = _interactionService.GetChatId(update);
-        var userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        long chatId = _interactionService.GetChatId(update);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
 
-        var newState = new UserStateData { StateName = "UnmuteUser", Step = 0 };
+        UserStateData newState = new UserStateData { StateName = "UnmuteUser", Step = 0 };
         _stateManager.Set(chatId, newState);
         
-        var tgIds = await _contactGetter.GetAllContactUserTGIds(userId);
-        var infos = await Task.WhenAll(tgIds.Select(async tg => {
-            var id = _userGetter.GetUserIDbyTelegramID(tg);
-            var uname = _userGetter.GetUserNameByTelegramID(tg);
-            var membership = await BuildMembershipInfo(userId, id);
-            return string.Format(_resourceService.GetResourceString("ContactInfo"), id, uname, "") + (string.IsNullOrEmpty(membership) ? "" : $"\n{membership}");
-        }));
+        List<long> tgIds = (await _contactGetter.GetAllContactUserTGIds(userId)).ToList();
+        List<string> infoList = new List<string>();
 
-        var text = $"{_resourceService.GetResourceString("UnmuteUserInstructions")}\n\n{_resourceService.GetResourceString("YourContacts")}\n{string.Join("\n", infos)}";
+        foreach (var tg in tgIds)
+        {
+            int id = _userGetter.GetUserIDbyTelegramID(tg);
+            string uname = _userGetter.GetUserNameByTelegramID(tg);
+            string membership = await BuildMembershipInfo(userId, id);
+            
+            string info = string.Format(_resourceService.GetResourceString("ContactInfo"), id, uname, "") + 
+                            (string.IsNullOrEmpty(membership) ? "" : $"\n{membership}");
+            infoList.Add(info);
+        }
+
+        string text = $"{_resourceService.GetResourceString("UnmuteUserInstructions")}\n\n{_resourceService.GetResourceString("YourContacts")}\n{string.Join("\n", infoList)}";
         await botClient.SendMessage(chatId, text, cancellationToken: CancellationToken.None);
     }
 
