@@ -106,7 +106,7 @@ public class TelegramSenderService : ITelegramSenderService
         {
             previewCaption = previewCaption.Substring(0, 100) + "...";
         }
-        await _interactionService.ReplyToUpdate(botClient, update, text: $"Distribution complete. Sent to {sentCount}/{finalRecipients.Count} users. Caption:\n{caption}", messageIdToEdit: session.StatusMessageId);
+        await _interactionService.ReplyToUpdate(botClient, update, text: $"Distribution complete. Sent to {sentCount}/{finalRecipients.Count} users. Caption:\n{previewCaption}", messageIdToEdit: session.StatusMessageId);
     } //TODO текст в коде
 
     private async Task<List<TelegramMediaInfo>> UploadToTelegramStorage(ITelegramBotClient botClient, long storageChatId, List<byte[]> mediaFiles, CancellationToken cancellationToken)
