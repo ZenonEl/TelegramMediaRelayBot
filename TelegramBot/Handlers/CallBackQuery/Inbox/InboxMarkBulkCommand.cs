@@ -19,7 +19,7 @@ public class InboxMarkBulkCommand : IBotCallbackQueryHandlers
                                 IUserGetter userGetter,
                                 IResourceService resourceService,
                                 IUiResourceService uiResources,
-                                IInboxResourceService inboxResources) 
+                                IInboxResourceService inboxResources)
     {
         _inbox = inbox;
         _userGetter = userGetter;

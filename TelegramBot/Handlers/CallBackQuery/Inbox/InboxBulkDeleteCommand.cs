@@ -15,7 +15,7 @@ public class InboxBulkDeleteCommand : IBotCallbackQueryHandlers
     private readonly IUserGetter _userGetter;
     private readonly IResourceService _resourceService;
     public string Name => "inbox:bulkdel:";
-    public InboxBulkDeleteCommand(IInboxRepository inbox, 
+    public InboxBulkDeleteCommand(IInboxRepository inbox,
                                 IUserGetter userGetter,
                                 IResourceService resourceService,
                                 IUiResourceService uiResources,

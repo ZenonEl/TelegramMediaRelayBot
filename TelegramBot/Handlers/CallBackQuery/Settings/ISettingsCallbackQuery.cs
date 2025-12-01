@@ -12,19 +12,11 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
 public class ShowSettingsCommand : IBotCallbackQueryHandlers
 {
-    private readonly IUiResourceService _uiResources;
-    private readonly ISettingsResourceService _settingsResources;
-    private readonly IStatesResourceService _statesResources;
-    private readonly IErrorsResourceService _errorsResources;
     private readonly IUserMenuService _menuService;
     public string Name => "show_settings";
 
-    public ShowSettingsCommand(IUserMenuService menuService, IErrorsResourceService errorsResources, IStatesResourceService statesResources, ISettingsResourceService settingsResources, IUiResourceService uiResources)
+    public ShowSettingsCommand(IUserMenuService menuService)
     {
-        _uiResources = uiResources;
-        _settingsResources = settingsResources;
-        _statesResources = statesResources;
-        _errorsResources = errorsResources;
         _menuService = menuService;
     }
 

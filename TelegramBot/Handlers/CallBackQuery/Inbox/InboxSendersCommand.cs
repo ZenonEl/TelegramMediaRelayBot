@@ -12,10 +12,12 @@ public class InboxSendersCommand : IBotCallbackQueryHandlers
     private readonly IUserGetter _userGetter;
     private readonly IInboxRepository _inbox;
     public string Name => "inbox:senders:";
-    public InboxSendersCommand(IUserGetter userGetter, IInboxRepository inbox, IUiResourceService uiResources) 
-    { _userGetter = userGetter;
-    _inbox = inbox;
-    _uiResources = uiResources;}
+    public InboxSendersCommand(IUserGetter userGetter, IInboxRepository inbox, IUiResourceService uiResources)
+    {
+        _userGetter = userGetter;
+        _inbox = inbox;
+        _uiResources = uiResources;
+    }
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;

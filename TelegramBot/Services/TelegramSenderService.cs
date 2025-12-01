@@ -99,7 +99,6 @@ public class TelegramSenderService : ITelegramSenderService
             await Task.Delay(_delayConfig.CurrentValue.ContactSendDelay, cancellationToken);
         }
 
-        string caption = "";
         string previewCaption = session.Caption ?? string.Empty;
 
         if (previewCaption.Length > 100)

@@ -11,7 +11,7 @@ public class InboxSenderBulkApplyCommand : IBotCallbackQueryHandlers
     private readonly IUserGetter _userGetter;
     private readonly IInboxRepository _inbox;
     public string Name => "inbox:sender:";
-    public InboxSenderBulkApplyCommand(IUserGetter userGetter, IInboxRepository inbox, IUiResourceService uiResources) 
+    public InboxSenderBulkApplyCommand(IUserGetter userGetter, IInboxRepository inbox, IUiResourceService uiResources)
     {
         _userGetter = userGetter;
         _inbox = inbox;
