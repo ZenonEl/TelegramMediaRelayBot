@@ -7,7 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using TelegramMediaRelayBot.Config;
 
-using TelegramMediaRelayBot.Database.Interfaces; // Убедись, что using для IContactUoW/IUserUoW здесь есть
+using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.TelegramBot;
 
