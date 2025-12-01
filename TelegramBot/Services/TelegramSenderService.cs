@@ -58,6 +58,7 @@ public class TelegramSenderService : ITelegramSenderService
     public async Task SendMedia(ITelegramBotClient botClient, Update update, DownloadSession session, List<byte[]> mediaFiles, List<long>? targetUserIds, CancellationToken cancellationToken)
     {
         // 1. ЕДИНОКРАТНАЯ ЗАГРУЗКА: Отправляем байты в чат с ботом, чтобы получить FileId
+        mediaFiles.Reverse(); 
         List<TelegramMediaInfo> uploadedMedia = await UploadToTelegramStorage(botClient, session.ChatId, mediaFiles, cancellationToken);
         if (!uploadedMedia.Any())
         {
