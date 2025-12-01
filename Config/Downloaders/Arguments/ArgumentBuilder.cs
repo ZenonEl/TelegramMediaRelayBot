@@ -69,8 +69,8 @@ public class ArgumentBuilder : IArgumentBuilder
                     string lastArg = finalArgs[finalArgs.Count - 1];
                     if (lastArg == "--proxy" || lastArg == "--cookies" || lastArg == "--username" || lastArg == "--password")
                     {
-                            finalArgs.RemoveAt(finalArgs.Count - 1);
-                            Log.Debug("Also dropping orphaned flag '{Flag}'", lastArg);
+                        finalArgs.RemoveAt(finalArgs.Count - 1);
+                        Log.Debug("Also dropping orphaned flag '{Flag}'", lastArg);
                     }
                 }
             }

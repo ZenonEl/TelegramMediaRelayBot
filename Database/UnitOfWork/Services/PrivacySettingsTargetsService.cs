@@ -22,14 +22,14 @@ public class PrivacySettingsTargetsUoWService : IPrivacySettingsTargetsUoW
     // 3. Реализуем методы интерфейса, вызывая IRepository
     public async Task<bool> SetPrivacyRuleTarget(int userId, int privacySettingId, string targetType, string targetValue)
     {
-        var affected = await ExecuteInTransaction(() =>
+        int affected = await ExecuteInTransaction(() =>
             _repository.UpsertTarget(userId, privacySettingId, targetType, targetValue));
         return affected > 0;
     }
 
     public async Task<bool> SetToRemovePrivacyRuleTarget(int privacySettingId, string targetValue)
     {
-        var affected = await ExecuteInTransaction(() =>
+        int affected = await ExecuteInTransaction(() =>
             _repository.RemoveTarget(privacySettingId, targetValue));
         return affected > 0;
     }
@@ -40,7 +40,7 @@ public class PrivacySettingsTargetsUoWService : IPrivacySettingsTargetsUoW
         try
         {
             _uow.Begin();
-            var result = await action();
+            T? result = await action();
             _uow.Commit();
             return result;
         }

@@ -3,9 +3,6 @@
 // See LICENSE file in the project root for full license information.
 
 using System.Text.RegularExpressions;
-using Telegram.Bot.Types;
-
-using TelegramMediaRelayBot.TelegramBot.Utils; // Для IAlbumInputMedia и т.д.
 
 namespace TelegramMediaRelayBot.TelegramBot.Services;
 
@@ -27,7 +24,7 @@ public class MediaTypeResolver : IMediaTypeResolver
 
         string start = BitConverter.ToString(bytes.Take(12).ToArray()).Replace("-", "");
 
-        var patterns = new Dictionary<TelegramFileType, string>
+        Dictionary<TelegramFileType, string> patterns = new Dictionary<TelegramFileType, string>
         {
             // Video: MP4/ISO BMFF (ftyp), WebM(Matroska EBML 1A45DFA3), AVI(RIFF 52494646 + 415649), MKV(1A45DFA3)
             { TelegramFileType.Video, @"^(000000..66747970|1A45DFA3|52494646.{8}415649|57415645)" },
@@ -37,7 +34,7 @@ public class MediaTypeResolver : IMediaTypeResolver
             { TelegramFileType.Audio, @"^(494433|4F676753|664C6143|52494646.{8}57415645)" }
         };
 
-        foreach (var pattern in patterns)
+        foreach (KeyValuePair<TelegramFileType, string> pattern in patterns)
         {
             Log.Verbose($"File bytes start: {start}");
             if (Regex.IsMatch(start, pattern.Value, RegexOptions.IgnoreCase))

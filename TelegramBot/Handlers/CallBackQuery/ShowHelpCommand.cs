@@ -19,7 +19,7 @@ public class ShowHelpCommand : IBotCallbackQueryHandlers
 
     public Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        var helpText = _resourceService.GetResourceString("HelpText");
+        string helpText = _resourceService.GetResourceString("HelpText");
         return botClient.EditMessageText(
             chatId: update.CallbackQuery!.Message!.Chat.Id,
             messageId: update.CallbackQuery!.Message!.MessageId,

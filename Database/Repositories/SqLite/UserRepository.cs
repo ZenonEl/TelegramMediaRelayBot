@@ -108,7 +108,7 @@ public class SqliteUserGetter(IDbConnection dbConnection) : IUserGetter
             WHERE MutedContactId = @ContactId AND IsActive = 1";
 
 
-        var mutedByUserIds = dbConnection.Query<int>(query, new { ContactId = contactId }).ToList();
+        List<int> mutedByUserIds = dbConnection.Query<int>(query, new { ContactId = contactId }).ToList();
 
         return mutedByUserIds.Select(GetTelegramIDbyUserID).ToList();
     }
@@ -121,9 +121,9 @@ public class SqliteUserGetter(IDbConnection dbConnection) : IUserGetter
             WHERE MutedContactId = @ContactId AND IsActive = 1";
 
 
-        var mutedByUserIds = (await dbConnection.QueryAsync<int>(query, new { ContactId = contactId })).ToList();
-        var telegramIds = new List<long>(mutedByUserIds.Count);
-        foreach (var uid in mutedByUserIds)
+        List<int> mutedByUserIds = (await dbConnection.QueryAsync<int>(query, new { ContactId = contactId })).ToList();
+        List<long> telegramIds = new List<long>(mutedByUserIds.Count);
+        foreach (int uid in mutedByUserIds)
         {
             telegramIds.Add(GetTelegramIDbyUserID(uid));
         }
@@ -136,7 +136,7 @@ public class SqliteUserGetter(IDbConnection dbConnection) : IUserGetter
         try
         {
 
-            var result = dbConnection.QueryFirstOrDefault<long?>(query, new { link });
+            long? result = dbConnection.QueryFirstOrDefault<long?>(query, new { link });
             return result ?? -1;
         }
         catch (Exception ex)
@@ -152,7 +152,7 @@ public class SqliteUserGetter(IDbConnection dbConnection) : IUserGetter
         try
         {
 
-            var result = await dbConnection.QueryFirstOrDefaultAsync<long?>(query, new { link });
+            long? result = await dbConnection.QueryFirstOrDefaultAsync<long?>(query, new { link });
             return result ?? -1;
         }
         catch (Exception ex)
@@ -167,7 +167,7 @@ public class SqliteUserGetter(IDbConnection dbConnection) : IUserGetter
         const string query = "SELECT Link FROM Users WHERE TelegramID = @telegramID";
         try
         {
-            var result = dbConnection.QueryFirstOrDefault<string>(query, new { telegramID });
+            string? result = dbConnection.QueryFirstOrDefault<string>(query, new { telegramID });
             return result ?? string.Empty;
         }
         catch (Exception ex)
@@ -198,7 +198,7 @@ public class SqliteUserGetter(IDbConnection dbConnection) : IUserGetter
         try
         {
 
-            var expiredMuteIds = dbConnection.Query<int>(query).ToList();
+            List<int> expiredMuteIds = dbConnection.Query<int>(query).ToList();
             return expiredMuteIds;
         }
         catch (Exception ex)
@@ -219,7 +219,7 @@ public class SqliteUserGetter(IDbConnection dbConnection) : IUserGetter
         try
         {
 
-            var expiredMuteIds = (await dbConnection.QueryAsync<int>(query)).ToList();
+            List<int> expiredMuteIds = (await dbConnection.QueryAsync<int>(query)).ToList();
             return expiredMuteIds;
         }
         catch (Exception ex)

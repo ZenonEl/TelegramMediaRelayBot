@@ -33,7 +33,7 @@ public class MySqlPrivacySettingsTargetsGetter(IDbConnection dbConnection) : IPr
             )";
 
 
-        var result = await dbConnection.ExecuteScalarAsync<bool>(query, new { userId, type });
+        bool result = await dbConnection.ExecuteScalarAsync<bool>(query, new { userId, type });
         return result;
     }
 

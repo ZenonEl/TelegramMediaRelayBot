@@ -21,7 +21,7 @@ public class ProcessRunner : IProcessRunner
 
     public async Task<CommandResult> RunAsync(ProcessRunOptions options, CancellationToken ct)
     {
-        var startInfo = new ProcessStartInfo
+        ProcessStartInfo startInfo = new ProcessStartInfo
         {
             FileName = options.FileName,
             RedirectStandardOutput = true,
@@ -30,21 +30,21 @@ public class ProcessRunner : IProcessRunner
             CreateNoWindow = true
         };
 
-        foreach (var arg in options.Arguments)
+        foreach (string arg in options.Arguments)
         {
             startInfo.ArgumentList.Add(arg);
         }
 
-        using var process = new Process { StartInfo = startInfo };
-        var stopwatch = Stopwatch.StartNew();
+        using Process process = new Process { StartInfo = startInfo };
+        Stopwatch stopwatch = Stopwatch.StartNew();
 
-        var outputLines = new List<string>();
-        var errorLines = new List<string>();
+        List<string> outputLines = new List<string>();
+        List<string> errorLines = new List<string>();
 
         process.Start();
 
-        var readOutputTask = ReadStreamAsync(process.StandardOutput, outputLines, options.OnOutputLine, ct);
-        var readErrorTask = ReadStreamAsync(process.StandardError, errorLines, options.OnOutputLine, ct);
+        Task readOutputTask = ReadStreamAsync(process.StandardOutput, outputLines, options.OnOutputLine, ct);
+        Task readErrorTask = ReadStreamAsync(process.StandardError, errorLines, options.OnOutputLine, ct);
 
         bool exited;
         try
@@ -85,7 +85,7 @@ public class ProcessRunner : IProcessRunner
 
     private async Task ReadStreamAsync(StreamReader reader, List<string> lines, Action<string>? onOutput, CancellationToken ct)
     {
-        var enableProgressOutput = onOutput != null && _config.GlobalSettings.DownloadProgressLogLevel == ProgressLogLevel.Verbose;
+        bool enableProgressOutput = onOutput != null && _config.GlobalSettings.DownloadProgressLogLevel == ProgressLogLevel.Verbose;
 
         try
         {

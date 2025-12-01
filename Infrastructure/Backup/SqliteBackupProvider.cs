@@ -23,13 +23,13 @@ public sealed class SqliteBackupProvider : IBackupProvider
 
     private string GetDbFilePath()
     {
-        var cs = _configuration["AppSettings:SqlConnectionString"] ?? string.Empty;
+        string cs = _configuration["AppSettings:SqlConnectionString"] ?? string.Empty;
         // Expect formats like: Data Source=/path/to/db.sqlite
-        var prefix = "Data Source=";
-        var start = cs.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
+        string prefix = "Data Source=";
+        int start = cs.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
         if (start >= 0)
         {
-            var path = cs[(start + prefix.Length)..].Trim();
+            string path = cs[(start + prefix.Length)..].Trim();
             return path;
         }
         // fallback to default in AppContext.BaseDirectory
@@ -39,16 +39,16 @@ public sealed class SqliteBackupProvider : IBackupProvider
     public async Task<BackupDescriptor> CreateAsync(CancellationToken ct)
     {
         Directory.CreateDirectory(_settings.Storage.Path);
-        var dbPath = GetDbFilePath();
-        var ts = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
-        var destFile = System.IO.Path.Combine(_settings.Storage.Path, $"{ts}_sqlite.db");
+        string dbPath = GetDbFilePath();
+        string ts = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+        string destFile = System.IO.Path.Combine(_settings.Storage.Path, $"{ts}_sqlite.db");
 
         // Prefer VACUUM INTO for consistent snapshot
         if (_settings.Sqlite.UseVacuumInto)
         {
-            await using var conn = new SqliteConnection(_configuration["AppSettings:SqlConnectionString"]);
+            await using SqliteConnection conn = new SqliteConnection(_configuration["AppSettings:SqlConnectionString"]);
             await conn.OpenAsync(ct);
-            var cmd = conn.CreateCommand();
+            SqliteCommand cmd = conn.CreateCommand();
             cmd.CommandText = $"VACUUM INTO '{destFile.Replace("'", "''")}'";
             await cmd.ExecuteNonQueryAsync(ct);
         }
@@ -61,18 +61,18 @@ public sealed class SqliteBackupProvider : IBackupProvider
         string finalPath = destFile;
         if (_settings.Storage.UseGzip)
         {
-            var gz = destFile + ".gz";
-            await using var input = System.IO.File.OpenRead(destFile);
-            await using var output = System.IO.File.Create(gz);
-            await using var gzip = new System.IO.Compression.GZipStream(output, System.IO.Compression.CompressionLevel.Optimal, leaveOpen: false);
+            string gz = destFile + ".gz";
+            await using FileStream input = System.IO.File.OpenRead(destFile);
+            await using FileStream output = System.IO.File.Create(gz);
+            await using System.IO.Compression.GZipStream gzip = new System.IO.Compression.GZipStream(output, System.IO.Compression.CompressionLevel.Optimal, leaveOpen: false);
             await input.CopyToAsync(gzip, ct);
             System.IO.File.Delete(destFile);
             finalPath = gz;
         }
 
         string? checksum = await ComputeSha256Async(finalPath, ct);
-        var info = new System.IO.FileInfo(finalPath);
-        var descriptor = new BackupDescriptor(
+        FileInfo info = new System.IO.FileInfo(finalPath);
+        BackupDescriptor descriptor = new BackupDescriptor(
             BackupId: System.IO.Path.GetFileNameWithoutExtension(finalPath),
             FilePath: finalPath,
             SizeBytes: info.Length,
@@ -89,19 +89,19 @@ public sealed class SqliteBackupProvider : IBackupProvider
         // Decompress if .gz
         if (input.EndsWith(".gz", StringComparison.OrdinalIgnoreCase))
         {
-            var temp = System.IO.Path.GetTempFileName();
-            await using var src = System.IO.File.OpenRead(input);
-            await using var gz = new System.IO.Compression.GZipStream(src, System.IO.Compression.CompressionMode.Decompress);
-            await using var dst = System.IO.File.OpenWrite(temp);
+            string temp = System.IO.Path.GetTempFileName();
+            await using FileStream src = System.IO.File.OpenRead(input);
+            await using System.IO.Compression.GZipStream gz = new System.IO.Compression.GZipStream(src, System.IO.Compression.CompressionMode.Decompress);
+            await using FileStream dst = System.IO.File.OpenWrite(temp);
             await gz.CopyToAsync(dst, ct);
             input = temp;
         }
 
-        var targetDb = GetDbFilePath();
-        var backupCopy = targetDb + ".restore";
+        string targetDb = GetDbFilePath();
+        string backupCopy = targetDb + ".restore";
         System.IO.File.Copy(input, backupCopy, overwrite: true);
         // Atomic-ish swap: move current to .old, then move restore into place
-        var old = targetDb + ".old";
+        string old = targetDb + ".old";
         if (System.IO.File.Exists(old)) System.IO.File.Delete(old);
         if (System.IO.File.Exists(targetDb)) System.IO.File.Move(targetDb, old);
         System.IO.File.Move(backupCopy, targetDb);
@@ -111,7 +111,7 @@ public sealed class SqliteBackupProvider : IBackupProvider
     public Task<IReadOnlyList<BackupDescriptor>> ListAsync(CancellationToken ct)
     {
         Directory.CreateDirectory(_settings.Storage.Path);
-        var files = System.IO.Directory.EnumerateFiles(_settings.Storage.Path)
+        List<BackupDescriptor> files = System.IO.Directory.EnumerateFiles(_settings.Storage.Path)
             .Where(f => f.EndsWith(".db") || f.EndsWith(".db.gz"))
             .Select(f => new BackupDescriptor(
                 System.IO.Path.GetFileNameWithoutExtension(f),
@@ -143,8 +143,8 @@ public sealed class SqliteBackupProvider : IBackupProvider
 
     private static async Task<string> ComputeSha256Async(string file, CancellationToken ct)
     {
-        await using var stream = System.IO.File.OpenRead(file);
-        using var sha = SHA256.Create();
+        await using FileStream stream = System.IO.File.OpenRead(file);
+        using SHA256 sha = SHA256.Create();
         byte[] hash = await sha.ComputeHashAsync(stream, ct);
         return Convert.ToHexString(hash);
     }

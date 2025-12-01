@@ -60,7 +60,7 @@ public class TelegramLogUpdater : IAsyncDisposable
                 // 2. Обрезаем до того, как обернуть в ```, чтобы избежать проблем с форматированием
                 if (newContent.Length > 4000) newContent = "...\n" + newContent[^4000..];
 
-                var textToSend = $"```{newContent}```";
+                string textToSend = $"```{newContent}```";
 
                 if (textToSend == _lastSentText) continue;
 

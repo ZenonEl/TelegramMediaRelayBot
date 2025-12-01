@@ -1,0 +1,103 @@
+# Top-level declaration indicates this is the root configuration file
+root = true
+
+# ==============================================================================
+# C# FILES
+# ==============================================================================
+[*.cs]
+
+# ------------------------------------------------------------------------------
+# 1. CORE FORMATTING (Отступы и кодировка)
+# ------------------------------------------------------------------------------
+indent_style = space
+indent_size = 4
+tab_width = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# ------------------------------------------------------------------------------
+# 2. VAR vs EXPLICIT TYPES (Твое требование: никаких var)
+# ------------------------------------------------------------------------------
+# false:warning означает "Использовать var? НЕТ. Если есть - кидай Warning"
+# dotnet format автоматически заменит var на тип.
+
+# Для встроенных типов (int, string)
+csharp_style_var_for_built_in_types = false:warning
+
+# Когда тип очевиден (new MyClass())
+csharp_style_var_when_type_is_apparent = false:warning
+
+# Во всех остальных случаях
+csharp_style_var_elsewhere = false:warning
+
+# ------------------------------------------------------------------------------
+# 3. USINGS (Импорты)
+# ------------------------------------------------------------------------------
+# Сортировать System.* наверх
+dotnet_sort_system_directives_first = true
+# Разделять группы импортов пустой строкой (false = компактнее)
+dotnet_separate_import_directive_groups = false
+
+# Правило IDE0005: Удалять неиспользуемые using
+# severity = warning заставляет dotnet format удалять их
+dotnet_diagnostic.IDE0005.severity = warning
+
+# ------------------------------------------------------------------------------
+# 4. CODE STYLE (Современный C#)
+# ------------------------------------------------------------------------------
+# Использовать File-Scoped Namespaces (namespace X;) вместо блочных ({})
+csharp_style_namespace_declarations = file_scoped:warning
+
+# Использовать pattern matching (is not null вместо != null)
+csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
+csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
+
+# Использовать укороченный new() там где тип уже известен слева
+# MyClass c = new();
+csharp_style_implicit_object_creation_when_type_is_apparent = true:suggestion
+
+# ------------------------------------------------------------------------------
+# 5. NEWLINE & BRACES (Правила скобок)
+# ------------------------------------------------------------------------------
+# Открывающая скобка { всегда на новой строке (стандарт C#)
+csharp_new_line_before_open_brace = all
+# else, catch, finally на новой строке
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+
+# ------------------------------------------------------------------------------
+# 6. CLASS MEMBERS
+# ------------------------------------------------------------------------------
+# Поля должны быть приватными по умолчанию (если не указано иное)
+dotnet_style_readonly_field = true:suggestion
+
+# Использовать 'this.' только если необходимо (для чистоты)
+dotnet_style_qualification_for_field = false:suggestion
+dotnet_style_qualification_for_property = false:suggestion
+dotnet_style_qualification_for_method = false:suggestion
+dotnet_style_qualification_for_event = false:suggestion
+
+# ------------------------------------------------------------------------------
+# 7. NAMING CONVENTIONS (Опционально, но полезно)
+# ------------------------------------------------------------------------------
+# Интерфейсы должны начинаться с 'I'
+dotnet_naming_rule.interface_should_be_begins_with_i.severity = suggestion
+dotnet_naming_rule.interface_should_be_begins_with_i.symbols = interface
+dotnet_naming_rule.interface_should_be_begins_with_i.style = i_prefix
+
+dotnet_naming_symbols.interface.applicable_kinds = interface
+dotnet_naming_style.i_prefix.capitalization = pascal_case
+dotnet_naming_style.i_prefix.required_prefix = I
+
+# Асинхронные методы должны заканчиваться на 'Async'
+dotnet_naming_rule.async_methods_end_in_async.severity = suggestion
+dotnet_naming_rule.async_methods_end_in_async.symbols = async_methods
+dotnet_naming_rule.async_methods_end_in_async.style = async_suffix
+
+dotnet_naming_symbols.async_methods.applicable_kinds = method
+dotnet_naming_symbols.async_methods.applicable_accessibilities = *
+dotnet_naming_style.async_suffix.capitalization = pascal_case
+dotnet_naming_style.async_suffix.required_suffix = Async

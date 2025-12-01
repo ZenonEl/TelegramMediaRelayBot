@@ -78,14 +78,14 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
 
             SqliteUserGetter userGetter = new(dbConnection);
 
-            var results = await dbConnection.QueryAsync<(long UserId, long ContactId)>(
+            IEnumerable<(long UserId, long ContactId)> results = await dbConnection.QueryAsync<(long UserId, long ContactId)>(
                 @"SELECT UserId, ContactId
                 FROM Contacts
                 WHERE (ContactId = @UserId OR UserId = @UserId)
                 AND status = @Status",
                 new { UserId = userId, Status = ContactsStatus.ACCEPTED });
 
-            var contactUserIds = results
+            List<long> contactUserIds = results
                 .SelectMany(row => new[] { row.UserId, row.ContactId })
                 .Where(id => id != userId)
                 .Distinct()
@@ -106,7 +106,7 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
     {
         try
         {
-            var results = await dbConnection.QueryAsync<long>(
+            IEnumerable<long> results = await dbConnection.QueryAsync<long>(
                 @"SELECT DISTINCT CASE
                     WHEN UserId = @UserId THEN ContactId
                     ELSE UserId
@@ -126,15 +126,15 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
     }
 
     public async Task<IEnumerable<int>> GetMutedContactIds(int userId)
-        {
-            const string query = @"
+    {
+        const string query = @"
                 SELECT MutedContactId
                 FROM MutedContacts
                 WHERE MutedByUserId = @userId
                 AND (ExpirationDate IS NULL OR ExpirationDate > datetime('now'))";
 
-            return (await dbConnection.QueryAsync<int>(query, new { userId })).ToList();
-        }
+        return (await dbConnection.QueryAsync<int>(query, new { userId })).ToList();
+    }
 
     public string GetActiveMuteTimeByContactID(int contactID)
     {
@@ -142,7 +142,7 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
         {
 
 
-            var expirationDate = dbConnection.QueryFirstOrDefault<DateTime?>(
+            DateTime? expirationDate = dbConnection.QueryFirstOrDefault<DateTime?>(
                 @"SELECT ExpirationDate
                 FROM MutedContacts
                 WHERE MutedContactId = @contactID
@@ -164,7 +164,7 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
         try
         {
 
-            var expirationDate = await dbConnection.QueryFirstOrDefaultAsync<DateTime?>(
+            DateTime? expirationDate = await dbConnection.QueryFirstOrDefaultAsync<DateTime?>(
                 @"SELECT ExpirationDate
                 FROM MutedContacts
                 WHERE MutedContactId = @contactID
@@ -187,7 +187,7 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
         try
         {
 
-            var result = dbConnection.QueryFirstOrDefault<int?>(query, new { link });
+            int? result = dbConnection.QueryFirstOrDefault<int?>(query, new { link });
             return result ?? -1;
         }
         catch (Exception ex)
@@ -203,7 +203,7 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
         try
         {
 
-            var result = await dbConnection.QueryFirstOrDefaultAsync<int?>(query, new { link });
+            int? result = await dbConnection.QueryFirstOrDefaultAsync<int?>(query, new { link });
             return result ?? -1;
         }
         catch (Exception ex)
@@ -219,7 +219,7 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
         try
         {
 
-            var result = dbConnection.QueryFirstOrDefault<int?>(query, new { telegramID });
+            int? result = dbConnection.QueryFirstOrDefault<int?>(query, new { telegramID });
             return result ?? -1;
         }
         catch (Exception ex)
@@ -235,7 +235,7 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
         try
         {
 
-            var result = await dbConnection.QueryFirstOrDefaultAsync<int?>(query, new { telegramID });
+            int? result = await dbConnection.QueryFirstOrDefaultAsync<int?>(query, new { telegramID });
             return result ?? -1;
         }
         catch (Exception ex)

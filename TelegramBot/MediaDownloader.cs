@@ -27,7 +27,7 @@ public partial class TGBot : IHostedService
     {
         Log.Information("TGBot Hosted Service is starting.");
 
-        var me = _botClient.GetMe(cancellationToken).GetAwaiter().GetResult();
+        User me = _botClient.GetMe(cancellationToken).GetAwaiter().GetResult();
         Log.Information("Hello, I am {BotId} ready and my name is {BotName}.", me.Id, me.FirstName);
 
         _botClient.StartReceiving(
@@ -49,27 +49,27 @@ public partial class TGBot : IHostedService
     private async Task UpdateHandler(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         // Создаем НОВЫЙ scope для КАЖДОГО `Update`.
-        await using var scope = _scopeFactory.CreateAsyncScope();
-        var sp = scope.ServiceProvider;
+        await using AsyncServiceScope scope = _scopeFactory.CreateAsyncScope();
+        IServiceProvider sp = scope.ServiceProvider;
 
         // Получаем из scope все сервисы, которые могут понадобиться в этом запросе.
-        var interactionService = sp.GetRequiredService<ITelegramInteractionService>();
-        var stateManager = sp.GetRequiredService<IUserStateManager>();
-        var stateHandlerFactory = sp.GetRequiredService<StateHandlerFactory>();
+        ITelegramInteractionService interactionService = sp.GetRequiredService<ITelegramInteractionService>();
+        IUserStateManager stateManager = sp.GetRequiredService<IUserStateManager>();
+        StateHandlerFactory stateHandlerFactory = sp.GetRequiredService<StateHandlerFactory>();
 
-        var chatId = interactionService.GetChatId(update);
+        long chatId = interactionService.GetChatId(update);
         if (chatId == 0) return;
 
         // Логирование переносим сюда, так как нам нужен stateManager из scope
         LogEvent(update, chatId, stateManager);
 
         // 1. Проверяем, не находится ли пользователь в состоянии
-        if (stateManager.TryGet(chatId, out var stateData))
+        if (stateManager.TryGet(chatId, out UserStateData? stateData))
         {
-            var handler = stateHandlerFactory.GetHandler(stateData.StateName);
+            IStateHandler? handler = stateHandlerFactory.GetHandler(stateData.StateName);
             if (handler != null)
             {
-                var result = await handler.Process(stateData, update, botClient, cancellationToken);
+                StateResult result = await handler.Process(stateData, update, botClient, cancellationToken);
 
                 if (result.NextAction == StateResultAction.Complete) stateManager.Remove(chatId);
                 else if (result.NextAction == StateResultAction.Continue) stateManager.Set(chatId, stateData);
@@ -81,17 +81,17 @@ public partial class TGBot : IHostedService
         // 2. Если состояния не было, определяем тип чата и передаем дальше
         if (update.CallbackQuery?.Message?.Chat.Type == ChatType.Private)
         {
-            var privateHandler = sp.GetRequiredService<PrivateUpdateHandler>();
+            PrivateUpdateHandler privateHandler = sp.GetRequiredService<PrivateUpdateHandler>();
             await privateHandler.ProcessCallbackQuery(botClient, update, cancellationToken);
         }
         else if (update.Message?.Chat.Type == ChatType.Private)
         {
-            var privateHandler = sp.GetRequiredService<PrivateUpdateHandler>();
+            PrivateUpdateHandler privateHandler = sp.GetRequiredService<PrivateUpdateHandler>();
             await privateHandler.ProcessMessage(botClient, update, cancellationToken);
         }
         else
         {
-            var groupHandler = sp.GetRequiredService<GroupUpdateHandler>();
+            GroupUpdateHandler groupHandler = sp.GetRequiredService<GroupUpdateHandler>();
             await groupHandler.HandleGroupUpdate(botClient, update, cancellationToken);
         }
     }
@@ -106,7 +106,7 @@ public partial class TGBot : IHostedService
     // Логика логирования теперь тоже здесь, так как она зависит от Scoped-сервиса
     private void LogEvent(Update update, long chatId, IUserStateManager stateManager)
     {
-        var (logMessageType, logMessageData, userId) = update.Type switch
+        (string logMessageType, string logMessageData, long userId) = update.Type switch
         {
             UpdateType.Message => ("Message", update.Message!.Text ?? string.Empty, update.Message.From!.Id),
             UpdateType.CallbackQuery => ("CallbackQuery", update.CallbackQuery!.Data ?? string.Empty, update.CallbackQuery.From.Id),
@@ -115,7 +115,7 @@ public partial class TGBot : IHostedService
 
         if (userId == 0) return;
 
-        var stateName = stateManager.TryGet(chatId, out var state) ? state?.StateName : "None";
+        string? stateName = stateManager.TryGet(chatId, out UserStateData? state) ? state?.StateName : "None";
 
         Log.Information("Event: {Type}, UserId: {UserId}, ChatId: {ChatId}, Data: {Data}, State: {State}",
             logMessageType, userId, chatId, logMessageData, stateName);

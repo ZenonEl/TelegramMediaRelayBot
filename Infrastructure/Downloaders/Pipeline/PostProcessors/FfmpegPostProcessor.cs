@@ -39,12 +39,12 @@ public class FfmpegPostProcessor : IPostProcessor
 
     public async Task ProcessAsync(DownloadContext context, CancellationToken ct)
     {
-        var newFilesList = new List<DownloadedFile>();
+        List<DownloadedFile> newFilesList = new List<DownloadedFile>();
 
         int totalVideos = context.ResultFiles.Count(f => f.MediaType == MediaType.Video);
         int currentVideoIndex = 0;
 
-        foreach (var file in context.ResultFiles)
+        foreach (DownloadedFile file in context.ResultFiles)
         {
             if (file.MediaType != MediaType.Video)
             {
@@ -86,7 +86,7 @@ public class FfmpegPostProcessor : IPostProcessor
                 if (success)
                 {
                     long newSize = new FileInfo(outputPath).Length;
-                    context.Log($"[FFmpeg Finish] Success. {originalSize/1024/1024} MB -> {newSize/1024/1024} MB");
+                    context.Log($"[FFmpeg Finish] Success. {originalSize / 1024 / 1024} MB -> {newSize / 1024 / 1024} MB");
                     try { System.IO.File.Delete(inputPath); } catch { }
                     newFilesList.Add(new DownloadedFile
                     {
@@ -107,7 +107,7 @@ public class FfmpegPostProcessor : IPostProcessor
 
     private async Task<bool> RunFfmpegAsync(string input, string output, DownloadContext context, CancellationToken ct)
     {
-        var args = new List<string>
+        List<string> args = new List<string>
         {
             "-y",
             "-i", input,
@@ -120,7 +120,7 @@ public class FfmpegPostProcessor : IPostProcessor
             output
         };
 
-        var options = new ProcessRunOptions
+        ProcessRunOptions options = new ProcessRunOptions
         {
             FileName = _config.ExecutablePath,
             Arguments = args,
@@ -129,7 +129,7 @@ public class FfmpegPostProcessor : IPostProcessor
             OnOutputLine = null
         };
 
-        var result = await _processRunner.RunAsync(options, ct);
+        CommandResult result = await _processRunner.RunAsync(options, ct);
 
         if (result.ExitCode != 0)
         {

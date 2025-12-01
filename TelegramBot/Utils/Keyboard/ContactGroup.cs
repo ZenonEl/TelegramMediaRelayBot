@@ -18,7 +18,7 @@ public static class ContactGroup
 
     public static InlineKeyboardMarkup GetContactGroupEditActionsKeyboardMarkup(int groupId)
     {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
                 {
                     new[]
                     {

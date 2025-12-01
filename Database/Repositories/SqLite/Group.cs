@@ -29,7 +29,7 @@ public class SqliteGroupGetter(IDbConnection dbConnection) : IGroupGetter
             WHERE ID = @groupId AND UserId = @userId";
 
 
-        var count = await dbConnection.ExecuteScalarAsync<int>(query, new { groupId, userId });
+        int count = await dbConnection.ExecuteScalarAsync<int>(query, new { groupId, userId });
         return count > 0;
     }
 

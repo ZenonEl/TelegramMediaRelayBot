@@ -26,8 +26,8 @@ public class GroupUpdateHandler
 
     public async Task HandleGroupUpdate(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        var message = update.Message!;
-        var messageText = message.Text!;
+        Message message = update.Message!;
+        string messageText = message.Text!;
 
         if (messageText.StartsWith("/link"))
         {
@@ -35,7 +35,7 @@ public class GroupUpdateHandler
         }
         else if (messageText.StartsWith("/help"))
         {
-            var text = _resourceService.GetResourceString("GroupHelpText");
+            string text = _resourceService.GetResourceString("GroupHelpText");
             await botClient.SendMessage(message.Chat.Id, text, cancellationToken: cancellationToken);
         }
     }
@@ -43,15 +43,15 @@ public class GroupUpdateHandler
     private async Task HandleLinkCommand(ITelegramBotClient botClient, Message message, CancellationToken cancellationToken)
     {
         // 2. Логика парсинга команды. Можно в будущем вынести в отдельный CommandParser.
-        var parts = message.Text!.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+        string[] parts = message.Text!.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length < 2)
         {
             await botClient.SendMessage(message.Chat.Id, _resourceService.GetResourceString("InvalidLinkFormat"), cancellationToken: cancellationToken);
             return;
         }
 
-        var url = parts[1];
-        var caption = message.ReplyToMessage?.Text ?? string.Empty; // Пример получения подписи из реплая
+        string url = parts[1];
+        string caption = message.ReplyToMessage?.Text ?? string.Empty; // Пример получения подписи из реплая
 
         // 3. Используем наш новый сервис для валидации ссылки
         if (!_urlParsingService.IsLink(url))
@@ -64,7 +64,7 @@ public class GroupUpdateHandler
         // Для групповых чатов мы не показываем клавиатуру, а сразу запускаем загрузку "только для себя".
         // (Это предположение, логику можно изменить).
 
-        var statusMessage = await botClient.SendMessage(message.Chat.Id,
+        Message statusMessage = await botClient.SendMessage(message.Chat.Id,
             _resourceService.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
 
         DownloadSession session = _sessionManager.CreateSession(

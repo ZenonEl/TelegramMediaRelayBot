@@ -37,7 +37,7 @@ public class SqlitePrivacySettingsTargetsRepository(IDbConnection dbConnection) 
     public async Task<List<string>> GetAllUserTargets(int userId)
     {
         const string query = "SELECT TargetValue FROM PrivacySettingsTargets WHERE UserId = @userId";
-        var result = await dbConnection.QueryAsync<string>(query, new { userId });
+        IEnumerable<string> result = await dbConnection.QueryAsync<string>(query, new { userId });
         return result.ToList();
     }
 }

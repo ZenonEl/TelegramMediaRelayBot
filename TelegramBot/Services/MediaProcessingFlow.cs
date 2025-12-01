@@ -2,9 +2,7 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using Microsoft.Extensions.Options;
 using Telegram.Bot.Types.Enums;
-using TelegramMediaRelayBot.Config;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Domain.Models;
 using TelegramMediaRelayBot.TelegramBot.Sessions;
@@ -75,7 +73,7 @@ public class MediaProcessingFlow : IMediaProcessingFlow
             await botClient.EditMessageText(session.ChatId, session.StatusMessageId, "Sending media...",
                                             replyMarkup: KeyboardUtils.GetCancelKeyboardMarkup(session.StatusMessageId),
                                             cancellationToken: session.SessionCts.Token);
-            var senderName = _userGetter.GetUserNameByTelegramID(session.ChatId);
+            string senderName = _userGetter.GetUserNameByTelegramID(session.ChatId);
             session.Caption = _captionGenerator.Generate(session, senderName);
 
             await _senderService.SendMedia(botClient, update, session, processedFiles, targetUserIds, session.SessionCts.Token);

@@ -46,8 +46,8 @@ public class UserDeleteGroupCommand : IBotCallbackQueryHandlers
         }
 
         // 2. Генерируем кнопки
-        var buttons = new List<InlineKeyboardButton[]>();
-        foreach (var groupId in groupsId)
+        List<InlineKeyboardButton[]> buttons = new List<InlineKeyboardButton[]>();
+        foreach (int groupId in groupsId)
         {
             buttons.Add(new[]
             {

@@ -19,7 +19,7 @@ public class DefaultActionUoWService : IDefaultActionUoW
 
     public async Task<bool> SetAutoSendVideoCondition(int userId, string actionCondition, string type)
     {
-        var affectedRows = await ExecuteInTransaction(() =>
+        int affectedRows = await ExecuteInTransaction(() =>
             _repository.UpsertActionCondition(userId, actionCondition, type));
 
         return affectedRows > 0;
@@ -27,7 +27,7 @@ public class DefaultActionUoWService : IDefaultActionUoW
 
     public async Task<bool> SetAutoSendVideoAction(int userId, string action, string type)
     {
-        var affectedRows = await ExecuteInTransaction(() =>
+        int affectedRows = await ExecuteInTransaction(() =>
             _repository.UpsertAction(userId, action, type));
 
         return affectedRows > 0;
@@ -38,7 +38,7 @@ public class DefaultActionUoWService : IDefaultActionUoW
         try
         {
             _uow.Begin();
-            var result = await action();
+            T? result = await action();
             _uow.Commit();
             return result;
         }

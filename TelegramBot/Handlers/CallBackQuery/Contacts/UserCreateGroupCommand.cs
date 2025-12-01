@@ -38,7 +38,7 @@ public class UserCreateGroupCommand : IBotCallbackQueryHandlers
         string promptText = "📝 <b>Введите название новой группы:</b>\nНапример: <i>Рабочие чаты</i>";
 
         // Кнопка "Отмена" должна быть в replyMarkup, но для простоты UX оставим одну кнопку.
-        var keyboard = KeyboardUtils.GetCancelKeyboardMarkup(callback: "main_menu"); // Используем ID 0, чтобы получить новую кнопку
+        Telegram.Bot.Types.ReplyMarkups.InlineKeyboardMarkup keyboard = KeyboardUtils.GetCancelKeyboardMarkup(callback: "main_menu"); // Используем ID 0, чтобы получить новую кнопку
 
         await _interactionService.ReplyToUpdate(
             botClient,

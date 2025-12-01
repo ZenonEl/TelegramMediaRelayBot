@@ -4,8 +4,8 @@
 
 using System.Data;
 using Dapper;
-using FluentMigrator.Runner.Initialization;
 using FluentMigrator.Runner;
+using FluentMigrator.Runner.Initialization;
 using FluentValidation;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
@@ -15,8 +15,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MySql.Data.MySqlClient;
 using TelegramBot.Services;
-using TelegramMediaRelayBot.Config.Downloaders;
 using TelegramMediaRelayBot.Config;
+using TelegramMediaRelayBot.Config.Downloaders;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database.Repositories.MySql;
 using TelegramMediaRelayBot.Database.Repositories.Sqlite;
@@ -33,14 +33,14 @@ using TelegramMediaRelayBot.Infrastructure.Processes;
 using TelegramMediaRelayBot.Infrastructure.Services;
 using TelegramMediaRelayBot.Migrations;
 using TelegramMediaRelayBot.Services;
-using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
+using TelegramMediaRelayBot.TelegramBot;
 using TelegramMediaRelayBot.TelegramBot.Handlers;
+using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Sessions;
 using TelegramMediaRelayBot.TelegramBot.SiteFilter;
 using TelegramMediaRelayBot.TelegramBot.States;
 using TelegramMediaRelayBot.TelegramBot.Validation;
-using TelegramMediaRelayBot.TelegramBot;
 
 namespace TelegramMediaRelayBot.Extensions;
 
@@ -101,7 +101,7 @@ public static class HostingExtensions
 
         services.AddSingleton<ITelegramBotClient>(provider =>
         {
-            var botConfig = provider.GetRequiredService<IOptions<BotConfiguration>>();
+            IOptions<BotConfiguration> botConfig = provider.GetRequiredService<IOptions<BotConfiguration>>();
             if (string.IsNullOrWhiteSpace(botConfig.Value.TelegramBotToken))
                 throw new ArgumentException("Telegram Bot Token is not configured.");
             return new TelegramBotClient(botConfig.Value.TelegramBotToken);
@@ -240,8 +240,8 @@ public static class HostingExtensions
     /// </summary>
     public static IServiceCollection AddPersistenceServices(this IServiceCollection services, IConfiguration configuration)
     {
-        var dbType = configuration.GetValue<string>("AppSettings:DatabaseType") ?? "sqlite";
-        var connectionString = GetConnectionString(dbType, configuration);
+        string dbType = configuration.GetValue<string>("AppSettings:DatabaseType") ?? "sqlite";
+        string connectionString = GetConnectionString(dbType, configuration);
 
         // Вся конфигурация FluentMigrator в одном месте
         services.AddFluentMigratorCore()
@@ -422,14 +422,14 @@ public static class HostingExtensions
     /// </summary>
     public static async Task ApplyDatabaseMigrationsAsync(this IHost host)
     {
-        using var scope = host.Services.CreateScope();
-        var services = scope.ServiceProvider;
-        var logger = services.GetRequiredService<ILogger<IHost>>();
-        var migrationRunner = services.GetRequiredService<IMigrationRunner>();
+        using IServiceScope scope = host.Services.CreateScope();
+        IServiceProvider services = scope.ServiceProvider;
+        ILogger<IHost> logger = services.GetRequiredService<ILogger<IHost>>();
+        IMigrationRunner migrationRunner = services.GetRequiredService<IMigrationRunner>();
 
-        using var connection = services.GetRequiredService<IDbConnection>();
-        var configuration = services.GetRequiredService<IConfiguration>();
-        var databaseName = configuration["AppSettings:DatabaseName"];
+        using IDbConnection connection = services.GetRequiredService<IDbConnection>();
+        IConfiguration configuration = services.GetRequiredService<IConfiguration>();
+        string? databaseName = configuration["AppSettings:DatabaseName"];
 
         if (string.IsNullOrEmpty(databaseName))
         {
@@ -441,43 +441,43 @@ public static class HostingExtensions
         {
             logger.LogInformation("Performing database consistency check before migration...");
 
-            var checkTableSql = "SELECT COUNT(1) FROM information_schema.tables WHERE table_schema = @dbName AND table_name = @tableName";
+            string checkTableSql = "SELECT COUNT(1) FROM information_schema.tables WHERE table_schema = @dbName AND table_name = @tableName";
 
-            var versionInfoExists = await connection.QuerySingleAsync<int>(checkTableSql, new { dbName = databaseName, tableName = "VersionInfo" }) == 1;
-            var usersTableExists = await connection.QuerySingleAsync<int>(checkTableSql, new { dbName = databaseName, tableName = "Users" }) == 1;
+            bool versionInfoExists = await connection.QuerySingleAsync<int>(checkTableSql, new { dbName = databaseName, tableName = "VersionInfo" }) == 1;
+            bool usersTableExists = await connection.QuerySingleAsync<int>(checkTableSql, new { dbName = databaseName, tableName = "Users" }) == 1;
 
 
             Log.Debug($"VersionInfo table exists: {versionInfoExists}");
             Log.Debug($"Users table exists: {usersTableExists}");
-                    if (!versionInfoExists && usersTableExists)
-                    {
-                        logger.LogWarning("!!! Inconsistent database state detected (Data tables exist, but VersionInfo is missing). Attempting to fix it manually. !!!");
+            if (!versionInfoExists && usersTableExists)
+            {
+                logger.LogWarning("!!! Inconsistent database state detected (Data tables exist, but VersionInfo is missing). Attempting to fix it manually. !!!");
 
-                        logger.LogInformation("Manually creating 'VersionInfo' table...");
-                        await connection.ExecuteAsync(@"
+                logger.LogInformation("Manually creating 'VersionInfo' table...");
+                await connection.ExecuteAsync(@"
                     CREATE TABLE `VersionInfo` (
                         `Version` BIGINT NOT NULL,
                         `AppliedOn` DATETIME NULL,
                         `Description` NVARCHAR(1024) NULL,
                         PRIMARY KEY (`Version`)
                     );");
-                        logger.LogInformation("'VersionInfo' table created successfully.");
+                logger.LogInformation("'VersionInfo' table created successfully.");
 
-                        logger.LogInformation("Manually marking existing migrations as applied...");
-                        await connection.ExecuteAsync(
-                            "INSERT INTO VersionInfo (Version, AppliedOn, Description) VALUES (@Version, @AppliedOn, @Description)",
-                            new[]
-                            {
+                logger.LogInformation("Manually marking existing migrations as applied...");
+                await connection.ExecuteAsync(
+                    "INSERT INTO VersionInfo (Version, AppliedOn, Description) VALUES (@Version, @AppliedOn, @Description)",
+                    new[]
+                    {
                         new { Version = 2025100901L, AppliedOn = DateTime.UtcNow, Description = "Manual Fix - M001_CreateInitialSchema" },
                         new { Version = 2025100902L, AppliedOn = DateTime.UtcNow, Description = "Manual Fix - M002_CreateMySqlSpecificObjects" }
-                            }
-                        );
-                        logger.LogInformation("Migrations marked as applied. The database state is now consistent.");
                     }
-                    else
-                    {
-                        logger.LogInformation("Database consistency check passed.");
-                    }
+                );
+                logger.LogInformation("Migrations marked as applied. The database state is now consistent.");
+            }
+            else
+            {
+                logger.LogInformation("Database consistency check passed.");
+            }
 
             logger.LogWarning("--- STARTING MIGRATION ---");
 
@@ -509,7 +509,7 @@ public static class HostingExtensions
 
         static string EnsureSqliteFormat(string cs)
         {
-            var trimmed = cs.Trim();
+            string trimmed = cs.Trim();
             if (trimmed.Contains("Data Source=", StringComparison.OrdinalIgnoreCase) ||
                 trimmed.Contains("Filename=", StringComparison.OrdinalIgnoreCase))
             {
@@ -517,7 +517,7 @@ public static class HostingExtensions
             }
             if (trimmed.EndsWith(".db", StringComparison.OrdinalIgnoreCase))
             {
-                var fullPath = System.IO.Path.IsPathRooted(trimmed)
+                string fullPath = System.IO.Path.IsPathRooted(trimmed)
                     ? trimmed
                     : System.IO.Path.Combine(AppContext.BaseDirectory, trimmed);
                 return $"Data Source={fullPath}";
@@ -525,8 +525,8 @@ public static class HostingExtensions
             return trimmed;
         }
 
-        var raw = configuration["AppSettings:SqlConnectionString"] ?? string.Empty;
-        var type = (dbType ?? "sqlite").ToLowerInvariant();
+        string raw = configuration["AppSettings:SqlConnectionString"] ?? string.Empty;
+        string type = (dbType ?? "sqlite").ToLowerInvariant();
 
         switch (type)
         {

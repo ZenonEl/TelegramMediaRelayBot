@@ -5,9 +5,7 @@
 using System.Globalization;
 using FluentValidation;
 using Telegram.Bot.Types.ReplyMarkups;
-using TelegramMediaRelayBot.Config.Services;
 using TelegramMediaRelayBot.Database.Interfaces;
-using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Validation;
 
@@ -33,17 +31,17 @@ public class InboxListCommand : IBotCallbackQueryHandlers
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
         int userId = _userGetter.GetUserIDbyTelegramID(chatId);
         string data = update.CallbackQuery!.Data!;
-        var parts = data.Split(':');
-        int page = parts.Length >= 3 && int.TryParse(parts[2], out var p) ? Math.Max(1, p) : 1;
+        string[] parts = data.Split(':');
+        int page = parts.Length >= 3 && int.TryParse(parts[2], out int p) ? Math.Max(1, p) : 1;
         string filter = parts.Length >= 4 ? parts[3] : string.Empty; // "unread" | "sender" | "sender_unread" | ""
         int? fromSenderId = null;
         if (string.Equals(filter, "sender", StringComparison.OrdinalIgnoreCase) || string.Equals(filter, "sender_unread", StringComparison.OrdinalIgnoreCase))
         {
             // format: inbox:list:<page>:sender[:senderId] OR inbox:list:<page>:sender_unread:<senderId>
-            if (parts.Length >= 5 && int.TryParse(parts[4], out var sid)) fromSenderId = sid;
+            if (parts.Length >= 5 && int.TryParse(parts[4], out int sid)) fromSenderId = sid;
         }
         int pageSize = PageSize;
-        var validation = await _listValidator.ValidateAsync(new InboxListRequest { ChatId = chatId, Page = page, PageSize = pageSize }, ct).ConfigureAwait(false);
+        FluentValidation.Results.ValidationResult validation = await _listValidator.ValidateAsync(new InboxListRequest { ChatId = chatId, Page = page, PageSize = pageSize }, ct).ConfigureAwait(false);
         if (!validation.IsValid)
         {
             string err = string.Join("\n", validation.Errors.Select(e => $"• {e.ErrorMessage}"));
@@ -52,14 +50,14 @@ public class InboxListCommand : IBotCallbackQueryHandlers
         }
         int offset = (page - 1) * pageSize;
         bool onlyUnread = string.Equals(filter, "unread", StringComparison.OrdinalIgnoreCase) || string.Equals(filter, "sender_unread", StringComparison.OrdinalIgnoreCase);
-        var items = (await _inbox.GetItemsAsync(userId, onlyUnread ? "new" : null, fromSenderId, pageSize, offset).ConfigureAwait(false)).ToList();
+        List<InboxItemDto> items = (await _inbox.GetItemsAsync(userId, onlyUnread ? "new" : null, fromSenderId, pageSize, offset).ConfigureAwait(false)).ToList();
         if (items.Count == 0 && page > 1)
         {
             // fallback to previous page
             page = 1; offset = 0; items = (await _inbox.GetItemsAsync(userId, pageSize, offset).ConfigureAwait(false)).ToList();
         }
         // Build keyboard and header
-        var rows = new List<InlineKeyboardButton[]>();
+        List<InlineKeyboardButton[]> rows = new List<InlineKeyboardButton[]>();
         // Filter toggle row + Senders menu
         // Верхняя строка: переключатель Все/Непрочитанные. Если активен просмотр конкретного отправителя,
         // сохраняем его в колбэке, чтобы фильтр работал в рамках отправителя.
@@ -76,7 +74,7 @@ public class InboxListCommand : IBotCallbackQueryHandlers
         rows.Add(new[] { InlineKeyboardButton.WithCallbackData(toggleText, toggleCb), InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("Inbox.SendersButton"), "inbox:senders:") });
         if (items.Count > 0)
         {
-            foreach (var it in items)
+            foreach (InboxItemDto? it in items)
             {
                 bool isNew = string.Equals(it.Status, "new", StringComparison.OrdinalIgnoreCase);
                 string senderName = _userGetter != null ? _userGetter.GetUserNameByTelegramID(_userGetter.GetTelegramIDbyUserID(it.FromContactId)) : it.FromContactId.ToString();
@@ -84,17 +82,17 @@ public class InboxListCommand : IBotCallbackQueryHandlers
                 DateTime displayTimeLocal;
                 try
                 {
-                    var doc = System.Text.Json.JsonDocument.Parse(it.PayloadJson);
-                    if (doc.RootElement.TryGetProperty("OriginalMessageDateUtc", out var ts) && ts.ValueKind == System.Text.Json.JsonValueKind.String)
+                    System.Text.Json.JsonDocument doc = System.Text.Json.JsonDocument.Parse(it.PayloadJson);
+                    if (doc.RootElement.TryGetProperty("OriginalMessageDateUtc", out System.Text.Json.JsonElement ts) && ts.ValueKind == System.Text.Json.JsonValueKind.String)
                     {
-                        var s = ts.GetString();
+                        string? s = ts.GetString();
                         if (!string.IsNullOrEmpty(s))
                         {
-                            if (DateTimeOffset.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var dto))
+                            if (DateTimeOffset.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTimeOffset dto))
                             {
                                 displayTimeLocal = dto.LocalDateTime;
                             }
-                            else if (DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var dt))
+                            else if (DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTime dt))
                             {
                                 displayTimeLocal = DateTime.SpecifyKind(dt, DateTimeKind.Utc).ToLocalTime();
                             }
@@ -129,9 +127,9 @@ public class InboxListCommand : IBotCallbackQueryHandlers
                 {
                     baseFilter = $"{filter}:{fromSenderId.Value}";
                 }
-                var prevCb = hasPrev ? $"inbox:list:{page - 1}:{baseFilter}".TrimEnd(':') : $"inbox:list:{page}:{baseFilter}".TrimEnd(':');
-                var nextCb = hasNext ? $"inbox:list:{page + 1}:{baseFilter}".TrimEnd(':') : $"inbox:list:{page}:{baseFilter}".TrimEnd(':');
-                var navRow = new List<InlineKeyboardButton>();
+                string prevCb = hasPrev ? $"inbox:list:{page - 1}:{baseFilter}".TrimEnd(':') : $"inbox:list:{page}:{baseFilter}".TrimEnd(':');
+                string nextCb = hasNext ? $"inbox:list:{page + 1}:{baseFilter}".TrimEnd(':') : $"inbox:list:{page}:{baseFilter}".TrimEnd(':');
+                List<InlineKeyboardButton> navRow = new List<InlineKeyboardButton>();
                 if (hasPrev) navRow.Add(InlineKeyboardButton.WithCallbackData($"◀ {page - 1}", prevCb));
                 if (hasNext) navRow.Add(InlineKeyboardButton.WithCallbackData($"▶ {page + 1}", nextCb));
                 if (navRow.Count > 0) rows.Add(navRow.ToArray());
@@ -141,10 +139,10 @@ public class InboxListCommand : IBotCallbackQueryHandlers
             rows.Add(new[] { InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("Inbox.DeleteRead"), $"inbox:bulkdel:read:{filter}:{page}"), InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("Inbox.DeleteUnread"), $"inbox:bulkdel:unread:{filter}:{page}") });
         }
         rows.Add(new[] { KeyboardUtils.GetReturnButton("main_menu") });
-        var kb = new InlineKeyboardMarkup(rows);
+        InlineKeyboardMarkup kb = new InlineKeyboardMarkup(rows);
         string header = items.Count == 0 ? _resourceService.GetResourceString("InboxListEmpty") : string.Format(_resourceService.GetResourceString("InboxListCurrentPage"), page);
-		// Важно всегда пытаться обновлять клавиатуру, даже если заголовок не изменился,
-		// иначе переключение фильтра (Все/Непрочитанные) визуально не обновится.
+        // Важно всегда пытаться обновлять клавиатуру, даже если заголовок не изменился,
+        // иначе переключение фильтра (Все/Непрочитанные) визуально не обновится.
         try
         {
             await botClient.EditMessageText(chatId, update.CallbackQuery!.Message!.MessageId, header, replyMarkup: kb, cancellationToken: ct).ConfigureAwait(false);

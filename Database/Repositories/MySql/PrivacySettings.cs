@@ -32,7 +32,7 @@ public class MySqlPrivacySettingsGetter(IDbConnection dbConnection) : IPrivacySe
             FROM PrivacySettings
             WHERE UserId = @userId AND Type = @type";
 
-        return dbConnection.ExecuteScalar<bool>(query, new {userId, type});
+        return dbConnection.ExecuteScalar<bool>(query, new { userId, type });
     }
 
     public async Task<int> GetPrivacyRuleId(int userId, string type)
@@ -42,7 +42,7 @@ public class MySqlPrivacySettingsGetter(IDbConnection dbConnection) : IPrivacySe
             FROM PrivacySettings
             WHERE UserId = @userId AND Type = @type";
 
-        return await dbConnection.ExecuteScalarAsync<int>(query, new {userId, type});
+        return await dbConnection.ExecuteScalarAsync<int>(query, new { userId, type });
     }
 
     public async Task<string> GetPrivacyRuleValue(int userId, string type)
@@ -52,7 +52,7 @@ public class MySqlPrivacySettingsGetter(IDbConnection dbConnection) : IPrivacySe
             FROM PrivacySettings
             WHERE UserId = @userId AND Type = @type";
 
-        return await dbConnection.ExecuteScalarAsync<string>(query, new {userId, type}) ?? string.Empty;
+        return await dbConnection.ExecuteScalarAsync<string>(query, new { userId, type }) ?? string.Empty;
     }
 
     public async Task<List<PrivacyRuleResult>> GetAllActiveUserRulesWithTargets(int userId)
@@ -68,14 +68,15 @@ public class MySqlPrivacySettingsGetter(IDbConnection dbConnection) : IPrivacySe
                 AND PS.IsActive = 1
                 AND PS.Action IN @actions";
 
-        var allowedActions = new[] {
+        string[] allowedActions = new[] {
             PrivacyRuleAction.SOCIAL_FILTER,
             PrivacyRuleAction.NSFW_FILTER,
             PrivacyRuleAction.UNIFIED_FILTER,
             PrivacyRuleAction.DOMAIN_FILTER
         };
 
-        var result = await dbConnection.QueryAsync<PrivacyRuleResult>(query, new {
+        IEnumerable<PrivacyRuleResult> result = await dbConnection.QueryAsync<PrivacyRuleResult>(query, new
+        {
             userId,
             actions = allowedActions
         });

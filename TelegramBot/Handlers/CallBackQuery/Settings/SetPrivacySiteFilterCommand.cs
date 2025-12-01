@@ -2,8 +2,8 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.States;
 using TelegramMediaRelayBot.TelegramBot.Utils;
@@ -40,9 +40,9 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        var callbackQueryData = update.CallbackQuery!.Data!.Split(':')[1];
-        var chatId = update.CallbackQuery!.Message!.Chat.Id;
-        var userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        string callbackQueryData = update.CallbackQuery!.Data!.Split(':')[1];
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
 
         // Логика для add_domains и remove_domains
         if (callbackQueryData == "add_domains" || callbackQueryData == "remove_domains")
@@ -52,7 +52,7 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
         }
 
         // Логика для переключателей
-        var switchResult = callbackQueryData switch
+        bool switchResult = callbackQueryData switch
         {
             "social" => await SwitchSocial(userId),
             "nsfw" => await SwitchNSFW(userId),
@@ -61,8 +61,8 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
             _ => false
         };
 
-        var text = switchResult ? _resourceService.GetResourceString("SuccessActionResult") : _resourceService.GetResourceString("ErrorActionResult");
-        var actionText = !_isActive ? _resourceService.GetResourceString("Enable") : _resourceService.GetResourceString("Disable");
+        string text = switchResult ? _resourceService.GetResourceString("SuccessActionResult") : _resourceService.GetResourceString("ErrorActionResult");
+        string actionText = !_isActive ? _resourceService.GetResourceString("Enable") : _resourceService.GetResourceString("Disable");
 
         await _interactionService.ReplyToUpdate(botClient, update,
             KeyboardUtils.GetReturnButtonMarkup("user_update_site_stop_list"), ct, $"{text} ({actionText})");
@@ -70,14 +70,14 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
 
     private async Task HandleDomainStateLaunch(ITelegramBotClient botClient, Update update, long chatId, int userId, bool isRemove, CancellationToken ct)
     {
-        var privacyRuleId = await _privacySettingsGetter.GetPrivacyRuleId(userId, PrivacyRuleType.SITES_BY_DOMAIN_FILTER);
+        int privacyRuleId = await _privacySettingsGetter.GetPrivacyRuleId(userId, PrivacyRuleType.SITES_BY_DOMAIN_FILTER);
         if (privacyRuleId == 0 && !isRemove)
         {
             // Обработка ошибки
             return;
         }
 
-        var newState = new UserStateData
+        UserStateData newState = new UserStateData
         {
             StateName = "DomainFilter",
             Step = 0,
@@ -90,7 +90,7 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
         };
         _stateManager.Set(chatId, newState);
 
-        var prompt = isRemove
+        string prompt = isRemove
             ? _resourceService.GetResourceString("EnterDomainsToRemovePrompt")
             : _resourceService.GetResourceString("EnterDomainsToAddPrompt");
 

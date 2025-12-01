@@ -43,7 +43,7 @@ public class TelegramInteractionService : ITelegramInteractionService
         int messageIdToEdit = 0,
         ParseMode parseMode = ParseMode.Html)
     {
-        var chatId = GetChatId(update);
+        long chatId = GetChatId(update);
         if (chatId == 0) return null;
 
         int targetMessageId = 0;

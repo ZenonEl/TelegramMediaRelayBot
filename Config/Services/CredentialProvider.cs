@@ -22,7 +22,7 @@ public class CredentialProvider : ICredentialProvider
                 Directory.CreateDirectory(_secretsDirectory);
             }
             catch
-            {}
+            { }
         }
     }
 
@@ -35,7 +35,7 @@ public class CredentialProvider : ICredentialProvider
 
         try
         {
-            var fullPath = Path.GetFullPath(Path.Combine(_secretsDirectory, fileName));
+            string fullPath = Path.GetFullPath(Path.Combine(_secretsDirectory, fileName));
             if (!fullPath.StartsWith(_secretsDirectory, StringComparison.OrdinalIgnoreCase))
             {
                 return null;
@@ -57,11 +57,11 @@ public class CredentialProvider : ICredentialProvider
     {
         if (string.IsNullOrWhiteSpace(value)) return value;
 
-        var match = _envVarRegex.Match(value.Trim());
+        Match match = _envVarRegex.Match(value.Trim());
         if (match.Success)
         {
-            var envVarName = match.Groups[1].Value;
-            var envValue = Environment.GetEnvironmentVariable(envVarName);
+            string envVarName = match.Groups[1].Value;
+            string? envValue = Environment.GetEnvironmentVariable(envVarName);
             return envValue;
         }
 

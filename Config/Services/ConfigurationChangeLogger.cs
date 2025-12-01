@@ -56,16 +56,16 @@ public class ConfigurationChangeLogger
 
     private static T DeepClone<T>(T value)
     {
-        var json = JsonSerializer.Serialize(value);
+        string json = JsonSerializer.Serialize(value);
         return JsonSerializer.Deserialize<T>(json)!;
     }
 
     private static void LogChanges<T>(string sectionName, ref T lastValue, T newValue)
     {
-        var changes = GetPropertyChanges(lastValue!, newValue!);
+        List<(string Property, string OldValue, string NewValue)> changes = GetPropertyChanges(lastValue!, newValue!);
         if (changes.Count > 0)
         {
-            foreach (var (prop, oldVal, newValStr) in changes)
+            foreach ((string prop, string oldVal, string newValStr) in changes)
             {
                 Log.Information("Config changed [{Section}]: {Property}: '{Old}' -> '{New}'", sectionName, prop, oldVal, newValStr);
             }
@@ -75,25 +75,25 @@ public class ConfigurationChangeLogger
 
     private static List<(string Property, string OldValue, string NewValue)> GetPropertyChanges<T>(T oldObj, T newObj, string? prefix = null)
     {
-        var list = new List<(string, string, string)>();
+        List<(string, string, string)> list = new List<(string, string, string)>();
         if (oldObj == null || newObj == null) return list;
 
-        var props = typeof(T)
+        List<PropertyInfo> props = typeof(T)
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Where(p => p.CanRead)
             .ToList();
 
-        foreach (var prop in props)
+        foreach (PropertyInfo? prop in props)
         {
-            var oldVal = prop.GetValue(oldObj);
-            var newVal = prop.GetValue(newObj);
+            object? oldVal = prop.GetValue(oldObj);
+            object? newVal = prop.GetValue(newObj);
 
-            var name = string.IsNullOrEmpty(prefix) ? prop.Name : $"{prefix}.{prop.Name}";
+            string name = string.IsNullOrEmpty(prefix) ? prop.Name : $"{prefix}.{prop.Name}";
 
             if (IsSimpleType(prop.PropertyType))
             {
-                var oldStr = oldVal?.ToString() ?? string.Empty;
-                var newStr = newVal?.ToString() ?? string.Empty;
+                string oldStr = oldVal?.ToString() ?? string.Empty;
+                string newStr = newVal?.ToString() ?? string.Empty;
                 if (!string.Equals(oldStr, newStr, StringComparison.Ordinal))
                 {
                     list.Add((name, oldStr, newStr));
@@ -102,7 +102,7 @@ public class ConfigurationChangeLogger
             else if (oldVal != null && newVal != null)
             {
                 // Recurse one level for complex nested objects
-                var nested = typeof(ConfigurationChangeLogger)
+                List<(string, string, string)>? nested = typeof(ConfigurationChangeLogger)
                     .GetMethod(nameof(GetPropertyChanges), BindingFlags.NonPublic | BindingFlags.Static)!
                     .MakeGenericMethod(prop.PropertyType)
                     .Invoke(null, new object?[] { oldVal, newVal, name }) as List<(string, string, string)>;

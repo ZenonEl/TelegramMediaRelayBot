@@ -4,7 +4,6 @@
 
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
-using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace TelegramMediaRelayBot.TelegramBot.States;
 
@@ -37,7 +36,7 @@ public class UnmuteUserStateHandler : IStateHandler
 
     public async Task<StateResult> Process(UserStateData stateData, Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        var chatId = _interactionService.GetChatId(update);
+        long chatId = _interactionService.GetChatId(update);
         if (await _stateBreaker.HandleStateBreak(botClient, update))
         {
             return StateResult.Complete();
@@ -49,7 +48,7 @@ public class UnmuteUserStateHandler : IStateHandler
             // ШАГ 0: Ожидание ID или ссылки от пользователя
             // ========================================================================
             case 0:
-                var message = update.Message;
+                Message? message = update.Message;
                 if (message == null || string.IsNullOrWhiteSpace(message.Text))
                 {
                     await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
@@ -57,14 +56,14 @@ public class UnmuteUserStateHandler : IStateHandler
                 }
 
                 int contactId;
-                var userId = _userGetter.GetUserIDbyTelegramID(chatId);
-                var allowedIds = await _contactGetter.GetAllContactUserTGIds(userId);
+                int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+                List<long> allowedIds = await _contactGetter.GetAllContactUserTGIds(userId);
 
                 if (int.TryParse(message.Text, out int parsedId))
                 {
                     contactId = parsedId;
-                    var contactTelegramId = _userGetter.GetTelegramIDbyUserID(contactId);
-                    var userName = _userGetter.GetUserNameByID(contactId);
+                    long contactTelegramId = _userGetter.GetTelegramIDbyUserID(contactId);
+                    string? userName = _userGetter.GetUserNameByID(contactId);
 
                     if (string.IsNullOrEmpty(userName) || !allowedIds.Contains(contactTelegramId))
                     {
@@ -75,7 +74,7 @@ public class UnmuteUserStateHandler : IStateHandler
                 else
                 {
                     contactId = _contactGetter.GetContactIDByLink(message.Text);
-                    var contactTelegramId = _userGetter.GetTelegramIDbyUserID(contactId);
+                    long contactTelegramId = _userGetter.GetTelegramIDbyUserID(contactId);
 
                     if (contactId == -1 || !allowedIds.Contains(contactTelegramId))
                     {
@@ -96,10 +95,10 @@ public class UnmuteUserStateHandler : IStateHandler
             // ШАГ 1: Ожидание подтверждения
             // ========================================================================
             case 1:
-                if (!stateData.Data.TryGetValue("MutedContactId", out var contactIdObj)) return StateResult.Complete();
+                if (!stateData.Data.TryGetValue("MutedContactId", out object? contactIdObj)) return StateResult.Complete();
 
-                var activeMuteTime = _contactGetter.GetActiveMuteTimeByContactID((int)contactIdObj);
-                var text = string.Format(_resourceService.GetResourceString("UserInMute"), activeMuteTime);
+                string activeMuteTime = _contactGetter.GetActiveMuteTimeByContactID((int)contactIdObj);
+                string text = string.Format(_resourceService.GetResourceString("UserInMute"), activeMuteTime);
                 await botClient.SendMessage(chatId, text, cancellationToken: cancellationToken);
 
                 stateData.Step = 2;
@@ -109,7 +108,7 @@ public class UnmuteUserStateHandler : IStateHandler
             // ШАГ 2: Финальное подтверждение и выполнение
             // ========================================================================
             case 2:
-                if (!stateData.Data.TryGetValue("MutedByUserId", out var mutedByObj) ||
+                if (!stateData.Data.TryGetValue("MutedByUserId", out object? mutedByObj) ||
                     !stateData.Data.TryGetValue("MutedContactId", out contactIdObj))
                 {
                     return StateResult.Complete();

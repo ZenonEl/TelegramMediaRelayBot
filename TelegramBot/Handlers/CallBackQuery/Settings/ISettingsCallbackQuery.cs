@@ -2,11 +2,11 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
-using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
@@ -287,9 +287,9 @@ public class UserUpdateSelfLinkWithKeepSelectedContactsCommand : IBotCallbackQue
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
         int ownerUserId = _userGetter.GetUserIDbyTelegramID(chatId);
-        var tgIds = await _contactGetterRepository.GetAllContactUserTGIds(ownerUserId);
-        var lines = new List<string>();
-        foreach (var tg in tgIds)
+        List<long> tgIds = await _contactGetterRepository.GetAllContactUserTGIds(ownerUserId);
+        List<string> lines = new List<string>();
+        foreach (long tg in tgIds)
         {
             int cid = _userGetter.GetUserIDbyTelegramID(tg);
             string uname = _userGetter.GetUserNameByTelegramID(tg);
@@ -337,9 +337,9 @@ public class UserUpdateSelfLinkWithDeleteSelectedContactsCommand : IBotCallbackQ
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
         int ownerUserId = _userGetter.GetUserIDbyTelegramID(chatId);
-        var tgIds = await _contactGetterRepository.GetAllContactUserTGIds(ownerUserId);
-        var lines = new List<string>();
-        foreach (var tg in tgIds)
+        List<long> tgIds = await _contactGetterRepository.GetAllContactUserTGIds(ownerUserId);
+        List<string> lines = new List<string>();
+        foreach (long tg in tgIds)
         {
             int cid = _userGetter.GetUserIDbyTelegramID(tg);
             string uname = _userGetter.GetUserNameByTelegramID(tg);

@@ -17,7 +17,7 @@ public class StateHandlerFactory
 
     public IStateHandler? GetHandler(string stateName)
     {
-        _handlers.TryGetValue(stateName, out var handler);
+        _handlers.TryGetValue(stateName, out IStateHandler? handler);
         return handler;
     }
 }

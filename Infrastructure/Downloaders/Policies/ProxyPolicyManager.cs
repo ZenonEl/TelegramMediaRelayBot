@@ -23,12 +23,12 @@ public class ProxyPolicyManager : IProxyPolicyManager
 
     public string? GetProxyAddress(DownloaderDefinition downloaderConfig, string url)
     {
-        var policy = downloaderConfig.ProxyPolicy;
-        var uri = new Uri(url);
+        DownloaderProxyPolicyConfig policy = downloaderConfig.ProxyPolicy;
+        Uri uri = new Uri(url);
         string? proxyNameToUse = null;
 
         // 1. Проверяем, есть ли правило для конкретного сайта
-        foreach (var siteRule in policy.SiteSpecific)
+        foreach (KeyValuePair<string, string?> siteRule in policy.SiteSpecific)
         {
             // Используем EndsWith для поддержки поддоменов (e.g., m.tiktok.com)
             if (uri.Host.EndsWith(siteRule.Key, StringComparison.OrdinalIgnoreCase))
@@ -53,7 +53,7 @@ public class ProxyPolicyManager : IProxyPolicyManager
         }
 
         // 4. Ищем прокси с таким именем в нашем словаре
-        if (_proxies.TryGetValue(proxyNameToUse, out var proxyConfig))
+        if (_proxies.TryGetValue(proxyNameToUse, out ProxyConfig? proxyConfig))
         {
             Log.Debug("Proxy policy for {Url}: Using proxy '{ProxyName}'.", url, proxyNameToUse);
             return proxyConfig.Address;

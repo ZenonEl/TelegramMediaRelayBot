@@ -32,17 +32,17 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        var parts = update.CallbackQuery!.Data!.Split(':');
-        var action = parts[1];
-        var chatId = update.CallbackQuery!.Message!.Chat.Id;
+        string[] parts = update.CallbackQuery!.Data!.Split(':');
+        string action = parts[1];
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
 
         // --- ЛОГИКА ЗАПУСКА СОСТОЯНИЙ ---
         if (action == UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS || action == UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS)
         {
-            var isGroup = action == UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS;
+            bool isGroup = action == UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS;
 
             // Запускаем новый, чистый StateHandler
-            var newState = new UserStateData
+            UserStateData newState = new UserStateData
             {
                 StateName = isGroup ? "SetDistributionGroups" : "SetDistributionUsers",
                 Step = 0
@@ -50,7 +50,7 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
             _stateManager.Set(chatId, newState);
 
             // Отправляем первое сообщение (логика показа списка контактов/групп теперь внутри StateHandler)
-            var prompt = _resourceService.GetResourceString("EnterContactIdsPrompt");
+            string prompt = _resourceService.GetResourceString("EnterContactIdsPrompt");
             await botClient.SendMessage(chatId, prompt, cancellationToken: cancellationToken);
 
             // Также обновляем действие по умолчанию, если нужно
@@ -59,9 +59,9 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
         }
 
         // --- ЛОГИКА ПРЯМОГО ДЕЙСТВИЯ ---
-        var result = await _userMenuService.SetDefaultActionToUser(chatId, action);
+        bool result = await _userMenuService.SetDefaultActionToUser(chatId, action);
 
-        var message = result
+        string message = result
             ? _resourceService.GetResourceString("DefaultActionChangedMessage")
             : _resourceService.GetResourceString("DefaultActionNotChangedMessage");
 

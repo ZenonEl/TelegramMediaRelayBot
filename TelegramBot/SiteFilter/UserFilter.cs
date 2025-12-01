@@ -2,10 +2,9 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
-using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace TelegramMediaRelayBot.TelegramBot.SiteFilter;
 
@@ -48,16 +47,16 @@ public class DefaultUserFilterService : IUserFilterService
         ILinkCategorizer categorizer
         )
     {
-        var filteredUsers = new List<long>();
+        List<long> filteredUsers = new List<long>();
         string linkCategory = categorizer.DetermineCategory(linkUrl);
         _urlParser.TryExtractLinkAndText(linkUrl, out string linkDomain, out string _);
 
         foreach (long userId in userIds)
         {
-            var userFilters = await GetUserFilters(userId);
+            List<UserFilter> userFilters = await GetUserFilters(userId);
             bool shouldExclude = false;
 
-            foreach (var filter in userFilters)
+            foreach (UserFilter filter in userFilters)
             {
                 if (filter.Type == "category" &&
                     ShouldExcludeByCategory(filter.Value, linkCategory))
@@ -88,12 +87,13 @@ public class DefaultUserFilterService : IUserFilterService
         int userId = _userGetter.GetUserIDbyTelegramID(chatId);
         if (userId <= 0) return new List<UserFilter>();
 
-        var rules = await _privacySettingsGetter.GetAllActiveUserRulesWithTargets(userId);
-        var filters = new List<UserFilter>();
+        List<PrivacyRuleResult> rules = await _privacySettingsGetter.GetAllActiveUserRulesWithTargets(userId);
+        List<UserFilter> filters = new List<UserFilter>();
 
-        foreach (var rule in rules)
+        foreach (PrivacyRuleResult rule in rules)
         {
-            var filterType = rule.Type switch {
+            string? filterType = rule.Type switch
+            {
                 PrivacyRuleType.SOCIAL_SITE_FILTER => "category",
                 PrivacyRuleType.NSFW_SITE_FILTER => "category",
                 PrivacyRuleType.UNIFIED_SITE_FILTER => "category",
@@ -101,7 +101,8 @@ public class DefaultUserFilterService : IUserFilterService
                 _ => null
             };
 
-            var filterValue = rule.Action switch {
+            string? filterValue = rule.Action switch
+            {
                 PrivacyRuleAction.SOCIAL_FILTER => "Social",
                 PrivacyRuleAction.UNIFIED_FILTER => "UnifiedDomains",
                 PrivacyRuleAction.NSFW_FILTER => "NSFW",
@@ -111,7 +112,8 @@ public class DefaultUserFilterService : IUserFilterService
 
             if (!string.IsNullOrEmpty(filterType) && !string.IsNullOrEmpty(filterValue))
             {
-                filters.Add(new UserFilter {
+                filters.Add(new UserFilter
+                {
                     Type = filterType,
                     Value = filterValue
                 });

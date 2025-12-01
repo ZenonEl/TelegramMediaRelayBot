@@ -4,8 +4,8 @@
 
 using System.Collections.Concurrent;
 using Microsoft.Extensions.DependencyInjection;
-using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
 
 namespace TelegramMediaRelayBot.TelegramBot.Sessions;
@@ -60,7 +60,7 @@ public class DownloadSessionManager
 
     public void UpdateCaption(int statusMessageId, string newCaption)
     {
-        if (_sessions.TryGetValue(statusMessageId, out var session))
+        if (_sessions.TryGetValue(statusMessageId, out DownloadSession? session))
         {
             session.Caption = _textCleaner.Cleanup(newCaption);
             Log.Debug("Updated caption for session {MessageId}", statusMessageId);
@@ -100,7 +100,7 @@ public class DownloadSessionManager
     /// </summary>
     public void MarkAsProcessing(int statusMessageId)
     {
-        if (_sessions.TryGetValue(statusMessageId, out var session))
+        if (_sessions.TryGetValue(statusMessageId, out DownloadSession? session))
         {
             session.IsProcessing = true;
             Log.Debug("Session {MessageId} is now marked as processing.", statusMessageId);

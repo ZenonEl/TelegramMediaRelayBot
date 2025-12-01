@@ -47,7 +47,7 @@ public class PipelineMediaDownloader : IMediaDownloader
         _urlRegexPatterns = new List<Regex>();
         _urlHostPatterns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var pattern in _config.UrlMatching.Patterns)
+        foreach (string pattern in _config.UrlMatching.Patterns)
         {
             if (pattern.Contains("\\") || pattern.Contains("^") || pattern.Contains("$"))
             {
@@ -55,7 +55,7 @@ public class PipelineMediaDownloader : IMediaDownloader
                 {
                     _urlRegexPatterns.Add(new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase));
                 }
-                catch {}
+                catch { }
             }
             else
             {
@@ -84,7 +84,7 @@ public class PipelineMediaDownloader : IMediaDownloader
         if (string.IsNullOrWhiteSpace(url)) return false;
         try
         {
-            var uri = new Uri(url);
+            Uri uri = new Uri(url);
             if (_urlHostPatterns.Contains(uri.Host)) return true;
             if (_urlRegexPatterns.Any(regex => regex.IsMatch(url))) return true;
         }
@@ -92,12 +92,12 @@ public class PipelineMediaDownloader : IMediaDownloader
         return false;
     }
 
-public async Task<DownloadResult> Download(string url, DownloadOptions options, CancellationToken ct)
+    public async Task<DownloadResult> Download(string url, DownloadOptions options, CancellationToken ct)
     {
-        var tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        string tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         Directory.CreateDirectory(tempPath);
 
-        var context = new DownloadContext
+        DownloadContext context = new DownloadContext
         {
             OriginalUrl = url,
             OutputDirectory = tempPath,
@@ -115,7 +115,7 @@ public async Task<DownloadResult> Download(string url, DownloadOptions options, 
         {
             // 1. ЗАПУСК ЗАГРУЗКИ
             Log.Debug("--- PIPELINE START: {Url} ---", url);
-            var executionResult = await _retryOrchestrator.ExecuteWithRetriesAsync(_executor, context, ct);
+            ExecutionResult executionResult = await _retryOrchestrator.ExecuteWithRetriesAsync(_executor, context, ct);
 
             if (executionResult.Status != ExecutionStatus.Success)
             {
@@ -130,7 +130,7 @@ public async Task<DownloadResult> Download(string url, DownloadOptions options, 
             LogFilesState("After Download", context);
 
             // 2. ЗАПУСК ПОСТ-ПРОЦЕССОРОВ
-            foreach (var processor in _postProcessors)
+            foreach (IPostProcessor processor in _postProcessors)
             {
                 if (processor.CanProcess(context))
                 {
@@ -147,18 +147,18 @@ public async Task<DownloadResult> Download(string url, DownloadOptions options, 
             }
 
             // 3. ФИНАЛЬНАЯ ПОДГОТОВКА
-            var result = new DownloadResult
+            DownloadResult result = new DownloadResult
             {
                 Success = true,
                 MediaFiles = new List<byte[]>(),
                 MediaType = context.ResultFiles.FirstOrDefault()?.MediaType ?? MediaType.None,
             };
 
-            foreach (var file in context.ResultFiles)
+            foreach (DownloadedFile file in context.ResultFiles)
             {
                 if (System.IO.File.Exists(file.FilePath))
                 {
-                    var bytes = await System.IO.File.ReadAllBytesAsync(file.FilePath, ct);
+                    byte[] bytes = await System.IO.File.ReadAllBytesAsync(file.FilePath, ct);
                     result.MediaFiles.Add(bytes);
                     if (bytes.Length > 52428800)
                     {
@@ -185,10 +185,10 @@ public async Task<DownloadResult> Download(string url, DownloadOptions options, 
     // --- ВСПОМОГАТЕЛЬНЫЙ МЕТОД ДЛЯ ЛОГОВ ---
     private void LogFilesState(string stage, DownloadContext context)
     {
-        var files = context.ResultFiles;
+        List<DownloadedFile> files = context.ResultFiles;
         Log.Information("📊 [{Stage}] Files count: {Count}", stage, files.Count);
 
-        foreach (var file in files)
+        foreach (DownloadedFile file in files)
         {
             long size = 0;
             if (System.IO.File.Exists(file.FilePath))

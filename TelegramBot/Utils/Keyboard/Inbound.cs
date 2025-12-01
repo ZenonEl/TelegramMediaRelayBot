@@ -19,7 +19,7 @@ public static class InBoundKB
 
     public static InlineKeyboardMarkup GetInBoundActionsKeyboardMarkup(string userId, string callbackData)
     {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
                     {
                         new[]
                         {
@@ -39,13 +39,13 @@ public static class InBoundKB
 
     public static async Task<InlineKeyboardMarkup> GetInboundsKeyboardMarkup(Update update, IInboundDBGetter inboundDBGetter, IUserGetter userGetter)
     {
-        var buttonDataList = await inboundDBGetter.GetInboundsButtonDataAsync(userGetter.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id));
+        List<Database.ButtonData> buttonDataList = await inboundDBGetter.GetInboundsButtonDataAsync(userGetter.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id));
 
-        var inlineKeyboardButtons = new List<InlineKeyboardButton[]>();
+        List<InlineKeyboardButton[]> inlineKeyboardButtons = new List<InlineKeyboardButton[]>();
 
-        foreach (var buttonData in buttonDataList)
+        foreach (Database.ButtonData buttonData in buttonDataList)
         {
-            var button = InlineKeyboardButton.WithCallbackData(buttonData.ButtonText, buttonData.CallbackData);
+            InlineKeyboardButton button = InlineKeyboardButton.WithCallbackData(buttonData.ButtonText, buttonData.CallbackData);
             inlineKeyboardButtons.Add(new[] { button });
         }
         inlineKeyboardButtons.Add(new[] { KeyboardUtils.GetReturnButton("main_menu") });

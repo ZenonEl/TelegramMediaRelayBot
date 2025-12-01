@@ -2,8 +2,6 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using TelegramMediaRelayBot.TelegramBot.States;
-using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace TelegramMediaRelayBot.TelegramBot.Services;
@@ -34,7 +32,7 @@ public class StateBreakService : IStateBreakService
 
         if ((update.Message?.Text == command) || (update.CallbackQuery?.Data == callbackData))
         {
-            var chatId = GetChatId(update);
+            long chatId = GetChatId(update);
             _stateManager.Remove(chatId);
             await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), CancellationToken.None);
             return true;
@@ -44,7 +42,7 @@ public class StateBreakService : IStateBreakService
 
     public async Task AlertAndShowMenu(ITelegramBotClient botClient, Update update, string alertText)
     {
-        var chatId = GetChatId(update);
+        long chatId = GetChatId(update);
         _stateManager.Remove(chatId);
         await botClient.SendMessage(chatId, alertText, cancellationToken: CancellationToken.None);
         await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), CancellationToken.None);

@@ -2,47 +2,46 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-namespace TelegramMediaRelayBot.Database.Interfaces
+namespace TelegramMediaRelayBot.Database.Interfaces;
+
+public interface IInboxRepository
 {
-    public interface IInboxRepository
-    {
-        Task<long> AddItemAsync(int ownerUserId, int fromContactId, string caption, string payloadJson, string status);
-        Task<bool> SetStatusAsync(long inboxItemId, string status);
-        Task<IEnumerable<InboxItemDto>> GetItemsAsync(int ownerUserId, int limit = 20, int offset = 0);
-        Task<IEnumerable<InboxItemDto>> GetItemsAsync(int ownerUserId, string? statusFilter, int? fromContactId, int limit = 20, int offset = 0);
-        Task<InboxItemDto?> GetItemAsync(long id);
-        Task<bool> DeleteAsync(long id);
-        Task<int> GetNewCountAsync(int ownerUserId);
+    Task<long> AddItemAsync(int ownerUserId, int fromContactId, string caption, string payloadJson, string status);
+    Task<bool> SetStatusAsync(long inboxItemId, string status);
+    Task<IEnumerable<InboxItemDto>> GetItemsAsync(int ownerUserId, int limit = 20, int offset = 0);
+    Task<IEnumerable<InboxItemDto>> GetItemsAsync(int ownerUserId, string? statusFilter, int? fromContactId, int limit = 20, int offset = 0);
+    Task<InboxItemDto?> GetItemAsync(long id);
+    Task<bool> DeleteAsync(long id);
+    Task<int> GetNewCountAsync(int ownerUserId);
 
-        // Bulk operations
-        Task<int> SetStatusForOwnerAsync(int ownerUserId, string fromStatus, string toStatus, int? fromContactId = null);
-        Task<int> DeleteForOwnerAsync(int ownerUserId, string? statusFilter = null, int? fromContactId = null);
+    // Bulk operations
+    Task<int> SetStatusForOwnerAsync(int ownerUserId, string fromStatus, string toStatus, int? fromContactId = null);
+    Task<int> DeleteForOwnerAsync(int ownerUserId, string? statusFilter = null, int? fromContactId = null);
 
-        // Aggregations
-        Task<IEnumerable<InboxSenderInfo>> GetSendersAsync(int ownerUserId);
+    // Aggregations
+    Task<IEnumerable<InboxSenderInfo>> GetSendersAsync(int ownerUserId);
 
-        // Helpers
-        Task<InboxItemDto?> GetLatestItemForOwnerFromAsync(int ownerUserId, int fromContactId);
-        Task<bool> UpdatePayloadAsync(long inboxItemId, string payloadJson);
-    }
+    // Helpers
+    Task<InboxItemDto?> GetLatestItemForOwnerFromAsync(int ownerUserId, int fromContactId);
+    Task<bool> UpdatePayloadAsync(long inboxItemId, string payloadJson);
+}
 
-    public sealed class InboxItemDto
-    {
-        public long Id { get; set; }
-        public int OwnerUserId { get; set; }
-        public int FromContactId { get; set; }
-        public string? Caption { get; set; }
-        public string PayloadJson { get; set; } = string.Empty;
-        public string Status { get; set; } = "new";
-        public DateTime CreatedAt { get; set; }
-        // For future extensions (viewed timestamp etc.)
-    }
+public sealed class InboxItemDto
+{
+    public long Id { get; set; }
+    public int OwnerUserId { get; set; }
+    public int FromContactId { get; set; }
+    public string? Caption { get; set; }
+    public string PayloadJson { get; set; } = string.Empty;
+    public string Status { get; set; } = "new";
+    public DateTime CreatedAt { get; set; }
+    // For future extensions (viewed timestamp etc.)
+}
 
-    public sealed class InboxSenderInfo
-    {
-        public int FromContactId { get; set; }
-        public int Total { get; set; }
-        public int NewCount { get; set; }
-    }
+public sealed class InboxSenderInfo
+{
+    public int FromContactId { get; set; }
+    public int Total { get; set; }
+    public int NewCount { get; set; }
 }
 

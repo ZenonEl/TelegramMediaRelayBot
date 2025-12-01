@@ -24,13 +24,13 @@ public class SetAutoSendTimeCommand : IBotCallbackQueryHandlers
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        var callbackQueryData = update.CallbackQuery!.Data!.Split(':')[1];
-        var chatId = update.CallbackQuery!.Message!.Chat.Id;
+        string callbackQueryData = update.CallbackQuery!.Data!.Split(':')[1];
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
 
         // Заменяем static вызов на вызов сервиса
-        var result = await _userMenuService.SetAutoSendVideoTimeToUser(chatId, callbackQueryData);
+        bool result = await _userMenuService.SetAutoSendVideoTimeToUser(chatId, callbackQueryData);
 
-        var message = result
+        string message = result
             ? _resourceService.GetResourceString("AutoSendTimeChangedMessage") + callbackQueryData
             : _resourceService.GetResourceString("AutoSendTimeNotChangedMessage");
 

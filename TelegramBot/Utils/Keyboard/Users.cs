@@ -19,7 +19,7 @@ public static class UsersKB
 
     public static InlineKeyboardMarkup GetSettingsKeyboardMarkup()
     {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
         {
             new[]
             {
@@ -50,7 +50,7 @@ public static class UsersPrivacyMenuKB
 
     public static InlineKeyboardMarkup GetPrivacyMenuKeyboardMarkup()
     {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
         {
             new[]
             {
@@ -68,10 +68,10 @@ public static class UsersPrivacyMenuKB
             {
                 InlineKeyboardButton.WithCallbackData(GetResourceString("AllowContentForwardingBtn"), "user_update_content_forwarding_rule"),
             },
-			new[]
-			{
-				InlineKeyboardButton.WithCallbackData(GetResourceString("InboxSettingsButtonText"), "user_inbox_menu"),
-			},
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(GetResourceString("InboxSettingsButtonText"), "user_inbox_menu"),
+            },
 
             new[]
             {
@@ -83,8 +83,8 @@ public static class UsersPrivacyMenuKB
 
     public static InlineKeyboardMarkup GetInboxKeyboardMarkup(bool isEnabled)
     {
-        var toggleText = isEnabled ? GetResourceString("Disable") : GetResourceString("Enable");
-        var toggleCmd = isEnabled ? "user_inbox_disable" : "user_inbox_enable";
+        string toggleText = isEnabled ? GetResourceString("Disable") : GetResourceString("Enable");
+        string toggleCmd = isEnabled ? "user_inbox_disable" : "user_inbox_enable";
         return new InlineKeyboardMarkup(new[]
         {
             new[]
@@ -100,7 +100,7 @@ public static class UsersPrivacyMenuKB
 
     public static InlineKeyboardMarkup GetWhoCanFindMeByLinkKeyboardMarkup()
     {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
         {
             new[]
             {
@@ -124,7 +124,7 @@ public static class UsersPrivacyMenuKB
 
     public static InlineKeyboardMarkup GetUpdateSelfLinkKeyboardMarkup()
     {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
         {
             new[]
             {
@@ -152,7 +152,7 @@ public static class UsersPrivacyMenuKB
 
     public static InlineKeyboardMarkup GetPermanentContentSpoilerKeyboardMarkup()
     {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
         {
             new[]
             {
@@ -255,7 +255,7 @@ public static class UsersDefaultActionsMenuKB
 
     public static InlineKeyboardMarkup GetDefaultActionsMenuKeyboardMarkup()
     {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
         {
             new[]
             {
@@ -271,7 +271,7 @@ public static class UsersDefaultActionsMenuKB
 
     public static InlineKeyboardMarkup GetDefaultVideoDistributionKeyboardMarkup()
     {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
         {
             new[]
             {
@@ -291,7 +291,7 @@ public static class UsersDefaultActionsMenuKB
 
     public static InlineKeyboardMarkup GetUsersVideoSentUsersKeyboardMarkup()
     {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
         {
             new[]
             {
@@ -321,7 +321,7 @@ public static class UsersDefaultActionsMenuKB
 
     public static InlineKeyboardMarkup GetUsersAutoSendVideoTimeKeyboardMarkup()
     {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
         {
             new[]
             {

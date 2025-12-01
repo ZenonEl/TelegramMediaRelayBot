@@ -17,16 +17,16 @@ public class InboxSendersCommand : IBotCallbackQueryHandlers
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
         int userId = _userGetter.GetUserIDbyTelegramID(chatId);
-        var senders = (await _inbox.GetSendersAsync(userId).ConfigureAwait(false)).ToList();
-        var rows = new List<InlineKeyboardButton[]>();
-        foreach (var s in senders)
+        List<InboxSenderInfo> senders = (await _inbox.GetSendersAsync(userId).ConfigureAwait(false)).ToList();
+        List<InlineKeyboardButton[]> rows = new List<InlineKeyboardButton[]>();
+        foreach (InboxSenderInfo? s in senders)
         {
             string name = _userGetter.GetUserNameByTelegramID(_userGetter.GetTelegramIDbyUserID(s.FromContactId));
             string text = $"{name} · {s.NewCount}/{s.Total}";
             rows.Add(new[] { InlineKeyboardButton.WithCallbackData(text, $"inbox:senderops:{s.FromContactId}:1") });
         }
         rows.Add(new[] { InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("BackButtonText"), "inbox:list:1") });
-        var kb = new InlineKeyboardMarkup(rows);
+        InlineKeyboardMarkup kb = new InlineKeyboardMarkup(rows);
         await botClient.EditMessageText(chatId, update.CallbackQuery!.Message!.MessageId, _resourceService.GetResourceString("ChooseOptionText"), replyMarkup: kb, cancellationToken: ct).ConfigureAwait(false);
     }
 }

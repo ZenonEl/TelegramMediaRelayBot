@@ -17,7 +17,7 @@ public static class ReplyKeyboardUtils
     /// </summary>
     public static ReplyKeyboardMarkup GetSingleButtonKeyboardMarkup(string text)
     {
-        var replyKeyboard = new ReplyKeyboardMarkup(new[]
+        ReplyKeyboardMarkup replyKeyboard = new ReplyKeyboardMarkup(new[]
         {
             new KeyboardButton(text)
         })
@@ -32,7 +32,7 @@ public static class ReplyKeyboardUtils
     /// </summary>
     public async static Task RemoveReplyMarkup(ITelegramBotClient botClient, long chatId, CancellationToken cancellationToken)
     {
-        var sentMessage = await botClient.SendMessage(chatId, "ㅤ", cancellationToken: cancellationToken, replyMarkup: new ReplyKeyboardRemove()).ConfigureAwait(false);
+        Message sentMessage = await botClient.SendMessage(chatId, "ㅤ", cancellationToken: cancellationToken, replyMarkup: new ReplyKeyboardRemove()).ConfigureAwait(false);
         await botClient.DeleteMessage(chatId, sentMessage.MessageId, cancellationToken).ConfigureAwait(false);
     }
 }

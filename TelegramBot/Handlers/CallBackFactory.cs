@@ -18,13 +18,13 @@ public class CallbackQueryHandlersFactory
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        var data = update.CallbackQuery?.Data;
+        string? data = update.CallbackQuery?.Data;
         if (string.IsNullOrEmpty(data)) return;
 
-        using var scope = _provider.CreateScope();
-        var handlers = scope.ServiceProvider.GetServices<IBotCallbackQueryHandlers>();
+        using IServiceScope scope = _provider.CreateScope();
+        IEnumerable<IBotCallbackQueryHandlers> handlers = scope.ServiceProvider.GetServices<IBotCallbackQueryHandlers>();
 
-        var handler = handlers
+        IBotCallbackQueryHandlers? handler = handlers
             .Where(h => data.StartsWith(h.Name, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(h => h.Name.Length)
             .FirstOrDefault();

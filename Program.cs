@@ -7,36 +7,35 @@ global using Telegram.Bot;
 global using Telegram.Bot.Types;
 global using TelegramMediaRelayBot.Config.Services;
 using Microsoft.Extensions.Configuration;
-using TelegramMediaRelayBot.Extensions;
 using Microsoft.Extensions.Hosting;
+using TelegramMediaRelayBot.Extensions;
 
 
-namespace TelegramMediaRelayBot
+namespace TelegramMediaRelayBot;
+
+public static class Program
 {
-    public static class Program
+    public static async Task Main(string[] args)
     {
-        public static async Task Main(string[] args)
+        IHostBuilder builder = Host.CreateDefaultBuilder(args);
+
+        builder.ConfigureAppConfiguration((hostingContext, config) =>
         {
-            IHostBuilder builder = Host.CreateDefaultBuilder(args);
+            config.AddYamlFile("downloader-config.yaml", optional: false, reloadOnChange: true);
+        });
 
-            builder.ConfigureAppConfiguration((hostingContext, config) =>
-            {
-                config.AddYamlFile("downloader-config.yaml", optional: false, reloadOnChange: true);
-            });
+        builder.ConfigureServices((hostContext, services) =>
+        {
+            services.AddConfigurationServices(hostContext.Configuration);
+            services.AddApplicationCore();
+            services.AddPersistenceServices(hostContext.Configuration);
+        })
+        .AddSerilogLogging();
 
-            builder.ConfigureServices((hostContext, services) =>
-            {
-                services.AddConfigurationServices(hostContext.Configuration);
-                services.AddApplicationCore();
-                services.AddPersistenceServices(hostContext.Configuration);
-            })
-            .AddSerilogLogging();
+        IHost host = builder.Build();
 
-            IHost host = builder.Build();
+        await host.ApplyDatabaseMigrationsAsync();
 
-            await host.ApplyDatabaseMigrationsAsync();
-
-            await host.RunAsync();
-        }
+        await host.RunAsync();
     }
 }

@@ -15,12 +15,12 @@ public class DomainsLoader : IDomainsLoader
 {
     public HashSet<string> LoadDomainsFromFile(string filePath)
     {
-        var domains = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        HashSet<string> domains = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         if (!System.IO.File.Exists(filePath))
             return domains;
 
-        foreach (var line in System.IO.File.ReadLines(filePath))
+        foreach (string line in System.IO.File.ReadLines(filePath))
         {
             string cleanLine = line.Trim();
 

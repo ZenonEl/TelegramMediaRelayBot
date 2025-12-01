@@ -22,7 +22,7 @@ public class ConfigurationService : IConfigurationService
     /// <inheritdoc />
     public bool CanUserStartUsingBot(string referrerLink, IUserGetter userGetter)
     {
-        var accessPolicy = _accessPolicyOptions.CurrentValue;
+        AccessPolicyConfiguration accessPolicy = _accessPolicyOptions.CurrentValue;
 
         if (!accessPolicy.Enabled)
             return true;
@@ -31,8 +31,8 @@ public class ConfigurationService : IConfigurationService
         if (referrerUserId == -1)
             return false;
 
-        var newUsersPolicy = accessPolicy.NewUsersPolicy;
-        var allowRules = newUsersPolicy.AllowRules;
+        NewUsersPolicyConfiguration newUsersPolicy = accessPolicy.NewUsersPolicy;
+        AllowRulesConfiguration allowRules = newUsersPolicy.AllowRules;
 
         bool isReferrerBlacklisted = allowRules.BlacklistedReferrerIds.Contains(referrerUserId);
         bool isReferrerWhitelisted = allowRules.WhitelistedReferrerIds.Contains(referrerUserId);

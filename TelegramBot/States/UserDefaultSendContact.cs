@@ -2,11 +2,11 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
-using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 namespace TelegramMediaRelayBot.TelegramBot.States;
 
@@ -42,16 +42,16 @@ public class SetDistributionUsersStateHandler : IStateHandler
 
     public async Task<StateResult> Process(UserStateData stateData, Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        var chatId = _interactionService.GetChatId(update);
+        long chatId = _interactionService.GetChatId(update);
         if (await _stateBreaker.HandleStateBreak(botClient, update)) return StateResult.Complete();
 
-        var actingUserId = _userGetter.GetUserIDbyTelegramID(chatId);
+        int actingUserId = _userGetter.GetUserIDbyTelegramID(chatId);
 
         switch (stateData.Step)
         {
             // ШАГ 0: Ожидание списка ID контактов
             case 0:
-                var messageText = update.Message?.Text;
+                string? messageText = update.Message?.Text;
                 if (string.IsNullOrEmpty(messageText))
                 {
                     await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
@@ -64,20 +64,21 @@ public class SetDistributionUsersStateHandler : IStateHandler
 
                 if (inputIds.Count == 0)
                 {
-                    var tgIds = await _contactGetter.GetAllContactUserTGIds(actingUserId);
-                    var infos = tgIds.Select(tg => {
+                    List<long> tgIds = await _contactGetter.GetAllContactUserTGIds(actingUserId);
+                    List<string> infos = tgIds.Select(tg =>
+                    {
                         int cid = _userGetter.GetUserIDbyTelegramID(tg);
                         string uname = _userGetter.GetUserNameByTelegramID(tg);
                         return string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, "");
                     }).ToList();
-                    var header = _resourceService.GetResourceString("YourContacts");
-                    var body = infos.Any() ? string.Join("\n", infos) : _resourceService.GetResourceString("NoUsersFound");
+                    string header = _resourceService.GetResourceString("YourContacts");
+                    string body = infos.Any() ? string.Join("\n", infos) : _resourceService.GetResourceString("NoUsersFound");
                     await botClient.SendMessage(chatId, $"{header}\n{body}\n\n{_resourceService.GetResourceString("PleaseEnterContactIDs")}", cancellationToken: cancellationToken);
                     return StateResult.Continue();
                 }
 
-                var allowedTgIds = await _contactGetter.GetAllContactUserTGIds(actingUserId);
-                var validTargetIds = inputIds.Where(id => allowedTgIds.Contains(_userGetter.GetTelegramIDbyUserID(id))).ToList();
+                List<long> allowedTgIds = await _contactGetter.GetAllContactUserTGIds(actingUserId);
+                List<int> validTargetIds = inputIds.Where(id => allowedTgIds.Contains(_userGetter.GetTelegramIDbyUserID(id))).ToList();
 
                 if (validTargetIds.Count == 0)
                 {
@@ -86,8 +87,8 @@ public class SetDistributionUsersStateHandler : IStateHandler
                 }
 
                 stateData.Data["TargetIds"] = validTargetIds;
-                var idsList = string.Join(", ", validTargetIds);
-                var message = string.Format(_resourceService.GetResourceString("ProcessIDsList"), idsList);
+                string idsList = string.Join(", ", validTargetIds);
+                string message = string.Format(_resourceService.GetResourceString("ProcessIDsList"), idsList);
 
                 await botClient.SendMessage(chatId, message, replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
                 stateData.Step = 1;
@@ -104,11 +105,11 @@ public class SetDistributionUsersStateHandler : IStateHandler
 
                 await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, cancellationToken: cancellationToken);
 
-                var targetIds = (List<int>)stateData.Data["TargetIds"];
-                var actionId = _defaultActionGetter.GetDefaultActionId(actingUserId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+                List<int> targetIds = (List<int>)stateData.Data["TargetIds"];
+                int actionId = _defaultActionGetter.GetDefaultActionId(actingUserId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
 
                 await _defaultAction.RemoveAllDefaultUsersActionTargets(actingUserId, TargetTypes.USER, actionId);
-                foreach (var id in targetIds)
+                foreach (int id in targetIds)
                 {
                     await _defaultAction.AddDefaultUsersActionTargets(actingUserId, actionId, TargetTypes.USER, id);
                 }

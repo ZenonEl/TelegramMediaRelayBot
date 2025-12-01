@@ -18,7 +18,7 @@ public class BotConfigurationValidator : IValidateOptions<BotConfiguration>
         {
             return ValidateOptionsResult.Fail("AppSettings:DatabaseType must be provided (sqlite or mysql).");
         }
-        var type = options.DatabaseType.ToLowerInvariant();
+        string type = options.DatabaseType.ToLowerInvariant();
         if (type != "sqlite" && type != "mysql")
         {
             return ValidateOptionsResult.Fail("AppSettings:DatabaseType must be either 'sqlite' or 'mysql'.");

@@ -3,7 +3,6 @@
 // See LICENSE file in the project root for full license information.
 
 using FluentValidation;
-using Telegram.Bot.Types;
 
 namespace TelegramMediaRelayBot.TelegramBot.Validation;
 

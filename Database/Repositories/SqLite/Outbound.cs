@@ -32,10 +32,10 @@ public class SqliteOutboundDBGetter(IDbConnection dbConnection) : IOutboundDBGet
 
         // 2. Используем Dapper. Он отлично работает со SQLite.
         // Вся работа с подключением, командами и чтением инкапсулирована здесь.
-        var users = await dbConnection.QueryAsync<UserQueryResult>(query, new { userId });
+        IEnumerable<UserQueryResult> users = await dbConnection.QueryAsync<UserQueryResult>(query, new { userId });
 
         // 3. Преобразуем результат в итоговую модель данных.
-        var buttonDataList = users
+        List<ButtonData> buttonDataList = users
             .Select(user => new ButtonData
             {
                 ButtonText = user.Name,

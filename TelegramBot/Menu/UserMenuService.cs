@@ -2,11 +2,11 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.States;
-using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 namespace TelegramMediaRelayBot.TelegramBot.Services;
 
@@ -134,13 +134,13 @@ public class UserMenuService : IUserMenuService
 
     public Task<bool> SetAutoSendVideoTimeToUser(long chatId, string time)
     {
-        var userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
         return _defaultActionSetter.SetAutoSendVideoConditionToUser(userId, time, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
     }
 
     public Task<bool> SetDefaultActionToUser(long chatId, string action)
     {
-        var userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
         return _defaultActionSetter.SetAutoSendVideoActionToUser(userId, action, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
     }
 
@@ -160,8 +160,8 @@ public class UserMenuService : IUserMenuService
 
     public void UpdateSelfLinkWithKeepSelectedContacts(Update update)
     {
-        var chatId = _interactionService.GetChatId(update);
-        var newState = new UserStateData
+        long chatId = _interactionService.GetChatId(update);
+        UserStateData newState = new UserStateData
         {
             StateName = "ManageContacts",
             Step = 0,
@@ -172,8 +172,8 @@ public class UserMenuService : IUserMenuService
 
     public void UpdateSelfLinkWithDeleteSelectedContacts(Update update)
     {
-        var chatId = _interactionService.GetChatId(update);
-        var newState = new UserStateData
+        long chatId = _interactionService.GetChatId(update);
+        UserStateData newState = new UserStateData
         {
             StateName = "ManageContacts",
             Step = 0,
@@ -184,14 +184,14 @@ public class UserMenuService : IUserMenuService
 
     public bool UpdateSelfLinkWithContacts(Update update)
     {
-        var chatId = _interactionService.GetChatId(update);
-        var userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        long chatId = _interactionService.GetChatId(update);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
         return _userRepository.ReCreateUserSelfLink(userId);
     }
 
     public void UpdateSelfLinkWithNewContacts(Update update)
     {
-        var userId = _userGetter.GetUserIDbyTelegramID(_interactionService.GetChatId(update));
+        int userId = _userGetter.GetUserIDbyTelegramID(_interactionService.GetChatId(update));
         _userRepository.ReCreateUserSelfLink(userId);
         _contactRemover.RemoveAllContacts(userId);
     }

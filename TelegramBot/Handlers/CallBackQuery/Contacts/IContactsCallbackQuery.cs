@@ -49,8 +49,8 @@ public class ViewInboundInvitesCommand : IBotCallbackQueryHandlers
     {
         await _menuUtils.ViewInboundInviteLinks(botClient, update);
 
-        var chatId = update.CallbackQuery!.Message!.Chat.Id;
-        var newState = new UserStateData { StateName = "InboundInvite", Step = 0 };
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        UserStateData newState = new UserStateData { StateName = "InboundInvite", Step = 0 };
         _stateManager.Set(chatId, newState);
 
         await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, cancellationToken: ct);

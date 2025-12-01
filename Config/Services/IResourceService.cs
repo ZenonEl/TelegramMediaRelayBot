@@ -14,7 +14,7 @@ public interface IResourceService
     /// </summary>
     /// <param name="key">Resource key</param>
     /// <returns>Localized string</returns>
-    [Obsolete("Используйте специализированные сервисы, например IUiResourceService")]
+    //[Obsolete("Используйте специализированные сервисы, например IUiResourceService")]
     string GetResourceString(string key);
 }
 

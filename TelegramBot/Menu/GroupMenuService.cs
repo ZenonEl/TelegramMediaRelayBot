@@ -42,16 +42,16 @@ public class GroupMenuService : IGroupMenuService
 
     public async Task ShowGroupsMenu(ITelegramBotClient botClient, Update update)
     {
-        var chatId = update.CallbackQuery!.Message!.Chat.Id;
-        var userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
 
         // Запускаем универсальное состояние для управления группами
-        var newState = new UserStateData { StateName = "ManageGroups", Step = 0 }; // Имя нового универсального обработчика
+        UserStateData newState = new UserStateData { StateName = "ManageGroups", Step = 0 }; // Имя нового универсального обработчика
         _stateManager.Set(chatId, newState);
 
-        var groupInfos = await UsersGroup.GetUserGroupInfoByUserId(userId, _groupGetter);
+        List<string> groupInfos = await UsersGroup.GetUserGroupInfoByUserId(userId, _groupGetter);
 
-        var messageText = groupInfos.Any()
+        string messageText = groupInfos.Any()
             ? $"{_resourceService.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}"
             : _resourceService.GetResourceString("AltYourGroupsText");
 
@@ -66,10 +66,10 @@ public class GroupMenuService : IGroupMenuService
 
     public async Task<List<GroupViewModel>> GetGroupsForDisplay(int userId)
     {
-        var groupIds = await _groupGetter.GetGroupIDsByUserId(userId);
-        var groupViewModels = new List<GroupViewModel>();
+        IEnumerable<int> groupIds = await _groupGetter.GetGroupIDsByUserId(userId);
+        List<GroupViewModel> groupViewModels = new List<GroupViewModel>();
 
-        foreach (var groupId in groupIds)
+        foreach (int groupId in groupIds)
         {
             groupViewModels.Add(new GroupViewModel
             {
@@ -85,19 +85,19 @@ public class GroupMenuService : IGroupMenuService
 
     public async Task ShowAvailableGroups(ITelegramBotClient botClient, Update update)
     {
-        var chatId = update.CallbackQuery!.Message!.Chat.Id;
-        var userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
 
         // 1. Получаем СТРУКТУРИРОВАННЫЕ ДАННЫЕ
         List<GroupViewModel> groups = await GetGroupsForDisplay(userId);
 
         // 2. ФОРМАТИРУЕМ в красивое сообщение
-        var sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
         sb.AppendLine(_resourceService.GetResourceString("YourGroups"));
 
         if (groups.Any())
         {
-            foreach (var group in groups)
+            foreach (GroupViewModel group in groups)
             {
                 sb.AppendLine($"{group.Name} (ID: {group.Id})");
             }

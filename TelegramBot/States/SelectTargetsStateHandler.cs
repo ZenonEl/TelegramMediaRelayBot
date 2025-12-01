@@ -44,7 +44,7 @@ public class SelectTargetsStateHandler : IStateHandler
 
     public async Task<StateResult> Process(UserStateData stateData, Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        var chatId = _interactionService.GetChatId(update);
+        long chatId = _interactionService.GetChatId(update);
         if (await _stateBreaker.HandleStateBreak(botClient, update)) return StateResult.Complete();
 
         // --- НОВАЯ ЛОГИКА ДЛЯ КНОПКИ "НАЗАД" ---
@@ -80,8 +80,8 @@ public class SelectTargetsStateHandler : IStateHandler
                 stateData.Data["SelectedTargetIds"] = validTargetIds;
 
                 // Формируем сообщение для подтверждения
-                var idsList = string.Join(", ", validTargetIds);
-                var message = string.Format(_resourceService.GetResourceString("ProcessIDsList"), idsList);
+                string idsList = string.Join(", ", validTargetIds);
+                string message = string.Format(_resourceService.GetResourceString("ProcessIDsList"), idsList);
 
                 // Отправляем новое сообщение с кнопками "Да" / "Назад"
                 await botClient.SendMessage(chatId, message,
@@ -97,7 +97,7 @@ public class SelectTargetsStateHandler : IStateHandler
             case 1:
                 if (update.CallbackQuery?.Data != "accept")
                 {
-                    if (stateData.Data.TryGetValue("ContactListId", out var _contactListId))
+                    if (stateData.Data.TryGetValue("ContactListId", out object? _contactListId))
                     {
                         contactListId = Convert.ToInt32(_contactListId);
                     }
@@ -122,20 +122,20 @@ public class SelectTargetsStateHandler : IStateHandler
                 }
                 catch { }
 
-                if (!stateData.Data.TryGetValue("SessionMessageId", out var sessionMsgIdObj) ||
-                    !stateData.Data.TryGetValue("SelectedTargetIds", out var targetIdsObj))
+                if (!stateData.Data.TryGetValue("SessionMessageId", out object? sessionMsgIdObj) ||
+                    !stateData.Data.TryGetValue("SelectedTargetIds", out object? targetIdsObj))
                 {
                     await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, _resourceService.GetResourceString("InvisibleLetter"));
                     return StateResult.Complete();
                 }
 
-                if (!_sessionManager.TryGetSession((int)sessionMsgIdObj, out var session))
+                if (!_sessionManager.TryGetSession((int)sessionMsgIdObj, out DownloadSession? session))
                 {
                     await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, "Session expired.", true, cancellationToken: cancellationToken);
                     return StateResult.Complete();
                 }
 
-                stateData.Data.TryGetValue("TargetType", out var targetTypeObj);
+                stateData.Data.TryGetValue("TargetType", out object? targetTypeObj);
                 string targetType = (string)(targetTypeObj ?? "Users");
 
                 targetType = (string)targetTypeObj;
@@ -163,11 +163,11 @@ public class SelectTargetsStateHandler : IStateHandler
                     finalTargetTgIds = uniqueTgIds.ToList();
                 }
 
-                if (stateData.Data.TryGetValue("ContactListId", out var __contactListId))
+                if (stateData.Data.TryGetValue("ContactListId", out object? __contactListId))
                 {
                     contactListId = Convert.ToInt32(__contactListId);
                 }
-                var statusMsg = await _interactionService.ReplyToUpdate(
+                Message? statusMsg = await _interactionService.ReplyToUpdate(
                     botClient,
                     update,
                     $"🚀 Starting distribution to {finalTargetTgIds.Count} selected targets...", //TODO текст в коде
@@ -180,28 +180,28 @@ public class SelectTargetsStateHandler : IStateHandler
 
                 await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, cancellationToken: cancellationToken);
                 return StateResult.Complete();
-                }
+        }
 
         return StateResult.Ignore();
     }
 
     private async Task<List<int>> ValidateUserIds(int actingUserId, List<int> inputIds)
     {
-        var allowedTgIds = await _contactGetter.GetAllContactUserTGIds(actingUserId);
+        List<long> allowedTgIds = await _contactGetter.GetAllContactUserTGIds(actingUserId);
         return inputIds.Where(id => allowedTgIds.Contains(_userGetter.GetTelegramIDbyUserID(id))).ToList();
     }
 
     private async Task<List<int>> ValidateGroupIds(int actingUserId, List<int> inputIds)
     {
-        var userGroups = await _groupGetter.GetGroupIDsByUserId(actingUserId);
+        IEnumerable<int> userGroups = await _groupGetter.GetGroupIDsByUserId(actingUserId);
         return inputIds.Where(id => userGroups.Contains(id)).ToList();
     }
 
     private async Task<List<int>?> ParseAndValidateIds(long chatId, string messageText, UserStateData stateData)
     {
-        var actingUserId = _userGetter.GetUserIDbyTelegramID(chatId);
-        stateData.Data.TryGetValue("TargetType", out var targetTypeObj);
-        var targetType = (string)(targetTypeObj ?? "Users");
+        int actingUserId = _userGetter.GetUserIDbyTelegramID(chatId);
+        stateData.Data.TryGetValue("TargetType", out object? targetTypeObj);
+        string targetType = (string)(targetTypeObj ?? "Users");
 
         List<int> inputIds;
         try
@@ -214,7 +214,7 @@ public class SelectTargetsStateHandler : IStateHandler
             return null;
         }
 
-        var validTargetIds = targetType == "Users"
+        List<int> validTargetIds = targetType == "Users"
             ? await ValidateUserIds(actingUserId, inputIds)
             : await ValidateGroupIds(actingUserId, inputIds);
 

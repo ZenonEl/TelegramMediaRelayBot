@@ -35,9 +35,9 @@ public class SendToSpecifiedUsersCommand : IBotCallbackQueryHandlers
         _sessionManager.CancelDefaultAction(messageId);
         _sessionManager.MarkAsProcessing(messageId);
 
-        var sentMessage = await _contactMenuService.ShowAvailableContacts(botClient, update);
+        Message? sentMessage = await _contactMenuService.ShowAvailableContacts(botClient, update);
 
-        var stateDataDict = new Dictionary<string, object>
+        Dictionary<string, object> stateDataDict = new Dictionary<string, object>
         {
             { "TargetType", "Users" },
             { "SessionMessageId", messageId }

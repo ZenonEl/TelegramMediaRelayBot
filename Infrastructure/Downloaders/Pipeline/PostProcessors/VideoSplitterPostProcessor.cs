@@ -39,9 +39,9 @@ public class VideoSplitterPostProcessor : IPostProcessor
 
     public async Task ProcessAsync(DownloadContext context, CancellationToken ct)
     {
-        var newFilesList = new List<DownloadedFile>();
+        List<DownloadedFile> newFilesList = new List<DownloadedFile>();
 
-        foreach (var file in context.ResultFiles)
+        foreach (DownloadedFile file in context.ResultFiles)
         {
             if (file.MediaType != MediaType.Video || file.FileSize <= _config.ThresholdBytes)
             {
@@ -102,11 +102,11 @@ public class VideoSplitterPostProcessor : IPostProcessor
         string ffprobeExec = "ffprobe"; //TODO улучшить в будущем поиск
         if (Path.IsPathRooted(_ffmpegPath))
         {
-                string? dir = Path.GetDirectoryName(_ffmpegPath);
-                if (dir != null) ffprobeExec = Path.Combine(dir, "ffprobe");
+            string? dir = Path.GetDirectoryName(_ffmpegPath);
+            if (dir != null) ffprobeExec = Path.Combine(dir, "ffprobe");
         }
 
-        var result = await _processRunner.RunAsync(new ProcessRunOptions
+        CommandResult result = await _processRunner.RunAsync(new ProcessRunOptions
         {
             FileName = ffprobeExec,
             Arguments = args,
@@ -123,7 +123,7 @@ public class VideoSplitterPostProcessor : IPostProcessor
 
     private async Task<List<DownloadedFile>> SplitFileAsync(string inputFile, int parts, double segmentDuration, DownloadContext context, CancellationToken ct)
     {
-        var outputFiles = new List<DownloadedFile>();
+        List<DownloadedFile> outputFiles = new List<DownloadedFile>();
         string dir = Path.GetDirectoryName(inputFile)!;
         string name = Path.GetFileNameWithoutExtension(inputFile);
         string ext = Path.GetExtension(inputFile);
@@ -135,7 +135,7 @@ public class VideoSplitterPostProcessor : IPostProcessor
 
             double startTime = i * segmentDuration;
 
-            var args = new List<string>
+            List<string> args = new List<string>
             {
                 "-y",
                 "-ss", startTime.ToString(CultureInfo.InvariantCulture),
@@ -146,9 +146,9 @@ public class VideoSplitterPostProcessor : IPostProcessor
                 outputPath
             };
 
-            context.Log($"Creating part {i+1}/{parts}...");
+            context.Log($"Creating part {i + 1}/{parts}...");
 
-            var result = await _processRunner.RunAsync(new ProcessRunOptions
+            CommandResult result = await _processRunner.RunAsync(new ProcessRunOptions
             {
                 FileName = _ffmpegPath,
                 Arguments = args,
@@ -165,7 +165,7 @@ public class VideoSplitterPostProcessor : IPostProcessor
             }
             else
             {
-                context.Log($"Failed to create part {i+1}. Aborting split.");
+                context.Log($"Failed to create part {i + 1}. Aborting split.");
                 return new List<DownloadedFile>();
             }
         }

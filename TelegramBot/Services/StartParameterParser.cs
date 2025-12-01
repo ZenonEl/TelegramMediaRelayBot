@@ -18,7 +18,7 @@ public class StartParameterParser : IStartParameterParser
             return string.Empty;
         }
 
-        var parts = messageText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        string[] parts = messageText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
         if (parts.Length > 1 && parts[0] == "/start")
         {

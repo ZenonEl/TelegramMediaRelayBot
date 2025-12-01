@@ -2,11 +2,11 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
-using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 namespace TelegramMediaRelayBot.TelegramBot.States;
 
@@ -42,7 +42,7 @@ public class InboundInviteStateHandler : IStateHandler
 
     public async Task<StateResult> Process(UserStateData stateData, Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        var chatId = _interactionService.GetChatId(update);
+        long chatId = _interactionService.GetChatId(update);
         if (await _stateBreaker.HandleStateBreak(botClient, update))
         {
             return StateResult.Complete();
@@ -54,7 +54,7 @@ public class InboundInviteStateHandler : IStateHandler
             return StateResult.Ignore();
         }
 
-        var callbackData = update.CallbackQuery.Data;
+        string callbackData = update.CallbackQuery.Data;
 
         switch (stateData.Step)
         {
@@ -64,7 +64,7 @@ public class InboundInviteStateHandler : IStateHandler
             case 0:
                 if (callbackData.StartsWith("user_show_inbounds_invite:"))
                 {
-                    var userIdStr = callbackData.Split(':')[1];
+                    string userIdStr = callbackData.Split(':')[1];
                     // Сохраняем ID пользователя, с которым работаем, в данные состояния
                     stateData.Data["TargetUserId"] = userIdStr;
 
@@ -83,12 +83,12 @@ public class InboundInviteStateHandler : IStateHandler
             // ШАГ 1: Ожидание действия (Принять/Отклонить)
             // ========================================================================
             case 1:
-                if (!stateData.Data.TryGetValue("TargetUserId", out var targetUserIdObj))
+                if (!stateData.Data.TryGetValue("TargetUserId", out object? targetUserIdObj))
                 {
                     Log.Warning("State 'InboundInvite' is missing 'TargetUserId' at Step 1.");
                     return StateResult.Complete();
                 }
-                var targetUserId = (string)targetUserIdObj;
+                string targetUserId = (string)targetUserIdObj;
 
                 if (callbackData.StartsWith("user_accept_inbounds_invite:"))
                 {
@@ -115,17 +115,17 @@ public class InboundInviteStateHandler : IStateHandler
                 if (callbackData.StartsWith("accept_accept_invite:"))
                 {
                     // --- ЛОГИКА ИЗ AcceptInboundInvite ---
-                    var senderIdStr = callbackData.Split(':')[1];
-                    var senderTelegramId = long.Parse(senderIdStr);
-                    var accepterTelegramId = update.CallbackQuery.Message!.Chat.Id;
+                    string senderIdStr = callbackData.Split(':')[1];
+                    long senderTelegramId = long.Parse(senderIdStr);
+                    long accepterTelegramId = update.CallbackQuery.Message!.Chat.Id;
                     await _contactSetter.SetContactStatus(senderTelegramId, accepterTelegramId, ContactsStatus.ACCEPTED);
                 }
                 else if (callbackData.StartsWith("accept_decline_invite:"))
                 {
                     // --- ЛОГИКА ИЗ DeclineInboundInvite ---
-                    var senderIdStr = callbackData.Split(':')[1];
-                    var senderId = _userGetter.GetUserIDbyTelegramID(long.Parse(senderIdStr));
-                    var accepterId = _userGetter.GetUserIDbyTelegramID(update.CallbackQuery.Message!.Chat.Id);
+                    string senderIdStr = callbackData.Split(':')[1];
+                    int senderId = _userGetter.GetUserIDbyTelegramID(long.Parse(senderIdStr));
+                    int accepterId = _userGetter.GetUserIDbyTelegramID(update.CallbackQuery.Message!.Chat.Id);
                     await _contactRemover.RemoveContactByStatus(senderId, accepterId, ContactsStatus.WAITING_FOR_ACCEPT);
                 }
 

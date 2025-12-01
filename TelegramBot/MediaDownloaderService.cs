@@ -32,24 +32,24 @@ public class MediaDownloaderService
 
     public async Task<DownloadResult> DownloadMedia(string url, DownloadOptions options, CancellationToken ct)
     {
-        var availableDownloaders = _downloaderFactory.GetDownloadersForUrl(url);
+        IEnumerable<IMediaDownloader> availableDownloaders = _downloaderFactory.GetDownloadersForUrl(url);
         if (!availableDownloaders.Any())
         {
             return new DownloadResult { Success = false, ErrorMessage = $"No downloader found for URL: {url}" };
         }
 
-        var lastErrorResult = new DownloadResult { Success = false, ErrorMessage = "All downloaders failed." };
+        DownloadResult lastErrorResult = new DownloadResult { Success = false, ErrorMessage = "All downloaders failed." };
 
-        foreach (var downloader in availableDownloaders)
+        foreach (IMediaDownloader downloader in availableDownloaders)
         {
             Log.Information("Attempting to download with {DownloaderName}...", downloader.Name);
 
-            var attemptResult = new DownloadResult { Success = false };
+            DownloadResult attemptResult = new DownloadResult { Success = false };
             int attempt = 1;
 
             while (true)
             {
-                var proxyAddress = _proxyPolicyManager.GetProxyAddress(downloader.Config, url);
+                string? proxyAddress = _proxyPolicyManager.GetProxyAddress(downloader.Config, url);
 
                 if (attemptResult.Modifiers?.UseProxyName != null)
                 {
@@ -71,7 +71,7 @@ public class MediaDownloaderService
                 Log.Warning("Attempt {Attempt} with {DownloaderName} failed: {Error}", attempt, downloader.Name, attemptResult.ErrorMessage);
                 lastErrorResult = attemptResult;
 
-                var decision = _retryPolicyManager.Decide(lastErrorResult, attempt);
+                RetryDecision decision = _retryPolicyManager.Decide(lastErrorResult, attempt);
 
                 if (decision.ShouldRetry)
                 {

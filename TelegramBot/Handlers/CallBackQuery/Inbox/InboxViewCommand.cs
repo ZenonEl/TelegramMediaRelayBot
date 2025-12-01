@@ -39,28 +39,28 @@ public class InboxViewCommand : IBotCallbackQueryHandlers
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
-        var parts = update.CallbackQuery!.Data!.Split(':');
+        string[] parts = update.CallbackQuery!.Data!.Split(':');
         long id = long.Parse(parts[2]);
-        int page = parts.Length >= 4 && int.TryParse(parts[3], out var p) ? p : 1;
-        var validation = await _viewValidator.ValidateAsync(new InboxViewRequest { ChatId = chatId, ItemId = id, Page = page }, ct).ConfigureAwait(false);
+        int page = parts.Length >= 4 && int.TryParse(parts[3], out int p) ? p : 1;
+        FluentValidation.Results.ValidationResult validation = await _viewValidator.ValidateAsync(new InboxViewRequest { ChatId = chatId, ItemId = id, Page = page }, ct).ConfigureAwait(false);
         if (!validation.IsValid)
         {
             string err = string.Join("\n", validation.Errors.Select(e => $"• {e.ErrorMessage}"));
             await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, err, showAlert: true, cancellationToken: ct).ConfigureAwait(false);
             return;
         }
-        var item = await _inbox.GetItemAsync(id).ConfigureAwait(false);
+        InboxItemDto? item = await _inbox.GetItemAsync(id).ConfigureAwait(false);
         if (item == null)
         {
             await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, _resourceService.GetResourceString("InboxItemNotFound"), cancellationToken: ct).ConfigureAwait(false);
             return;
         }
-        var payload = System.Text.Json.JsonSerializer.Deserialize<Payload>(item.PayloadJson) ?? new Payload();
+        Payload payload = System.Text.Json.JsonSerializer.Deserialize<Payload>(item.PayloadJson) ?? new Payload();
         // Rebuild media from file ids with type-safe sending
-        var photoVideo = new List<IAlbumInputMedia>();
-        var audios = new List<string>();
-        var documents = new List<string>();
-        foreach (var m in payload.SavedMedia)
+        List<IAlbumInputMedia> photoVideo = new List<IAlbumInputMedia>();
+        List<string> audios = new List<string>();
+        List<string> documents = new List<string>();
+        foreach (SavedMediaItem m in payload.SavedMedia)
         {
             string t = m.Type?.ToLowerInvariant() ?? string.Empty;
             if (t.Contains("photo") || t == "image") { photoVideo.Add(new InputMediaPhoto(m.FileId) { Caption = m.Caption }); continue; }
@@ -70,7 +70,7 @@ public class InboxViewCommand : IBotCallbackQueryHandlers
         }
         for (int i = 0; i < photoVideo.Count; i += 10)
         {
-            var chunk = photoVideo.Skip(i).Take(10).ToList();
+            List<IAlbumInputMedia> chunk = photoVideo.Skip(i).Take(10).ToList();
             if (chunk.Any())
             {
                 try
@@ -84,11 +84,11 @@ public class InboxViewCommand : IBotCallbackQueryHandlers
                 }
             }
         }
-        foreach (var a in audios)
+        foreach (string a in audios)
         {
             try { await botClient.SendAudio(chatId, a, cancellationToken: ct).ConfigureAwait(false); } catch { }
         }
-        foreach (var d in documents)
+        foreach (string d in documents)
         {
             try { await botClient.SendDocument(chatId, d, cancellationToken: ct).ConfigureAwait(false); } catch { }
         }
@@ -105,7 +105,7 @@ public class InboxViewCommand : IBotCallbackQueryHandlers
         {
             if (el.ValueKind == System.Text.Json.JsonValueKind.Array)
             {
-                var arr = el.EnumerateArray().Select(x => x.GetString()).Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
+                List<string?> arr = el.EnumerateArray().Select(x => x.GetString()).Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
                 h1 = arr.ElementAtOrDefault(0) ?? string.Empty;
                 h2 = arr.ElementAtOrDefault(1) ?? string.Empty;
             }
@@ -118,7 +118,7 @@ public class InboxViewCommand : IBotCallbackQueryHandlers
         h2 = System.Net.WebUtility.HtmlEncode(h2);
         string captionEsc = System.Net.WebUtility.HtmlEncode(payload.Caption ?? string.Empty);
         string info = string.Format(_resourceService.GetResourceString("Inbox.ViewInfoTemplate"), senderName, h1, h2, captionEsc);
-        var kb = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup kb = new InlineKeyboardMarkup(new[]
         {
             new[] { InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("InboxDeleteButtonText"), $"inbox:delete:{id}:{page}") },
             new[] { InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("BackButtonText"), $"inbox:list:{page}") }

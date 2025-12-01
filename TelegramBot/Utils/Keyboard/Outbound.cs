@@ -19,13 +19,13 @@ public class OutBoundKB
 
     public static async Task<InlineKeyboardMarkup> GetOutboundKeyboardMarkup(long userId, IOutboundDBGetter outboundDBGetter, IUserGetter userGetter)
     {
-        var buttonDataList = await outboundDBGetter.GetOutboundButtonDataAsync(userGetter.GetUserIDbyTelegramID(userId));
+        List<Database.ButtonData> buttonDataList = await outboundDBGetter.GetOutboundButtonDataAsync(userGetter.GetUserIDbyTelegramID(userId));
 
-        var inlineKeyboardButtons = new List<InlineKeyboardButton[]>();
+        List<InlineKeyboardButton[]> inlineKeyboardButtons = new List<InlineKeyboardButton[]>();
 
-        foreach (var buttonData in buttonDataList)
+        foreach (Database.ButtonData buttonData in buttonDataList)
         {
-            var button = InlineKeyboardButton.WithCallbackData(buttonData.ButtonText, buttonData.CallbackData);
+            InlineKeyboardButton button = InlineKeyboardButton.WithCallbackData(buttonData.ButtonText, buttonData.CallbackData);
             inlineKeyboardButtons.Add(new[] { button });
         }
         inlineKeyboardButtons.Add(new[] { KeyboardUtils.GetReturnButton("main_menu") });
@@ -34,7 +34,7 @@ public class OutBoundKB
 
     public static InlineKeyboardMarkup GetOutboundActionsKeyboardMarkup(string userId)
     {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
                     {
                         new[]
                         {
@@ -50,7 +50,7 @@ public class OutBoundKB
 
     public static InlineKeyboardMarkup GetOutBoundActionsKeyboardMarkup(string userId, string callbackData)
     {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
                     {
                         new[]
                         {

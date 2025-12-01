@@ -3,8 +3,8 @@
 // See LICENSE file in the project root for full license information.
 
 using TelegramMediaRelayBot.Database.Interfaces;
-using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 namespace TelegramMediaRelayBot.TelegramBot.Services;
 
@@ -41,39 +41,39 @@ public class CallbackQueryMenuService : ICallbackQueryMenuService
 
     public async Task GetSelfLink(ITelegramBotClient botClient, Update update)
     {
-        var link = _userGetter.GetUserSelfLink(update.CallbackQuery!.Message!.Chat.Id);
-        var me = await botClient.GetMe();
-        var startLink = $"\nhttps://t.me/{me.Username}?start={link}";
-        var text = _resourceService.GetResourceString("YourLink") + startLink;
+        string link = _userGetter.GetUserSelfLink(update.CallbackQuery!.Message!.Chat.Id);
+        User me = await botClient.GetMe();
+        string startLink = $"\nhttps://t.me/{me.Username}?start={link}";
+        string text = _resourceService.GetResourceString("YourLink") + startLink;
         await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), CancellationToken.None, text);
     }
 
     public async Task ViewInboundInviteLinks(ITelegramBotClient botClient, Update update)
     {
-        var text = _resourceService.GetResourceString("YourInboundInvitations");
-        var keyboard = await InBoundKB.GetInboundsKeyboardMarkup(update, _inboundDbGetter, _userGetter);
+        string text = _resourceService.GetResourceString("YourInboundInvitations");
+        Telegram.Bot.Types.ReplyMarkups.InlineKeyboardMarkup keyboard = await InBoundKB.GetInboundsKeyboardMarkup(update, _inboundDbGetter, _userGetter);
         await _interactionService.ReplyToUpdate(botClient, update, keyboard, CancellationToken.None, text);
     }
 
     public async Task ViewOutboundInviteLinks(ITelegramBotClient botClient, Update update)
     {
-        var chatId = _interactionService.GetChatId(update);
-        var text = _resourceService.GetResourceString("YourOutboundInvitations");
-        var keyboard = await OutBoundKB.GetOutboundKeyboardMarkup(chatId, _outboundDbGetter, _userGetter);
+        long chatId = _interactionService.GetChatId(update);
+        string text = _resourceService.GetResourceString("YourOutboundInvitations");
+        Telegram.Bot.Types.ReplyMarkups.InlineKeyboardMarkup keyboard = await OutBoundKB.GetOutboundKeyboardMarkup(chatId, _outboundDbGetter, _userGetter);
         await _interactionService.ReplyToUpdate(botClient, update, keyboard, CancellationToken.None, text);
     }
 
     public Task ShowOutboundInvite(ITelegramBotClient botClient, Update update)
     {
-        var chatId = _interactionService.GetChatId(update);
-        var userIdStr = update.CallbackQuery!.Data!.Split(':')[1];
-        var keyboard = OutBoundKB.GetOutboundActionsKeyboardMarkup(userIdStr);
+        long chatId = _interactionService.GetChatId(update);
+        string userIdStr = update.CallbackQuery!.Data!.Split(':')[1];
+        Telegram.Bot.Types.ReplyMarkups.InlineKeyboardMarkup keyboard = OutBoundKB.GetOutboundActionsKeyboardMarkup(userIdStr);
         return _interactionService.ReplyToUpdate(botClient, update, keyboard, CancellationToken.None, _resourceService.GetResourceString("OutboundInviteMenu"));
     }
 
     public Task WhosTheGenius(ITelegramBotClient botClient, Update update)
     {
-        var text = _resourceService.GetResourceString("WhosTheGeniusText");
+        string text = _resourceService.GetResourceString("WhosTheGeniusText");
         return _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), CancellationToken.None, text);
     }
 }

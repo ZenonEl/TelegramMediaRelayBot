@@ -63,13 +63,13 @@ public class RetryOrchestrator : IRetryOrchestrator
             // --- АНАЛИЗ ОШИБКИ И РЕШЕНИЕ О РЕТРАЕ ---
             // Превращаем наш ExecutionResult в то, что понимает старый менеджер политик
             // (В будущем можно переписать менеджер политик на новые типы)
-            var legacyResult = new Domain.Models.DownloadResult
+            Domain.Models.DownloadResult legacyResult = new Domain.Models.DownloadResult
             {
                 Success = false,
                 ErrorMessage = lastResult.ErrorMessage
             };
 
-            var decision = _retryManager.Decide(legacyResult, attempt);
+            RetryDecision decision = _retryManager.Decide(legacyResult, attempt);
 
             if (!decision.ShouldRetry)
             {
@@ -94,8 +94,8 @@ public class RetryOrchestrator : IRetryOrchestrator
 
                 if (lastResult.SuggestSwitchProxy)
                 {
-                     // Логика ротации прокси, если экзекьютор сам попросил
-                     // context.ActiveProxyUrl = ... get random proxy ...
+                    // Логика ротации прокси, если экзекьютор сам попросил
+                    // context.ActiveProxyUrl = ... get random proxy ...
                 }
 
                 attempt++;

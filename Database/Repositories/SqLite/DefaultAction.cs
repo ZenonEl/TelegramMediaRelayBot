@@ -13,13 +13,13 @@ public class SqliteDefaultAction(IDefaultActionTargetsRepository repository) : I
 {
     public async Task<bool> AddDefaultUsersActionTargets(int userId, int actionId, string targetType, int targetId)
     {
-        var affected = await repository.AddTarget(userId, actionId, targetType, targetId);
+        int affected = await repository.AddTarget(userId, actionId, targetType, targetId);
         return affected > 0;
     }
 
     public async Task<bool> RemoveAllDefaultUsersActionTargets(int userId, string targetType, int actionId)
     {
-        var affected = await repository.RemoveAllTargets(userId, targetType, actionId);
+        int affected = await repository.RemoveAllTargets(userId, targetType, actionId);
         return affected > 0;
     }
 }
@@ -67,7 +67,7 @@ public class SqliteDefaultActionGetter(IDbConnection dbConnection) : IDefaultAct
         try
         {
 
-            return dbConnection.ExecuteScalar<int>(query, new {userId, type});
+            return dbConnection.ExecuteScalar<int>(query, new { userId, type });
         }
         catch (Exception ex)
         {
@@ -82,7 +82,7 @@ public class SqliteDefaultActionGetter(IDbConnection dbConnection) : IDefaultAct
         {
 
 
-            var result = dbConnection.QueryFirstOrDefault<(string Action, string ActionCondition)>(
+            (string Action, string ActionCondition) result = dbConnection.QueryFirstOrDefault<(string Action, string ActionCondition)>(
                 @"SELECT Action, ActionCondition
                 FROM DefaultUsersActions
                 WHERE UserID = @userID
@@ -108,7 +108,7 @@ public class SqliteDefaultActionGetter(IDbConnection dbConnection) : IDefaultAct
         try
         {
 
-            var result = await dbConnection.QueryAsync<int>(
+            IEnumerable<int> result = await dbConnection.QueryAsync<int>(
                 @"SELECT TargetID FROM DefaultUsersActionTargets
                 WHERE UserId = @userId AND TargetType = @targetType AND ActionID = @actionId",
                 new { userId, targetType, actionId });
@@ -141,7 +141,7 @@ public class SqliteDefaultActionGetter(IDbConnection dbConnection) : IDefaultAct
         try
         {
 
-            var result = await dbConnection.QueryFirstOrDefaultAsync<(string Action, string ActionCondition)>(
+            (string Action, string ActionCondition) result = await dbConnection.QueryFirstOrDefaultAsync<(string Action, string ActionCondition)>(
                 @"SELECT Action, ActionCondition
                 FROM DefaultUsersActions
                 WHERE UserID = @userID

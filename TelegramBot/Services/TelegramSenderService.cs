@@ -4,8 +4,8 @@
 
 using Microsoft.Extensions.Options;
 using TelegramMediaRelayBot.Config;
-using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Models;
 using TelegramMediaRelayBot.TelegramBot.Sessions;
 using TelegramMediaRelayBot.TelegramBot.SiteFilter;
@@ -111,32 +111,32 @@ public class TelegramSenderService : ITelegramSenderService
 
     private async Task<List<TelegramMediaInfo>> UploadToTelegramStorage(ITelegramBotClient botClient, long storageChatId, List<byte[]> mediaFiles, CancellationToken cancellationToken)
     {
-        var uploadedMedia = new List<TelegramMediaInfo>();
+        List<TelegramMediaInfo> uploadedMedia = new List<TelegramMediaInfo>();
 
         // 1. Строго группируем файлы по типам
-        var groupedFiles = mediaFiles
+        Dictionary<TelegramFileType, List<byte[]>> groupedFiles = mediaFiles
             .Select(bytes => (Bytes: bytes, Type: _mediaTypeResolver.DetermineFileType(bytes)))
             .GroupBy(x => x.Type)
             .ToDictionary(g => g.Key, g => g.Select(x => x.Bytes).ToList());
 
         // 2. Последовательно отправляем каждую группу
-        if (groupedFiles.TryGetValue(TelegramFileType.Photo, out var photos))
+        if (groupedFiles.TryGetValue(TelegramFileType.Photo, out List<byte[]>? photos))
         {
-            var photoGroup = photos.Select(p => (IAlbumInputMedia)new InputMediaPhoto(new InputFileStream(new MemoryStream(p))));
-            var sent = await SendInChunks(botClient, storageChatId, photoGroup.ToList(), cancellationToken);
+            IEnumerable<IAlbumInputMedia> photoGroup = photos.Select(p => (IAlbumInputMedia)new InputMediaPhoto(new InputFileStream(new MemoryStream(p))));
+            List<Message> sent = await SendInChunks(botClient, storageChatId, photoGroup.ToList(), cancellationToken);
             uploadedMedia.AddRange(sent.Select(m => new TelegramMediaInfo { FileId = m.Photo!.Last().FileId, Type = TelegramFileType.Photo }));
         }
-        if (groupedFiles.TryGetValue(TelegramFileType.Video, out var videos))
+        if (groupedFiles.TryGetValue(TelegramFileType.Video, out List<byte[]>? videos))
         {
-            var videoGroup = videos.Select(v => (IAlbumInputMedia)new InputMediaVideo(new InputFileStream(new MemoryStream(v))));
-            var sent = await SendInChunks(botClient, storageChatId, videoGroup.ToList(), cancellationToken);
+            IEnumerable<IAlbumInputMedia> videoGroup = videos.Select(v => (IAlbumInputMedia)new InputMediaVideo(new InputFileStream(new MemoryStream(v))));
+            List<Message> sent = await SendInChunks(botClient, storageChatId, videoGroup.ToList(), cancellationToken);
             uploadedMedia.AddRange(sent.Select(m => new TelegramMediaInfo { FileId = m.Video!.FileId, Type = TelegramFileType.Video }));
         }
-        if (groupedFiles.TryGetValue(TelegramFileType.Audio, out var audios))
+        if (groupedFiles.TryGetValue(TelegramFileType.Audio, out List<byte[]>? audios))
         {
-            foreach(var audioBytes in audios)
+            foreach (byte[]? audioBytes in audios)
             {
-                var sent = await botClient.SendAudio(storageChatId, new InputFileStream(new MemoryStream(audioBytes)), cancellationToken: cancellationToken);
+                Message sent = await botClient.SendAudio(storageChatId, new InputFileStream(new MemoryStream(audioBytes)), cancellationToken: cancellationToken);
                 uploadedMedia.Add(new TelegramMediaInfo { FileId = sent.Audio!.FileId, Type = TelegramFileType.Audio });
             }
         }
@@ -147,17 +147,17 @@ public class TelegramSenderService : ITelegramSenderService
 
     private async Task ForwardFromStorage(ITelegramBotClient botClient, long recipientChatId, List<TelegramMediaInfo> uploadedMedia, string caption, int senderUserId, CancellationToken cancellationToken)
     {
-        var isDisallowContentForwarding = _privacySettingsGetter.GetIsActivePrivacyRule(senderUserId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING);
+        bool isDisallowContentForwarding = _privacySettingsGetter.GetIsActivePrivacyRule(senderUserId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING);
 
         List<string> captionChunks = SplitCaption(caption);
         string firstChunk = captionChunks.FirstOrDefault() ?? string.Empty;
 
         // 1. Строго группируем по типам
-        var groupedMedia = uploadedMedia.GroupBy(m => m.Type);
+        IEnumerable<IGrouping<TelegramFileType, TelegramMediaInfo>> groupedMedia = uploadedMedia.GroupBy(m => m.Type);
 
         bool isFirstChunk = true;
         Message? lastSentMessage = null;
-        foreach (var group in groupedMedia)
+        foreach (IGrouping<TelegramFileType, TelegramMediaInfo> group in groupedMedia)
         {
             string? currentCaption = isFirstChunk ? firstChunk : null;
             if (group.Key == TelegramFileType.Photo || group.Key == TelegramFileType.Video)
@@ -169,25 +169,27 @@ public class TelegramSenderService : ITelegramSenderService
                 // Прикрепляем caption только к первому элементу самой первой группы
                 if (isFirstChunk && album.Any())
                 {
-                    if (album[0] is InputMediaPhoto p) {
+                    if (album[0] is InputMediaPhoto p)
+                    {
                         p.Caption = currentCaption;
                         p.ParseMode = Telegram.Bot.Types.Enums.ParseMode.Html;
                     }
-                    else if (album[0] is InputMediaVideo v) {
+                    else if (album[0] is InputMediaVideo v)
+                    {
                         v.Caption = currentCaption;
                         v.ParseMode = Telegram.Bot.Types.Enums.ParseMode.Html;
                     }
                     isFirstChunk = false;
                 }
 
-                var sent = await SendInChunks(botClient, recipientChatId, album, cancellationToken, isDisallowContentForwarding);
+                List<Message> sent = await SendInChunks(botClient, recipientChatId, album, cancellationToken, isDisallowContentForwarding);
                 if (sent.Any()) lastSentMessage = sent.Last();
             }
             else if (group.Key == TelegramFileType.Audio)
             {
-                foreach(var audio in group)
+                foreach (TelegramMediaInfo? audio in group)
                 {
-                    var audioCaption = isFirstChunk ? caption : null;
+                    string? audioCaption = isFirstChunk ? caption : null;
                     await botClient.SendAudio(recipientChatId, audio.FileId, caption: audioCaption, cancellationToken: cancellationToken, protectContent: isDisallowContentForwarding);
                     isFirstChunk = false;
                 }
@@ -197,7 +199,7 @@ public class TelegramSenderService : ITelegramSenderService
         if (captionChunks.Count > 1)
         {
             // Определяем, к какому сообщению "привязать" ответ
-            var replyParameters = lastSentMessage != null
+            ReplyParameters? replyParameters = lastSentMessage != null
                 ? new ReplyParameters { MessageId = lastSentMessage.MessageId }
                 : null;
 
@@ -219,16 +221,16 @@ public class TelegramSenderService : ITelegramSenderService
         }
     }
 
-private async Task<List<Message>> SendInChunks(ITelegramBotClient botClient, long chatId, List<IAlbumInputMedia> media, CancellationToken cancellationToken, bool protectContent = false)
+    private async Task<List<Message>> SendInChunks(ITelegramBotClient botClient, long chatId, List<IAlbumInputMedia> media, CancellationToken cancellationToken, bool protectContent = false)
     {
-        var allSentMessages = new List<Message>();
+        List<Message> allSentMessages = new List<Message>();
         const long MaxRequestSize = 49 * 1024 * 1024; // max 50 MB
         const int MaxCount = 10;
 
-        var currentChunk = new List<IAlbumInputMedia>();
+        List<IAlbumInputMedia> currentChunk = new List<IAlbumInputMedia>();
         long currentChunkSize = 0;
 
-        foreach (var item in media)
+        foreach (IAlbumInputMedia item in media)
         {
             long itemSize = GetMediaSize(item);
 
@@ -261,7 +263,7 @@ private async Task<List<Message>> SendInChunks(ITelegramBotClient botClient, lon
 
             try
             {
-                var sent = await botClient.SendMediaGroup(
+                Message[] sent = await botClient.SendMediaGroup(
                     chatId,
                     currentChunk,
                     disableNotification: true,

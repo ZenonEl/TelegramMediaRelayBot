@@ -4,7 +4,6 @@
 
 using Dapper;
 using MySql.Data.MySqlClient;
-using TelegramMediaRelayBot.Config.Services;
 
 namespace TelegramMediaRelayBot.Database.Repositories.MySql;
 
@@ -21,7 +20,7 @@ public class MySqlDBCreator
     {
         string databaseName = _databaseConfigurationService.GetDatabaseName();
         string query = $"CREATE DATABASE IF NOT EXISTS `{databaseName}`;";
-        using var connection = new MySqlConnection(connectionString);
+        using MySqlConnection connection = new MySqlConnection(connectionString);
         connection.Execute(query);
     }
 }

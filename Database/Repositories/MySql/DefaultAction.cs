@@ -12,13 +12,13 @@ public class MySqlDefaultAction(IDefaultActionTargetsRepository repository) : ID
 {
     public async Task<bool> AddDefaultUsersActionTargets(int userId, int actionId, string targetType, int targetId)
     {
-        var affectedRows = await repository.AddTarget(userId, actionId, targetType, targetId);
+        int affectedRows = await repository.AddTarget(userId, actionId, targetType, targetId);
         return affectedRows > 0;
     }
 
     public async Task<bool> RemoveAllDefaultUsersActionTargets(int userId, string targetType, int actionId)
     {
-        var affectedRows = await repository.RemoveAllTargets(userId, targetType, actionId);
+        int affectedRows = await repository.RemoveAllTargets(userId, targetType, actionId);
         return affectedRows > 0;
     }
 }
@@ -47,7 +47,8 @@ public class MySqlDefaultActionGetter(IDbConnection dbConnection) : IDefaultActi
             return dbConnection.Query<int>(
                 @"SELECT TargetID FROM DefaultUsersActionTargets
                 WHERE UserId = @userId AND TargetType = @targetType AND ActionID = @actionId",
-                new {
+                new
+                {
                     userId,
                     targetType,
                     actionId
@@ -70,7 +71,7 @@ public class MySqlDefaultActionGetter(IDbConnection dbConnection) : IDefaultActi
         try
         {
 
-            return dbConnection.ExecuteScalar<int>(query, new {userId, type});
+            return dbConnection.ExecuteScalar<int>(query, new { userId, type });
         }
         catch (Exception ex)
         {
@@ -85,7 +86,7 @@ public class MySqlDefaultActionGetter(IDbConnection dbConnection) : IDefaultActi
         {
 
 
-            var result = dbConnection.QueryFirstOrDefault<(string Action, string ActionCondition)>(
+            (string Action, string ActionCondition) result = dbConnection.QueryFirstOrDefault<(string Action, string ActionCondition)>(
                 @"SELECT Action, ActionCondition
                 FROM DefaultUsersActions
                 WHERE UserID = @userID
@@ -111,7 +112,7 @@ public class MySqlDefaultActionGetter(IDbConnection dbConnection) : IDefaultActi
         try
         {
 
-            var result = await dbConnection.QueryAsync<int>(
+            IEnumerable<int> result = await dbConnection.QueryAsync<int>(
                 @"SELECT TargetID FROM DefaultUsersActionTargets
                 WHERE UserId = @userId AND TargetType = @targetType AND ActionID = @actionId",
                 new { userId, targetType, actionId });
@@ -144,7 +145,7 @@ public class MySqlDefaultActionGetter(IDbConnection dbConnection) : IDefaultActi
         try
         {
 
-            var result = await dbConnection.QueryFirstOrDefaultAsync<(string Action, string ActionCondition)>(
+            (string Action, string ActionCondition) result = await dbConnection.QueryFirstOrDefaultAsync<(string Action, string ActionCondition)>(
                 @"SELECT Action, ActionCondition
                 FROM DefaultUsersActions
                 WHERE UserID = @userID

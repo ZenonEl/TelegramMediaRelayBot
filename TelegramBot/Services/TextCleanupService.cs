@@ -28,21 +28,21 @@ public class TextCleanupService : ITextCleanupService
         lock (_cleanupRegexes)
         {
             _cleanupRegexes.Clear();
-            var allPatterns = new List<string>(config.Patterns);
+            List<string> allPatterns = new List<string>(config.Patterns);
 
             if (!string.IsNullOrWhiteSpace(config.PatternsFile))
             {
-                var path = Path.Combine(AppContext.BaseDirectory, config.PatternsFile);
+                string path = Path.Combine(AppContext.BaseDirectory, config.PatternsFile);
                 if (System.IO.File.Exists(path))
                 {
-                    var patternsFromFile = System.IO.File.ReadAllLines(path)
+                    IEnumerable<string> patternsFromFile = System.IO.File.ReadAllLines(path)
                         .Select(line => line.Trim())
                         .Where(line => !string.IsNullOrEmpty(line) && !line.StartsWith('#'));
                     allPatterns.AddRange(patternsFromFile);
                 }
             }
 
-            foreach (var pattern in allPatterns)
+            foreach (string pattern in allPatterns)
             {
                 try { _cleanupRegexes.Add(new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase)); }
                 catch (Exception ex) { Log.Warning(ex, "Invalid text cleanup regex pattern: {Pattern}", pattern); }
@@ -58,7 +58,7 @@ public class TextCleanupService : ITextCleanupService
         string cleanedText = text;
         lock (_cleanupRegexes)
         {
-            foreach (var regex in _cleanupRegexes)
+            foreach (Regex regex in _cleanupRegexes)
             {
                 cleanedText = regex.Replace(cleanedText, string.Empty);
             }

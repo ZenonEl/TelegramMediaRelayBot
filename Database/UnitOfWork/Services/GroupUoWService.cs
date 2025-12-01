@@ -20,35 +20,35 @@ public class GroupUoWService : IGroupUoW
     // Методы остаются теми же, но теперь они правильно реализуют IGroupUoW
     public async Task<bool> SetNewGroup(int userId, string groupName, string description)
     {
-        var affected = await ExecuteInTransaction(() =>
+        int affected = await ExecuteInTransaction(() =>
             _repository.CreateGroup(userId, groupName, description));
         return affected > 0;
     }
 
     public async Task<bool> SetGroupName(int groupId, string groupName)
     {
-        var affected = await ExecuteInTransaction(() =>
+        int affected = await ExecuteInTransaction(() =>
             _repository.UpdateGroupName(groupId, groupName));
         return affected > 0;
     }
 
     public async Task<bool> SetGroupDescription(int groupId, string description)
     {
-        var affected = await ExecuteInTransaction(() =>
+        int affected = await ExecuteInTransaction(() =>
             _repository.UpdateGroupDescription(groupId, description));
         return affected > 0;
     }
 
     public async Task<bool> SetIsDefaultGroup(int groupId)
     {
-        var affected = await ExecuteInTransaction(() =>
+        int affected = await ExecuteInTransaction(() =>
             _repository.ToggleDefaultStatus(groupId));
         return affected > 0;
     }
 
     public async Task<bool> SetDeleteGroup(int groupId)
     {
-        var affected = await ExecuteInTransaction(() =>
+        int affected = await ExecuteInTransaction(() =>
             _repository.DeleteGroup(groupId));
         return affected > 0;
     }
@@ -58,7 +58,7 @@ public class GroupUoWService : IGroupUoW
         try
         {
             _uow.Begin();
-            var result = await action();
+            T? result = await action();
             _uow.Commit();
             return result;
         }

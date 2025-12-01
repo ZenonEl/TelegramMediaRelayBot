@@ -27,7 +27,7 @@ public class LastUserTextCache : ILastUserTextCache
 
     public (bool Found, string Text, DateTime At) TryGet(long chatId)
     {
-        if (_lastTextByChatId.TryGetValue(chatId, out var v))
+        if (_lastTextByChatId.TryGetValue(chatId, out (string Text, DateTime At) v))
         {
             return (true, v.Text, v.At);
         }

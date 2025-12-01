@@ -3,7 +3,6 @@
 // See LICENSE file in the project root for full license information.
 
 using TelegramMediaRelayBot.Config.Downloaders;
-using TelegramMediaRelayBot.Domain.Models;
 
 namespace TelegramMediaRelayBot.Infrastructure.Downloaders.Policies;
 

@@ -21,16 +21,16 @@ public class CancelDownloadCommand : IBotCallbackQueryHandlers
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        var callbackQuery = update.CallbackQuery!;
-        var parts = callbackQuery.Data!.Split(':');
-        if (parts.Length < 2 || !int.TryParse(parts[^1], out var msgId))
+        CallbackQuery callbackQuery = update.CallbackQuery!;
+        string[] parts = callbackQuery.Data!.Split(':');
+        if (parts.Length < 2 || !int.TryParse(parts[^1], out int msgId))
         {
             await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct);
             return;
         }
 
         // Вместо TGBot.StateManager... вызываем наш новый менеджер
-        var cancelled = _sessionManager.CancelSession(msgId);
+        bool cancelled = _sessionManager.CancelSession(msgId);
 
         if (cancelled)
         {

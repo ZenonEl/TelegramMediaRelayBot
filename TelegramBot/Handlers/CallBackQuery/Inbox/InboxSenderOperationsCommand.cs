@@ -15,13 +15,13 @@ public class InboxSenderOperationsCommand : IBotCallbackQueryHandlers
     { _userGetter = userGetter; _resourceService = resourceService; }
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        var parts = update.CallbackQuery!.Data!.Split(':');
+        string[] parts = update.CallbackQuery!.Data!.Split(':');
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
         int userId = _userGetter.GetUserIDbyTelegramID(chatId);
         int senderContactId = int.Parse(parts[2]);
-        int page = parts.Length >= 4 && int.TryParse(parts[3], out var p) ? p : 1;
+        int page = parts.Length >= 4 && int.TryParse(parts[3], out int p) ? p : 1;
         string name = _userGetter.GetUserNameByTelegramID(_userGetter.GetTelegramIDbyUserID(senderContactId));
-        var kb = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup kb = new InlineKeyboardMarkup(new[]
         {
             new[] { InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("Inbox.Sender.ShowAll"), $"inbox:list:1:sender:{senderContactId}") },
             new[] { InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("Inbox.Sender.ShowUnread"), $"inbox:list:1:sender_unread:{senderContactId}") },

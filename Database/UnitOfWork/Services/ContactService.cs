@@ -24,8 +24,8 @@ public class ContactUoWService : IContactUoW
     public async Task AddContactAsync(long userTelegramId, string contactLink, string status)
     {
         // Здесь мы правильно используем DI для получения ID
-        var userId = _userGetter.GetUserIDbyTelegramID(userTelegramId);
-        var contactId = _contactGetter.GetContactIDByLink(contactLink);
+        int userId = _userGetter.GetUserIDbyTelegramID(userTelegramId);
+        int contactId = _contactGetter.GetContactIDByLink(contactLink);
 
         if (userId == 0 || contactId == 0) return; // или бросить исключение
 
@@ -60,8 +60,8 @@ public class ContactUoWService : IContactUoW
 
     public async Task UpdateContactStatusAsync(long senderTelegramId, long accepterTelegramId, string status)
     {
-        var senderId = _userGetter.GetUserIDbyTelegramID(senderTelegramId);
-        var accepterId = _userGetter.GetUserIDbyTelegramID(accepterTelegramId);
+        int senderId = _userGetter.GetUserIDbyTelegramID(senderTelegramId);
+        int accepterId = _userGetter.GetUserIDbyTelegramID(accepterTelegramId);
 
         if (senderId == 0 || accepterId == 0) return;
 

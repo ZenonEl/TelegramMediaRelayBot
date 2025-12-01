@@ -37,7 +37,7 @@ public class AddContactStateHandler : IStateHandler
 
     public async Task<StateResult> Process(UserStateData stateData, Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        var chatId = _interactionService.GetChatId(update);
+        long chatId = _interactionService.GetChatId(update);
         if (await _stateBreaker.HandleStateBreak(botClient, update))
         {
             return StateResult.Complete();
@@ -49,7 +49,7 @@ public class AddContactStateHandler : IStateHandler
             // ШАГ 0: Ожидание ссылки от пользователя
             // ========================================================================
             case 0:
-                var link = update.Message?.Text?.Trim();
+                string? link = update.Message?.Text?.Trim();
                 if (string.IsNullOrWhiteSpace(link))
                 {
                     await _stateBreaker.AlertAndShowMenu(botClient, update, _resourceService.GetResourceString("InputErrorMessage"));
@@ -71,7 +71,7 @@ public class AddContactStateHandler : IStateHandler
                 stateData.Data["FoundContactId"] = contactId;
                 stateData.Data["FoundUserName"] = _userGetter.GetUserNameByID(contactId);
 
-                var summary = $"{_resourceService.GetResourceString("LinkText")}: {link} \n{_resourceService.GetResourceString("NameText")}: {stateData.Data["FoundUserName"]}";
+                string summary = $"{_resourceService.GetResourceString("LinkText")}: {link} \n{_resourceService.GetResourceString("NameText")}: {stateData.Data["FoundUserName"]}";
                 await botClient.SendMessage(chatId, _resourceService.GetResourceString("ConfirmAdditionText") + summary,
                     cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup());
 
@@ -90,10 +90,10 @@ public class AddContactStateHandler : IStateHandler
                 if (update.CallbackQuery.Data == "accept")
                 {
                     // Достаем данные из контейнера
-                    var originalLink = (string)stateData.Data["Link"];
-                    var userTelegramId = chatId;
-                    var contactTelegramId = _userGetter.GetTelegramIDbyUserID((int)stateData.Data["FoundContactId"]);
-                    var senderName = _userGetter.GetUserNameByTelegramID(userTelegramId);
+                    string originalLink = (string)stateData.Data["Link"];
+                    long userTelegramId = chatId;
+                    long contactTelegramId = _userGetter.GetTelegramIDbyUserID((int)stateData.Data["FoundContactId"]);
+                    string senderName = _userGetter.GetUserNameByTelegramID(userTelegramId);
 
                     // Вызываем UoW-совместимый сервис
                     await _contactAdder.AddContact(userTelegramId, originalLink);

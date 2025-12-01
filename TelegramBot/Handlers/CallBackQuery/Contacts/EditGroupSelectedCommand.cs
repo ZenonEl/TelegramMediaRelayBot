@@ -3,11 +3,10 @@
 // See LICENSE file in the project root for full license information.
 
 using Telegram.Bot.Types.ReplyMarkups;
+using TelegramMediaRelayBot.Database.Interfaces; // Для IGroupGetter
 using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.States;
 using TelegramMediaRelayBot.TelegramBot.Utils;
-
-using TelegramMediaRelayBot.Database.Interfaces; // Для IGroupGetter
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 

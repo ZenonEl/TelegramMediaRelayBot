@@ -33,14 +33,14 @@ public class MainMenuCommand : IBotCallbackQueryHandlers
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        var chatId = update.CallbackQuery!.Message!.Chat.Id;
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
 
         // Вместо TGBot.StateManager.TryGet... мы вызываем наш новый менеджер
         // TODO: Реализовать в менеджере метод для отмены ВСЕХ сессий для пользователя
         // _sessionManager.CancelAllForChat(chatId);
 
-        var userId = _userGetter.GetUserIDbyTelegramID(chatId);
-        var newCount = await _inbox.GetNewCountAsync(userId);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        int newCount = await _inbox.GetNewCountAsync(userId);
         await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(newCount), ct);
     }
 }

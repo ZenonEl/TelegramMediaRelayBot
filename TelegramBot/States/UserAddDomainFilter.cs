@@ -2,11 +2,11 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
-using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 namespace TelegramMediaRelayBot.TelegramBot.States;
 
@@ -33,7 +33,7 @@ public class DomainFilterStateHandler : IStateHandler
 
     public async Task<StateResult> Process(UserStateData stateData, Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        var chatId = _interactionService.GetChatId(update);
+        long chatId = _interactionService.GetChatId(update);
         if (await _stateBreaker.HandleStateBreak(botClient, update))
         {
             return StateResult.Complete();
@@ -45,21 +45,21 @@ public class DomainFilterStateHandler : IStateHandler
             // ШАГ 0: Ожидание списка доменов от пользователя
             // ========================================================================
             case 0:
-                var messageText = update.Message?.Text;
+                string? messageText = update.Message?.Text;
                 if (string.IsNullOrEmpty(messageText))
                 {
                     await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
                     return StateResult.Continue();
                 }
 
-                var inputDomains = messageText.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                List<string> inputDomains = messageText.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries).ToList();
                 if (inputDomains.Count == 0)
                 {
                     await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
                     return StateResult.Continue();
                 }
 
-                var checkedDomains = ValidateDomains(inputDomains);
+                List<string> checkedDomains = ValidateDomains(inputDomains);
                 if (checkedDomains.Count == 0)
                 {
                     await botClient.SendMessage(chatId, _resourceService.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken);
@@ -69,8 +69,8 @@ public class DomainFilterStateHandler : IStateHandler
                 // Сохраняем проверенные домены в состояние
                 stateData.Data["CheckedDomains"] = checkedDomains;
 
-                var domainsListStr = string.Join(", ", checkedDomains);
-                var message = $"{_resourceService.GetResourceString("ConfirmDecision")}:\n\n{domainsListStr}";
+                string domainsListStr = string.Join(", ", checkedDomains);
+                string message = $"{_resourceService.GetResourceString("ConfirmDecision")}:\n\n{domainsListStr}";
 
                 await botClient.SendMessage(chatId, message,
                     replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
@@ -93,29 +93,29 @@ public class DomainFilterStateHandler : IStateHandler
                 }
 
                 // Пользователь нажал "accept", выполняем действие
-                if (!stateData.Data.TryGetValue("IsRemove", out var isRemoveObj) ||
-                    !stateData.Data.TryGetValue("PrivacyRuleId", out var ruleIdObj) ||
-                    !stateData.Data.TryGetValue("UserId", out var userIdObj) ||
-                    !stateData.Data.TryGetValue("CheckedDomains", out var domainsObj))
+                if (!stateData.Data.TryGetValue("IsRemove", out object? isRemoveObj) ||
+                    !stateData.Data.TryGetValue("PrivacyRuleId", out object? ruleIdObj) ||
+                    !stateData.Data.TryGetValue("UserId", out object? userIdObj) ||
+                    !stateData.Data.TryGetValue("CheckedDomains", out object? domainsObj))
                 {
                     return StateResult.Complete(); // Ошибка в данных состояния
                 }
 
-                var isRemove = (bool)isRemoveObj;
-                var privacyRuleId = (int)ruleIdObj;
-                var userId = (int)userIdObj;
-                var domainsToProcess = (List<string>)domainsObj;
+                bool isRemove = (bool)isRemoveObj;
+                int privacyRuleId = (int)ruleIdObj;
+                int userId = (int)userIdObj;
+                List<string> domainsToProcess = (List<string>)domainsObj;
 
                 if (isRemove)
                 {
-                    foreach (var domain in domainsToProcess)
+                    foreach (string domain in domainsToProcess)
                     {
                         await _privacyTargetsSetter.SetToRemovePrivacyRuleTarget(privacyRuleId, domain);
                     }
                 }
                 else
                 {
-                    foreach (var domain in domainsToProcess)
+                    foreach (string domain in domainsToProcess)
                     {
                         await _privacyTargetsSetter.SetPrivacyRuleTarget(userId, privacyRuleId, PrivacyRuleType.SITES_BY_DOMAIN_FILTER, domain);
                     }
@@ -133,17 +133,17 @@ public class DomainFilterStateHandler : IStateHandler
     // Сохраняем твою оригинальную логику валидации доменов
     private List<string> ValidateDomains(List<string> inputDomains)
     {
-        var checkedDomains = new HashSet<string>();
-        foreach (var url in inputDomains)
+        HashSet<string> checkedDomains = new HashSet<string>();
+        foreach (string url in inputDomains)
         {
-            var normalizedUrl = url;
+            string normalizedUrl = url;
             if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
                 !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
                 normalizedUrl = "https://" + url;
             }
 
-            if (Uri.TryCreate(normalizedUrl, UriKind.Absolute, out var uri))
+            if (Uri.TryCreate(normalizedUrl, UriKind.Absolute, out Uri? uri))
             {
                 checkedDomains.Add(uri.Host.ToLower());
             }

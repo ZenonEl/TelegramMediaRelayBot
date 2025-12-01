@@ -66,7 +66,7 @@ public class EditContactGroupStateHandler : IStateHandler
                 if (data == "group_action:toggle_default")
                 {
                     // Получаем текущее состояние
-                    var group = await _groupGetter.GetGroupNameById(groupId);
+                    string group = await _groupGetter.GetGroupNameById(groupId);
                     if (group != string.Empty)
                     {
                         bool newState = !await _groupGetter.GetIsDefaultGroup(groupId);

@@ -31,10 +31,10 @@ public class MySqlOutboundDBGetter(IDbConnection dbConnection) : IOutboundDBGett
             WHERE c.UserId = @userId AND c.status = 'waiting_for_accept'";
 
         // 3. Используем Dapper для безопасного выполнения запроса
-        var users = await dbConnection.QueryAsync<UserQueryResult>(query, new { userId });
+        IEnumerable<UserQueryResult> users = await dbConnection.QueryAsync<UserQueryResult>(query, new { userId });
 
         // 4. Преобразуем результат в нужный формат, как и раньше
-        var buttonDataList = users
+        List<ButtonData> buttonDataList = users
             .Select(user => new ButtonData
             {
                 ButtonText = user.Name,

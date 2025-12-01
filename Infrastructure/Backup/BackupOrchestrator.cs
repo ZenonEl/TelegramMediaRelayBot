@@ -38,14 +38,14 @@ public sealed class BackupOrchestrator : IBackupOrchestrator
 
     public async Task RunOnStartAsync(CancellationToken ct)
     {
-        var cfg = _settings.CurrentValue;
+        BackupConfiguration cfg = _settings.CurrentValue;
         if (!cfg.Enabled) return;
         if (cfg.Restore.Enabled && System.IO.File.Exists(cfg.Restore.RequireConfirmationFile))
         {
             try
             {
                 Log.Information("Restore requested. Starting restore from {File}", cfg.Restore.BackupFile);
-                var provider = _factory.Create(_dbType);
+                IBackupProvider provider = _factory.Create(_dbType);
                 await provider.RestoreAsync(cfg.Restore.BackupFile, ct);
                 if (cfg.Restore.VerifyChecksum)
                 {
@@ -68,9 +68,9 @@ public sealed class BackupOrchestrator : IBackupOrchestrator
 
     public async Task RunOnShutdownAsync(CancellationToken ct)
     {
-        var cfg = _settings.CurrentValue;
+        BackupConfiguration cfg = _settings.CurrentValue;
         if (!cfg.Enabled || !cfg.Schedule.OnShutdown) return;
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(TimeSpan.FromMinutes(cfg.Restore.TimeoutMinutes));
         await RunBackupAsync(cts.Token, reason: "OnShutdown");
     }
@@ -79,9 +79,9 @@ public sealed class BackupOrchestrator : IBackupOrchestrator
     {
         try
         {
-            var provider = _factory.Create(_dbType);
+            IBackupProvider provider = _factory.Create(_dbType);
             Log.Information("Backup started ({Reason})", reason);
-            var desc = await provider.CreateAsync(ct);
+            BackupDescriptor desc = await provider.CreateAsync(ct);
             await ApplyRetentionAsync(ct);
             Log.Information("Backup finished: {File} ({Size} bytes)", desc.FilePath, desc.SizeBytes);
         }
@@ -97,7 +97,7 @@ public sealed class BackupOrchestrator : IBackupOrchestrator
 
     private void ReconfigureTimers()
     {
-        var cfg = _settings.CurrentValue;
+        BackupConfiguration cfg = _settings.CurrentValue;
         try
         {
             _dailyTimer?.Change(Timeout.Infinite, Timeout.Infinite);
@@ -117,21 +117,21 @@ public sealed class BackupOrchestrator : IBackupOrchestrator
 
     private void ScheduleNextDaily()
     {
-        var cfg = _settings.CurrentValue;
-        var tz = TimeZoneInfo.FindSystemTimeZoneById(cfg.Schedule.TimeZone);
-        var now = TimeZoneInfo.ConvertTime(DateTime.UtcNow, tz);
+        BackupConfiguration cfg = _settings.CurrentValue;
+        TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(cfg.Schedule.TimeZone);
+        DateTime now = TimeZoneInfo.ConvertTime(DateTime.UtcNow, tz);
         DateTime? next = null;
-        foreach (var t in cfg.Schedule.DailyTimes)
+        foreach (string t in cfg.Schedule.DailyTimes)
         {
-            if (TimeSpan.TryParse(t, out var tod))
+            if (TimeSpan.TryParse(t, out TimeSpan tod))
             {
-                var candidate = now.Date + tod;
+                DateTime candidate = now.Date + tod;
                 if (candidate <= now) candidate = candidate.AddDays(1);
                 if (next == null || candidate < next) next = candidate;
             }
         }
         if (next == null) return;
-        var due = next.Value - now + TimeSpan.FromMinutes(cfg.Schedule.InitialDelayMinutes);
+        TimeSpan due = next.Value - now + TimeSpan.FromMinutes(cfg.Schedule.InitialDelayMinutes);
         _dailyTimer = new Timer(async _ =>
         {
             await RunBackupAsync(CancellationToken.None, reason: "DailyTimes");
@@ -142,17 +142,17 @@ public sealed class BackupOrchestrator : IBackupOrchestrator
 
     private async Task ApplyRetentionAsync(CancellationToken ct)
     {
-        var cfg = _settings.CurrentValue;
-        var provider = _factory.Create(_dbType);
-        var list = await provider.ListAsync(ct);
-        var maxAge = TimeSpan.FromDays(cfg.Storage.Retention.MaxAgeDays);
-        var toDelete = list
+        BackupConfiguration cfg = _settings.CurrentValue;
+        IBackupProvider provider = _factory.Create(_dbType);
+        IReadOnlyList<BackupDescriptor> list = await provider.ListAsync(ct);
+        TimeSpan maxAge = TimeSpan.FromDays(cfg.Storage.Retention.MaxAgeDays);
+        List<BackupDescriptor> toDelete = list
             .OrderByDescending(b => b.CreatedUtc)
             .Skip(cfg.Storage.Retention.MaxCount)
             .Concat(list.Where(b => DateTime.UtcNow - b.CreatedUtc > maxAge))
             .DistinctBy(b => b.FilePath)
             .ToList();
-        foreach (var b in toDelete)
+        foreach (BackupDescriptor? b in toDelete)
         {
             try { await provider.DeleteAsync(b.FilePath, ct); Log.Information("Deleted old backup: {File}", b.FilePath); }
             catch (Exception ex) { Log.Warning(ex, "Failed to delete old backup: {File}", b.FilePath); }

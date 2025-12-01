@@ -44,9 +44,9 @@ public class CliDownloadExecutor : IDownloadExecutor
             // Аутентификация тоже может быть динамической, но пока берем из конфига
             // Важно: если в контексте есть AuthData, можно использовать его приоритетнее конфига
 
-            var arguments = _argumentBuilder.Build(_config.ArgumentList, builderContext, _config.Authentication);
+            List<string> arguments = _argumentBuilder.Build(_config.ArgumentList, builderContext, _config.Authentication);
 
-            var processOptions = new ProcessRunOptions
+            ProcessRunOptions processOptions = new ProcessRunOptions
             {
                 FileName = _config.ExecutablePath,
                 Arguments = arguments,
@@ -76,13 +76,13 @@ public class CliDownloadExecutor : IDownloadExecutor
                 return AnalyzeError(result.ErrorOutput);
             }
 
-            var files = Directory.GetFiles(context.OutputDirectory);
+            string[] files = Directory.GetFiles(context.OutputDirectory);
             if (files.Length == 0)
             {
                 return ExecutionResult.Retryable("Process finished successfully, but no files found.");
             }
 
-            foreach (var file in files)
+            foreach (string file in files)
             {
                 context.ResultFiles.Add(new DownloadedFile
                 {
@@ -114,7 +114,7 @@ public class CliDownloadExecutor : IDownloadExecutor
 
     private MediaType DetermineMediaType(string filePath)
     {
-        var ext = Path.GetExtension(filePath).ToLowerInvariant();
+        string ext = Path.GetExtension(filePath).ToLowerInvariant();
         return ext switch
         {
             ".mp4" or ".mkv" or ".webm" or ".mov" => MediaType.Video,

@@ -2,11 +2,11 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
-using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 namespace TelegramMediaRelayBot.TelegramBot.States;
 
@@ -39,14 +39,14 @@ public class OutboundInviteStateHandler : IStateHandler
 
     public async Task<StateResult> Process(UserStateData stateData, Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        var chatId = _interactionService.GetChatId(update);
+        long chatId = _interactionService.GetChatId(update);
         if (await _stateBreaker.HandleStateBreak(botClient, update))
         {
             return StateResult.Complete();
         }
 
         if (update.CallbackQuery?.Data == null) return StateResult.Ignore();
-        var callbackData = update.CallbackQuery.Data;
+        string callbackData = update.CallbackQuery.Data;
 
         switch (stateData.Step)
         {
@@ -56,7 +56,7 @@ public class OutboundInviteStateHandler : IStateHandler
             case 0:
                 if (callbackData.StartsWith("revoke_outbound_invite:"))
                 {
-                    var userIdStr = callbackData.Split(':')[1];
+                    string userIdStr = callbackData.Split(':')[1];
                     stateData.Data["TargetUserIdStr"] = userIdStr; // Сохраняем ID цели
 
                     await _interactionService.ReplyToUpdate(botClient, update, OutBoundKB.GetOutBoundActionsKeyboardMarkup(userIdStr, "user_show_outbound_invite:" + chatId),
@@ -75,14 +75,14 @@ public class OutboundInviteStateHandler : IStateHandler
             case 1:
                 if (callbackData.StartsWith("user_show_outbound_invite:"))
                 {
-        string userId = update.CallbackQuery!.Data!.Split(':')[1];
-        await _interactionService.ReplyToUpdate(botClient, update, OutBoundKB.GetOutboundActionsKeyboardMarkup(userId), cancellationToken, _resourceService.GetResourceString("OutboundInviteMenu"));
+                    string userId = update.CallbackQuery!.Data!.Split(':')[1];
+                    await _interactionService.ReplyToUpdate(botClient, update, OutBoundKB.GetOutboundActionsKeyboardMarkup(userId), cancellationToken, _resourceService.GetResourceString("OutboundInviteMenu"));
                 }
                 else if (callbackData.StartsWith("user_accept_revoke_outbound_invite:"))
                 {
-                    var userIdStr = callbackData.Split(':')[1];
-                    var accepterId = _userGetter.GetUserIDbyTelegramID(long.Parse(userIdStr));
-                    var senderId = _userGetter.GetUserIDbyTelegramID(chatId);
+                    string userIdStr = callbackData.Split(':')[1];
+                    int accepterId = _userGetter.GetUserIDbyTelegramID(long.Parse(userIdStr));
+                    int senderId = _userGetter.GetUserIDbyTelegramID(chatId);
                     await _contactRemover.RemoveContactByStatus(senderId, accepterId, ContactsStatus.WAITING_FOR_ACCEPT);
                 }
 

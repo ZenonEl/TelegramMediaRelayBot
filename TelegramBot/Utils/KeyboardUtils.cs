@@ -24,7 +24,7 @@ public static class KeyboardUtils
 
     public static InlineKeyboardMarkup GetReturnButtonMarkup(string callback = "main_menu", string? text = null)
     {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
                     {
                         new[]
                         {
@@ -37,7 +37,7 @@ public static class KeyboardUtils
     public static InlineKeyboardMarkup GetConfirmForActionKeyboardMarkup(string acceptCallback = "accept", string denyCallback = "main_menu", int? messageId = null)
     {
         string suffix = messageId.HasValue ? $":{messageId.Value}" : string.Empty;
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
                     {
                         new[]
                         {
@@ -53,7 +53,7 @@ public static class KeyboardUtils
 
     public static InlineKeyboardMarkup GetViewContactsKeyboardMarkup()
     {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
                     {
                         new[]
                         {
@@ -78,7 +78,7 @@ public static class KeyboardUtils
 
     public static InlineKeyboardMarkup SendInlineKeyboardMenu(int inboxNewCount = 0)
     {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
                     {
                         new[]
                         {
@@ -118,7 +118,7 @@ public static class KeyboardUtils
     public static InlineKeyboardMarkup GetVideoDistributionKeyboardMarkup(int? messageId = null)
     {
         string suffix = messageId.HasValue ? $":{messageId.Value}" : string.Empty;
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
                         {
                             new[]
                             {
@@ -139,21 +139,21 @@ public static class KeyboardUtils
                                 GetReturnButton()
                             },
                         });
-            return inlineKeyboard;
+        return inlineKeyboard;
     }
 
     private static string TextOrDefault(string key, string fallback)
     {
-        var value = GetResourceString(key);
+        string value = GetResourceString(key);
         if (string.Equals(value, key, StringComparison.Ordinal)) return fallback;
         return value;
     }
 
     public static InlineKeyboardMarkup GetCancelKeyboardMarkup(int? messageId = null, string callback = "cancel_download")
     {
-        var cancelText = TextOrDefault("CancelButtonText", "Отменить");
+        string cancelText = TextOrDefault("CancelButtonText", "Отменить");
         callback = messageId.HasValue ? $"{callback}:{messageId.Value}" : callback;
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
                     {
                         new[] { InlineKeyboardButton.WithCallbackData(cancelText, callback) }
                     });
@@ -162,9 +162,9 @@ public static class KeyboardUtils
 
     public static InlineKeyboardMarkup GetConfirmWithCancelKeyboardMarkup(string acceptCallback = "accept", string denyCallback = "main_menu", int? messageId = null)
     {
-        var cancelText = TextOrDefault("CancelButtonText", "Отменить");
+        string cancelText = TextOrDefault("CancelButtonText", "Отменить");
         string suffix = messageId.HasValue ? $":{messageId.Value}" : string.Empty;
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
                     {
                         new[] { InlineKeyboardButton.WithCallbackData(GetResourceString("YesButtonText"), acceptCallback + suffix) },
                         new[] { InlineKeyboardButton.WithCallbackData(cancelText, "cancel_download" + suffix) },

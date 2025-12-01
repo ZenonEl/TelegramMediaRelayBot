@@ -32,10 +32,10 @@ public class SqliteInboundDBGetter(IDbConnection dbConnection) : IInboundDBGette
             WHERE c.ContactId = @userId AND c.status = 'waiting_for_accept'";
 
         // 2. Используем Dapper для безопасного и чистого выполнения запроса.
-        var users = await dbConnection.QueryAsync<UserQueryResult>(query, new { userId });
+        IEnumerable<UserQueryResult> users = await dbConnection.QueryAsync<UserQueryResult>(query, new { userId });
 
         // 3. Преобразуем полученные данные в итоговую модель.
-        var buttonDataList = users
+        List<ButtonData> buttonDataList = users
             .Select(user => new ButtonData
             {
                 ButtonText = user.Name,

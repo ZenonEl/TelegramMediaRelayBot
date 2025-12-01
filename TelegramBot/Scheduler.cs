@@ -56,7 +56,7 @@ public class Scheduler : IHostedService, IDisposable
                 await CheckForUnmuteContacts(stoppingToken);
 
                 // Ждем интервал из конфига
-                var delay = TimeSpan.FromSeconds(_delayConfig.CurrentValue.UserUnMuteCheckInterval);
+                TimeSpan delay = TimeSpan.FromSeconds(_delayConfig.CurrentValue.UserUnMuteCheckInterval);
                 await Task.Delay(delay, stoppingToken);
             }
             catch (OperationCanceledException)
@@ -80,14 +80,14 @@ public class Scheduler : IHostedService, IDisposable
         {
             try
             {
-                var torConfig = _torConfig.CurrentValue;
+                TorConfiguration torConfig = _torConfig.CurrentValue;
                 if (torConfig.Enabled)
                 {
                     // Выполняем полезную работу
                     await ChangeTorCircuit(stoppingToken);
 
                     // Ждем интервал из конфига
-                    var delay = TimeSpan.FromMinutes(torConfig.TorChangingChainInterval);
+                    TimeSpan delay = TimeSpan.FromMinutes(torConfig.TorChangingChainInterval);
                     await Task.Delay(delay, stoppingToken);
                 }
                 else
@@ -114,37 +114,37 @@ public class Scheduler : IHostedService, IDisposable
     {
         // IHostedService - это Singleton, а сервисы БД - Scoped.
         // Чтобы безопасно их использовать, нужно создавать Scope.
-        using var scope = _scopeFactory.CreateScope();
-        var userGetter = scope.ServiceProvider.GetRequiredService<IUserGetter>();
-        var contactUow = scope.ServiceProvider.GetRequiredService<IContactUoW>();
+        using IServiceScope scope = _scopeFactory.CreateScope();
+        IUserGetter userGetter = scope.ServiceProvider.GetRequiredService<IUserGetter>();
+        IContactUoW contactUow = scope.ServiceProvider.GetRequiredService<IContactUoW>();
 
-        var expiredMutes = userGetter.GetExpiredUsersMutes();
-        foreach (var mute in expiredMutes)
+        List<int> expiredMutes = userGetter.GetExpiredUsersMutes();
+        foreach (int mute in expiredMutes)
         {
             if (stoppingToken.IsCancellationRequested) break;
 
             await contactUow.UnMuteUserByMuteId(mute);
             Log.Information("Mute record {MuteId} deactivated.", mute);
-                }
+        }
     }
 
     // 6. Логика Tor остается почти без изменений
     private async Task ChangeTorCircuit(CancellationToken stoppingToken)
     {
-        var torConfig = _torConfig.CurrentValue;
+        TorConfiguration torConfig = _torConfig.CurrentValue;
 
-        var controlPortClient = new DotNetTor.ControlPort.Client(
+        DotNetTor.ControlPort.Client controlPortClient = new DotNetTor.ControlPort.Client(
             torConfig.TorSocksHost,
             controlPort: torConfig.TorControlPort,
             password: torConfig.TorControlPassword ?? "");
 
         await controlPortClient.ChangeCircuitAsync(stoppingToken);
 
-        using var httpClient = new HttpClient(new DotNetTor.SocksPort.SocksPortHandler(
+        using HttpClient httpClient = new HttpClient(new DotNetTor.SocksPort.SocksPortHandler(
             torConfig.TorSocksHost,
             socksPort: torConfig.TorSocksPort));
 
-        var result = await httpClient.GetStringAsync("https://check.torproject.org/api/ip", stoppingToken);
+        string result = await httpClient.GetStringAsync("https://check.torproject.org/api/ip", stoppingToken);
         Log.Debug("New Tor IP: {TorIp}", result);
     }
 

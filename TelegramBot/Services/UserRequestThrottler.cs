@@ -21,12 +21,12 @@ public class UserRequestThrottler : IUserRequestThrottler
 
     public TimeSpan ReserveSlot(long chatId, TimeSpan baseDelay)
     {
-        var now = DateTime.UtcNow;
+        DateTime now = DateTime.UtcNow;
         // Потокобезопасно получаем или добавляем значение
-        var next = _nextSlotByChatId.GetOrAdd(chatId, now);
+        DateTime next = _nextSlotByChatId.GetOrAdd(chatId, now);
 
-        var wait = (next > now ? next - now : TimeSpan.Zero) + baseDelay;
-        var newNextSlot = now + wait;
+        TimeSpan wait = (next > now ? next - now : TimeSpan.Zero) + baseDelay;
+        DateTime newNextSlot = now + wait;
 
         // Потокобезопасно обновляем значение
         _nextSlotByChatId.AddOrUpdate(chatId, newNextSlot, (key, oldVal) => newNextSlot > oldVal ? newNextSlot : oldVal);

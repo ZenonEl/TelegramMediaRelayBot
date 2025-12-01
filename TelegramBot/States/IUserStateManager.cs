@@ -22,7 +22,7 @@ public class InMemoryUserStateManager : IUserStateManager
 
     public bool TryGet(long chatId, out UserStateData? state)
     {
-        if (_states.TryGetValue(chatId, out var s))
+        if (_states.TryGetValue(chatId, out UserStateData? s))
         {
             state = s;
             return true;

@@ -36,10 +36,10 @@ public class MySqlInboundDBGetter(IDbConnection dbConnection) : IInboundDBGetter
         // 2. Используем Dapper для выполнения запроса.
         // Он безопасен и сам управляет открытием/закрытием подключения.
         // Мы БОЛЬШЕ НИКОГДА не пишем 'using (dbConnection)' для внедренного подключения.
-        var users = await dbConnection.QueryAsync<UserQueryResult>(query, new { userId });
+        IEnumerable<UserQueryResult> users = await dbConnection.QueryAsync<UserQueryResult>(query, new { userId });
 
         // 3. Преобразуем (мапим) результат в нужный нам формат ButtonData
-        var buttonDataList = users
+        List<ButtonData> buttonDataList = users
             .Select(user => new ButtonData
             {
                 ButtonText = user.Name,

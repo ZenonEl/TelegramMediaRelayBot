@@ -3,9 +3,8 @@
 // See LICENSE file in the project root for full license information.
 
 using System.Collections.Concurrent;
-using System.Text.Json;
-using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Models;
 using TelegramMediaRelayBot.TelegramBot.Sessions;
 
@@ -45,8 +44,8 @@ public class InboxService : IInboxService
 
         try
         {
-            var senderUserId = _userGetter.GetUserIDbyTelegramID(session.ChatId);
-            var senderName = _userGetter.GetUserNameByTelegramID(session.ChatId);
+            int senderUserId = _userGetter.GetUserIDbyTelegramID(session.ChatId);
+            string senderName = _userGetter.GetUserNameByTelegramID(session.ChatId);
 
             var mediaItems = savedMediaRefs.Select(m => new
             {
@@ -55,16 +54,16 @@ public class InboxService : IInboxService
                 Caption = (string?)null
             }).ToList();
 
-            var now = DateTime.UtcNow;
+            DateTime now = DateTime.UtcNow;
             string dateCode = now.ToString("yyyy_MM_dd_HH_mm_ss");
             string userHash = $"{dateCode}_{senderName}";
-            var hashtags = new List<string> { dateCode, userHash };
+            List<string> hashtags = new List<string> { dateCode, userHash };
 
             string cleanCaption = session.Caption ?? string.Empty;
 
             if (!string.IsNullOrEmpty(cleanCaption))
             {
-                var lines = cleanCaption.Split('\n');
+                string[] lines = cleanCaption.Split('\n');
                 if (lines.Length >= 3 &&
                     lines[0].TrimStart().StartsWith("<code>") &&
                     lines[1].TrimStart().StartsWith("<code>") &&
@@ -101,17 +100,17 @@ public class InboxService : IInboxService
     private async Task NotifyRecipientIfNeeded(ITelegramBotClient botClient, int recipientUserId)
     {
         // --- ТВОЯ ЛОГИКА НОТИФИКАЦИЙ ---
-        var newCount = await _inboxRepo.GetNewCountAsync(recipientUserId);
+        int newCount = await _inboxRepo.GetNewCountAsync(recipientUserId);
         bool shouldNotify = newCount == 1 || (newCount >= 5 && newCount % 5 == 0);
 
         if (shouldNotify)
         {
-            var nowUtc = DateTime.UtcNow;
-            if (!_lastInboxNotifyUtc.TryGetValue(recipientUserId, out var last) || (nowUtc - last) > TimeSpan.FromSeconds(5))
+            DateTime nowUtc = DateTime.UtcNow;
+            if (!_lastInboxNotifyUtc.TryGetValue(recipientUserId, out DateTime last) || (nowUtc - last) > TimeSpan.FromSeconds(5))
             {
                 _lastInboxNotifyUtc[recipientUserId] = nowUtc;
-                var recipientTgId = _userGetter.GetTelegramIDbyUserID(recipientUserId);
-                var note = string.Format(_resourceService.GetResourceString("InboxNewCountNotify"), newCount);
+                long recipientTgId = _userGetter.GetTelegramIDbyUserID(recipientUserId);
+                string note = string.Format(_resourceService.GetResourceString("InboxNewCountNotify"), newCount);
                 await botClient.SendMessage(recipientTgId, note);
             }
         }

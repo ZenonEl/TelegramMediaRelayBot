@@ -18,7 +18,7 @@ public class UrlParsingService : IUrlParsingService
     public bool IsLink(string input)
     {
         if (string.IsNullOrWhiteSpace(input)) return false;
-        return Uri.TryCreate(input, UriKind.Absolute, out var uriResult)
+        return Uri.TryCreate(input, UriKind.Absolute, out Uri? uriResult)
                 && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
     }
 
@@ -45,7 +45,7 @@ public class UrlParsingService : IUrlParsingService
 
     public string ExtractDomain(string url)
     {
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return string.Empty;
+        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri)) return string.Empty;
         return uri.Host.ToLower();
     }
 }

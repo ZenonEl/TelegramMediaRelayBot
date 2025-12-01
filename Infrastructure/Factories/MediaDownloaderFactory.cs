@@ -8,8 +8,8 @@ using TelegramMediaRelayBot.Domain.Interfaces;
 using TelegramMediaRelayBot.Infrastructure.Downloaders.Arguments;
 using TelegramMediaRelayBot.Infrastructure.Downloaders.Pipeline;
 using TelegramMediaRelayBot.Infrastructure.Downloaders.Policies;
-using TelegramMediaRelayBot.Infrastructure.Pipeline.Executors;
 using TelegramMediaRelayBot.Infrastructure.Pipeline;
+using TelegramMediaRelayBot.Infrastructure.Pipeline.Executors;
 using TelegramMediaRelayBot.Infrastructure.Processes;
 
 namespace TelegramMediaRelayBot.Infrastructure.Factories;
@@ -61,17 +61,17 @@ public class MediaDownloaderFactory : IMediaDownloaderFactory
 
     private void InitializeDownloaders()
     {
-        foreach (var def in _config.Downloaders)
+        foreach (DownloaderDefinition def in _config.Downloaders)
         {
             LoadPatternsFromFile(def.UrlMatching);
 
             IDownloadExecutor executor = new CliDownloadExecutor(def, _processRunner, _argumentBuilder);
 
-            var selectedProcessors = _allPostProcessors
+            List<IPostProcessor> selectedProcessors = _allPostProcessors
                 .Where(p => def.PostProcessors.Contains(p.Name, StringComparer.OrdinalIgnoreCase))
                 .ToList();
 
-            var pipeline = new PipelineMediaDownloader(
+            PipelineMediaDownloader pipeline = new PipelineMediaDownloader(
                 def,
                 executor,
                 _retryOrchestrator,
@@ -93,10 +93,10 @@ public class MediaDownloaderFactory : IMediaDownloaderFactory
 
         try
         {
-            var path = Path.Combine(AppContext.BaseDirectory, urlMatchingConfig.PatternsFile);
+            string path = Path.Combine(AppContext.BaseDirectory, urlMatchingConfig.PatternsFile);
             if (System.IO.File.Exists(path))
             {
-                var patternsFromFile = System.IO.File.ReadAllLines(path)
+                List<string> patternsFromFile = System.IO.File.ReadAllLines(path)
                     .Select(line => line.Trim())
                     .Where(line => !string.IsNullOrEmpty(line) && !line.StartsWith('#'))
                     .ToList();
@@ -113,7 +113,7 @@ public class MediaDownloaderFactory : IMediaDownloaderFactory
 
     public IMediaDownloader GetDownloader(string url)
     {
-        var downloader = _downloaders
+        IMediaDownloader? downloader = _downloaders
             .Where(d => d.CanHandle(url))
             .OrderByDescending(d => d.Priority)
             .FirstOrDefault();

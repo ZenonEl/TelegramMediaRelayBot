@@ -37,12 +37,12 @@ public class DeleteGroupSelectedCommand : IBotCallbackQueryHandlers
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        var data = update.CallbackQuery!.Data!;
+        string data = update.CallbackQuery!.Data!;
         // data formats:
         // 1. "delete_group_select:123"
         // 2. "delete_group_confirm:123"
 
-        var parts = data.Split(':');
+        string[] parts = data.Split(':');
         string action = parts[0]; // "delete_group_select" или "delete_group_confirm"
 
         if (parts.Length < 2 || !int.TryParse(parts[1], out int groupId))
@@ -54,7 +54,7 @@ public class DeleteGroupSelectedCommand : IBotCallbackQueryHandlers
         // --- СЦЕНАРИЙ 1: ЗАПРОС ПОДТВЕРЖДЕНИЯ ---
         if (action == "delete_group_select")
         {
-            var group = await _groupGetter.GetIsDefaultGroup(groupId);
+            bool group = await _groupGetter.GetIsDefaultGroup(groupId);
             if (group == null)
             {
                 await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, "Group not found", cancellationToken: ct);
@@ -62,7 +62,7 @@ public class DeleteGroupSelectedCommand : IBotCallbackQueryHandlers
             }
 
             // Рисуем кнопки "Да, удалить" и "Нет, назад"
-            var confirmKeyboard = new InlineKeyboardMarkup(new[]
+            InlineKeyboardMarkup confirmKeyboard = new InlineKeyboardMarkup(new[]
             {
                 new[]
                 {

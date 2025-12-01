@@ -25,7 +25,7 @@ public class RetryPolicyManager : IRetryPolicyManager
     public RetryDecision Decide(DownloadResult lastResult, int attemptNumber)
     {
         // 1. Ищем первое подходящее правило
-        var policy = FindMatchingPolicy(lastResult.ErrorMessage ?? string.Empty);
+        RetryPolicyConfig? policy = FindMatchingPolicy(lastResult.ErrorMessage ?? string.Empty);
 
         if (policy == null)
         {
@@ -62,9 +62,9 @@ public class RetryPolicyManager : IRetryPolicyManager
 
     private RetryPolicyConfig? FindMatchingPolicy(string errorMessage)
     {
-        foreach (var policy in _policies)
+        foreach (RetryPolicyConfig policy in _policies)
         {
-            foreach (var pattern in policy.ErrorPatterns)
+            foreach (string pattern in policy.ErrorPatterns)
             {
                 if (pattern == "*")
                 {

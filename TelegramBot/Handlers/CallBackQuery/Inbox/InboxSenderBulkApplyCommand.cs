@@ -15,12 +15,12 @@ public class InboxSenderBulkApplyCommand : IBotCallbackQueryHandlers
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         // inbox:sender:mark:confirm:read|unread:senderId:page OR inbox:sender:del:confirm:read|unread:senderId:page
-        var parts = update.CallbackQuery!.Data!.Split(':');
+        string[] parts = update.CallbackQuery!.Data!.Split(':');
         if (parts.Length < 6) { await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, cancellationToken: ct).ConfigureAwait(false); return; }
         string mode = parts[2]; // mark|del
         string which = parts[4]; // read|unread
         int senderId = int.Parse(parts[5]);
-        int page = parts.Length >= 7 && int.TryParse(parts[6], out var p) ? p : 1;
+        int page = parts.Length >= 7 && int.TryParse(parts[6], out int p) ? p : 1;
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
         int ownerId = _userGetter.GetUserIDbyTelegramID(chatId);
         if (mode == "mark")

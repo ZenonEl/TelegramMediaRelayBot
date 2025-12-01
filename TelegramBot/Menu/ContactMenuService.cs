@@ -7,7 +7,6 @@ using Telegram.Bot.Types.ReplyMarkups;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Models;
 using TelegramMediaRelayBot.TelegramBot.States;
-using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace TelegramMediaRelayBot.TelegramBot.Services;
@@ -51,8 +50,8 @@ public class ContactMenuService : IContactMenuService
 
     public async Task StartAddContactFlow(ITelegramBotClient botClient, Update update)
     {
-        var chatId = _interactionService.GetChatId(update);
-        var newState = new UserStateData { StateName = "AddContact", Step = 0 };
+        long chatId = _interactionService.GetChatId(update);
+        UserStateData newState = new UserStateData { StateName = "AddContact", Step = 0 };
         _stateManager.Set(chatId, newState);
         await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), CancellationToken.None, _resourceService.GetResourceString("SpecifyContactLink"));
     }
@@ -68,7 +67,7 @@ public class ContactMenuService : IContactMenuService
         List<long> tgIds = (await _contactGetter.GetAllContactUserTGIds(userId)).ToList();
         List<string> infoList = new List<string>();
 
-        foreach (var tg in tgIds)
+        foreach (long tg in tgIds)
         {
             int id = _userGetter.GetUserIDbyTelegramID(tg);
             string uname = _userGetter.GetUserNameByTelegramID(tg);
@@ -96,8 +95,8 @@ public class ContactMenuService : IContactMenuService
             return;
         }
 
-        var buttons = new List<InlineKeyboardButton[]>();
-        foreach (var c in contacts)
+        List<InlineKeyboardButton[]> buttons = new List<InlineKeyboardButton[]>();
+        foreach (ContactViewModel c in contacts)
         {
             buttons.Add(new[]
             {
@@ -113,8 +112,8 @@ public class ContactMenuService : IContactMenuService
 
     public async Task StartUnmuteContactFlow(ITelegramBotClient botClient, Update update)
     {
-        var chatId = _interactionService.GetChatId(update);
-        var userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        long chatId = _interactionService.GetChatId(update);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
 
         IEnumerable<int> mutedIds = await _contactGetter.GetMutedContactIds(userId);
 
@@ -125,7 +124,7 @@ public class ContactMenuService : IContactMenuService
             return;
         }
 
-        var buttons = new List<InlineKeyboardButton[]>();
+        List<InlineKeyboardButton[]> buttons = new List<InlineKeyboardButton[]>();
         foreach (int id in mutedIds)
         {
             string name = _userGetter.GetUserNameByID(id) ?? "Unknown";
@@ -147,7 +146,8 @@ public class ContactMenuService : IContactMenuService
         int userId = _userGetter.GetUserIDbyTelegramID(chatId);
 
         List<long> contactUserTGIds = await _contactGetter.GetAllContactUserTGIds(userId);
-        var contactUsersInfo = contactUserTGIds.Select(tgId => {
+        List<string> contactUsersInfo = contactUserTGIds.Select(tgId =>
+        {
             long id = _userGetter.GetUserIDbyTelegramID(tgId);
             string username = _userGetter.GetUserNameByTelegramID(tgId);
             string link = _userGetter.GetUserSelfLink(tgId);
@@ -159,8 +159,8 @@ public class ContactMenuService : IContactMenuService
 
     public async Task StartEditContactGroupFlow(ITelegramBotClient botClient, Update update)
     {
-        var chatId = _interactionService.GetChatId(update);
-        var userId = _userGetter.GetUserIDbyTelegramID(chatId);
+        long chatId = _interactionService.GetChatId(update);
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
 
         // 1. УБИРАЕМ установку состояния.
         // Состояние установится само, когда юзер выберет группу.
@@ -184,8 +184,8 @@ public class ContactMenuService : IContactMenuService
         }
 
         // 3. Создаем клавиатуру из групп
-        var buttons = new List<InlineKeyboardButton[]>();
-        foreach (var group in groups)
+        List<InlineKeyboardButton[]> buttons = new List<InlineKeyboardButton[]>();
+        foreach (int group in groups)
         {
             // Генерируем кнопку для каждой группы
             // callbackData должен совпадать с EditGroupSelectedCommand.Name
@@ -213,13 +213,13 @@ public class ContactMenuService : IContactMenuService
 
     public async Task<List<ContactViewModel>> GetContactsForDisplay(int userId)
     {
-        var contactViewModels = new List<ContactViewModel>();
-        var tgIds = await _contactGetter.GetAllContactUserTGIds(userId);
+        List<ContactViewModel> contactViewModels = new List<ContactViewModel>();
+        List<long> tgIds = await _contactGetter.GetAllContactUserTGIds(userId);
 
-        foreach (var tgId in tgIds)
+        foreach (long tgId in tgIds)
         {
-            var contactId = _userGetter.GetUserIDbyTelegramID(tgId);
-            var membershipInfo = await BuildMembershipInfo(userId, contactId); // Используем наш приватный метод
+            int contactId = _userGetter.GetUserIDbyTelegramID(tgId);
+            string membershipInfo = await BuildMembershipInfo(userId, contactId); // Используем наш приватный метод
 
             contactViewModels.Add(new ContactViewModel
             {
@@ -239,12 +239,12 @@ public class ContactMenuService : IContactMenuService
 
         List<ContactViewModel> contacts = await GetContactsForDisplay(userId);
 
-        var sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
         sb.AppendLine(_resourceService.GetResourceString("YourContacts"));
 
         if (contacts.Any())
         {
-            foreach (var contact in contacts)
+            foreach (ContactViewModel contact in contacts)
             {
                 sb.AppendLine(string.Format(_resourceService.GetResourceString("ContactInfo"), contact.Id, contact.Name, contact.Link));
                 sb.AppendLine(contact.MembershipInfo);
@@ -267,11 +267,11 @@ public class ContactMenuService : IContactMenuService
 
     private async Task<string> BuildMembershipInfo(int ownerUserId, int contactUserId)
     {
-        var groupIds = await _groupGetter.GetGroupIDsByUserId(ownerUserId);
-        var membership = new List<string>();
-        foreach (var gid in groupIds)
+        IEnumerable<int> groupIds = await _groupGetter.GetGroupIDsByUserId(ownerUserId);
+        List<string> membership = new List<string>();
+        foreach (int gid in groupIds)
         {
-            var members = await _groupGetter.GetAllUsersIdsInGroup(gid);
+            IEnumerable<int> members = await _groupGetter.GetAllUsersIdsInGroup(gid);
             if (members.Contains(contactUserId))
             {
                 string name = await _groupGetter.GetGroupNameById(gid);

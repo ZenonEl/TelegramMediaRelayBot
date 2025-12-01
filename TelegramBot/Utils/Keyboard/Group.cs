@@ -19,7 +19,7 @@ public static class UsersGroup
 
     public static InlineKeyboardMarkup GetUsersGroupActionsKeyboardMarkup(bool groupsMoreZero)
     {
-        var kb = new List<List<InlineKeyboardButton>>
+        List<List<InlineKeyboardButton>> kb = new List<List<InlineKeyboardButton>>
         {
             new[]
         {
@@ -48,7 +48,7 @@ public static class UsersGroup
                 )
             }.ToList());
         }
-        kb.Add(                    new[]
+        kb.Add(new[]
                     {
                         KeyboardUtils.GetReturnButton()
                     }.ToList());
@@ -58,7 +58,7 @@ public static class UsersGroup
 
     public static InlineKeyboardMarkup GetUsersGroupEditActionsKeyboardMarkup(int groupId)
     {
-        var inlineKeyboard = new InlineKeyboardMarkup(new[]
+        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(new[]
                 {
                     new[]
                     {
@@ -84,9 +84,9 @@ public static class UsersGroup
     {
         IEnumerable<int> groupIds = await groupGetter.GetGroupIDsByUserId(userId);
 
-        var groupInfos = new List<string>();
+        List<string> groupInfos = new List<string>();
         string groupInfo;
-        foreach (var groupId in groupIds)
+        foreach (int groupId in groupIds)
         {
             string groupName = await groupGetter.GetGroupNameById(groupId);
 

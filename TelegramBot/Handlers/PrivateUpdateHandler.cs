@@ -7,8 +7,8 @@ using Microsoft.Extensions.Options;
 using Telegram.Bot.Types.Enums;
 using TelegramBot.Services;
 using TelegramMediaRelayBot.Config;
-using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Domain.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Sessions;
@@ -64,8 +64,8 @@ public class PrivateUpdateHandler
 
     public async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        var message = update.Message!;
-        var chatId = message.Chat.Id;
+        Message message = update.Message!;
+        long chatId = message.Chat.Id;
 
         if (!await EnsureUserHasAccessOrRegister(botClient, update, cancellationToken)) return;
 
@@ -75,7 +75,7 @@ public class PrivateUpdateHandler
             return;
         }
 
-        if (message.Text != null && _urlParser.TryExtractLinkAndText(message.Text, out var url, out var caption))
+        if (message.Text != null && _urlParser.TryExtractLinkAndText(message.Text, out string? url, out string? caption))
         {
             IEnumerable<IMediaDownloader> downloaders = _downloaderFactory.GetDownloadersForUrl(url);
             if (!downloaders.Any())
@@ -109,7 +109,7 @@ public class PrivateUpdateHandler
 
             if (defaultAction != UsersAction.OFF && defaultAction != UsersAction.NO_VALUE)
                 int.TryParse(defaultAction.Split(";")[1], out actionCondition);
-            var window = TimeSpan.FromSeconds(actionCondition);
+            TimeSpan window = TimeSpan.FromSeconds(actionCondition);
 
             if (session != null && (DateTime.UtcNow - session.CreatedAtUtc) <= window)
             {
@@ -135,22 +135,22 @@ public class PrivateUpdateHandler
 
     public async Task ProcessCallbackQuery(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        await using var scope = _scopeFactory.CreateAsyncScope();
-        var handlersFactory = scope.ServiceProvider.GetRequiredService<CallbackQueryHandlersFactory>();
-        var callbackQuery = update.CallbackQuery!;
-        var data = callbackQuery.Data!;
+        await using AsyncServiceScope scope = _scopeFactory.CreateAsyncScope();
+        CallbackQueryHandlersFactory handlersFactory = scope.ServiceProvider.GetRequiredService<CallbackQueryHandlersFactory>();
+        CallbackQuery callbackQuery = update.CallbackQuery!;
+        string data = callbackQuery.Data!;
 
         await handlersFactory.ExecuteAsync(update, botClient, cancellationToken);
     }
 
     private async Task<bool> EnsureUserHasAccessOrRegister(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        var chatId = update.Message!.Chat.Id;
+        long chatId = update.Message!.Chat.Id;
         if (_userRepository.CheckUserExists(chatId)) return true;
 
-        var usersCount = await _userGetter.GetAllUsersCount();
+        int usersCount = await _userGetter.GetAllUsersCount();
         // Используем наш новый сервис
-        var startParameter = _startParser.Parse(update.Message.Text!);
+        string startParameter = _startParser.Parse(update.Message.Text!);
 
         if ((usersCount == 0 || !string.IsNullOrEmpty(startParameter)) && _configService.CanUserStartUsingBot(startParameter, _userGetter))
         {
@@ -170,15 +170,15 @@ public class PrivateUpdateHandler
 
     private async Task HandleCommand(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        await using var scope = _scopeFactory.CreateAsyncScope();
-        var sp = scope.ServiceProvider;
-        var inboxRepo = sp.GetRequiredService<IInboxRepository>();
-        var menuService = sp.GetRequiredService<IUserMenuService>();
+        await using AsyncServiceScope scope = _scopeFactory.CreateAsyncScope();
+        IServiceProvider sp = scope.ServiceProvider;
+        IInboxRepository inboxRepo = sp.GetRequiredService<IInboxRepository>();
+        IUserMenuService menuService = sp.GetRequiredService<IUserMenuService>();
 
         if (update.Message?.Text == "/start")
         {
-            var userId = _userGetter.GetUserIDbyTelegramID(update.Message.Chat.Id);
-            var newCount = await inboxRepo.GetNewCountAsync(userId);
+            int userId = _userGetter.GetUserIDbyTelegramID(update.Message.Chat.Id);
+            int newCount = await inboxRepo.GetNewCountAsync(userId);
             await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(newCount), cancellationToken);
         }
         else if (update.Message?.Text == "/help")
