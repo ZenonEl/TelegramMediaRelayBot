@@ -83,7 +83,7 @@ public class EditContactGroupStateHandler : IStateHandler
                 if (data == "group_action:add") action = "Add";
                 else if (data == "group_action:remove") action = "Remove";
                 else if (data == "group_action:rename") action = "Rename";
-                else if (data == "group_action:desc") action = "Description"; 
+                else if (data == "group_action:desc") action = "Description";
 
                 if (action == null) return StateResult.Ignore();
 
@@ -97,7 +97,7 @@ public class EditContactGroupStateHandler : IStateHandler
                     // TODO: Move "Group.Description.Prompt"
                     string prompt = "📝 <b>Введите новое описание группы:</b>\n" +
                                     "<i>Отправьте точку (.), чтобы удалить описание.</i>";
-                                    
+
                     await _interactionService.ReplyToUpdate(botClient, update, backKb, cancellationToken, prompt);
                     stateData.Step = 1;
                     return StateResult.Continue();
@@ -117,7 +117,7 @@ public class EditContactGroupStateHandler : IStateHandler
                 {
                     // 1. Получаем тех, кто УЖЕ в группе
                     List<int> existingMembers = (List<int>)await _groupGetter.GetAllUsersIdsInGroup(groupId);
-                    
+
                     // 2. Получаем ВСЕ контакты
                     List<long> allContactTgIds = (List<long>)await _contactGetter.GetAllContactUserTGIds(userId);
 
@@ -136,12 +136,12 @@ public class EditContactGroupStateHandler : IStateHandler
                     }
 
                     sb.AppendLine("👇 <b>Кого можно добавить (ID):</b>");
-                    
+
                     bool foundCandidates = false;
                     foreach (long tgId in allContactTgIds)
                     {
                         int cid = _userGetter.GetUserIDbyTelegramID(tgId);
-                        
+
                         // ФИЛЬТР: Показываем только тех, кого НЕТ в группе
                         if (!existingMembers.Contains(cid))
                         {
@@ -203,10 +203,10 @@ public class EditContactGroupStateHandler : IStateHandler
                     string newDescription = userText == "." ? string.Empty : userText;
                     await _groupSetter.SetGroupDescription(groupId, newDescription);
                     // TODO: Move "Group.Description.Success"
-                    string msg = string.IsNullOrEmpty(newDescription) 
-                        ? "🗑 Описание удалено." 
+                    string msg = string.IsNullOrEmpty(newDescription)
+                        ? "🗑 Описание удалено."
                         : "✅ Описание обновлено.";
-                        
+
                     await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, msg);
                     return StateResult.Complete();
                 }
@@ -216,7 +216,7 @@ public class EditContactGroupStateHandler : IStateHandler
                 {
                     // TODO: Реализовать RenameGroupAsync в репозитории
                     await _groupSetter.SetGroupName(groupId, userText);
-                    
+
                     // TODO: Move "Group.Rename.Success"
                     await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, $"✅ Группа переименована в: <b>{userText}</b>");
                     return StateResult.Complete();

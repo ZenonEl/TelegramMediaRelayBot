@@ -43,7 +43,7 @@ public class CliDownloadExecutor : IDownloadExecutor
 
             // Аутентификация тоже может быть динамической, но пока берем из конфига
             // Важно: если в контексте есть AuthData, можно использовать его приоритетнее конфига
-            
+
             var arguments = _argumentBuilder.Build(_config.ArgumentList, builderContext, _config.Authentication);
 
             var processOptions = new ProcessRunOptions
@@ -51,7 +51,7 @@ public class CliDownloadExecutor : IDownloadExecutor
                 FileName = _config.ExecutablePath,
                 Arguments = arguments,
                 Timeout = TimeSpan.FromMinutes(10),
-                OnOutputLine = (line) => 
+                OnOutputLine = (line) =>
                 {
                     context.Log($"[CLI] {line}");
                     context.ProgressCallback?.Invoke(line);

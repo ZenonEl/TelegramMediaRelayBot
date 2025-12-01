@@ -17,13 +17,13 @@ public class FfmpegPostProcessor : IPostProcessor
     private readonly IConcurrencyLimiter _limiter;
     private readonly FfmpegConfig _config;
 
-    private const long SafeSizeLimit = 50331648; 
+    private const long SafeSizeLimit = 50331648;
 
     public string Name => "FfmpegConverter";
     public int Order => 10;
 
     public FfmpegPostProcessor(
-        IProcessRunner processRunner, 
+        IProcessRunner processRunner,
         IConcurrencyLimiter limiter,
         IOptionsMonitor<DownloaderConfigRoot> configMonitor)
     {
@@ -40,7 +40,7 @@ public class FfmpegPostProcessor : IPostProcessor
     public async Task ProcessAsync(DownloadContext context, CancellationToken ct)
     {
         var newFilesList = new List<DownloadedFile>();
-        
+
         int totalVideos = context.ResultFiles.Count(f => f.MediaType == MediaType.Video);
         int currentVideoIndex = 0;
 
@@ -58,7 +58,7 @@ public class FfmpegPostProcessor : IPostProcessor
             string fileName = Path.GetFileName(inputPath);
 
             bool isMp4 = Path.GetExtension(inputPath).Equals(".mp4", StringComparison.OrdinalIgnoreCase);
-            
+
             if (isMp4 && originalSize < SafeSizeLimit)
             {
                 context.Log($"[Skip Optimization] File '{fileName}' is MP4 and small enough ({originalSize / 1024 / 1024} MB).");
@@ -66,13 +66,13 @@ public class FfmpegPostProcessor : IPostProcessor
                 continue;
             }
 
-            string statusMsg = totalVideos > 1 
-                ? $"⚙️ Оптимизирую видео {currentVideoIndex} из {totalVideos}..." 
+            string statusMsg = totalVideos > 1
+                ? $"⚙️ Оптимизирую видео {currentVideoIndex} из {totalVideos}..."
                 : "⚙️ Оптимизирую видео...";
             context.ProgressCallback?.Invoke(statusMsg);
 
             string outputPath = Path.Combine(
-                Path.GetDirectoryName(inputPath)!, 
+                Path.GetDirectoryName(inputPath)!,
                 Path.GetFileNameWithoutExtension(inputPath) + "_opt.mp4"
             );
 
@@ -126,11 +126,11 @@ public class FfmpegPostProcessor : IPostProcessor
             Arguments = args,
             Timeout = _config.OperationTimeout,
             // Можно добавить логирование stderr, если нужно видеть детали ошибки
-            OnOutputLine = null 
+            OnOutputLine = null
         };
 
         var result = await _processRunner.RunAsync(options, ct);
-        
+
         if (result.ExitCode != 0)
         {
             context.Log($"FFmpeg stderr: {result.ErrorOutput}");

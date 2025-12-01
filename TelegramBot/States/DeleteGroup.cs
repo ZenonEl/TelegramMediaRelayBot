@@ -3,9 +3,9 @@
 // See LICENSE file in the project root for full license information.
 
 using Telegram.Bot.Types.ReplyMarkups;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Utils;
-using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
@@ -49,13 +49,13 @@ public class UserDeleteGroupCommand : IBotCallbackQueryHandlers
         var buttons = new List<InlineKeyboardButton[]>();
         foreach (var groupId in groupsId)
         {
-            buttons.Add(new[] 
-            { 
+            buttons.Add(new[]
+            {
                 // Клик по группе вызывает команду подтверждения удаления
                 InlineKeyboardButton.WithCallbackData(
-                    text: $"🗑 {await _groupGetter.GetGroupNameById(groupId)}", 
-                    callbackData: $"delete_group_select:{groupId}" 
-                ) 
+                    text: $"🗑 {await _groupGetter.GetGroupNameById(groupId)}",
+                    callbackData: $"delete_group_select:{groupId}"
+                )
             });
         }
 
@@ -66,10 +66,10 @@ public class UserDeleteGroupCommand : IBotCallbackQueryHandlers
         string text = "🗑 <b>Выберите группу для удаления:</b>\n<i>Внимание: это действие необратимо.</i>";
 
         await _interactionService.ReplyToUpdate(
-            botClient, 
-            update, 
-            new InlineKeyboardMarkup(buttons), 
-            ct, 
+            botClient,
+            update,
+            new InlineKeyboardMarkup(buttons),
+            ct,
             text
         );
 

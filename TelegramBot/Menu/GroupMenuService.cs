@@ -2,7 +2,6 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-
 using System.Text;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Models;
@@ -95,7 +94,7 @@ public class GroupMenuService : IGroupMenuService
         // 2. ФОРМАТИРУЕМ в красивое сообщение
         var sb = new StringBuilder();
         sb.AppendLine(_resourceService.GetResourceString("YourGroups"));
-        
+
         if (groups.Any())
         {
             foreach (var group in groups)
@@ -108,7 +107,7 @@ public class GroupMenuService : IGroupMenuService
             sb.AppendLine(_resourceService.GetResourceString("NoGroupsFound"));
         }
         sb.AppendLine($"\n{_resourceService.GetResourceString("PleaseEnterGroupIDs")}"); //TODO поправить вид сообщения с айди и его удаление
-        
+
         // 3. ОТПРАВЛЯЕМ сообщение
         await botClient.SendMessage(chatId, sb.ToString(), cancellationToken: CancellationToken.None);
     }

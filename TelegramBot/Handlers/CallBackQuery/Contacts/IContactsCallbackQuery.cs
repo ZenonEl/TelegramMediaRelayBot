@@ -3,8 +3,8 @@
 // See LICENSE file in the project root for full license information.
 
 using TelegramMediaRelayBot.Database.Interfaces;
-using TelegramMediaRelayBot.TelegramBot.States;
 using TelegramMediaRelayBot.TelegramBot.Services;
+using TelegramMediaRelayBot.TelegramBot.States;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
@@ -44,11 +44,11 @@ public class ViewInboundInvitesCommand : IBotCallbackQueryHandlers
     }
 
     public string Name => "view_inbound_invite_links";
-    
+
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         await _menuUtils.ViewInboundInviteLinks(botClient, update);
-        
+
         var chatId = update.CallbackQuery!.Message!.Chat.Id;
         var newState = new UserStateData { StateName = "InboundInvite", Step = 0 };
         _stateManager.Set(chatId, newState);
@@ -65,8 +65,8 @@ public class ViewOutboundInviteLinksCommand : IBotCallbackQueryHandlers
     public ViewOutboundInviteLinksCommand(ICallbackQueryMenuService menuUtils)
     {
         _menuUtils = menuUtils;
-    }  
-    
+    }
+
     public Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         return _menuUtils.ViewOutboundInviteLinks(botClient, update);
@@ -98,7 +98,7 @@ public class ViewContactsCommand : IBotCallbackQueryHandlers
     {
         _contactMenuService = contactMenuService;
     }
-    
+
     public Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         return _contactMenuService.ViewContacts(botClient, update);
@@ -114,7 +114,7 @@ public class MuteContactCommand : IBotCallbackQueryHandlers
     {
         _contactMenuService = contactMenuService;
     }
-    
+
     public Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         return _contactMenuService.StartMuteContactFlow(botClient, update);
@@ -130,7 +130,7 @@ public class UnmuteContactCommand : IBotCallbackQueryHandlers
     {
         _contactMenuService = contactMenuService;
     }
-    
+
     public Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         return _contactMenuService.StartUnmuteContactFlow(botClient, update);
@@ -146,7 +146,7 @@ public class DeleteContactCommand : IBotCallbackQueryHandlers
     {
         _contactMenuService = contactMenuService;
     }
-    
+
     public Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         return _contactMenuService.StartDeleteContactFlow(botClient, update);

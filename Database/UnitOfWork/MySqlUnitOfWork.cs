@@ -40,7 +40,7 @@ public sealed class MySqlUnitOfWork : IUnitOfWork
         _transaction?.Rollback();
         DisposeTransaction();
     }
-    
+
     private void DisposeTransaction()
     {
         _transaction?.Dispose();
@@ -50,9 +50,9 @@ public sealed class MySqlUnitOfWork : IUnitOfWork
     public void Dispose()
     {
         if (_disposed) return;
-        
+
         DisposeTransaction();
-        
+
         _disposed = true;
     }
 }

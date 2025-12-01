@@ -30,9 +30,9 @@ public class RetryOrchestrator : IRetryOrchestrator
         bool keepTrying = true;
 
         // 1. Инициализация первичного прокси (если задан в конфиге загрузчика)
-        // Примечание: тут нам нужно будет прокинуть DownloaderDefinition, 
+        // Примечание: тут нам нужно будет прокинуть DownloaderDefinition,
         // но пока предположим, что прокси уже настроен в контексте или будет настроен в первой итерации.
-        
+
         while (keepTrying && !ct.IsCancellationRequested)
         {
             context.Log($"Starting attempt #{attempt}. Proxy: {context.ActiveProxyUrl ?? "None"}");
@@ -47,11 +47,11 @@ public class RetryOrchestrator : IRetryOrchestrator
                     return lastResult;
                 }
 
-                if (lastResult.Status == ExecutionStatus.FatalError || 
+                if (lastResult.Status == ExecutionStatus.FatalError ||
                     lastResult.Status == ExecutionStatus.ContentNotSupported)
                 {
                     context.Log($"Execution stopped. Status: {lastResult.Status}. Error: {lastResult.ErrorMessage}");
-                    return lastResult; 
+                    return lastResult;
                 }
             }
             catch (Exception ex)
@@ -63,12 +63,12 @@ public class RetryOrchestrator : IRetryOrchestrator
             // --- АНАЛИЗ ОШИБКИ И РЕШЕНИЕ О РЕТРАЕ ---
             // Превращаем наш ExecutionResult в то, что понимает старый менеджер политик
             // (В будущем можно переписать менеджер политик на новые типы)
-            var legacyResult = new Domain.Models.DownloadResult 
-            { 
-                Success = false, 
-                ErrorMessage = lastResult.ErrorMessage 
+            var legacyResult = new Domain.Models.DownloadResult
+            {
+                Success = false,
+                ErrorMessage = lastResult.ErrorMessage
             };
-            
+
             var decision = _retryManager.Decide(legacyResult, attempt);
 
             if (!decision.ShouldRetry)
@@ -79,7 +79,7 @@ public class RetryOrchestrator : IRetryOrchestrator
             else
             {
                 context.Log($"Retrying... Reason: {decision.Reason}. Delay: {decision.Delay.TotalSeconds}s");
-                
+
                 // Применяем модификаторы (смена прокси)
                 if (decision.Modifiers?.UseProxyName != null)
                 {
@@ -87,7 +87,7 @@ public class RetryOrchestrator : IRetryOrchestrator
                     // Нам придется чуть расширить ProxyPolicyManager, чтобы он умел отдавать адрес по имени
                     // Или просто в контекст писать имя, а экзекьютор сам разберется.
                     // Пока упростим: считаем что Modifiers дает имя, а мы ищем адрес.
-                    // context.ActiveProxyUrl = _proxyManager.GetAddressByName(decision.Modifiers.UseProxyName); 
+                    // context.ActiveProxyUrl = _proxyManager.GetAddressByName(decision.Modifiers.UseProxyName);
                     // (Предположим, что мы реализуем этот метод позже)
                     context.Log($"Switched proxy to: {decision.Modifiers.UseProxyName}");
                 }

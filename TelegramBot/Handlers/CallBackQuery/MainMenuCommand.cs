@@ -12,7 +12,7 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 public class MainMenuCommand : IBotCallbackQueryHandlers
 {
     public string Name => "main_menu";
-    
+
     // Новые, чистые зависимости
     private readonly DownloadSessionManager _sessionManager;
     private readonly IInboxRepository _inbox;
@@ -20,8 +20,8 @@ public class MainMenuCommand : IBotCallbackQueryHandlers
     private readonly ITelegramInteractionService _interactionService;
 
     public MainMenuCommand(
-        DownloadSessionManager sessionManager, 
-        IInboxRepository inbox, 
+        DownloadSessionManager sessionManager,
+        IInboxRepository inbox,
         IUserGetter userGetter,
         ITelegramInteractionService interactionService)
     {
@@ -38,7 +38,7 @@ public class MainMenuCommand : IBotCallbackQueryHandlers
         // Вместо TGBot.StateManager.TryGet... мы вызываем наш новый менеджер
         // TODO: Реализовать в менеджере метод для отмены ВСЕХ сессий для пользователя
         // _sessionManager.CancelAllForChat(chatId);
-        
+
         var userId = _userGetter.GetUserIDbyTelegramID(chatId);
         var newCount = await _inbox.GetNewCountAsync(userId);
         await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(newCount), ct);

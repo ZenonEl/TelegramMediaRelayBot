@@ -18,7 +18,7 @@ public class VideoSplitterPostProcessor : IPostProcessor
     private readonly string _ffmpegPath;
 
     public string Name => "VideoSplitter";
-    public int Order => 5; 
+    public int Order => 5;
 
     public VideoSplitterPostProcessor(
         IProcessRunner processRunner,
@@ -32,8 +32,8 @@ public class VideoSplitterPostProcessor : IPostProcessor
     public bool CanProcess(DownloadContext context)
     {
         if (!_config.Enabled) return false;
-        
-        return context.ResultFiles.Any(f => 
+
+        return context.ResultFiles.Any(f =>
             f.MediaType == MediaType.Video && f.FileSize > _config.ThresholdBytes);
     }
 
@@ -68,7 +68,7 @@ public class VideoSplitterPostProcessor : IPostProcessor
                 context.Log($"Duration: {duration}s. Parts: {partsCount}. Segment: {segmentDuration}s.");
 
                 List<DownloadedFile> chunks = await SplitFileAsync(file.FilePath, partsCount, segmentDuration, context, ct);
-                
+
                 if (chunks.Any())
                 {
                     try { System.IO.File.Delete(file.FilePath); } catch { }
@@ -132,7 +132,7 @@ public class VideoSplitterPostProcessor : IPostProcessor
         {
             string outputName = $"{name}_part{i + 1:00}{ext}";
             string outputPath = Path.Combine(dir, outputName);
-            
+
             double startTime = i * segmentDuration;
 
             var args = new List<string>
@@ -147,7 +147,7 @@ public class VideoSplitterPostProcessor : IPostProcessor
             };
 
             context.Log($"Creating part {i+1}/{parts}...");
-            
+
             var result = await _processRunner.RunAsync(new ProcessRunOptions
             {
                 FileName = _ffmpegPath,
@@ -157,10 +157,10 @@ public class VideoSplitterPostProcessor : IPostProcessor
 
             if (result.ExitCode == 0 && System.IO.File.Exists(outputPath))
             {
-                outputFiles.Add(new DownloadedFile 
-                { 
-                    FilePath = outputPath, 
-                    MediaType = MediaType.Video 
+                outputFiles.Add(new DownloadedFile
+                {
+                    FilePath = outputPath,
+                    MediaType = MediaType.Video
                 });
             }
             else

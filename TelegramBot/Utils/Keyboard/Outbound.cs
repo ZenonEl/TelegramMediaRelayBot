@@ -5,19 +5,18 @@
 using Telegram.Bot.Types.ReplyMarkups;
 using TelegramMediaRelayBot.Database.Interfaces;
 
-
 namespace TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 public class OutBoundKB
 {
-    private static readonly System.Resources.ResourceManager _resourceManager = 
+    private static readonly System.Resources.ResourceManager _resourceManager =
         new System.Resources.ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
-    
+
     private static string GetResourceString(string key)
     {
         return _resourceManager.GetString(key) ?? key;
     }
-    
+
     public static async Task<InlineKeyboardMarkup> GetOutboundKeyboardMarkup(long userId, IOutboundDBGetter outboundDBGetter, IUserGetter userGetter)
     {
         var buttonDataList = await outboundDBGetter.GetOutboundButtonDataAsync(userGetter.GetUserIDbyTelegramID(userId));

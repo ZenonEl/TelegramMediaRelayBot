@@ -2,10 +2,11 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using TelegramMediaRelayBot.Config;
-using Microsoft.Extensions.DependencyInjection;
+
 using TelegramMediaRelayBot.Database.Interfaces; // Убедись, что using для IContactUoW/IUserUoW здесь есть
 
 namespace TelegramMediaRelayBot.TelegramBot;
@@ -16,7 +17,7 @@ public class Scheduler : IHostedService, IDisposable
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IOptionsMonitor<MessageDelayConfiguration> _delayConfig;
     private readonly IOptionsMonitor<TorConfiguration> _torConfig;
-    
+
     private Task? _unmuteTask;
     private Task? _torTask;
     private CancellationTokenSource? _stoppingCts;
@@ -40,7 +41,7 @@ public class Scheduler : IHostedService, IDisposable
         // Запускаем наши фоновые задачи
         _unmuteTask = RunUnmuteLoop(_stoppingCts.Token);
         _torTask = RunTorLoop(_stoppingCts.Token);
-        
+
         return Task.CompletedTask;
     }
 
@@ -53,7 +54,7 @@ public class Scheduler : IHostedService, IDisposable
             {
                 // Выполняем полезную работу
                 await CheckForUnmuteContacts(stoppingToken);
-                
+
                 // Ждем интервал из конфига
                 var delay = TimeSpan.FromSeconds(_delayConfig.CurrentValue.UserUnMuteCheckInterval);
                 await Task.Delay(delay, stoppingToken);
@@ -126,17 +127,17 @@ public class Scheduler : IHostedService, IDisposable
             Log.Information("Mute record {MuteId} deactivated.", mute);
                 }
     }
-    
+
     // 6. Логика Tor остается почти без изменений
     private async Task ChangeTorCircuit(CancellationToken stoppingToken)
     {
         var torConfig = _torConfig.CurrentValue;
-        
+
         var controlPortClient = new DotNetTor.ControlPort.Client(
             torConfig.TorSocksHost,
             controlPort: torConfig.TorControlPort,
             password: torConfig.TorControlPassword ?? "");
-        
+
         await controlPortClient.ChangeCircuitAsync(stoppingToken);
 
         using var httpClient = new HttpClient(new DotNetTor.SocksPort.SocksPortHandler(
@@ -151,10 +152,10 @@ public class Scheduler : IHostedService, IDisposable
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         Log.Information("Scheduler is stopping.");
-        
+
         // Сигнализируем нашим циклам, что пора завершаться
         _stoppingCts?.Cancel();
-        
+
         // Ждем, пока все задачи завершатся (или пока не истечет таймаут)
         if (_unmuteTask != null && _torTask != null)
         {

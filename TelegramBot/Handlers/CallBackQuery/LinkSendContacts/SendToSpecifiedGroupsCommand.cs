@@ -2,9 +2,9 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using TelegramMediaRelayBot.TelegramBot.States;
 using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Sessions;
+using TelegramMediaRelayBot.TelegramBot.States;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
@@ -17,7 +17,7 @@ public class SendToSpecifiedGroupsCommand : IBotCallbackQueryHandlers
     public string Name => "send_to_specified_groups:";
 
     public SendToSpecifiedGroupsCommand(
-        IUserStateManager stateManager, 
+        IUserStateManager stateManager,
         IGroupMenuService groupMenuService,
         DownloadSessionManager sessionManager)
     {
@@ -42,7 +42,7 @@ public class SendToSpecifiedGroupsCommand : IBotCallbackQueryHandlers
             Data = new()
             {
                 { "TargetType", "Groups" },
-                { "SessionMessageId", messageId } 
+                { "SessionMessageId", messageId }
             }
         };
         _stateManager.Set(chatId, newState);

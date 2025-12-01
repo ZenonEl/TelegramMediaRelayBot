@@ -2,21 +2,21 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using TelegramMediaRelayBot.TelegramBot.Sessions;
-using TelegramMediaRelayBot.Database.Interfaces;
-using TelegramMediaRelayBot.TelegramBot.SiteFilter;
 using Microsoft.Extensions.Options;
 using TelegramMediaRelayBot.Config;
-using TelegramMediaRelayBot.TelegramBot.Models;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
+using TelegramMediaRelayBot.TelegramBot.Models;
+using TelegramMediaRelayBot.TelegramBot.Sessions;
+using TelegramMediaRelayBot.TelegramBot.SiteFilter;
 
 namespace TelegramMediaRelayBot.TelegramBot.Services;
 
 public interface ITelegramSenderService
 {
     Task SendMedia(ITelegramBotClient botClient, Update update,
-                    DownloadSession session, 
-                    List<byte[]> mediaFiles, List<long>? targetUserIds, 
+                    DownloadSession session,
+                    List<byte[]> mediaFiles, List<long>? targetUserIds,
                     CancellationToken cancellationToken);
 }
 
@@ -64,7 +64,7 @@ public class TelegramSenderService : ITelegramSenderService
             await botClient.EditMessageText(session.ChatId, session.StatusMessageId, "Failed to prepare media for sending.");
             return;
         }
-        
+
         // Если цели не указаны, отправка только себе уже произошла на шаге 1, просто завершаем.
         if (targetUserIds == null || targetUserIds.Count == 0)
         {
@@ -77,13 +77,13 @@ public class TelegramSenderService : ITelegramSenderService
         List<long> mutedByUserIds = _userGetter.GetUsersIdForMuteContactId(senderUserId);
         List<long> filteredTgIds = targetUserIds.Except(mutedByUserIds).ToList();
         List<long> finalRecipients = await _userFilter.FilterUsersByLink(filteredTgIds, session.Url, _categorizer);
-        
+
         // 3. РАССЫЛКА ПО FileId
         int sentCount = 0;
         foreach (long recipientTgId in finalRecipients)
         {
             if (cancellationToken.IsCancellationRequested) break;
-            
+
             int recipientUserId = _userGetter.GetUserIDbyTelegramID(recipientTgId);
 
             if (await _inboxService.TryDeliverToInbox(botClient, session, recipientUserId, uploadedMedia))
@@ -95,13 +95,13 @@ public class TelegramSenderService : ITelegramSenderService
             // Отправляем медиа по FileId
             await ForwardFromStorage(botClient, recipientTgId, uploadedMedia, session.Caption, senderUserId, cancellationToken);
             sentCount++;
-            
+
             await Task.Delay(_delayConfig.CurrentValue.ContactSendDelay, cancellationToken);
         }
 
         string caption = "";
         string previewCaption = session.Caption ?? string.Empty;
-        
+
         if (previewCaption.Length > 100)
         {
             previewCaption = previewCaption.Substring(0, 100) + "...";
@@ -144,7 +144,7 @@ public class TelegramSenderService : ITelegramSenderService
 
         return uploadedMedia;
     }
-    
+
     private async Task ForwardFromStorage(ITelegramBotClient botClient, long recipientChatId, List<TelegramMediaInfo> uploadedMedia, string caption, int senderUserId, CancellationToken cancellationToken)
     {
         var isDisallowContentForwarding = _privacySettingsGetter.GetIsActivePrivacyRule(senderUserId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING);
@@ -162,24 +162,24 @@ public class TelegramSenderService : ITelegramSenderService
             string? currentCaption = isFirstChunk ? firstChunk : null;
             if (group.Key == TelegramFileType.Photo || group.Key == TelegramFileType.Video)
             {
-                List<IAlbumInputMedia> album = group.Select(m => m.Type == TelegramFileType.Photo 
+                List<IAlbumInputMedia> album = group.Select(m => m.Type == TelegramFileType.Photo
                     ? (IAlbumInputMedia)new InputMediaPhoto(m.FileId)
                     : (IAlbumInputMedia)new InputMediaVideo(m.FileId)).ToList();
-                
+
                 // Прикрепляем caption только к первому элементу самой первой группы
                 if (isFirstChunk && album.Any())
                 {
                     if (album[0] is InputMediaPhoto p) {
                         p.Caption = currentCaption;
                         p.ParseMode = Telegram.Bot.Types.Enums.ParseMode.Html;
-                    } 
+                    }
                     else if (album[0] is InputMediaVideo v) {
                         v.Caption = currentCaption;
                         v.ParseMode = Telegram.Bot.Types.Enums.ParseMode.Html;
-                    } 
+                    }
                     isFirstChunk = false;
                 }
-                
+
                 var sent = await SendInChunks(botClient, recipientChatId, album, cancellationToken, isDisallowContentForwarding);
                 if (sent.Any()) lastSentMessage = sent.Last();
             }
@@ -200,11 +200,11 @@ public class TelegramSenderService : ITelegramSenderService
             var replyParameters = lastSentMessage != null
                 ? new ReplyParameters { MessageId = lastSentMessage.MessageId }
                 : null;
-                
+
             foreach (string extraChunk in captionChunks.Skip(1))
             {
                 if (cancellationToken.IsCancellationRequested) break;
-                
+
                 await botClient.SendMessage(
                     chatId: recipientChatId,
                     text: extraChunk,
@@ -214,7 +214,7 @@ public class TelegramSenderService : ITelegramSenderService
                     cancellationToken: cancellationToken
                 );
                 // Для следующих "хвостов" reply больше не нужен
-                replyParameters = null; 
+                replyParameters = null;
             }
         }
     }
@@ -259,20 +259,20 @@ private async Task<List<Message>> SendInChunks(ITelegramBotClient botClient, lon
                 else if (currentChunk[i] is InputMediaVideo v) v.Caption = null;
             }
 
-            try 
+            try
             {
                 var sent = await botClient.SendMediaGroup(
-                    chatId, 
-                    currentChunk, 
-                    disableNotification: true, 
-                    protectContent: protectContent, 
+                    chatId,
+                    currentChunk,
+                    disableNotification: true,
+                    protectContent: protectContent,
                     cancellationToken: cancellationToken
                 );
                 allSentMessages.AddRange(sent);
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Failed to send media chunk. Count: {Count}, TotalSize: {Size:F2} MB", 
+                Log.Error(ex, "Failed to send media chunk. Count: {Count}, TotalSize: {Size:F2} MB",
                     currentChunk.Count, currentChunkSize / 1024.0 / 1024.0);
                 throw;
             }

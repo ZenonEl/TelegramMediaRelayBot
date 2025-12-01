@@ -5,7 +5,6 @@
 using System.Data;
 using TelegramMediaRelayBot.Database.Interfaces;
 
-
 namespace TelegramMediaRelayBot.Database.Repositories.MySql;
 
 

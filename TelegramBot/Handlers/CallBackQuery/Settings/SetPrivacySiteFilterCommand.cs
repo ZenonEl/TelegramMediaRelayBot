@@ -2,8 +2,8 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.States;
 using TelegramMediaRelayBot.TelegramBot.Utils;
@@ -93,11 +93,11 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
         var prompt = isRemove
             ? _resourceService.GetResourceString("EnterDomainsToRemovePrompt")
             : _resourceService.GetResourceString("EnterDomainsToAddPrompt");
-            
+
         await botClient.SendMessage(chatId, prompt, cancellationToken: ct);
         await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, cancellationToken: ct);
     }
-    
+
     // Все методы Switch... остаются без изменений
     private async Task<bool> SwitchSocial(int userId)
     {

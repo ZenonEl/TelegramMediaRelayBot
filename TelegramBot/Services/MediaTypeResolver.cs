@@ -4,6 +4,7 @@
 
 using System.Text.RegularExpressions;
 using Telegram.Bot.Types;
+
 using TelegramMediaRelayBot.TelegramBot.Utils; // Для IAlbumInputMedia и т.д.
 
 namespace TelegramMediaRelayBot.TelegramBot.Services;
@@ -25,7 +26,7 @@ public class MediaTypeResolver : IMediaTypeResolver
             return TelegramFileType.Document;
 
         string start = BitConverter.ToString(bytes.Take(12).ToArray()).Replace("-", "");
-        
+
         var patterns = new Dictionary<TelegramFileType, string>
         {
             // Video: MP4/ISO BMFF (ftyp), WebM(Matroska EBML 1A45DFA3), AVI(RIFF 52494646 + 415649), MKV(1A45DFA3)
@@ -50,7 +51,7 @@ public class MediaTypeResolver : IMediaTypeResolver
     {
         return files.Select(CreateMedia);
     }
-    
+
     private IAlbumInputMedia CreateMedia(byte[] file)
     {
         TelegramFileType fileType = DetermineFileType(file);

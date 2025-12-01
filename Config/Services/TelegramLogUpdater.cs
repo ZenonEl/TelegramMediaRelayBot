@@ -55,20 +55,20 @@ public class TelegramLogUpdater : IAsyncDisposable
 
                 // --- ИСПРАВЛЕНИЕ ---
                 // 1. Убираем очистку буфера здесь. Будем очищать только после успешной отправки.
-                // _logBuffer.Clear(); 
-                
+                // _logBuffer.Clear();
+
                 // 2. Обрезаем до того, как обернуть в ```, чтобы избежать проблем с форматированием
                 if (newContent.Length > 4000) newContent = "...\n" + newContent[^4000..];
-                
+
                 var textToSend = $"```{newContent}```";
-                
+
                 if (textToSend == _lastSentText) continue;
 
                 await _botClient.EditMessageText(
                     _chatId, _statusMessage, textToSend,
                     parseMode: ParseMode.MarkdownV2, cancellationToken: _cts.Token,
                     replyMarkup: KeyboardUtils.GetCancelKeyboardMarkup(_statusMessage));
-                
+
                 _lastSentText = textToSend;
                 // Очищаем буфер только после успешной отправки
                 lock (_logBuffer) { _logBuffer.Clear(); }

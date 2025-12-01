@@ -2,10 +2,10 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.States;
 using TelegramMediaRelayBot.TelegramBot.Utils;
-using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
@@ -53,10 +53,10 @@ public class UnmuteContactSelectedCommand : IBotCallbackQueryHandlers
         string text = $"🔊 Пользователь <b>{contactName}</b> размучен.\nТеперь вы будете получать от него медиа.";
 
         await _interactionService.ReplyToUpdate(
-            botClient, 
-            update, 
-            KeyboardUtils.SendInlineKeyboardMenu(), 
-            ct, 
+            botClient,
+            update,
+            KeyboardUtils.SendInlineKeyboardMenu(),
+            ct,
             text
         );
 

@@ -5,19 +5,18 @@
 using Telegram.Bot.Types.ReplyMarkups;
 using TelegramMediaRelayBot.Database.Interfaces;
 
-
 namespace TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 public static class InBoundKB
 {
-    private static readonly System.Resources.ResourceManager _resourceManager = 
+    private static readonly System.Resources.ResourceManager _resourceManager =
         new System.Resources.ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
-    
+
     private static string GetResourceString(string key)
     {
         return _resourceManager.GetString(key) ?? key;
     }
-    
+
     public static InlineKeyboardMarkup GetInBoundActionsKeyboardMarkup(string userId, string callbackData)
     {
         var inlineKeyboard = new InlineKeyboardMarkup(new[]

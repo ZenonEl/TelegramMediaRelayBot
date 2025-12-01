@@ -20,7 +20,7 @@ public class ConcurrencyLimiter : IConcurrencyLimiter
     {
         int max = config.Value.MediaProcessing.MaxConcurrentProcessings;
         if (max <= 0) max = 1;
-        
+
         _semaphore = new SemaphoreSlim(max, max);
     }
 

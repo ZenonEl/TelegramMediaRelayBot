@@ -2,7 +2,6 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Utils;
@@ -98,10 +97,10 @@ public class AddContactStateHandler : IStateHandler
 
                     // Вызываем UoW-совместимый сервис
                     await _contactAdder.AddContact(userTelegramId, originalLink);
-                    
+
                     // Отправляем уведомление
-                    await botClient.SendMessage(contactTelegramId, 
-                        string.Format(_resourceService.GetResourceString("UserWantsToAddYou"), senderName), 
+                    await botClient.SendMessage(contactTelegramId,
+                        string.Format(_resourceService.GetResourceString("UserWantsToAddYou"), senderName),
                         cancellationToken: cancellationToken);
                     await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, _resourceService.GetResourceString("WaitForContactConfirmation"));
                 }
@@ -109,7 +108,7 @@ public class AddContactStateHandler : IStateHandler
                 {
                     await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, _resourceService.GetResourceString("InvisibleLetter"));
                 }
-                
+
                 // В любом случае сценарий завершен
                 return StateResult.Complete();
         }

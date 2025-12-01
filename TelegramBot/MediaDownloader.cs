@@ -2,13 +2,13 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using Telegram.Bot.Polling;
-using Telegram.Bot.Types.Enums;
-using TelegramMediaRelayBot.TelegramBot.Services;
-using TelegramMediaRelayBot.TelegramBot.States;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Telegram.Bot.Polling;
+using Telegram.Bot.Types.Enums;
 using TelegramMediaRelayBot.TelegramBot.Handlers;
+using TelegramMediaRelayBot.TelegramBot.Services;
+using TelegramMediaRelayBot.TelegramBot.States;
 
 namespace TelegramMediaRelayBot.TelegramBot;
 
@@ -36,7 +36,7 @@ public partial class TGBot : IHostedService
             receiverOptions: new ReceiverOptions { AllowedUpdates = Array.Empty<UpdateType>() },
             cancellationToken: cancellationToken
         );
-        
+
         return Task.CompletedTask;
     }
 
@@ -56,7 +56,7 @@ public partial class TGBot : IHostedService
         var interactionService = sp.GetRequiredService<ITelegramInteractionService>();
         var stateManager = sp.GetRequiredService<IUserStateManager>();
         var stateHandlerFactory = sp.GetRequiredService<StateHandlerFactory>();
-        
+
         var chatId = interactionService.GetChatId(update);
         if (chatId == 0) return;
 
@@ -70,10 +70,10 @@ public partial class TGBot : IHostedService
             if (handler != null)
             {
                 var result = await handler.Process(stateData, update, botClient, cancellationToken);
-                
+
                 if (result.NextAction == StateResultAction.Complete) stateManager.Remove(chatId);
                 else if (result.NextAction == StateResultAction.Continue) stateManager.Set(chatId, stateData);
-                
+
                 return; // Состояние обработано, выходим.
             }
         }
@@ -95,7 +95,7 @@ public partial class TGBot : IHostedService
             await groupHandler.HandleGroupUpdate(botClient, update, cancellationToken);
         }
     }
-    
+
     // Переносим ErrorHandler сюда, чтобы он был доступен
     private Task ErrorHandler(ITelegramBotClient _, Exception exception, CancellationToken __)
     {
@@ -116,8 +116,8 @@ public partial class TGBot : IHostedService
         if (userId == 0) return;
 
         var stateName = stateManager.TryGet(chatId, out var state) ? state?.StateName : "None";
-        
-        Log.Information("Event: {Type}, UserId: {UserId}, ChatId: {ChatId}, Data: {Data}, State: {State}", 
+
+        Log.Information("Event: {Type}, UserId: {UserId}, ChatId: {ChatId}, Data: {Data}, State: {State}",
             logMessageType, userId, chatId, logMessageData, stateName);
     }
 }

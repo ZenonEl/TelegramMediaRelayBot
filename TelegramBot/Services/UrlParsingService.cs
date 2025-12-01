@@ -30,16 +30,16 @@ public class UrlParsingService : IUrlParsingService
 
         Match match = Regex.Match(message, @"https?://[^\s]+", RegexOptions.IgnoreCase);
         if (!match.Success) return false;
-        
+
         link = match.Value.TrimEnd('.', ',', ';', '!', '?', ')', ']');
-        
+
         string textBefore = message.Substring(0, match.Index).Trim();
         string textAfter = (match.Index + match.Length < message.Length)
             ? message.Substring(match.Index + match.Length).Trim()
             : string.Empty;
 
         text = $"{textBefore} {textAfter}".Trim();
-        
+
         return true;
     }
 

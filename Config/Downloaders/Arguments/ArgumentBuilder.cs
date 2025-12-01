@@ -19,8 +19,8 @@ public class ArgumentBuilder : IArgumentBuilder
     }
 
     public List<string> Build(
-        List<string> templateList, 
-        ArgumentBuilderContext context, 
+        List<string> templateList,
+        ArgumentBuilderContext context,
         AuthenticationConfig? authConfig = null)
     {
         List<string> finalArgs = new List<string>();
@@ -61,7 +61,7 @@ public class ArgumentBuilder : IArgumentBuilder
             {
                 finalArgs.Add(processedString);
             }
-            else 
+            else
             {
                 Log.Debug("Dropping argument '{Template}' because token value is missing.", template);
                 if (finalArgs.Count > 0)

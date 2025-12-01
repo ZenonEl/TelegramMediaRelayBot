@@ -49,10 +49,10 @@ public class GroupUpdateHandler
             await botClient.SendMessage(message.Chat.Id, _resourceService.GetResourceString("InvalidLinkFormat"), cancellationToken: cancellationToken);
             return;
         }
-        
+
         var url = parts[1];
         var caption = message.ReplyToMessage?.Text ?? string.Empty; // Пример получения подписи из реплая
-        
+
         // 3. Используем наш новый сервис для валидации ссылки
         if (!_urlParsingService.IsLink(url))
         {
@@ -63,8 +63,8 @@ public class GroupUpdateHandler
         // 4. Вместо вызова HandleMediaRequest, создаем сессию через менеджер.
         // Для групповых чатов мы не показываем клавиатуру, а сразу запускаем загрузку "только для себя".
         // (Это предположение, логику можно изменить).
-        
-        var statusMessage = await botClient.SendMessage(message.Chat.Id, 
+
+        var statusMessage = await botClient.SendMessage(message.Chat.Id,
             _resourceService.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
 
         DownloadSession session = _sessionManager.CreateSession(

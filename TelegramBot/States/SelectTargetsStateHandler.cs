@@ -99,7 +99,7 @@ public class SelectTargetsStateHandler : IStateHandler
                 {
                     if (stateData.Data.TryGetValue("ContactListId", out var _contactListId))
                     {
-                        contactListId = Convert.ToInt32(_contactListId); 
+                        contactListId = Convert.ToInt32(_contactListId);
                     }
 
                     int sessionId = int.Parse(update.CallbackQuery.Data.Split(':')[1]);
@@ -112,7 +112,7 @@ public class SelectTargetsStateHandler : IStateHandler
                         _resourceService.GetResourceString("VideoRecipientsButtonText"),
                         messageIdToEdit: contactListId
                     );
-                    
+
                     return StateResult.Complete();
                 }
 
@@ -165,7 +165,7 @@ public class SelectTargetsStateHandler : IStateHandler
 
                 if (stateData.Data.TryGetValue("ContactListId", out var __contactListId))
                 {
-                    contactListId = Convert.ToInt32(__contactListId); 
+                    contactListId = Convert.ToInt32(__contactListId);
                 }
                 var statusMsg = await _interactionService.ReplyToUpdate(
                     botClient,
@@ -202,14 +202,14 @@ public class SelectTargetsStateHandler : IStateHandler
         var actingUserId = _userGetter.GetUserIDbyTelegramID(chatId);
         stateData.Data.TryGetValue("TargetType", out var targetTypeObj);
         var targetType = (string)(targetTypeObj ?? "Users");
-        
+
         List<int> inputIds;
-        try 
+        try
         {
             inputIds = messageText.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList();
             if (inputIds.Count == 0) return null;
         }
-        catch 
+        catch
         {
             return null;
         }
@@ -217,12 +217,12 @@ public class SelectTargetsStateHandler : IStateHandler
         var validTargetIds = targetType == "Users"
             ? await ValidateUserIds(actingUserId, inputIds)
             : await ValidateGroupIds(actingUserId, inputIds);
-            
+
         if (validTargetIds.Count == 0)
         {
             return null;
         }
-        
+
         return validTargetIds;
     }
 }

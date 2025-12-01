@@ -19,7 +19,7 @@ public class StartParameterParser : IStartParameterParser
         }
 
         var parts = messageText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        
+
         if (parts.Length > 1 && parts[0] == "/start")
         {
             // Мы просто возвращаем второй "кусок" сообщения.

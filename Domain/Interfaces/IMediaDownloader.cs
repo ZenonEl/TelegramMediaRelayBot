@@ -2,9 +2,9 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using TelegramMediaRelayBot.Domain.Models;
 using Microsoft.Extensions.Configuration;
 using TelegramMediaRelayBot.Config.Downloaders;
+using TelegramMediaRelayBot.Domain.Models;
 
 namespace TelegramMediaRelayBot.Domain.Interfaces;
 
@@ -15,7 +15,7 @@ public interface IMediaDownloader
     int Priority { get; }
     bool IsEnabled { get; }
     DownloaderDefinition Config { get; }
-    
+
     /// <summary>
     /// Проверяет, может ли этот загрузчик обработать URL на основе конфигурации.
     /// </summary>
@@ -47,4 +47,4 @@ public interface IUserPreferencesService
     Task<UserPreferences> GetUserPreferencesAsync(int userId, CancellationToken ct = default);
     Task UpdateUserPreferencesAsync(int userId, UserPreferences preferences, CancellationToken ct = default);
     Task TrackDownloadResultAsync(int userId, string url, string downloaderName, bool success, TimeSpan duration, long? fileSize, MediaType mediaType, CancellationToken ct = default);
-} 
+}

@@ -17,7 +17,7 @@ public class ProxyPolicyManager : IProxyPolicyManager
         _proxies = configMonitor.CurrentValue.Proxies
             .Where(p => p.Enabled)
             .ToDictionary(p => p.Name, p => p, StringComparer.OrdinalIgnoreCase);
-        
+
         // TODO: Подписаться на configMonitor.OnChange для обновления словаря при Hot Reload
     }
 

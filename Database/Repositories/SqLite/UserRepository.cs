@@ -2,9 +2,8 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
+using System.Data;
 using Dapper;
-using System.Data;
-using System.Data;
 using Microsoft.Data.Sqlite;
 using TelegramMediaRelayBot.Database.Interfaces;
 
@@ -17,9 +16,9 @@ public class SqliteUserRepository(IDbConnection dbConnection) : IUserRepository
     public bool CheckUserExists(long telegramId)
     {
         const string query = @"
-            SELECT 1 
-            FROM Users 
-            WHERE TelegramID = @telegramId 
+            SELECT 1
+            FROM Users
+            WHERE TelegramID = @telegramId
             LIMIT 1";
 
 
@@ -36,7 +35,7 @@ public class SqliteUserRepository(IDbConnection dbConnection) : IUserRepository
         }
 
         const string query = @"
-            INSERT INTO Users (TelegramID, Name, Link) 
+            INSERT INTO Users (TelegramID, Name, Link)
             VALUES (@telegramID, @name, @link)";
 
 
@@ -46,10 +45,10 @@ public class SqliteUserRepository(IDbConnection dbConnection) : IUserRepository
     public void UnMuteUserByMuteId(int muteId)
     {
         const string query = @"
-            UPDATE MutedContacts 
-            SET IsActive = 0 
+            UPDATE MutedContacts
+            SET IsActive = 0
             WHERE MutedId = @muteId";
-        
+
 
         dbConnection.Execute(query, new { muteId });
     }
@@ -58,10 +57,10 @@ public class SqliteUserRepository(IDbConnection dbConnection) : IUserRepository
     {
         string newLink = Utils.GenerateUserLink();
         const string query = @"
-            UPDATE Users 
-            SET Link = @newLink 
+            UPDATE Users
+            SET Link = @newLink
             WHERE ID = @userId";
-        
+
 
         return dbConnection.Execute(query, new { newLink, userId }) > 0;
     }
@@ -72,7 +71,7 @@ public class SqliteUserGetter(IDbConnection dbConnection) : IUserGetter
     public long GetTelegramIDbyUserID(int userId)
     {
         const string query = "SELECT TelegramID FROM Users WHERE ID = @UserId";
-        
+
 
         return dbConnection.ExecuteScalar<long>(query, new { UserId = userId });
     }
@@ -80,7 +79,7 @@ public class SqliteUserGetter(IDbConnection dbConnection) : IUserGetter
     public string GetUserNameByID(int userID)
     {
         const string query = "SELECT Name FROM Users WHERE ID = @UserID";
-        
+
 
         return dbConnection.ExecuteScalar<string?>(query, new { UserID = userID }) ?? "";
     }
@@ -88,7 +87,7 @@ public class SqliteUserGetter(IDbConnection dbConnection) : IUserGetter
     public int GetUserIDbyTelegramID(long telegramID)
     {
         const string query = "SELECT ID FROM Users WHERE TelegramID = @TelegramID";
-        
+
 
         return dbConnection.ExecuteScalar<int?>(query, new { TelegramID = telegramID }) ?? -1;
     }
@@ -96,7 +95,7 @@ public class SqliteUserGetter(IDbConnection dbConnection) : IUserGetter
     public string GetUserNameByTelegramID(long telegramID)
     {
         const string query = "SELECT Name FROM Users WHERE TelegramID = @TelegramID";
-        
+
 
         return dbConnection.ExecuteScalar<string?>(query, new { TelegramID = telegramID }) ?? string.Empty;
     }
@@ -104,21 +103,21 @@ public class SqliteUserGetter(IDbConnection dbConnection) : IUserGetter
     public List<long> GetUsersIdForMuteContactId(int contactId)
     {
         const string query = @"
-            SELECT MutedByUserId 
-            FROM MutedContacts 
+            SELECT MutedByUserId
+            FROM MutedContacts
             WHERE MutedContactId = @ContactId AND IsActive = 1";
-        
+
 
         var mutedByUserIds = dbConnection.Query<int>(query, new { ContactId = contactId }).ToList();
-        
+
         return mutedByUserIds.Select(GetTelegramIDbyUserID).ToList();
     }
 
     public async Task<List<long>> GetUsersIdForMuteContactIdAsync(int contactId)
     {
         const string query = @"
-            SELECT MutedByUserId 
-            FROM MutedContacts 
+            SELECT MutedByUserId
+            FROM MutedContacts
             WHERE MutedContactId = @ContactId AND IsActive = 1";
 
 
@@ -136,7 +135,7 @@ public class SqliteUserGetter(IDbConnection dbConnection) : IUserGetter
         const string query = "SELECT TelegramID FROM Users WHERE Link = @link";
         try
         {
-    
+
             var result = dbConnection.QueryFirstOrDefault<long?>(query, new { link });
             return result ?? -1;
         }
@@ -152,7 +151,7 @@ public class SqliteUserGetter(IDbConnection dbConnection) : IUserGetter
         const string query = "SELECT TelegramID FROM Users WHERE Link = @link";
         try
         {
-    
+
             var result = await dbConnection.QueryFirstOrDefaultAsync<long?>(query, new { link });
             return result ?? -1;
         }
@@ -191,14 +190,14 @@ public class SqliteUserGetter(IDbConnection dbConnection) : IUserGetter
     public List<int> GetExpiredUsersMutes()
     {
         const string query = @"
-            SELECT MutedId 
-            FROM MutedContacts 
-            WHERE ExpirationDate <= datetime('now') 
+            SELECT MutedId
+            FROM MutedContacts
+            WHERE ExpirationDate <= datetime('now')
             AND IsActive = 1";
 
         try
         {
-    
+
             var expiredMuteIds = dbConnection.Query<int>(query).ToList();
             return expiredMuteIds;
         }
@@ -212,14 +211,14 @@ public class SqliteUserGetter(IDbConnection dbConnection) : IUserGetter
     public async Task<List<int>> GetExpiredUsersMutesAsync()
     {
         const string query = @"
-            SELECT MutedId 
-            FROM MutedContacts 
-            WHERE ExpirationDate <= datetime('now') 
+            SELECT MutedId
+            FROM MutedContacts
+            WHERE ExpirationDate <= datetime('now')
             AND IsActive = 1";
 
         try
         {
-    
+
             var expiredMuteIds = (await dbConnection.QueryAsync<int>(query)).ToList();
             return expiredMuteIds;
         }

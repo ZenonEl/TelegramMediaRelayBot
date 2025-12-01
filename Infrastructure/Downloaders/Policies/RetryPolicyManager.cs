@@ -18,7 +18,7 @@ public class RetryPolicyManager : IRetryPolicyManager
         _policies = configMonitor.CurrentValue.RetryPolicies
             .OrderBy(p => p.ErrorPatterns.Contains("*") ? 1 : 0)
             .ToList();
-        
+
         // TODO: Подписаться на configMonitor.OnChange для обновления списка политик при Hot Reload
     }
 
@@ -48,9 +48,9 @@ public class RetryPolicyManager : IRetryPolicyManager
         }
 
         // 4. Принимаем решение о повторной попытке
-        Log.Information("Applying retry policy '{PolicyName}'. Attempt {Attempt}/{MaxAttempts}. Delay: {Delay}s.", 
+        Log.Information("Applying retry policy '{PolicyName}'. Attempt {Attempt}/{MaxAttempts}. Delay: {Delay}s.",
             policy.Name, attemptNumber, policy.MaxAttempts, policy.Delay.TotalSeconds);
-        
+
         return new RetryDecision
         {
             ShouldRetry = true,

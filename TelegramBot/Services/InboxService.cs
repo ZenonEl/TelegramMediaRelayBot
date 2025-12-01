@@ -4,8 +4,8 @@
 
 using System.Collections.Concurrent;
 using System.Text.Json;
-using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot.Models;
 using TelegramMediaRelayBot.TelegramBot.Sessions;
 
@@ -48,7 +48,7 @@ public class InboxService : IInboxService
             var senderUserId = _userGetter.GetUserIDbyTelegramID(session.ChatId);
             var senderName = _userGetter.GetUserNameByTelegramID(session.ChatId);
 
-            var mediaItems = savedMediaRefs.Select(m => new 
+            var mediaItems = savedMediaRefs.Select(m => new
             {
                 Type = m.Type.ToString(),
                 FileId = m.FileId,
@@ -61,13 +61,13 @@ public class InboxService : IInboxService
             var hashtags = new List<string> { dateCode, userHash };
 
             string cleanCaption = session.Caption ?? string.Empty;
-            
+
             if (!string.IsNullOrEmpty(cleanCaption))
             {
                 var lines = cleanCaption.Split('\n');
-                if (lines.Length >= 3 && 
-                    lines[0].TrimStart().StartsWith("<code>") && 
-                    lines[1].TrimStart().StartsWith("<code>") && 
+                if (lines.Length >= 3 &&
+                    lines[0].TrimStart().StartsWith("<code>") &&
+                    lines[1].TrimStart().StartsWith("<code>") &&
                     lines[2].TrimStart().StartsWith("#"))
                 {
                     cleanCaption = string.Join("\n", lines.Skip(3)).Trim();
@@ -79,7 +79,7 @@ public class InboxService : IInboxService
                 SourceChatId = session.ChatId,
                 SavedMedia = mediaItems,
                 Url = session.Url,
-                Caption = cleanCaption, 
+                Caption = cleanCaption,
                 Hashtag = hashtags,
                 OriginalMessageDateUtc = now.ToString("O")
             };

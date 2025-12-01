@@ -5,14 +5,13 @@
 using Telegram.Bot.Types.ReplyMarkups;
 using TelegramMediaRelayBot.Database;
 
-
 namespace TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 public static class UsersKB
 {
-    private static readonly System.Resources.ResourceManager _resourceManager = 
+    private static readonly System.Resources.ResourceManager _resourceManager =
         new System.Resources.ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
-    
+
     private static string GetResourceString(string key)
     {
         return _resourceManager.GetString(key) ?? key;
@@ -41,9 +40,9 @@ public static class UsersKB
 
 public static class UsersPrivacyMenuKB
 {
-    private static readonly System.Resources.ResourceManager _resourceManager = 
+    private static readonly System.Resources.ResourceManager _resourceManager =
         new System.Resources.ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
-    
+
     private static string GetResourceString(string key)
     {
         return _resourceManager.GetString(key) ?? key;
@@ -73,7 +72,7 @@ public static class UsersPrivacyMenuKB
 			{
 				InlineKeyboardButton.WithCallbackData(GetResourceString("InboxSettingsButtonText"), "user_inbox_menu"),
 			},
-            
+
             new[]
             {
                 KeyboardUtils.GetReturnButton("show_settings")
@@ -178,9 +177,9 @@ public static class UsersPrivacyMenuKB
             new[]
             {
                 InlineKeyboardButton.WithCallbackData(
-                    GetResourceString("SocialFilterButton"), 
+                    GetResourceString("SocialFilterButton"),
                     "user_set_site_stop_list:social"
-                ), 
+                ),
             },
             new[]
             {
@@ -245,9 +244,9 @@ public static class UsersPrivacyMenuKB
 
 public static class UsersDefaultActionsMenuKB
 {
-    private static readonly System.Resources.ResourceManager _resourceManager = 
+    private static readonly System.Resources.ResourceManager _resourceManager =
         new System.Resources.ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
-    
+
     private static string GetResourceString(string key)
     {
         return _resourceManager.GetString(key) ?? key;

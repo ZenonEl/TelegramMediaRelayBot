@@ -3,9 +3,9 @@
 // See LICENSE file in the project root for full license information.
 
 using Telegram.Bot.Types.ReplyMarkups;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Utils;
-using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
@@ -21,7 +21,7 @@ public class DeleteGroupSelectedCommand : IBotCallbackQueryHandlers
     // НО: лучше сделаем два отдельных префикса или один умный.
     // Давай используем один класс на два префикса, если фабрика это позволяет (нет, фабрика ищет по Name).
     // Поэтому сделаем Name общим префиксом, а внутри разберемся.
-    public string Name => "delete_group_"; 
+    public string Name => "delete_group_";
 
     public DeleteGroupSelectedCommand(
         IGroupGetter groupGetter,
@@ -44,7 +44,7 @@ public class DeleteGroupSelectedCommand : IBotCallbackQueryHandlers
 
         var parts = data.Split(':');
         string action = parts[0]; // "delete_group_select" или "delete_group_confirm"
-        
+
         if (parts.Length < 2 || !int.TryParse(parts[1], out int groupId))
         {
             await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, "Error parsing ID", cancellationToken: ct);
@@ -64,15 +64,15 @@ public class DeleteGroupSelectedCommand : IBotCallbackQueryHandlers
             // Рисуем кнопки "Да, удалить" и "Нет, назад"
             var confirmKeyboard = new InlineKeyboardMarkup(new[]
             {
-                new[] 
+                new[]
                 {
                     // Кнопка подтверждения
                     InlineKeyboardButton.WithCallbackData("💥 Да, удалить", $"delete_group_confirm:{groupId}")
                 },
-                new[] 
-                { 
+                new[]
+                {
                     // Кнопка отмены (возврат к списку удаления)
-                    InlineKeyboardButton.WithCallbackData("🔙 Нет, отмена", "user_delete_group") 
+                    InlineKeyboardButton.WithCallbackData("🔙 Нет, отмена", "user_delete_group")
                 }
             });
 
@@ -94,16 +94,16 @@ public class DeleteGroupSelectedCommand : IBotCallbackQueryHandlers
             {
                 // TODO: Move "Group.Delete.Success"
                 await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, "✅ Группа удалена", cancellationToken: ct);
-                
+
                 // Возвращаем пользователя к списку групп (чтобы он видел, что удалилось)
                 // Для этого просто вызываем логику списка
                 // Но так как у нас нет прямой ссылки на команду списка, просто отправим сообщение с кнопкой меню
-                
+
                 await _interactionService.ReplyToUpdate(
-                    botClient, 
-                    update, 
+                    botClient,
+                    update,
                     KeyboardUtils.SendInlineKeyboardMenu(), // Или кнопка "Назад к группам"
-                    ct, 
+                    ct,
                     "✅ <b>Группа успешно удалена.</b>"
                 );
             }

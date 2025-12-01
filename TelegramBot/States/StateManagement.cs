@@ -55,7 +55,7 @@ public enum StateResultAction
     /// <summary>
     /// Продолжить сценарий, сохранить измененное состояние.
     /// </summary>
-    Continue, 
+    Continue,
     /// <summary>
     /// Завершить сценарий, удалить состояние.
     /// </summary>

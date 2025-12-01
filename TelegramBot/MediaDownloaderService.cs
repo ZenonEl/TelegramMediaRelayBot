@@ -2,7 +2,6 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-
 using Microsoft.Extensions.Options;
 using TelegramMediaRelayBot.Config.Downloaders;
 using TelegramMediaRelayBot.Domain.Interfaces;
@@ -44,36 +43,36 @@ public class MediaDownloaderService
         foreach (var downloader in availableDownloaders)
         {
             Log.Information("Attempting to download with {DownloaderName}...", downloader.Name);
-            
+
             var attemptResult = new DownloadResult { Success = false };
             int attempt = 1;
 
             while (true)
             {
                 var proxyAddress = _proxyPolicyManager.GetProxyAddress(downloader.Config, url);
-                
+
                 if (attemptResult.Modifiers?.UseProxyName != null)
                 {
                     // TODO ... логика смены прокси ...
                 }
-                
+
                 options.ProxyUrl = proxyAddress;
                 options.LastResult = attemptResult;
-                
+
                 attemptResult = await downloader.Download(url, options, ct);
                 attemptResult.AttemptNumber = attempt;
-                
+
                 if (attemptResult.Success)
                 {
                     Log.Information("Download successful with {DownloaderName} on attempt {Attempt}", downloader.Name, attempt);
                     return attemptResult;
                 }
-                
+
                 Log.Warning("Attempt {Attempt} with {DownloaderName} failed: {Error}", attempt, downloader.Name, attemptResult.ErrorMessage);
                 lastErrorResult = attemptResult;
 
                 var decision = _retryPolicyManager.Decide(lastErrorResult, attempt);
-                
+
                 if (decision.ShouldRetry)
                 {
                     attemptResult.Modifiers = decision.Modifiers;
@@ -87,7 +86,7 @@ public class MediaDownloaderService
                 }
             }
         }
-        
+
         Log.Error("All downloaders and retry policies failed for URL: {Url}", url);
         return lastErrorResult;
     }

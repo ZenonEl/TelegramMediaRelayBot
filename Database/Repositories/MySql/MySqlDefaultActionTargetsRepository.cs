@@ -13,7 +13,7 @@ public class MySqlDefaultActionTargetsRepository(IDbConnection dbConnection) : I
     public Task<int> AddTarget(int userId, int actionId, string targetType, int targetId)
     {
         const string query = @"
-            INSERT INTO DefaultUsersActionTargets (UserId, ActionID, TargetType, TargetID) 
+            INSERT INTO DefaultUsersActionTargets (UserId, ActionID, TargetType, TargetID)
             VALUES (@userId, @actionId, @targetType, @targetId)";
         return dbConnection.ExecuteAsync(query, new { userId, actionId, targetType, targetId });
     }
@@ -21,7 +21,7 @@ public class MySqlDefaultActionTargetsRepository(IDbConnection dbConnection) : I
     public Task<int> RemoveAllTargets(int userId, string targetType, int actionId)
     {
         const string query = @"
-            DELETE FROM DefaultUsersActionTargets 
+            DELETE FROM DefaultUsersActionTargets
             WHERE UserId = @userId AND ActionID = @actionId AND TargetType = @targetType";
         return dbConnection.ExecuteAsync(query, new { userId, actionId, targetType });
     }

@@ -21,12 +21,12 @@ public interface IUserTimeService
 public class UserTimeService : IUserTimeService
 {
     // Сюда в будущем внедрим IUserRepository, чтобы брать TimezoneOffset
-    
+
     public DateTime ConvertToUserTime(int userId, DateTime utcDateTime)
     {
         // TODO: В будущем получать offset пользователя из БД.
         // Пока возвращаем UTC (или можно DateTime.Now если сервер в нужном поясе, но лучше UTC)
-        return utcDateTime; 
+        return utcDateTime;
     }
 
     public string FormatTimeForUser(int userId, DateTime? utcDateTime)
@@ -34,9 +34,9 @@ public class UserTimeService : IUserTimeService
         if (!utcDateTime.HasValue) return "навсегда"; // TODO Move: "Time.Forever"
 
         DateTime userTime = ConvertToUserTime(userId, utcDateTime.Value);
-        
+
         // Формат: "30.11.2025 15:30 (UTC)"
         // В будущем уберем (UTC) и будем писать локальное время
-        return $"{userTime:dd.MM.yyyy HH:mm} UTC"; 
+        return $"{userTime:dd.MM.yyyy HH:mm} UTC";
     }
 }

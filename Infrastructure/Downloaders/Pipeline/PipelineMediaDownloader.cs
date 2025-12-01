@@ -6,8 +6,8 @@ using System.Text.RegularExpressions;
 using TelegramMediaRelayBot.Config.Downloaders;
 using TelegramMediaRelayBot.Domain.Interfaces;
 using TelegramMediaRelayBot.Domain.Models;
-using TelegramMediaRelayBot.Infrastructure.Downloaders.Policies;
 using TelegramMediaRelayBot.Infrastructure.Downloaders.Pipeline;
+using TelegramMediaRelayBot.Infrastructure.Downloaders.Policies;
 
 namespace TelegramMediaRelayBot.Infrastructure.Pipeline;
 
@@ -51,7 +51,7 @@ public class PipelineMediaDownloader : IMediaDownloader
         {
             if (pattern.Contains("\\") || pattern.Contains("^") || pattern.Contains("$"))
             {
-                try 
+                try
                 {
                     _urlRegexPatterns.Add(new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase));
                 }
@@ -66,7 +66,7 @@ public class PipelineMediaDownloader : IMediaDownloader
 
     public bool CanHandle(string url)
     {
-        if (_config.UrlMatching.Mode == UrlMatchingMode.Any) 
+        if (_config.UrlMatching.Mode == UrlMatchingMode.Any)
             return true;
 
         bool isMatch = IsMatchingPattern(url);
@@ -119,10 +119,10 @@ public async Task<DownloadResult> Download(string url, DownloadOptions options, 
 
             if (executionResult.Status != ExecutionStatus.Success)
             {
-                return new DownloadResult 
-                { 
-                    Success = false, 
-                    ErrorMessage = executionResult.ErrorMessage ?? "Pipeline execution failed" 
+                return new DownloadResult
+                {
+                    Success = false,
+                    ErrorMessage = executionResult.ErrorMessage ?? "Pipeline execution failed"
                 };
             }
 
@@ -136,7 +136,7 @@ public async Task<DownloadResult> Download(string url, DownloadOptions options, 
                 {
                     Log.Debug(">>> Running Processor: {Name}", processor.Name);
                     await processor.ProcessAsync(context, ct);
-                    
+
                     // ЛОГ ПОСЛЕ КАЖДОГО ПРОЦЕССОРА
                     LogFilesState($"After {processor.Name}", context);
                 }
@@ -160,14 +160,14 @@ public async Task<DownloadResult> Download(string url, DownloadOptions options, 
                 {
                     var bytes = await System.IO.File.ReadAllBytesAsync(file.FilePath, ct);
                     result.MediaFiles.Add(bytes);
-                    if (bytes.Length > 52428800) 
+                    if (bytes.Length > 52428800)
                     {
-                        Log.Error("!!! DANGER !!! File {Name} is {Size:F2} MB, which is OVER Telegram limit (50MB)!", 
+                        Log.Error("!!! DANGER !!! File {Name} is {Size:F2} MB, which is OVER Telegram limit (50MB)!",
                             file.FileName, bytes.Length / 1024.0 / 1024.0);
                     }
                 }
             }
-            
+
             Log.Debug("--- PIPELINE FINISHED ---");
             return result;
         }
@@ -187,7 +187,7 @@ public async Task<DownloadResult> Download(string url, DownloadOptions options, 
     {
         var files = context.ResultFiles;
         Log.Information("📊 [{Stage}] Files count: {Count}", stage, files.Count);
-        
+
         foreach (var file in files)
         {
             long size = 0;
@@ -197,7 +197,7 @@ public async Task<DownloadResult> Download(string url, DownloadOptions options, 
             }
             else
             {
-                size = file.FileSize; 
+                size = file.FileSize;
             }
 
             double sizeMb = size / 1024.0 / 1024.0;

@@ -2,13 +2,11 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-
-using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot.Services;
-using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
-
+using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
@@ -314,7 +312,7 @@ public class UserUpdateSelfLinkWithKeepSelectedContactsCommand : IBotCallbackQue
 public class UserUpdateSelfLinkWithDeleteSelectedContactsCommand : IBotCallbackQueryHandlers
 {
     private readonly IUserMenuService _menuService;
-    private readonly IContactGetter _contactGetterRepository;    
+    private readonly IContactGetter _contactGetterRepository;
     private readonly IResourceService _resourceService;
     private readonly IUserGetter _userGetter;
     private readonly ITelegramInteractionService _interactionService;

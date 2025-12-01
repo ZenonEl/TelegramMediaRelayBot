@@ -4,14 +4,13 @@
 
 using Telegram.Bot.Types.ReplyMarkups;
 
-
 namespace TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 public static class ContactGroup
 {
-    private static readonly System.Resources.ResourceManager _resourceManager = 
+    private static readonly System.Resources.ResourceManager _resourceManager =
         new System.Resources.ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
-    
+
     private static string GetResourceString(string key)
     {
         return _resourceManager.GetString(key) ?? key;

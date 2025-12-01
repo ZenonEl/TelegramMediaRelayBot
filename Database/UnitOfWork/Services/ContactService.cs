@@ -26,28 +26,28 @@ public class ContactUoWService : IContactUoW
         // Здесь мы правильно используем DI для получения ID
         var userId = _userGetter.GetUserIDbyTelegramID(userTelegramId);
         var contactId = _contactGetter.GetContactIDByLink(contactLink);
-        
+
         if (userId == 0 || contactId == 0) return; // или бросить исключение
 
-        await ExecuteInTransactionAsync(() => 
+        await ExecuteInTransactionAsync(() =>
             _repository.AddContactAsync(userId, contactId, status));
     }
 
     public Task MuteContactAsync(int mutedByUserId, int mutedContactId, DateTime? expirationDate)
     {
-        return ExecuteInTransactionAsync(() => 
+        return ExecuteInTransactionAsync(() =>
             _repository.UpsertMutedContactAsync(mutedByUserId, mutedContactId, expirationDate));
     }
 
     public Task UnmuteContactAsync(int userId, int contactId)
     {
-        return ExecuteInTransactionAsync(() => 
+        return ExecuteInTransactionAsync(() =>
             _repository.DeactivateMutedContactAsync(userId, contactId));
     }
 
     public Task UnMuteUserByMuteId(int muteId)
     {
-        return ExecuteInTransactionAsync(() => 
+        return ExecuteInTransactionAsync(() =>
             _repository.UnMuteUserByMuteId(muteId));
     }
 
@@ -57,7 +57,7 @@ public class ContactUoWService : IContactUoW
         return ExecuteInTransactionAsync(() =>
             _repository.RemoveContactByStatusAsync(senderTelegramId, accepterTelegramId, status));
     }
-    
+
     public async Task UpdateContactStatusAsync(long senderTelegramId, long accepterTelegramId, string status)
     {
         var senderId = _userGetter.GetUserIDbyTelegramID(senderTelegramId);
@@ -65,21 +65,21 @@ public class ContactUoWService : IContactUoW
 
         if (senderId == 0 || accepterId == 0) return;
 
-        await ExecuteInTransactionAsync(() => 
+        await ExecuteInTransactionAsync(() =>
             _repository.UpdateContactStatusAsync(senderId, accepterId, status));
     }
-    
+
     public Task RemoveUsersFromContactsAsync(int userId, List<int> contactIds)
     {
         if (contactIds is not { Count: > 0 }) return Task.CompletedTask;
-        
+
         return ExecuteInTransactionAsync(async () =>
         {
             await _repository.RemoveContactsBatchAsync(userId, contactIds);
             await _repository.RemoveGroupMembersBatchAsync(userId, contactIds);
         });
     }
-    
+
     public Task RemoveAllUserContactsAsync(int userId, List<int>? excludeIds = null)
     {
         return ExecuteInTransactionAsync(async () =>

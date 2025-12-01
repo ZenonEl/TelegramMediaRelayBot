@@ -40,7 +40,7 @@ public sealed class SqliteUnitOfWork : IUnitOfWork
         _transaction?.Rollback();
         DisposeTransaction();
     }
-    
+
     private void DisposeTransaction()
     {
         _transaction?.Dispose();

@@ -17,11 +17,11 @@ public class CredentialProvider : ICredentialProvider
         _secretsDirectory = Path.Combine(AppContext.BaseDirectory, "Secrets");
         if (!Directory.Exists(_secretsDirectory))
         {
-            try 
-            { 
-                Directory.CreateDirectory(_secretsDirectory); 
+            try
+            {
+                Directory.CreateDirectory(_secretsDirectory);
             }
-            catch 
+            catch
             {}
         }
     }

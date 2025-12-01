@@ -2,15 +2,14 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-// (Этот класс очень большой, я сохраняю его логику, но в будущем его тоже можно декомпозировать)
-using FluentValidation;
 using System.Globalization;
+using FluentValidation;
 using Telegram.Bot.Types.ReplyMarkups;
-using TelegramMediaRelayBot.Database.Interfaces;
-using TelegramMediaRelayBot.TelegramBot.Utils;
-using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
-using TelegramMediaRelayBot.TelegramBot.Validation;
 using TelegramMediaRelayBot.Config.Services;
+using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
+using TelegramMediaRelayBot.TelegramBot.Utils;
+using TelegramMediaRelayBot.TelegramBot.Validation;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 

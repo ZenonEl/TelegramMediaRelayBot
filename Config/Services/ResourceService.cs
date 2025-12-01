@@ -28,7 +28,7 @@ public class ResourceService : IResourceService
     {
         return _resourceManager.GetString(key) ?? key;
     }
-} 
+}
 
 public class UiResourceService : IUiResourceService
 {

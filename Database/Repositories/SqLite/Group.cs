@@ -2,8 +2,8 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using Dapper;
 using System.Data;
+using Dapper;
 using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.Database.Repositories.Sqlite;
@@ -13,8 +13,8 @@ public class SqliteGroupGetter(IDbConnection dbConnection) : IGroupGetter
     public async Task<IEnumerable<int>> GetGroupIDsByUserId(int userId)
     {
         const string query = @"
-            SELECT ID 
-            FROM UsersGroups 
+            SELECT ID
+            FROM UsersGroups
             WHERE UserId = @userId";
 
 
@@ -24,8 +24,8 @@ public class SqliteGroupGetter(IDbConnection dbConnection) : IGroupGetter
     public async Task<bool> GetGroupOwnership(int groupId, int userId)
     {
         const string query = @"
-            SELECT COUNT(*) 
-            FROM UsersGroups 
+            SELECT COUNT(*)
+            FROM UsersGroups
             WHERE ID = @groupId AND UserId = @userId";
 
 
@@ -36,8 +36,8 @@ public class SqliteGroupGetter(IDbConnection dbConnection) : IGroupGetter
     public async Task<string> GetGroupNameById(int groupId)
     {
         const string query = @"
-            SELECT GroupName 
-            FROM UsersGroups 
+            SELECT GroupName
+            FROM UsersGroups
             WHERE ID = @groupId";
 
 
@@ -47,8 +47,8 @@ public class SqliteGroupGetter(IDbConnection dbConnection) : IGroupGetter
     public async Task<string> GetGroupDescriptionById(int groupId)
     {
         const string query = @"
-            SELECT Description 
-            FROM UsersGroups 
+            SELECT Description
+            FROM UsersGroups
             WHERE ID = @groupId";
 
 
@@ -58,8 +58,8 @@ public class SqliteGroupGetter(IDbConnection dbConnection) : IGroupGetter
     public async Task<int> GetGroupMemberCount(int groupId)
     {
         const string query = @"
-            SELECT COUNT(*) AS MemberCount 
-            FROM GroupMembers 
+            SELECT COUNT(*) AS MemberCount
+            FROM GroupMembers
             WHERE GroupId = @groupId";
 
 
@@ -69,8 +69,8 @@ public class SqliteGroupGetter(IDbConnection dbConnection) : IGroupGetter
     public async Task<bool> GetIsDefaultGroup(int groupId)
     {
         const string query = @"
-            SELECT IsDefaultEnabled 
-            FROM UsersGroups 
+            SELECT IsDefaultEnabled
+            FROM UsersGroups
             WHERE ID = @groupId";
 
 
@@ -80,8 +80,8 @@ public class SqliteGroupGetter(IDbConnection dbConnection) : IGroupGetter
     public async Task<IEnumerable<int>> GetAllUsersIdsInGroup(int groupId)
     {
         const string query = @"
-            SELECT ContactId 
-            FROM GroupMembers 
+            SELECT ContactId
+            FROM GroupMembers
             WHERE GroupId = @groupId";
 
 

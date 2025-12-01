@@ -23,12 +23,12 @@ public class ConfigurationService : IConfigurationService
     public bool CanUserStartUsingBot(string referrerLink, IUserGetter userGetter)
     {
         var accessPolicy = _accessPolicyOptions.CurrentValue;
-        
-        if (!accessPolicy.Enabled) 
+
+        if (!accessPolicy.Enabled)
             return true;
 
         long referrerUserId = userGetter.GetUserTelegramIdByLink(referrerLink);
-        if (referrerUserId == -1) 
+        if (referrerUserId == -1)
             return false;
 
         var newUsersPolicy = accessPolicy.NewUsersPolicy;

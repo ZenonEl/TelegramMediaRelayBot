@@ -3,10 +3,10 @@
 // See LICENSE file in the project root for full license information.
 
 using TelegramMediaRelayBot.Database.Interfaces;
-using TelegramMediaRelayBot.TelegramBot.Utils;
-using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot.Services;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
+using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace TelegramMediaRelayBot.TelegramBot.States;
 
@@ -19,14 +19,14 @@ public class SetDistributionUsersStateHandler : IStateHandler
     private readonly Config.Services.IResourceService _resourceService;
     private readonly ITelegramInteractionService _interactionService;
     private readonly IStateBreakService _stateBreaker;
-    
+
     public string Name => "SetDistributionUsers";
 
     public SetDistributionUsersStateHandler(
-        IContactGetter contactGetter, 
-        IDefaultAction defaultAction, 
-        IDefaultActionGetter defaultActionGetter, 
-        IUserGetter userGetter, 
+        IContactGetter contactGetter,
+        IDefaultAction defaultAction,
+        IDefaultActionGetter defaultActionGetter,
+        IUserGetter userGetter,
         Config.Services.IResourceService resourceService,
         ITelegramInteractionService interactionService,
         IStateBreakService stateBreaker)
@@ -44,7 +44,7 @@ public class SetDistributionUsersStateHandler : IStateHandler
     {
         var chatId = _interactionService.GetChatId(update);
         if (await _stateBreaker.HandleStateBreak(botClient, update)) return StateResult.Complete();
-        
+
         var actingUserId = _userGetter.GetUserIDbyTelegramID(chatId);
 
         switch (stateData.Step)
@@ -88,7 +88,7 @@ public class SetDistributionUsersStateHandler : IStateHandler
                 stateData.Data["TargetIds"] = validTargetIds;
                 var idsList = string.Join(", ", validTargetIds);
                 var message = string.Format(_resourceService.GetResourceString("ProcessIDsList"), idsList);
-                
+
                 await botClient.SendMessage(chatId, message, replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
                 stateData.Step = 1;
                 return StateResult.Continue();
@@ -101,7 +101,7 @@ public class SetDistributionUsersStateHandler : IStateHandler
                         cancellationToken, _resourceService.GetResourceString("UsersVideoSentUsersMenuText"));
                     return StateResult.Complete();
                 }
-                
+
                 await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, cancellationToken: cancellationToken);
 
                 var targetIds = (List<int>)stateData.Data["TargetIds"];
@@ -115,7 +115,7 @@ public class SetDistributionUsersStateHandler : IStateHandler
 
                 await _interactionService.ReplyToUpdate(botClient, update, UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
                     cancellationToken, string.Format(_resourceService.GetResourceString("SuccessMessageProcessIDsList"), targetIds.Count));
-                
+
                 return StateResult.Complete();
         }
         return StateResult.Ignore();

@@ -7,8 +7,8 @@ using Microsoft.Extensions.Options;
 using Telegram.Bot.Types.Enums;
 using TelegramBot.Services;
 using TelegramMediaRelayBot.Config;
-using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Domain.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Sessions;
@@ -97,7 +97,7 @@ public class PrivateUpdateHandler
                 statusMessageId: statusMessage.MessageId,
                 chatId: chatId, url: url, caption: caption,
                 originalMessageDateUtc: message.Date);
-            
+
             _sessionManager.ScheduleDefaultAction(botClient, update, session);
         }
         else if (message.Text != null && _sessionManager.GetLatestPendingSession(chatId) != null)

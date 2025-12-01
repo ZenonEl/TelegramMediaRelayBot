@@ -2,8 +2,8 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using Dapper;
 using System.Data;
+using Dapper;
 using MySql.Data.MySqlClient;
 using TelegramMediaRelayBot.Database.Interfaces;
 
@@ -41,19 +41,19 @@ public class MySqlContactRemover(IContactUoW contactUoWService) : IContactRemove
         return contactUoWService.RemoveContactByStatusAsync(senderTelegramId, accepterTelegramId, status)
             .ContinueWith(t => t.IsCompletedSuccessfully);
     }
-    
+
     public Task<bool> RemoveUsersFromContacts(int userId, List<int> contactIds)
     {
         return contactUoWService.RemoveUsersFromContactsAsync(userId, contactIds)
             .ContinueWith(t => t.IsCompletedSuccessfully);
     }
-    
+
     public Task<bool> RemoveAllContactsExcept(int userId, List<int> excludeIds)
     {
         return contactUoWService.RemoveAllUserContactsAsync(userId, excludeIds)
             .ContinueWith(t => t.IsCompletedSuccessfully);
     }
-    
+
     public Task<bool> RemoveAllContacts(int userId)
     {
         return contactUoWService.RemoveAllUserContactsAsync(userId, null)
@@ -82,13 +82,13 @@ public class MySqlContactGetter(IDbConnection dbConnection, TelegramMediaRelayBo
     {
         try
         {
-    
+
             MySqlUserGetter userGetter = new(dbConnection);
-            
+
             var results = await dbConnection.QueryAsync<(long UserId, long ContactId)>(
                 @"SELECT UserId, ContactId
                 FROM Contacts
-                WHERE (ContactId = @UserId OR UserId = @UserId) 
+                WHERE (ContactId = @UserId OR UserId = @UserId)
                 AND status = @Status",
                 new { UserId = userId, Status = ContactsStatus.ACCEPTED });
 
@@ -113,12 +113,12 @@ public class MySqlContactGetter(IDbConnection dbConnection, TelegramMediaRelayBo
     {
         try
         {
-    
-            
+
+
             var results = await dbConnection.QueryAsync<long>(
-                @"SELECT DISTINCT CASE 
-                    WHEN UserId = @UserId THEN ContactId 
-                    ELSE UserId 
+                @"SELECT DISTINCT CASE
+                    WHEN UserId = @UserId THEN ContactId
+                    ELSE UserId
                 END AS ContactId
                 FROM Contacts
                 WHERE (UserId = @UserId OR ContactId = @UserId)
@@ -137,9 +137,9 @@ public class MySqlContactGetter(IDbConnection dbConnection, TelegramMediaRelayBo
     public async Task<IEnumerable<int>> GetMutedContactIds(int userId)
         {
             const string query = @"
-                SELECT MutedContactId 
-                FROM MutedContacts 
-                WHERE MutedByUserId = @userId 
+                SELECT MutedContactId
+                FROM MutedContacts
+                WHERE MutedByUserId = @userId
                 AND (ExpirationDate IS NULL OR ExpirationDate > UTC_TIMESTAMP())";
 
             return (await dbConnection.QueryAsync<int>(query, new { userId })).ToList();
@@ -149,16 +149,16 @@ public class MySqlContactGetter(IDbConnection dbConnection, TelegramMediaRelayBo
     {
         try
         {
-    
-            
+
+
             var expirationDate = dbConnection.QueryFirstOrDefault<DateTime?>(
-                @"SELECT ExpirationDate 
-                FROM MutedContacts 
-                WHERE MutedContactId = @contactID 
+                @"SELECT ExpirationDate
+                FROM MutedContacts
+                WHERE MutedContactId = @contactID
                 AND IsActive = 1",
                 new { contactID });
 
-            return expirationDate?.ToString("yyyy-MM-dd HH:mm:ss") 
+            return expirationDate?.ToString("yyyy-MM-dd HH:mm:ss")
                 ?? _resourceService.GetResourceString("NoActiveMute");
         }
         catch (Exception ex)
@@ -172,15 +172,15 @@ public class MySqlContactGetter(IDbConnection dbConnection, TelegramMediaRelayBo
     {
         try
         {
-    
+
             var expirationDate = await dbConnection.QueryFirstOrDefaultAsync<DateTime?>(
-                @"SELECT ExpirationDate 
-                FROM MutedContacts 
-                WHERE MutedContactId = @contactID 
+                @"SELECT ExpirationDate
+                FROM MutedContacts
+                WHERE MutedContactId = @contactID
                 AND IsActive = 1",
                 new { contactID });
 
-            return expirationDate?.ToString("yyyy-MM-dd HH:mm:ss") 
+            return expirationDate?.ToString("yyyy-MM-dd HH:mm:ss")
                 ?? _resourceService.GetResourceString("NoActiveMute");
         }
         catch (Exception ex)
@@ -195,7 +195,7 @@ public class MySqlContactGetter(IDbConnection dbConnection, TelegramMediaRelayBo
         const string query = "SELECT ID FROM Users WHERE Link = @link";
         try
         {
-    
+
             var result = dbConnection.QueryFirstOrDefault<int?>(query, new { link });
             return result ?? -1;
         }
@@ -211,7 +211,7 @@ public class MySqlContactGetter(IDbConnection dbConnection, TelegramMediaRelayBo
         const string query = "SELECT ID FROM Users WHERE Link = @link";
         try
         {
-    
+
             var result = await dbConnection.QueryFirstOrDefaultAsync<int?>(query, new { link });
             return result ?? -1;
         }
@@ -227,7 +227,7 @@ public class MySqlContactGetter(IDbConnection dbConnection, TelegramMediaRelayBo
         const string query = "SELECT ID FROM Users WHERE TelegramID = @telegramID";
         try
         {
-    
+
             var result = dbConnection.QueryFirstOrDefault<int?>(query, new { telegramID });
             return result ?? -1;
         }
@@ -243,7 +243,7 @@ public class MySqlContactGetter(IDbConnection dbConnection, TelegramMediaRelayBo
         const string query = "SELECT ID FROM Users WHERE TelegramID = @telegramID";
         try
         {
-    
+
             var result = await dbConnection.QueryFirstOrDefaultAsync<int?>(query, new { telegramID });
             return result ?? -1;
         }

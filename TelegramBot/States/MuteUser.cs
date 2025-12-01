@@ -6,8 +6,8 @@ using System.Text;
 using Telegram.Bot.Types.ReplyMarkups;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
-using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
+using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace TelegramMediaRelayBot.TelegramBot.States;
 
@@ -41,7 +41,7 @@ public class MuteUserStateHandler : IStateHandler
     public async Task<StateResult> Process(UserStateData stateData, Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
         long chatId = _interactionService.GetChatId(update);
-        
+
         if (await _stateBreaker.HandleStateBreak(botClient, update)) return StateResult.Complete();
 
         if (!stateData.Data.TryGetValue("MutedContactId", out object? contactIdObj) || contactIdObj is not int contactId)
@@ -66,7 +66,7 @@ public class MuteUserStateHandler : IStateHandler
                 // Callback format: "mute_time_select:{minutes}" (-1 = forever)
                 InlineKeyboardMarkup timeKeyboard = new InlineKeyboardMarkup(new[]
                 {
-                    new[] 
+                    new[]
                     {
                         // TODO Move: "Time.15Minutes"
                         InlineKeyboardButton.WithCallbackData("15 мин", "mute_time_select:15"),
@@ -75,23 +75,23 @@ public class MuteUserStateHandler : IStateHandler
                         // TODO Move: "Time.8Hours"
                         InlineKeyboardButton.WithCallbackData("8 часов", "mute_time_select:480"),
                     },
-                    new[] 
+                    new[]
                     {
                         // TODO Move: "Time.1Day"
                         InlineKeyboardButton.WithCallbackData("1 день", "mute_time_select:1440"),
                         // TODO Move: "Time.1Week"
                         InlineKeyboardButton.WithCallbackData("1 неделя", "mute_time_select:10080"),
                     },
-                    new[] 
+                    new[]
                     {
                         // TODO Move: "Time.Forever"
-                        InlineKeyboardButton.WithCallbackData("♾ Навсегда", "mute_time_select:-1") 
+                        InlineKeyboardButton.WithCallbackData("♾ Навсегда", "mute_time_select:-1")
                     },
                     new[] { KeyboardUtils.GetReturnButton("mute_contact") } // Возврат к списку контактов
                 });
 
                 await _interactionService.ReplyToUpdate(botClient, update, timeKeyboard, cancellationToken, pickerText);
-                
+
                 stateData.Step = 1;
                 return StateResult.Continue();
 
@@ -117,7 +117,7 @@ public class MuteUserStateHandler : IStateHandler
                     (isValidInput, minutes, isForever) = ParseDuration(update.Message.Text);
                 }
                 // Вариант В: Нажата кнопка "Назад" (в меню контактов)
-                else if (update.CallbackQuery?.Data == "mute_contact") 
+                else if (update.CallbackQuery?.Data == "mute_contact")
                 {
                     return StateResult.Complete();
                 }
@@ -125,7 +125,7 @@ public class MuteUserStateHandler : IStateHandler
                 if (!isValidInput)
                 {
                     // TODO Move: "Mute.Error.InvalidFormat"
-                    await botClient.SendMessage(chatId, "⚠️ <b>Непонятный формат.</b>\nИспользуйте кнопки или пишите: 30m, 2h, 1d.", 
+                    await botClient.SendMessage(chatId, "⚠️ <b>Непонятный формат.</b>\nИспользуйте кнопки или пишите: 30m, 2h, 1d.",
                         parseMode: Telegram.Bot.Types.Enums.ParseMode.Html, cancellationToken: cancellationToken);
                     return StateResult.Continue();
                 }
@@ -133,22 +133,22 @@ public class MuteUserStateHandler : IStateHandler
                 // 1. Вычисляем дату (ВСЕГДА UTC)
                 DateTime? expirationDateUtc = isForever ? null : DateTime.UtcNow.AddMinutes(minutes);
                 stateData.Data["ExpirationDate"] = expirationDateUtc;
-                
+
                 long currentChatId = _interactionService.GetChatId(update);
                 int contactIdForDisplay = (int)contactIdObj; // для более явного типа
 
                 // 2. Форматируем дату через сервис
                 // ВАЖНО: Если мьют временный, показываем дату. Если навсегда, сервис вернет "навсегда".
                 string expirationString = _timeService.FormatTimeForUser(_userGetter.GetUserIDbyTelegramID(currentChatId), expirationDateUtc);
-                
+
                 // 3. Формируем текст подтверждения
                 string confirmName = _userGetter.GetUserNameByID(contactIdForDisplay) ?? "Unknown";
 
                 // TODO Move: "Mute.Confirm.Prompt"
                 string confirmText = $"❓ Вы уверены, что хотите заглушить <b>{confirmName}</b> до: <b>{expirationString}</b>?";
 
-                await _interactionService.ReplyToUpdate(botClient, update, 
-                    KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_mute"), 
+                await _interactionService.ReplyToUpdate(botClient, update,
+                    KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_mute"),
                     cancellationToken, confirmText);
 
                 stateData.Step = 2;
@@ -171,14 +171,14 @@ public class MuteUserStateHandler : IStateHandler
                 DateTime? finalExpiration = stateData.Data.ContainsKey("ExpirationDate") && stateData.Data["ExpirationDate"] != null
                     ? (DateTime)stateData.Data["ExpirationDate"]
                     : null;
-                
+
                 int myUserId = _userGetter.GetUserIDbyTelegramID(chatId);
 
                 await _contactAdder.AddMutedContact(myUserId, contactId, finalExpiration);
 
                 // TODO Move: "Mute.Success"
                 await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, "✅ Контакт заглушен.");
-                
+
                 return StateResult.Complete();
         }
 

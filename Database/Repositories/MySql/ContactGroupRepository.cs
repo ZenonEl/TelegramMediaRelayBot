@@ -2,8 +2,8 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using Dapper;
 using System.Data;
+using Dapper;
 using MySql.Data.MySqlClient;
 using TelegramMediaRelayBot.Database.Interfaces;
 
@@ -37,7 +37,7 @@ public class MySqlContactGroupRepository(IDbConnection dbConnection) : IContactG
     {
         const string query = @"
             SELECT COUNT(*) FROM Contacts
-            WHERE 
+            WHERE
                 ((UserId = @userId AND ContactId = @contactId) OR (UserId = @contactId AND ContactId = @userId))
                 AND Status = @status";
 

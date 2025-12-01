@@ -10,12 +10,12 @@ namespace TelegramMediaRelayBot.TelegramBot.Services;
 public interface ITelegramInteractionService
 {
     long GetChatId(Update update);
-    
+
     Task<Message?> ReplyToUpdate(
-        ITelegramBotClient botClient, 
-        Update update, 
-        InlineKeyboardMarkup? replyMarkup = null, 
-        CancellationToken cancellationToken = default, 
+        ITelegramBotClient botClient,
+        Update update,
+        InlineKeyboardMarkup? replyMarkup = null,
+        CancellationToken cancellationToken = default,
         string text = "ㅤ",
         int messageIdToEdit = 0,
         ParseMode parseMode = ParseMode.Html
@@ -35,10 +35,10 @@ public class TelegramInteractionService : ITelegramInteractionService
     }
 
     public async Task<Message?> ReplyToUpdate(
-        ITelegramBotClient botClient, 
-        Update update, 
-        InlineKeyboardMarkup? replyMarkup = null, 
-        CancellationToken cancellationToken = default, 
+        ITelegramBotClient botClient,
+        Update update,
+        InlineKeyboardMarkup? replyMarkup = null,
+        CancellationToken cancellationToken = default,
         string text = "",
         int messageIdToEdit = 0,
         ParseMode parseMode = ParseMode.Html)
@@ -74,7 +74,7 @@ public class TelegramInteractionService : ITelegramInteractionService
             {
                 if (ex.Message.Contains("message is not modified"))
                 {
-                    return null; 
+                    return null;
                 }
             }
         }

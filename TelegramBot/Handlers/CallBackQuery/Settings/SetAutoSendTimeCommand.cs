@@ -26,7 +26,7 @@ public class SetAutoSendTimeCommand : IBotCallbackQueryHandlers
     {
         var callbackQueryData = update.CallbackQuery!.Data!.Split(':')[1];
         var chatId = update.CallbackQuery!.Message!.Chat.Id;
-        
+
         // Заменяем static вызов на вызов сервиса
         var result = await _userMenuService.SetAutoSendVideoTimeToUser(chatId, callbackQueryData);
 

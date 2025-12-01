@@ -4,8 +4,8 @@
 
 using System.Collections.Concurrent;
 using Microsoft.Extensions.DependencyInjection;
-using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot.Services;
 
 namespace TelegramMediaRelayBot.TelegramBot.Sessions;
@@ -36,7 +36,7 @@ public class DownloadSessionManager
             StatusMessageId = statusMessageId,
             ChatId = chatId,
             Url = url,
-            Caption = _textCleaner.Cleanup(caption), 
+            Caption = _textCleaner.Cleanup(caption),
             OriginalMessageDateUtc = originalMessageDateUtc
         };
 

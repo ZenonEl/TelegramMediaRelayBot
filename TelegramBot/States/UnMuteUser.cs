@@ -86,7 +86,7 @@ public class UnmuteUserStateHandler : IStateHandler
 
                 stateData.Data["MutedByUserId"] = userId;
                 stateData.Data["MutedContactId"] = contactId;
-                
+
                 await botClient.SendMessage(chatId, _resourceService.GetResourceString("ConfirmDecision"), cancellationToken: cancellationToken);
 
                 stateData.Step = 1;
@@ -114,10 +114,10 @@ public class UnmuteUserStateHandler : IStateHandler
                 {
                     return StateResult.Complete();
                 }
-                
+
                 await _contactRemover.RemoveMutedContact((int)mutedByObj, (int)contactIdObj);
                 await _stateBreaker.AlertAndShowMenu(botClient, update, _resourceService.GetResourceString("UserUnmuted"));
-                
+
                 return StateResult.Complete();
         }
 

@@ -11,7 +11,7 @@ public class InboxSenderOperationsCommand : IBotCallbackQueryHandlers
     private readonly IUserGetter _userGetter;
     private readonly IResourceService _resourceService;
     public string Name => "inbox:senderops:";
-    public InboxSenderOperationsCommand(IUserGetter userGetter, IResourceService resourceService) 
+    public InboxSenderOperationsCommand(IUserGetter userGetter, IResourceService resourceService)
     { _userGetter = userGetter; _resourceService = resourceService; }
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {

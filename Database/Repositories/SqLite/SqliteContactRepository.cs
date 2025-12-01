@@ -23,7 +23,7 @@ public class SqliteContactRepository(IDbConnection dbConnection) : IContactRepos
         const string insertSql = @"
             INSERT INTO MutedContacts (MutedByUserId, MutedContactId, MuteDate, ExpirationDate, IsActive)
             VALUES (@mutedByUserId, @mutedContactId, UTC_TIMESTAMP(), @expirationDate, 1)";
-            
+
         return await dbConnection.ExecuteAsync(insertSql, new { mutedByUserId, mutedContactId, expirationDate });
     }
 
@@ -46,7 +46,7 @@ public class SqliteContactRepository(IDbConnection dbConnection) : IContactRepos
     {
         const string query = @$"
             UPDATE MutedContacts SET IsActive = 0 WHERE MutedId = @muteId";
-        
+
         return dbConnection.ExecuteAsync(query, new { muteId });
     }
 

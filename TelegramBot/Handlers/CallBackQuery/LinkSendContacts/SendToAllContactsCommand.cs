@@ -17,11 +17,11 @@ public class SendToAllContactsCommand : IBotCallbackQueryHandlers
     private readonly IContactGetter _contactGetter;
 
     public string Name => "send_to_all_contacts:";
-    
+
     public SendToAllContactsCommand(
-        DownloadSessionManager sessionManager, 
-        IServiceScopeFactory scopeFactory, 
-        IUserGetter userGetter, 
+        DownloadSessionManager sessionManager,
+        IServiceScopeFactory scopeFactory,
+        IUserGetter userGetter,
         IContactGetter contactGetter)
     {
         _sessionManager = sessionManager;
@@ -47,8 +47,8 @@ public class SendToAllContactsCommand : IBotCallbackQueryHandlers
         List<long> allContactTgIds = await _contactGetter.GetAllContactUserTGIds(userId);
 
         _sessionManager.MarkAsProcessing(messageId);
-        await botClient.EditMessageText(session.ChatId, messageId, 
-            $"Starting distribution to all contacts ({allContactTgIds.Count})...", 
+        await botClient.EditMessageText(session.ChatId, messageId,
+            $"Starting distribution to all contacts ({allContactTgIds.Count})...",
             cancellationToken: ct);
 
         _ = Task.Run(async () =>

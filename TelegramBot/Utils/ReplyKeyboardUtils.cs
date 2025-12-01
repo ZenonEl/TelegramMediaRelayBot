@@ -4,7 +4,6 @@
 
 using Telegram.Bot.Types.ReplyMarkups;
 
-
 namespace TelegramMediaRelayBot.TelegramBot.Utils;
 
 /// <summary>

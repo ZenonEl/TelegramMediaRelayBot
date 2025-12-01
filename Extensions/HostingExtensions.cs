@@ -2,45 +2,45 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Configuration;
-using TelegramMediaRelayBot.Config;
-using TelegramMediaRelayBot.Config.Downloaders;
-using TelegramMediaRelayBot.TelegramBot;
-using TelegramMediaRelayBot.TelegramBot.Handlers;
-using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
-using TelegramMediaRelayBot.TelegramBot.SiteFilter;
-using FluentValidation;
-using TelegramMediaRelayBot.TelegramBot.Validation;
-using TelegramMediaRelayBot.Infrastructure.Backup;
-using Microsoft.Extensions.Hosting;
-using TelegramMediaRelayBot.Domain.Interfaces;
-using TelegramMediaRelayBot.Infrastructure.Factories;
 using System.Data;
+using Dapper;
 using FluentMigrator.Runner.Initialization;
 using FluentMigrator.Runner;
-using TelegramMediaRelayBot.Database.UnitOfWork.Services;
+using FluentValidation;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MySql.Data.MySqlClient;
-using TelegramMediaRelayBot.Migrations;
+using TelegramBot.Services;
+using TelegramMediaRelayBot.Config.Downloaders;
+using TelegramMediaRelayBot.Config;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database.Repositories.MySql;
 using TelegramMediaRelayBot.Database.Repositories.Sqlite;
-using Dapper;
-using Microsoft.Extensions.Logging;
-using TelegramMediaRelayBot.TelegramBot.States;
-using TelegramBot.Services;
+using TelegramMediaRelayBot.Database.UnitOfWork.Services;
+using TelegramMediaRelayBot.Domain.Interfaces;
+using TelegramMediaRelayBot.Infrastructure.Backup;
+using TelegramMediaRelayBot.Infrastructure.Downloaders.Arguments;
+using TelegramMediaRelayBot.Infrastructure.Downloaders.Pipeline;
+using TelegramMediaRelayBot.Infrastructure.Downloaders.Policies;
+using TelegramMediaRelayBot.Infrastructure.Factories;
+using TelegramMediaRelayBot.Infrastructure.Pipeline.Orchestrators;
+using TelegramMediaRelayBot.Infrastructure.Pipeline.PostProcessors;
+using TelegramMediaRelayBot.Infrastructure.Processes;
+using TelegramMediaRelayBot.Infrastructure.Services;
+using TelegramMediaRelayBot.Migrations;
+using TelegramMediaRelayBot.Services;
+using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
+using TelegramMediaRelayBot.TelegramBot.Handlers;
 using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Sessions;
-using TelegramMediaRelayBot.Infrastructure.Processes;
-using TelegramMediaRelayBot.Infrastructure.Downloaders.Arguments;
-using TelegramMediaRelayBot.Infrastructure.Downloaders.Policies;
-using TelegramMediaRelayBot.Infrastructure.Pipeline.Orchestrators;
-using TelegramMediaRelayBot.Infrastructure.Downloaders.Pipeline;
-using TelegramMediaRelayBot.Services;
-using TelegramMediaRelayBot.Infrastructure.Services;
-using TelegramMediaRelayBot.Infrastructure.Pipeline.PostProcessors;
+using TelegramMediaRelayBot.TelegramBot.SiteFilter;
+using TelegramMediaRelayBot.TelegramBot.States;
+using TelegramMediaRelayBot.TelegramBot.Validation;
+using TelegramMediaRelayBot.TelegramBot;
 
 namespace TelegramMediaRelayBot.Extensions;
 
@@ -155,7 +155,7 @@ public static class HostingExtensions
 
         // 4. Factory & Consumers
         services.AddSingleton<IMediaDownloaderFactory, MediaDownloaderFactory>();
-        
+
         services.AddScoped<MediaDownloaderService>();
         services.AddScoped<IMediaProcessingFlow, MediaProcessingFlow>();
 
@@ -313,7 +313,7 @@ public static class HostingExtensions
         services.AddScoped<IPrivacySettingsRepository, SqlitePrivacySettingsRepository>();
         services.AddScoped<IPrivacySettingsTargetsRepository, SqlitePrivacySettingsTargetsRepository>();
         // ... Добавь сюда другие новые репозитории по мере их создания ...
-        
+
         // ========================================================================
         // == ФАСАДЫ И GETTER'ы (СТАРЫЕ ИНТЕРФЕЙСЫ)
         // ========================================================================
@@ -341,7 +341,7 @@ public static class HostingExtensions
         services.AddScoped<IPrivacySettingsGetter, SqlitePrivacySettingsGetter>();
         services.AddScoped<IPrivacySettingsTargetsSetter, SqlitePrivacySettingsTargetsSetter>();
         services.AddScoped<IPrivacySettingsTargetsGetter, SqlitePrivacySettingsTargetsGetter>();
-        
+
         // --- Остальные ---
         services.AddScoped<IUserRepository, SqliteUserRepository>();
         services.AddScoped<IUserGetter, SqliteUserGetter>();
@@ -383,13 +383,13 @@ public static class HostingExtensions
         // ========================================================================
         // Эти классы реализуют старые интерфейсы, но под капотом вызывают новые UoW сервисы или репозитории.
         // Это обеспечивает обратную совместимость с кодом бота.
-        
+
         // --- Контакты ---
         services.AddScoped<IContactAdder, MySqlContactAdder>();
         services.AddScoped<IContactRemover, MySqlContactRemover>();
         services.AddScoped<IContactSetter, MySqlContactSetter>();
         services.AddScoped<IContactGetter, MySqlContactGetter>();
-        
+
         // --- Группы ---
         services.AddScoped<IGroupRepository, MySqlGroupRepository>();
         services.AddScoped<IGroupSetter, MySqlGroupSetter>();
@@ -405,7 +405,7 @@ public static class HostingExtensions
         services.AddScoped<IPrivacySettingsGetter, MySqlPrivacySettingsGetter>();
         services.AddScoped<IPrivacySettingsTargetsSetter, MySqlPrivacySettingsTargetsSetter>();
         services.AddScoped<IPrivacySettingsTargetsGetter, MySqlPrivacySettingsTargetsGetter>();
-        
+
         // --- Остальные ---
         services.AddScoped<IUserRepository, MySqlUserRepository>();
         services.AddScoped<IUserGetter, MySqlUserGetter>();
@@ -442,7 +442,7 @@ public static class HostingExtensions
             logger.LogInformation("Performing database consistency check before migration...");
 
             var checkTableSql = "SELECT COUNT(1) FROM information_schema.tables WHERE table_schema = @dbName AND table_name = @tableName";
-            
+
             var versionInfoExists = await connection.QuerySingleAsync<int>(checkTableSql, new { dbName = databaseName, tableName = "VersionInfo" }) == 1;
             var usersTableExists = await connection.QuerySingleAsync<int>(checkTableSql, new { dbName = databaseName, tableName = "Users" }) == 1;
 
@@ -480,9 +480,9 @@ public static class HostingExtensions
                     }
 
             logger.LogWarning("--- STARTING MIGRATION ---");
-            
+
             migrationRunner.MigrateUp();
-            
+
             logger.LogWarning("--- MIGRATION FINISHED ---");
         }
         catch (Exception ex)

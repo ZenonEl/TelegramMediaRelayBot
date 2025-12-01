@@ -9,7 +9,7 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 public class CancelDownloadCommand : IBotCallbackQueryHandlers
 {
     public string Name => "cancel_download:";
-    
+
     private readonly DownloadSessionManager _sessionManager;
     private readonly Config.Services.IResourceService _resourceService;
 
@@ -39,7 +39,7 @@ public class CancelDownloadCommand : IBotCallbackQueryHandlers
                 // Попробуем отредактировать сообщение, от которого пришел колбек
                 if (callbackQuery.Message != null)
                 {
-                    await botClient.EditMessageText(callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId, 
+                    await botClient.EditMessageText(callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId,
                         _resourceService.GetResourceString("CanceledByUserMessage"), cancellationToken: ct);
                 }
             }
@@ -47,7 +47,7 @@ public class CancelDownloadCommand : IBotCallbackQueryHandlers
         }
         else
         {
-            await botClient.AnswerCallbackQuery(callbackQuery.Id, 
+            await botClient.AnswerCallbackQuery(callbackQuery.Id,
                 _resourceService.GetResourceString("NothingToCancelMessage"), showAlert: false, cancellationToken: ct);
         }
     }

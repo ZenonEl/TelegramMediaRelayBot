@@ -35,4 +35,4 @@ public class DatabaseConfigurationService : IDatabaseConfigurationService
     {
         return _botConfig.Value.DatabaseName;
     }
-} 
+}

@@ -17,7 +17,7 @@ public class MySqlPrivacySettingsTargetsRepository(IDbConnection dbConnection) :
             INSERT INTO PrivacySettingsTargets (UserId, PrivacySettingId, TargetType, TargetValue)
             VALUES (@userId, @privacySettingId, @targetType, @targetValue)
             ON DUPLICATE KEY UPDATE TargetValue = VALUES(TargetValue)";
-        
+
         return dbConnection.ExecuteAsync(query, new { userId, privacySettingId, targetType, targetValue });
     }
 

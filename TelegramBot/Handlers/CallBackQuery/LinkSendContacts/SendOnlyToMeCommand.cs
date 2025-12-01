@@ -25,7 +25,7 @@ public class SendOnlyToMeCommand : IBotCallbackQueryHandlers
     {
         CallbackQuery callbackQuery = update.CallbackQuery!;
         int messageId = int.Parse(callbackQuery.Data!.Split(':')[1]);
-        
+
         _sessionManager.CancelDefaultAction(messageId);
 
         if (!_sessionManager.TryGetSession(messageId, out DownloadSession? session))
@@ -36,7 +36,7 @@ public class SendOnlyToMeCommand : IBotCallbackQueryHandlers
 
         _sessionManager.MarkAsProcessing(messageId);
         await botClient.EditMessageText(session.ChatId, messageId, "Processing...", cancellationToken: ct);
-        
+
         _ = Task.Run(async () =>
         {
             await using (AsyncServiceScope scope = _scopeFactory.CreateAsyncScope())
@@ -45,7 +45,7 @@ public class SendOnlyToMeCommand : IBotCallbackQueryHandlers
                 await mediaFlow.StartFlow(botClient, update, session, null);
             }
         }, session.SessionCts.Token);
-        
+
         await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct);
     }
 }

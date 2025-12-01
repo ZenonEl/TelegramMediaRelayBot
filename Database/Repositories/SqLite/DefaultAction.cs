@@ -2,11 +2,10 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using Dapper;
 using System.Data;
+using Dapper;
 using Microsoft.Data.Sqlite;
 using TelegramMediaRelayBot.Database.Interfaces;
-
 
 namespace TelegramMediaRelayBot.Database.Repositories.Sqlite;
 
@@ -42,11 +41,11 @@ public class SqliteDefaultActionGetter(IDbConnection dbConnection) : IDefaultAct
 {
     public List<int> GetAllDefaultUsersActionTargets(int userId, string targetType, int actionId)
     {
-        try 
+        try
         {
-    
+
             return dbConnection.Query<int>(
-                @"SELECT TargetID FROM DefaultUsersActionTargets 
+                @"SELECT TargetID FROM DefaultUsersActionTargets
                 WHERE UserId = @userId AND TargetType = @targetType AND ActionID = @actionId",
                 new { userId, targetType, actionId }).ToList();
         }
@@ -60,14 +59,14 @@ public class SqliteDefaultActionGetter(IDbConnection dbConnection) : IDefaultAct
     public int GetDefaultActionId(int userId, string type)
     {
         const string query = @"
-            SELECT ID FROM DefaultUsersActions 
+            SELECT ID FROM DefaultUsersActions
             WHERE UserId = @userId AND Type = @type
             ORDER BY ID DESC
             LIMIT 1";
 
         try
         {
-    
+
             return dbConnection.ExecuteScalar<int>(query, new {userId, type});
         }
         catch (Exception ex)
@@ -81,8 +80,8 @@ public class SqliteDefaultActionGetter(IDbConnection dbConnection) : IDefaultAct
     {
         try
         {
-    
-            
+
+
             var result = dbConnection.QueryFirstOrDefault<(string Action, string ActionCondition)>(
                 @"SELECT Action, ActionCondition
                 FROM DefaultUsersActions
@@ -93,8 +92,8 @@ public class SqliteDefaultActionGetter(IDbConnection dbConnection) : IDefaultAct
                 LIMIT 1",
                 new { userID, type });
 
-            return result != default 
-                ? $"{result.Action};{result.ActionCondition}" 
+            return result != default
+                ? $"{result.Action};{result.ActionCondition}"
                 : UsersAction.NO_VALUE;
         }
         catch (Exception ex)
@@ -108,9 +107,9 @@ public class SqliteDefaultActionGetter(IDbConnection dbConnection) : IDefaultAct
     {
         try
         {
-    
+
             var result = await dbConnection.QueryAsync<int>(
-                @"SELECT TargetID FROM DefaultUsersActionTargets 
+                @"SELECT TargetID FROM DefaultUsersActionTargets
                 WHERE UserId = @userId AND TargetType = @targetType AND ActionID = @actionId",
                 new { userId, targetType, actionId });
             return result.ToList();
@@ -127,7 +126,7 @@ public class SqliteDefaultActionGetter(IDbConnection dbConnection) : IDefaultAct
         const string query = @"SELECT ID FROM DefaultUsersActions WHERE UserId = @userId AND Type = @type ORDER BY ID DESC LIMIT 1";
         try
         {
-    
+
             return await dbConnection.ExecuteScalarAsync<int>(query, new { userId, type });
         }
         catch (Exception ex)
@@ -141,7 +140,7 @@ public class SqliteDefaultActionGetter(IDbConnection dbConnection) : IDefaultAct
     {
         try
         {
-    
+
             var result = await dbConnection.QueryFirstOrDefaultAsync<(string Action, string ActionCondition)>(
                 @"SELECT Action, ActionCondition
                 FROM DefaultUsersActions
@@ -151,8 +150,8 @@ public class SqliteDefaultActionGetter(IDbConnection dbConnection) : IDefaultAct
                 ORDER BY ID DESC
                 LIMIT 1",
                 new { userID, type });
-            return result != default 
-                ? $"{result.Action};{result.ActionCondition}" 
+            return result != default
+                ? $"{result.Action};{result.ActionCondition}"
                 : UsersAction.NO_VALUE;
         }
         catch (Exception ex)

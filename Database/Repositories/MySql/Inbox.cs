@@ -2,8 +2,8 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using Dapper;
 using System.Data;
+using Dapper;
 using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.Database.Repositories.MySql;
@@ -105,7 +105,7 @@ public class MySqlInboxRepository(IDbConnection dbConnection) : IInboxRepository
 
         public async Task<InboxItemDto?> GetLatestItemForOwnerFromAsync(int ownerUserId, int fromContactId)
         {
-    
+
             var sql = @"SELECT ID as Id, OwnerUserId, FromContactId, Caption, PayloadJson, Status, CreatedAt
                         FROM InboxItems WHERE OwnerUserId=@ownerUserId AND FromContactId=@fromContactId
                         ORDER BY CreatedAt DESC LIMIT 1";
@@ -114,7 +114,7 @@ public class MySqlInboxRepository(IDbConnection dbConnection) : IInboxRepository
 
         public async Task<bool> UpdatePayloadAsync(long inboxItemId, string payloadJson)
         {
-    
+
             var sql = "UPDATE InboxItems SET PayloadJson=@payloadJson WHERE ID=@id";
             var affected = await dbConnection.ExecuteAsync(sql, new { id = inboxItemId, payloadJson });
             return affected > 0;

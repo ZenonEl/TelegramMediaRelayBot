@@ -16,9 +16,9 @@ public class SqlitePrivacySettingsTargetsRepository(IDbConnection dbConnection) 
         const string query = @"
             INSERT INTO PrivacySettingsTargets (UserId, PrivacySettingId, TargetType, TargetValue)
             VALUES (@userId, @privacySettingId, @targetType, @targetValue)
-            ON CONFLICT(UserId, PrivacySettingId, TargetType) 
+            ON CONFLICT(UserId, PrivacySettingId, TargetType)
             DO UPDATE SET TargetValue = excluded.TargetValue";
-        
+
         return dbConnection.ExecuteAsync(query, new { userId, privacySettingId, targetType, targetValue });
     }
 

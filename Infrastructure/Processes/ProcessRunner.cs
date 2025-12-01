@@ -86,13 +86,13 @@ public class ProcessRunner : IProcessRunner
     private async Task ReadStreamAsync(StreamReader reader, List<string> lines, Action<string>? onOutput, CancellationToken ct)
     {
         var enableProgressOutput = onOutput != null && _config.GlobalSettings.DownloadProgressLogLevel == ProgressLogLevel.Verbose;
-        
+
         try
         {
             while (!ct.IsCancellationRequested && await reader.ReadLineAsync(ct) is { } line)
             {
                 lines.Add(line);
-                
+
                 // Вызываем "подписчика" только если разрешено
                 if (enableProgressOutput)
                 {

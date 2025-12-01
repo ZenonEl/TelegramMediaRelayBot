@@ -2,23 +2,21 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-
 using Telegram.Bot.Types.ReplyMarkups;
 using TelegramMediaRelayBot.Database.Interfaces;
-
 
 namespace TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 
 public static class UsersGroup
 {
-    private static readonly System.Resources.ResourceManager _resourceManager = 
+    private static readonly System.Resources.ResourceManager _resourceManager =
         new System.Resources.ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
-    
+
     private static string GetResourceString(string key)
     {
         return _resourceManager.GetString(key) ?? key;
     }
-    
+
     public static InlineKeyboardMarkup GetUsersGroupActionsKeyboardMarkup(bool groupsMoreZero)
     {
         var kb = new List<List<InlineKeyboardButton>>
@@ -34,20 +32,20 @@ public static class UsersGroup
 
         if (groupsMoreZero)
         {
-            kb.Add(new[] 
-            { 
+            kb.Add(new[]
+            {
                 InlineKeyboardButton.WithCallbackData(
-                    GetResourceString("EditGroupButtonText"), 
+                    GetResourceString("EditGroupButtonText"),
                     "user_edit_group"
-                ) 
+                )
             }.ToList());
 
-            kb.Add(new[] 
-            { 
+            kb.Add(new[]
+            {
                 InlineKeyboardButton.WithCallbackData(
-                    GetResourceString("DeleteGroupButtonText"), 
+                    GetResourceString("DeleteGroupButtonText"),
                     "user_delete_group"
-                ) 
+                )
             }.ToList());
         }
         kb.Add(                    new[]
@@ -97,7 +95,7 @@ public static class UsersGroup
             int memberCount = await groupGetter.GetGroupMemberCount(groupId);
             bool isDefault = await groupGetter.GetIsDefaultGroup(groupId);
             groupInfo = string.Format(
-                GetResourceString("GroupInfoText"), 
+                GetResourceString("GroupInfoText"),
                 await groupGetter.GetGroupNameById(groupId),
                 groupId,
                 await groupGetter.GetGroupDescriptionById(groupId),
@@ -113,8 +111,8 @@ public static class UsersGroup
     {
         return string.Format(GetResourceString("GroupInfoText"), await groupGetter.GetGroupNameById(groupId),
                                                 groupId,
-                                                await groupGetter.GetGroupDescriptionById(groupId), 
-                                                await groupGetter.GetGroupMemberCount(groupId), 
+                                                await groupGetter.GetGroupDescriptionById(groupId),
+                                                await groupGetter.GetGroupMemberCount(groupId),
                                                 await groupGetter.GetIsDefaultGroup(groupId));
     }
 }

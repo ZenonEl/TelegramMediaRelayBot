@@ -3,10 +3,10 @@
 // See LICENSE file in the project root for full license information.
 
 using Telegram.Bot.Types.ReplyMarkups;
+using TelegramMediaRelayBot.Config.Services;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 using TelegramMediaRelayBot.TelegramBot.Validation;
-using TelegramMediaRelayBot.Config.Services;
 
 public class InboxBulkDeleteCommand : IBotCallbackQueryHandlers
 {

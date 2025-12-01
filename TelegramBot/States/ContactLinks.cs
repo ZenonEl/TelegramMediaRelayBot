@@ -2,11 +2,10 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
-using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
+using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace TelegramMediaRelayBot.TelegramBot.States;
 
@@ -82,7 +81,7 @@ public class ManageContactsStateHandler : IStateHandler
                         string uname = _userGetter.GetUserNameByTelegramID(tg);
                         return string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, "");
                     }).ToList();
-                    
+
                     var header = _resourceService.GetResourceString("YourContacts");
                     var body = lines.Any() ? string.Join("\n", lines) : _resourceService.GetResourceString("NoUsersFound");
                     var prompt = _resourceService.GetResourceString("State.ContactLinks.NoValidIds");
@@ -92,7 +91,7 @@ public class ManageContactsStateHandler : IStateHandler
 
                 var allowedTgIds = await _contactGetter.GetAllContactUserTGIds(actingUserId);
                 var validTargetIds = inputIds.Where(id => allowedTgIds.Contains(_userGetter.GetTelegramIDbyUserID(id))).ToList();
-                
+
                 if (validTargetIds.Count == 0)
                 {
                     await botClient.SendMessage(chatId, _resourceService.GetResourceString("State.ContactLinks.NoValidIdsForAccount"), cancellationToken: cancellationToken);
@@ -103,7 +102,7 @@ public class ManageContactsStateHandler : IStateHandler
 
                 var idsList = string.Join(", ", validTargetIds);
                 var message = string.Format(_resourceService.GetResourceString("State.ContactLinks.ConfirmList"), idsList);
-                
+
                 await botClient.SendMessage(chatId, message, replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
 
                 stateData.Step = 1;
@@ -122,9 +121,9 @@ public class ManageContactsStateHandler : IStateHandler
                     await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, _resourceService.GetResourceString("InvisibleLetter"));
                     return StateResult.Complete();
                 }
-                
+
                 // Пользователь нажал "accept", выполняем действие
-                if (!stateData.Data.TryGetValue("IsDelete", out var isDeleteObj) || 
+                if (!stateData.Data.TryGetValue("IsDelete", out var isDeleteObj) ||
                     !stateData.Data.TryGetValue("TargetIds", out var targetIdsObj))
                 {
                     return StateResult.Complete();
@@ -139,18 +138,18 @@ public class ManageContactsStateHandler : IStateHandler
                 {
                     actionStatus = await _contactRemover.RemoveUsersFromContacts(currentUserId, targetIds);
                 }
-                else 
+                else
                 {
                     actionStatus = await _contactRemover.RemoveAllContactsExcept(currentUserId, targetIds);
                 }
 
                 var statusMessage = actionStatus ? _resourceService.GetResourceString("SuccessActionResult") : _resourceService.GetResourceString("ErrorActionResult");
-                
+
                 _userRepository.ReCreateUserSelfLink(currentUserId);
 
                 await _interactionService.ReplyToUpdate(botClient, update, UsersPrivacyMenuKB.GetUpdateSelfLinkKeyboardMarkup(),
                     cancellationToken, _resourceService.GetResourceString("SelfLinkRefreshMenuText") + "\n\n" + statusMessage);
-                
+
                 return StateResult.Complete();
         }
 

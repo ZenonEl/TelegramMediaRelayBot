@@ -24,13 +24,13 @@ public class UserRequestThrottler : IUserRequestThrottler
         var now = DateTime.UtcNow;
         // Потокобезопасно получаем или добавляем значение
         var next = _nextSlotByChatId.GetOrAdd(chatId, now);
-        
+
         var wait = (next > now ? next - now : TimeSpan.Zero) + baseDelay;
         var newNextSlot = now + wait;
 
         // Потокобезопасно обновляем значение
         _nextSlotByChatId.AddOrUpdate(chatId, newNextSlot, (key, oldVal) => newNextSlot > oldVal ? newNextSlot : oldVal);
-        
+
         return wait;
     }
 }

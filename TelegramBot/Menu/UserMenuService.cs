@@ -2,12 +2,11 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-
-using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot.States;
-using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
+using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace TelegramMediaRelayBot.TelegramBot.Services;
 
@@ -29,7 +28,7 @@ public interface IUserMenuService
     Task<bool> SetDefaultActionToUser(long chatId, string action);
     Task ViewSiteFilterMenu(ITelegramBotClient botClient, Update update);
     Task ViewSiteFilterSettingsMenu(ITelegramBotClient botClient, Update update);
-    
+
     // Методы из класса UsersDB
     void UpdateSelfLinkWithKeepSelectedContacts(Update update);
     void UpdateSelfLinkWithDeleteSelectedContacts(Update update);
@@ -102,7 +101,7 @@ public class UserMenuService : IUserMenuService
         return _interactionService.ReplyToUpdate(botClient, update, UsersPrivacyMenuKB.GetWhoCanFindMeByLinkKeyboardMarkup(),
             CancellationToken.None, _resourceService.GetResourceString("SearchPrivacyText"));
     }
-    
+
     public Task ViewPermanentContentSpoilerMenu(ITelegramBotClient botClient, Update update)
     {
         return _interactionService.ReplyToUpdate(botClient, update, UsersPrivacyMenuKB.GetPermanentContentSpoilerKeyboardMarkup(),
@@ -150,7 +149,7 @@ public class UserMenuService : IUserMenuService
         return _interactionService.ReplyToUpdate(botClient, update, UsersPrivacyMenuKB.GetSiteFilterKeyboardMarkup(),
             CancellationToken.None, _resourceService.GetResourceString("SiteFilterMenuText"));
     }
-    
+
     public Task ViewSiteFilterSettingsMenu(ITelegramBotClient botClient, Update update)
     {
         return _interactionService.ReplyToUpdate(botClient, update, UsersPrivacyMenuKB.GetSiteFilterSettingsKeyboardMarkup(),

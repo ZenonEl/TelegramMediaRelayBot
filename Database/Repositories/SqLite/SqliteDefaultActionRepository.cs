@@ -15,9 +15,9 @@ public class SqliteDefaultActionRepository(IDbConnection dbConnection) : IDefaul
         const string query = @"
             INSERT INTO DefaultUsersActions (UserId, Type, ActionCondition, IsActive)
             VALUES (@userId, @type, @actionCondition, 1)
-            ON CONFLICT(UserId, Type) 
+            ON CONFLICT(UserId, Type)
             DO UPDATE SET ActionCondition = excluded.ActionCondition, IsActive = 1";
-        
+
         return dbConnection.ExecuteAsync(query, new { userId, type, actionCondition });
     }
 
@@ -26,7 +26,7 @@ public class SqliteDefaultActionRepository(IDbConnection dbConnection) : IDefaul
         const string query = @"
             INSERT INTO DefaultUsersActions (UserId, Type, Action, IsActive)
             VALUES (@userId, @type, @action, 1)
-            ON CONFLICT(UserId, Type) 
+            ON CONFLICT(UserId, Type)
             DO UPDATE SET Action = excluded.Action, IsActive = 1";
 
         return dbConnection.ExecuteAsync(query, new { userId, type, action });

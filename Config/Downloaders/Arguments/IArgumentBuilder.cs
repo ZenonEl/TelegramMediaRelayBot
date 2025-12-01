@@ -50,7 +50,7 @@ public interface IArgumentBuilder
     /// <param name="authConfig">Конфигурация авторизации (опционально).</param>
     /// <returns>Готовый список аргументов для процесса.</returns>
     List<string> Build(
-        List<string> argumentTemplates, 
-        ArgumentBuilderContext context, 
+        List<string> argumentTemplates,
+        ArgumentBuilderContext context,
         AuthenticationConfig? authConfig = null);
 }

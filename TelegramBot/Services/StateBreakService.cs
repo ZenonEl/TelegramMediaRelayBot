@@ -3,8 +3,8 @@
 // See LICENSE file in the project root for full license information.
 
 using TelegramMediaRelayBot.TelegramBot.States;
-using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
+using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace TelegramMediaRelayBot.TelegramBot.Services;
 
@@ -19,7 +19,7 @@ public class StateBreakService : IStateBreakService
     private readonly IUserStateManager _stateManager;
     private readonly ITelegramInteractionService _interactionService;
     // В будущем мы заменим KeyboardUtils на IKeyboardService
-    // private readonly IKeyboardService _keyboardService; 
+    // private readonly IKeyboardService _keyboardService;
 
     public StateBreakService(IUserStateManager stateManager, ITelegramInteractionService interactionService)
     {
@@ -49,7 +49,7 @@ public class StateBreakService : IStateBreakService
         await botClient.SendMessage(chatId, alertText, cancellationToken: CancellationToken.None);
         await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), CancellationToken.None);
     }
-    
+
     // Внутренний хелпер, чтобы не зависеть от ITelegramInteractionService внутри этого же сервиса
     private long GetChatId(Update update) => update.Message?.Chat.Id ?? update.CallbackQuery?.Message?.Chat.Id ?? 0;
 }

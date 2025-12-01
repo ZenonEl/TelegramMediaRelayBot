@@ -2,12 +2,12 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
+using Microsoft.Extensions.Options;
+using Telegram.Bot.Types.Enums;
+using TelegramMediaRelayBot.Config;
+using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Domain.Models;
 using TelegramMediaRelayBot.TelegramBot.Sessions;
-using Microsoft.Extensions.Options;
-using TelegramMediaRelayBot.Config;
-using Telegram.Bot.Types.Enums;
-using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace TelegramMediaRelayBot.TelegramBot.Services;
@@ -51,7 +51,7 @@ public class MediaProcessingFlow : IMediaProcessingFlow
                 replyMarkup: KeyboardUtils.GetCancelKeyboardMarkup(session.StatusMessageId),
                 cancellationToken: session.SessionCts.Token
             );
-            
+
             await using TelegramLogUpdater logUpdater = new TelegramLogUpdater(botClient, session.StatusMessageId, session.ChatId);
 
             DownloadOptions options = new DownloadOptions { OnProgress = logUpdater.HandleLogLine };

@@ -17,11 +17,11 @@ public class SendToDefaultGroupsCommand : IBotCallbackQueryHandlers
     private readonly IGroupGetter _groupGetter;
 
     public string Name => "send_to_default_groups:";
-    
+
     public SendToDefaultGroupsCommand(
-        DownloadSessionManager sessionManager, 
-        IServiceScopeFactory scopeFactory, 
-        IUserGetter userGetter, 
+        DownloadSessionManager sessionManager,
+        IServiceScopeFactory scopeFactory,
+        IUserGetter userGetter,
         IGroupGetter groupGetter)
     {
         _sessionManager = sessionManager;
@@ -48,8 +48,8 @@ public class SendToDefaultGroupsCommand : IBotCallbackQueryHandlers
         List<long> targetTgIds = userIdsInGroups.Select(id => _userGetter.GetTelegramIDbyUserID(id)).ToList();
 
         _sessionManager.MarkAsProcessing(messageId);
-        await botClient.EditMessageText(session.ChatId, messageId, 
-            $"Starting distribution to default groups ({targetTgIds.Count} users)...", 
+        await botClient.EditMessageText(session.ChatId, messageId,
+            $"Starting distribution to default groups ({targetTgIds.Count} users)...",
             cancellationToken: ct);
 
         _ = Task.Run(async () =>

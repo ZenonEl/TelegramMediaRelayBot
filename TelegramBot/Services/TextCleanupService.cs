@@ -54,7 +54,7 @@ public class TextCleanupService : ITextCleanupService
     public string Cleanup(string text)
     {
         if (string.IsNullOrEmpty(text)) return string.Empty;
-        
+
         string cleanedText = text;
         lock (_cleanupRegexes)
         {

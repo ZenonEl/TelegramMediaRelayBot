@@ -2,8 +2,8 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using Dapper;
 using System.Data;
+using Dapper;
 using Microsoft.Data.Sqlite;
 using TelegramMediaRelayBot.Database.Interfaces;
 
@@ -60,13 +60,13 @@ public class SqlitePrivacySettingsGetter(IDbConnection dbConnection) : IPrivacyS
     public async Task<List<PrivacyRuleResult>> GetAllActiveUserRulesWithTargets(int userId)
     {
         const string query = @"
-            SELECT 
+            SELECT
                 PS.Type,
                 PS.Action,
                 PST.TargetValue
             FROM PrivacySettings PS
             LEFT JOIN PrivacySettingsTargets PST ON PS.Id = PST.PrivacySettingId
-            WHERE PS.UserId = @userId 
+            WHERE PS.UserId = @userId
                 AND PS.IsActive = 1
                 AND PS.Action IN @actions";
 
@@ -82,7 +82,7 @@ public class SqlitePrivacySettingsGetter(IDbConnection dbConnection) : IPrivacyS
             userId,
             actions = allowedActions
         });
-        
+
         return result.ToList();
     }
 }

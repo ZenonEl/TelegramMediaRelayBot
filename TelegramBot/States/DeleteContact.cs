@@ -2,11 +2,10 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Services;
-using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
+using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace TelegramMediaRelayBot.TelegramBot.States;
 
@@ -78,7 +77,7 @@ public class RemoveContactsStateHandler : IStateHandler
                 var actingUserId = _userGetter.GetUserIDbyTelegramID(chatId);
                 var contactUserTGIds = await _contactGetter.GetAllContactUserTGIds(actingUserId);
                 var preparedTargetUserTGIds = inputIds.Select(id => _userGetter.GetTelegramIDbyUserID(id)).ToList();
-                
+
                 var validTgIds = contactUserTGIds.Intersect(preparedTargetUserTGIds).ToList();
 
                 if (!validTgIds.Any())
@@ -98,7 +97,7 @@ public class RemoveContactsStateHandler : IStateHandler
 
                 var message = $"{_resourceService.GetResourceString("ConfirmRemovalMessage")}\n\n{string.Join("\n", contactUsersInfo)}";
                 var keyboard = KeyboardUtils.GetConfirmForActionKeyboardMarkup("confirm_removal", "cancel_removal");
-                
+
                 await botClient.SendMessage(chatId, message, replyMarkup: keyboard, cancellationToken: cancellationToken);
                 stateData.Step = 1; // Переходим на шаг подтверждения
                 return StateResult.Continue();
@@ -113,7 +112,7 @@ public class RemoveContactsStateHandler : IStateHandler
                 if (update.CallbackQuery.Data == "cancel_removal")
                 {
                     // Пользователь отменил, возвращаемся к вводу ID
-                    await botClient.EditMessageText(chatId, update.CallbackQuery.Message!.MessageId, 
+                    await botClient.EditMessageText(chatId, update.CallbackQuery.Message!.MessageId,
                         _resourceService.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
                     stateData.Step = 0;
                     return StateResult.Continue();
@@ -122,7 +121,7 @@ public class RemoveContactsStateHandler : IStateHandler
                 if (update.CallbackQuery.Data == "confirm_removal")
                 {
                     if (!stateData.Data.TryGetValue("TargetIds", out var targetIdsObj)) return StateResult.Complete();
-                    
+
                     var currentUserId = _userGetter.GetUserIDbyTelegramID(chatId);
                     var targetIds = (List<int>)targetIdsObj;
 
@@ -132,7 +131,7 @@ public class RemoveContactsStateHandler : IStateHandler
                     await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), CancellationToken.None, text);
                     return StateResult.Complete();
                 }
-                
+
                 return StateResult.Ignore();
         }
 

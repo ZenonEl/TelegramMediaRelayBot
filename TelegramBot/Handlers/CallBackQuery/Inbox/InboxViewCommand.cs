@@ -73,7 +73,7 @@ public class InboxViewCommand : IBotCallbackQueryHandlers
             var chunk = photoVideo.Skip(i).Take(10).ToList();
             if (chunk.Any())
             {
-                try 
+                try
                 {
                     await botClient.SendMediaGroup(chatId, chunk, disableNotification: true, cancellationToken: ct).ConfigureAwait(false);
                 }

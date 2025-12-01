@@ -116,7 +116,7 @@ public class MediaProcessingConfig
 {
     // Сколько одновременно работающих ffmpeg разрешено (Лимит семафора)
     public int MaxConcurrentProcessings { get; set; } = 2;
-    
+
     // Настройки конкретно для конвертера
     public SplitterConfig Splitter { get; set; } = new();
     public FfmpegConfig Ffmpeg { get; set; } = new();
@@ -125,27 +125,27 @@ public class MediaProcessingConfig
 public class SplitterConfig
 {
     public bool Enabled { get; set; } = true;
-    
+
     // Порог в байтах. Если больше - режем.
-    public long ThresholdBytes { get; set; } = 209715200; 
-    
+    public long ThresholdBytes { get; set; } = 209715200;
+
     // Целевой размер куска.
-    public long ChunkSizeBytes { get; set; } = 47185920; 
+    public long ChunkSizeBytes { get; set; } = 47185920;
 }
 
 public class FfmpegConfig
 {
     // Путь к ffmpeg (если в PATH, то просто "ffmpeg")
     public string ExecutablePath { get; set; } = "ffmpeg";
-    
+
     // Лимит времени на обработку (чтобы не висело вечно)
     public TimeSpan OperationTimeout { get; set; } = TimeSpan.FromMinutes(20);
-    
+
     // Пресет скорости (ultrafast, superfast, veryfast, medium)
     // ultrafast = мгновенно, но файл большой. medium = долго, файл меньше.
     public string Preset { get; set; } = "veryfast";
-    
-    // CRF (Constant Rate Factor). 0-51. 
+
+    // CRF (Constant Rate Factor). 0-51.
     // 18 - визуально без потерь. 23 - стандарт. 28 - для моб. устройств.
-    public int Crf { get; set; } = 26; 
+    public int Crf { get; set; } = 26;
 }

@@ -2,9 +2,8 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-
-using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 
@@ -60,14 +59,14 @@ public class DefaultUserFilterService : IUserFilterService
 
             foreach (var filter in userFilters)
             {
-                if (filter.Type == "category" && 
+                if (filter.Type == "category" &&
                     ShouldExcludeByCategory(filter.Value, linkCategory))
                 {
                     shouldExclude = true;
                     break;
                 }
 
-                if (filter.Type == "domain" && 
+                if (filter.Type == "domain" &&
                     ShouldExcludeByDomain(filter.Value, linkDomain))
                 {
                     shouldExclude = true;

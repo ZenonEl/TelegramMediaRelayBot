@@ -3,10 +3,10 @@
 // See LICENSE file in the project root for full license information.
 
 using TelegramMediaRelayBot.Database.Interfaces;
-using TelegramMediaRelayBot.TelegramBot.Utils;
-using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot.Services;
+using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
+using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace TelegramMediaRelayBot.TelegramBot.States;
 
@@ -123,7 +123,7 @@ public class DomainFilterStateHandler : IStateHandler
 
                 await _interactionService.ReplyToUpdate(botClient, update, UsersPrivacyMenuKB.GetSiteFilterKeyboardMarkup(),
                     cancellationToken, _resourceService.GetResourceString("SuccessActionResult"));
-                
+
                 return StateResult.Complete();
         }
 

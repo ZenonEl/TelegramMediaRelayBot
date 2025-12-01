@@ -14,16 +14,16 @@ public interface IDatabaseConfigurationService
     /// </summary>
     /// <returns>Connection string</returns>
     string GetConnectionString();
-    
+
     /// <summary>
     /// Gets the database type (mysql/sqlite)
     /// </summary>
     /// <returns>Database type</returns>
     string GetDatabaseType();
-    
+
     /// <summary>
     /// Gets the database name
     /// </summary>
     /// <returns>Database name</returns>
     string GetDatabaseName();
-} 
+}

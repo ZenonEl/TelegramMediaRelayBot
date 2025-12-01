@@ -23,7 +23,7 @@ namespace TelegramMediaRelayBot.Database.Repositories.MySql
             const string insertSql = @"
                 INSERT INTO MutedContacts (MutedByUserId, MutedContactId, MuteDate, ExpirationDate, IsActive)
                 VALUES (@mutedByUserId, @mutedContactId, UTC_TIMESTAMP(), @expirationDate, 1)";
-                
+
             return await dbConnection.ExecuteAsync(insertSql, new { mutedByUserId, mutedContactId, expirationDate });
         }
 
@@ -37,7 +37,7 @@ namespace TelegramMediaRelayBot.Database.Repositories.MySql
         {
             const string query = @$"
                 UPDATE MutedContacts SET IsActive = 0 WHERE MutedId = @muteId";
-            
+
             return dbConnection.ExecuteAsync(query, new { muteId });
         }
 
@@ -61,7 +61,7 @@ namespace TelegramMediaRelayBot.Database.Repositories.MySql
             const string query = "DELETE FROM GroupMembers WHERE (UserId = @userId AND ContactId IN @contactIds) OR (ContactId = @userId AND UserId IN @contactIds)";
             return dbConnection.ExecuteAsync(query, new { userId, contactIds });
         }
-        
+
         public Task<int> RemoveAllContactsExceptAsync(int userId, List<int> excludeIds)
         {
             const string query = "DELETE FROM Contacts WHERE (UserId = @userId AND ContactId NOT IN @excludeIds) OR (ContactId = @userId AND UserId NOT IN @excludeIds)";

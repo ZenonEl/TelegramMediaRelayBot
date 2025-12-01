@@ -16,7 +16,7 @@ public class MySqlDefaultActionRepository(IDbConnection dbConnection) : IDefault
             INSERT INTO DefaultUsersActions (UserId, Type, ActionCondition, IsActive)
             VALUES (@userId, @type, @actionCondition, 1)
             ON DUPLICATE KEY UPDATE ActionCondition = @actionCondition, IsActive = 1";
-        
+
         return dbConnection.ExecuteAsync(query, new { userId, type, actionCondition });
     }
 

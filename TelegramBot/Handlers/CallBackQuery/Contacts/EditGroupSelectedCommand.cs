@@ -6,6 +6,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 using TelegramMediaRelayBot.TelegramBot.Services;
 using TelegramMediaRelayBot.TelegramBot.States;
 using TelegramMediaRelayBot.TelegramBot.Utils;
+
 using TelegramMediaRelayBot.Database.Interfaces; // Для IGroupGetter
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
@@ -35,7 +36,7 @@ public class EditGroupSelectedCommand : IBotCallbackQueryHandlers
     {
         CallbackQuery callback = update.CallbackQuery!;
         long chatId = callback.Message!.Chat.Id;
-        
+
         if (!int.TryParse(callback.Data!.Split(':')[1], out int groupId))
         {
             await botClient.AnswerCallbackQuery(callback.Id, "Invalid Group ID", cancellationToken: ct);
@@ -45,8 +46,8 @@ public class EditGroupSelectedCommand : IBotCallbackQueryHandlers
         // Получаем информацию о группе, чтобы узнать её имя и IsDefault
         // TODO: Убедись, что метод GetGroupById существует в репозитории. Если нет - добавь.
         // Если его нет, используй GetGroupsByUserId и найди нужную в списке.
-        string groupName = await _groupGetter.GetGroupNameById(groupId); 
-        
+        string groupName = await _groupGetter.GetGroupNameById(groupId);
+
         if (groupName == null)
         {
             await botClient.AnswerCallbackQuery(callback.Id, "Group not found", cancellationToken: ct);
@@ -72,7 +73,7 @@ public class EditGroupSelectedCommand : IBotCallbackQueryHandlers
         InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup(new[]
         {
             // Строка 1: Основные настройки
-            new[] 
+            new[]
             {
                 // TODO: Move "Group.Action.Rename"
                 InlineKeyboardButton.WithCallbackData("✏️ Имя", "group_action:rename"),
@@ -86,14 +87,14 @@ public class EditGroupSelectedCommand : IBotCallbackQueryHandlers
                 InlineKeyboardButton.WithCallbackData(defaultBtnText, "group_action:toggle_default")
             },
             // Строка 3: Управление участниками
-            new[] 
+            new[]
             {
                 InlineKeyboardButton.WithCallbackData("➕ Участник", "group_action:add"),
                 InlineKeyboardButton.WithCallbackData("➖ Участник", "group_action:remove")
             },
             // Строка 4: Назад
-            new[] 
-            { 
+            new[]
+            {
                 // ВАЖНО: Эта кнопка ведет на команду show_groups.
                 // Чтобы фикс сработал, ShowGroupsCommand должен сбрасывать стейт (см. Шаг 4).
                 KeyboardUtils.GetReturnButton("show_groups")

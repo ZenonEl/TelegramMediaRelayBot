@@ -36,7 +36,7 @@ namespace TelegramMediaRelayBot.Migrations
             Create.ForeignKey("FK_DefaultUsersActionTargets_ActionID").FromTable("DefaultUsersActionTargets").ForeignColumn("ActionID").ToTable("DefaultUsersActions").PrimaryColumn("ID").OnDelete(Rule.Cascade);
             Create.ForeignKey("FK_PrivacySettings_UserId").FromTable("PrivacySettings").ForeignColumn("UserId").ToTable("Users").PrimaryColumn("ID").OnDelete(Rule.Cascade);
             Create.ForeignKey("FK_PrivacySettingsTargets_PrivacySettingId").FromTable("PrivacySettingsTargets").ForeignColumn("PrivacySettingId").ToTable("PrivacySettings").PrimaryColumn("ID").OnDelete(Rule.Cascade);
-            
+
             // === Indexes ===
             Create.Index("IX_InboxItems_OwnerUserId").OnTable("InboxItems").OnColumn("OwnerUserId");
         }

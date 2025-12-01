@@ -35,15 +35,15 @@ public class CreateContactGroupStateHandler : IStateHandler
     public async Task<StateResult> Process(UserStateData stateData, Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
         long chatId = _interactionService.GetChatId(update);
-        
+
         // Логика отмены (кнопка)
-        if (await _stateBreaker.HandleStateBreak(botClient, update)) 
+        if (await _stateBreaker.HandleStateBreak(botClient, update))
         {
             return StateResult.Complete();
         }
 
         if (stateData.Step != 0) return StateResult.Ignore();
-        
+
         // 1. Проверяем наличие текста
         string? groupName = update.Message?.Text?.Trim();
 
@@ -56,7 +56,7 @@ public class CreateContactGroupStateHandler : IStateHandler
 
         // 2. Создание группы
         int ownerId = _userGetter.GetUserIDbyTelegramID(chatId);
-        
+
         // TODO: Реализовать метод CreateGroup (он должен вернуть ID новой группы)
         bool newGroupId = await _groupSetter.SetNewGroup(ownerId, groupName, "");
 

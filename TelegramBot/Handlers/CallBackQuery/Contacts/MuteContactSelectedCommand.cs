@@ -12,7 +12,7 @@ public class MuteContactSelectedCommand : IBotCallbackQueryHandlers
 {
     private readonly IUserStateManager _stateManager;
     private readonly ITelegramInteractionService _interactionService;
-    private readonly Config.Services.IResourceService _resourceService; 
+    private readonly Config.Services.IResourceService _resourceService;
     private readonly IEnumerable<IStateHandler> _stateHandlers;
 
     public string Name => "mute_contact_select:";
@@ -57,7 +57,7 @@ public class MuteContactSelectedCommand : IBotCallbackQueryHandlers
         {
             await handler.Process(stateData, update, botClient, ct);
         }
-        
+
         await botClient.AnswerCallbackQuery(callback.Id, cancellationToken: ct);
     }
 }

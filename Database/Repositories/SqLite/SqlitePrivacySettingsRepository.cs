@@ -15,12 +15,12 @@ public class SqlitePrivacySettingsRepository(IDbConnection dbConnection) : IPriv
         const string query = @"
             INSERT INTO PrivacySettings (UserId, Type, Action, IsActive, ActionCondition)
             VALUES (@userId, @type, @action, @isActive, @actionCondition)
-            ON CONFLICT(UserId, Type) 
-            DO UPDATE SET 
+            ON CONFLICT(UserId, Type)
+            DO UPDATE SET
                 Action = excluded.Action,
                 IsActive = excluded.IsActive,
                 ActionCondition = excluded.ActionCondition";
-        
+
         return dbConnection.ExecuteAsync(query, new { userId, type, action, isActive, actionCondition });
     }
 

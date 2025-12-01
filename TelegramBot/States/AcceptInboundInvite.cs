@@ -2,11 +2,11 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot.Services;
-using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Utils.Keyboard;
+using TelegramMediaRelayBot.TelegramBot.Utils;
 
 namespace TelegramMediaRelayBot.TelegramBot.States;
 
@@ -55,7 +55,7 @@ public class InboundInviteStateHandler : IStateHandler
         }
 
         var callbackData = update.CallbackQuery.Data;
-        
+
         switch (stateData.Step)
         {
             // ========================================================================
@@ -67,10 +67,10 @@ public class InboundInviteStateHandler : IStateHandler
                     var userIdStr = callbackData.Split(':')[1];
                     // Сохраняем ID пользователя, с которым работаем, в данные состояния
                     stateData.Data["TargetUserId"] = userIdStr;
-                    
+
                     await _interactionService.ReplyToUpdate(botClient, update, InBoundKB.GetInBoundActionsKeyboardMarkup(userIdStr, "view_inbound_invite_links"),
                                                 cancellationToken, _resourceService.GetResourceString("SelectAction"));
-                    
+
                     // Переходим на следующий шаг
                     stateData.Step = 1;
                     return StateResult.Continue();
@@ -128,7 +128,7 @@ public class InboundInviteStateHandler : IStateHandler
                     var accepterId = _userGetter.GetUserIDbyTelegramID(update.CallbackQuery.Message!.Chat.Id);
                     await _contactRemover.RemoveContactByStatus(senderId, accepterId, ContactsStatus.WAITING_FOR_ACCEPT);
                 }
-                
+
                 // Вне зависимости от результата, завершаем сценарий и показываем главное меню
                 await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, _resourceService.GetResourceString("InvisibleLetter"));
                 return StateResult.Complete();

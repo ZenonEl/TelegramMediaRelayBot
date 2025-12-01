@@ -2,8 +2,8 @@
 // Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 // See LICENSE file in the project root for full license information.
 
-using Dapper;
 using System.Data;
+using Dapper;
 using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot.Database.Repositories.Sqlite;
@@ -75,13 +75,13 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
     {
         try
         {
-    
+
             SqliteUserGetter userGetter = new(dbConnection);
-            
+
             var results = await dbConnection.QueryAsync<(long UserId, long ContactId)>(
                 @"SELECT UserId, ContactId
                 FROM Contacts
-                WHERE (ContactId = @UserId OR UserId = @UserId) 
+                WHERE (ContactId = @UserId OR UserId = @UserId)
                 AND status = @Status",
                 new { UserId = userId, Status = ContactsStatus.ACCEPTED });
 
@@ -107,9 +107,9 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
         try
         {
             var results = await dbConnection.QueryAsync<long>(
-                @"SELECT DISTINCT CASE 
-                    WHEN UserId = @UserId THEN ContactId 
-                    ELSE UserId 
+                @"SELECT DISTINCT CASE
+                    WHEN UserId = @UserId THEN ContactId
+                    ELSE UserId
                 END AS ContactId
                 FROM Contacts
                 WHERE (UserId = @UserId OR ContactId = @UserId)
@@ -128,9 +128,9 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
     public async Task<IEnumerable<int>> GetMutedContactIds(int userId)
         {
             const string query = @"
-                SELECT MutedContactId 
-                FROM MutedContacts 
-                WHERE MutedByUserId = @userId 
+                SELECT MutedContactId
+                FROM MutedContacts
+                WHERE MutedByUserId = @userId
                 AND (ExpirationDate IS NULL OR ExpirationDate > datetime('now'))";
 
             return (await dbConnection.QueryAsync<int>(query, new { userId })).ToList();
@@ -140,16 +140,16 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
     {
         try
         {
-    
-            
+
+
             var expirationDate = dbConnection.QueryFirstOrDefault<DateTime?>(
-                @"SELECT ExpirationDate 
-                FROM MutedContacts 
-                WHERE MutedContactId = @contactID 
+                @"SELECT ExpirationDate
+                FROM MutedContacts
+                WHERE MutedContactId = @contactID
                 AND IsActive = 1",
                 new { contactID });
 
-            return expirationDate?.ToString("yyyy-MM-dd HH:mm:ss") 
+            return expirationDate?.ToString("yyyy-MM-dd HH:mm:ss")
                 ?? _resourceService.GetResourceString("NoActiveMute");
         }
         catch (Exception ex)
@@ -163,15 +163,15 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
     {
         try
         {
-    
+
             var expirationDate = await dbConnection.QueryFirstOrDefaultAsync<DateTime?>(
-                @"SELECT ExpirationDate 
-                FROM MutedContacts 
-                WHERE MutedContactId = @contactID 
+                @"SELECT ExpirationDate
+                FROM MutedContacts
+                WHERE MutedContactId = @contactID
                 AND IsActive = 1",
                 new { contactID });
 
-            return expirationDate?.ToString("yyyy-MM-dd HH:mm:ss") 
+            return expirationDate?.ToString("yyyy-MM-dd HH:mm:ss")
                 ?? _resourceService.GetResourceString("NoActiveMute");
         }
         catch (Exception ex)
@@ -186,7 +186,7 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
         const string query = "SELECT ID FROM Users WHERE Link = @link";
         try
         {
-    
+
             var result = dbConnection.QueryFirstOrDefault<int?>(query, new { link });
             return result ?? -1;
         }
@@ -202,7 +202,7 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
         const string query = "SELECT ID FROM Users WHERE Link = @link";
         try
         {
-    
+
             var result = await dbConnection.QueryFirstOrDefaultAsync<int?>(query, new { link });
             return result ?? -1;
         }
@@ -218,7 +218,7 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
         const string query = "SELECT ID FROM Users WHERE TelegramID = @telegramID";
         try
         {
-    
+
             var result = dbConnection.QueryFirstOrDefault<int?>(query, new { telegramID });
             return result ?? -1;
         }
@@ -234,7 +234,7 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
         const string query = "SELECT ID FROM Users WHERE TelegramID = @telegramID";
         try
         {
-    
+
             var result = await dbConnection.QueryFirstOrDefaultAsync<int?>(query, new { telegramID });
             return result ?? -1;
         }

@@ -19,18 +19,18 @@ public class PrivacySettingsUoWService : IPrivacySettingsUoW
 
     public async Task<bool> SetPrivacyRule(int userId, string type, string action, bool isActive, string actionCondition)
     {
-        var affected = await ExecuteInTransaction(() => 
+        var affected = await ExecuteInTransaction(() =>
             _repository.UpsertRule(userId, type, action, isActive, actionCondition));
         return affected > 0;
     }
 
     public async Task<bool> SetPrivacyRuleToDisabled(int userId, string type)
     {
-        var affected = await ExecuteInTransaction(() => 
+        var affected = await ExecuteInTransaction(() =>
             _repository.DisableRule(userId, type));
         return affected > 0;
     }
-    
+
     private async Task<T> ExecuteInTransaction<T>(Func<Task<T>> action)
     {
         try

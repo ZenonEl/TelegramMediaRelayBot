@@ -4,7 +4,7 @@
 
 using TelegramMediaRelayBot.Domain.Models;
 
-namespace TelegramMediaRelayBot.Infrastructure.Downloaders.Pipeline; 
+namespace TelegramMediaRelayBot.Infrastructure.Downloaders.Pipeline;
 
 // --- Context ---
 public class DownloadContext
@@ -34,7 +34,7 @@ public class DownloadedFile
     public string FilePath { get; set; } = string.Empty;
     public string FileName => Path.GetFileName(FilePath);
     public long FileSize => new FileInfo(FilePath).Length;
-    public MediaType MediaType { get; set; } 
+    public MediaType MediaType { get; set; }
 }
 
 // --- ExecutionResult ---
@@ -51,11 +51,11 @@ public class ExecutionResult
     public bool SuggestSwitchProxy { get; set; } = false;
 
     public static ExecutionResult Success() => new() { Status = ExecutionStatus.Success };
-    public static ExecutionResult Fatal(string message, Exception? ex = null) => 
+    public static ExecutionResult Fatal(string message, Exception? ex = null) =>
         new() { Status = ExecutionStatus.FatalError, ErrorMessage = message, Exception = ex };
-    public static ExecutionResult Retryable(string message, bool switchProxy = false) => 
+    public static ExecutionResult Retryable(string message, bool switchProxy = false) =>
         new() { Status = ExecutionStatus.RetryableError, ErrorMessage = message, SuggestSwitchProxy = switchProxy };
-    public static ExecutionResult NotSupported(string message) => 
+    public static ExecutionResult NotSupported(string message) =>
         new() { Status = ExecutionStatus.ContentNotSupported, ErrorMessage = message };
 }
 

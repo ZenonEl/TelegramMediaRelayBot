@@ -8,8 +8,8 @@ using TelegramMediaRelayBot.Domain.Interfaces;
 using TelegramMediaRelayBot.Infrastructure.Downloaders.Arguments;
 using TelegramMediaRelayBot.Infrastructure.Downloaders.Pipeline;
 using TelegramMediaRelayBot.Infrastructure.Downloaders.Policies;
-using TelegramMediaRelayBot.Infrastructure.Pipeline;
 using TelegramMediaRelayBot.Infrastructure.Pipeline.Executors;
+using TelegramMediaRelayBot.Infrastructure.Pipeline;
 using TelegramMediaRelayBot.Infrastructure.Processes;
 
 namespace TelegramMediaRelayBot.Infrastructure.Factories;
@@ -36,7 +36,7 @@ public class MediaDownloaderFactory : IMediaDownloaderFactory
         IEnumerable<IPostProcessor> allPostProcessors)
     {
         _config = configMonitor.CurrentValue;
-        
+
         _processRunner = processRunner;
         _argumentBuilder = argumentBuilder;
         _retryOrchestrator = retryOrchestrator;
@@ -90,7 +90,7 @@ public class MediaDownloaderFactory : IMediaDownloaderFactory
     private void LoadPatternsFromFile(UrlMatchingConfig urlMatchingConfig)
     {
         if (string.IsNullOrWhiteSpace(urlMatchingConfig.PatternsFile)) return;
-        
+
         try
         {
             var path = Path.Combine(AppContext.BaseDirectory, urlMatchingConfig.PatternsFile);
@@ -100,7 +100,7 @@ public class MediaDownloaderFactory : IMediaDownloaderFactory
                     .Select(line => line.Trim())
                     .Where(line => !string.IsNullOrEmpty(line) && !line.StartsWith('#'))
                     .ToList();
-                
+
                 urlMatchingConfig.Patterns.AddRange(patternsFromFile);
                 Log.Debug("Loaded {Count} URL patterns from file: {File}", patternsFromFile.Count, path);
             }
@@ -117,12 +117,12 @@ public class MediaDownloaderFactory : IMediaDownloaderFactory
             .Where(d => d.CanHandle(url))
             .OrderByDescending(d => d.Priority)
             .FirstOrDefault();
-            
+
         if (downloader == null)
         {
             throw new InvalidOperationException($"No enabled downloader found for URL: {url}");
         }
-        
+
         Log.Information("Selected downloader {Downloader} for {Url}", downloader.Name, url);
         return downloader;
     }
@@ -133,7 +133,7 @@ public class MediaDownloaderFactory : IMediaDownloaderFactory
             .Where(d => d.CanHandle(url))
             .OrderByDescending(d => d.Priority);
     }
-    
+
     public IEnumerable<IMediaDownloader> GetAllDownloaders() => _downloaders;
     public IEnumerable<IMediaDownloader> GetEnabledDownloaders() => _downloaders;
 }

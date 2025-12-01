@@ -20,7 +20,7 @@ public class MySqlPrivacySettingsRepository(IDbConnection dbConnection) : IPriva
                 Action = VALUES(Action),
                 IsActive = VALUES(IsActive),
                 ActionCondition = VALUES(ActionCondition)";
-        
+
         return dbConnection.ExecuteAsync(query, new { userId, type, action, isActive, actionCondition });
     }
 
