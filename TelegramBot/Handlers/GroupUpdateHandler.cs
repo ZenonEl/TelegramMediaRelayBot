@@ -9,16 +9,25 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers;
 
 public class GroupUpdateHandler
 {
+    private readonly IStatusResourceService _statusResources;
+    private readonly IHelpResourceService _helpResources;
+    private readonly IErrorsResourceService _errorsResources;
     private readonly DownloadSessionManager _sessionManager;
     private readonly IUrlParsingService _urlParsingService;
     private readonly Config.Services.IResourceService _resourceService;
 
     // 1. Конструктор теперь чистый и не зависит от TGBot
     public GroupUpdateHandler(
+        IStatusResourceService statusResources,
+        IHelpResourceService helpResources,
+        IErrorsResourceService errorsResources,
         DownloadSessionManager sessionManager,
         IUrlParsingService urlParsingService,
         Config.Services.IResourceService resourceService)
     {
+        _statusResources = statusResources;
+        _helpResources = helpResources;
+        _errorsResources = errorsResources;
         _sessionManager = sessionManager;
         _urlParsingService = urlParsingService;
         _resourceService = resourceService;
@@ -35,7 +44,7 @@ public class GroupUpdateHandler
         }
         else if (messageText.StartsWith("/help"))
         {
-            string text = _resourceService.GetResourceString("GroupHelpText");
+            string text = _helpResources.GetString("Help.Group");
             await botClient.SendMessage(message.Chat.Id, text, cancellationToken: cancellationToken);
         }
     }
@@ -46,7 +55,7 @@ public class GroupUpdateHandler
         string[] parts = message.Text!.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length < 2)
         {
-            await botClient.SendMessage(message.Chat.Id, _resourceService.GetResourceString("InvalidLinkFormat"), cancellationToken: cancellationToken);
+            await botClient.SendMessage(message.Chat.Id, _errorsResources.GetString("Error.InvalidLinkFormat"), cancellationToken: cancellationToken);
             return;
         }
 
@@ -56,7 +65,7 @@ public class GroupUpdateHandler
         // 3. Используем наш новый сервис для валидации ссылки
         if (!_urlParsingService.IsLink(url))
         {
-            await botClient.SendMessage(message.Chat.Id, _resourceService.GetResourceString("InvalidLinkFormat"), cancellationToken: cancellationToken);
+            await botClient.SendMessage(message.Chat.Id, _errorsResources.GetString("Error.InvalidLinkFormat"), cancellationToken: cancellationToken);
             return;
         }
 
@@ -65,7 +74,7 @@ public class GroupUpdateHandler
         // (Это предположение, логику можно изменить).
 
         Message statusMessage = await botClient.SendMessage(message.Chat.Id,
-            _resourceService.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
+            _statusResources.GetString("Status.ProcessingLink"), cancellationToken: cancellationToken);
 
         DownloadSession session = _sessionManager.CreateSession(
             statusMessageId: statusMessage.MessageId,

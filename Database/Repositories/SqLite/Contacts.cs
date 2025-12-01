@@ -10,6 +10,7 @@ namespace TelegramMediaRelayBot.Database.Repositories.Sqlite;
 
 public class SqliteContactAdder(IContactUoW contactUoWService) : IContactAdder
 {
+    private readonly IErrorsResourceService _errorsResources;
     public Task AddContact(long telegramId, string link)
     {
         return contactUoWService.AddContactAsync(telegramId, link, ContactsStatus.WAITING_FOR_ACCEPT);
@@ -66,10 +67,10 @@ public class SqliteContactSetter(IContactUoW contactUoWService) : IContactSetter
     }
 }
 
-public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayBot.Config.Services.IResourceService resourceService) : IContactGetter
+public class SqliteContactGetter(IDbConnection dbConnection, IErrorsResourceService errorsResources) : IContactGetter
 {
 
-    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService = resourceService;
+    private readonly IErrorsResourceService _errorsResources = errorsResources;
 
     public async Task<List<long>> GetAllContactUserTGIds(int userId)
     {
@@ -150,7 +151,7 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
                 new { contactID });
 
             return expirationDate?.ToString("yyyy-MM-dd HH:mm:ss")
-                ?? _resourceService.GetResourceString("NoActiveMute");
+                ?? _errorsResources.GetString("Error.Mute.NotActive");
         }
         catch (Exception ex)
         {
@@ -172,7 +173,7 @@ public class SqliteContactGetter(IDbConnection dbConnection, TelegramMediaRelayB
                 new { contactID });
 
             return expirationDate?.ToString("yyyy-MM-dd HH:mm:ss")
-                ?? _resourceService.GetResourceString("NoActiveMute");
+                ?? _errorsResources.GetString("Error.Mute.NotActive");
         }
         catch (Exception ex)
         {

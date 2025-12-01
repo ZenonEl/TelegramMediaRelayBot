@@ -12,6 +12,8 @@ namespace TelegramMediaRelayBot.TelegramBot.States;
 
 public class OutboundInviteStateHandler : IStateHandler
 {
+    private readonly IUiResourceService _uiResources;
+    private readonly IStatesResourceService _statesResources;
     private readonly IContactRemover _contactRemover;
     private readonly IOutboundDBGetter _outboundDbGetter;
     private readonly IUserGetter _userGetter;
@@ -22,6 +24,8 @@ public class OutboundInviteStateHandler : IStateHandler
     public string Name => "OutboundInvite";
 
     public OutboundInviteStateHandler(
+        IUiResourceService uiResources,
+        IStatesResourceService statesResources,
         IContactRemover contactRemover,
         IOutboundDBGetter outboundDbGetter,
         IUserGetter userGetter,
@@ -29,6 +33,8 @@ public class OutboundInviteStateHandler : IStateHandler
         ITelegramInteractionService interactionService,
         IStateBreakService stateBreaker)
     {
+        _uiResources = uiResources;
+        _statesResources = statesResources;
         _contactRemover = contactRemover;
         _outboundDbGetter = outboundDbGetter;
         _userGetter = userGetter;
@@ -60,7 +66,7 @@ public class OutboundInviteStateHandler : IStateHandler
                     stateData.Data["TargetUserIdStr"] = userIdStr; // Сохраняем ID цели
 
                     await _interactionService.ReplyToUpdate(botClient, update, OutBoundKB.GetOutBoundActionsKeyboardMarkup(userIdStr, "user_show_outbound_invite:" + chatId),
-                                                cancellationToken, _resourceService.GetResourceString("DeclineOutBound"));
+                                                cancellationToken, _statesResources.GetString("State.OutboundInvite.Confirm.Decline"));
 
                     stateData.Step = 1; // Переходим к подтверждению
                     return StateResult.Continue();
@@ -76,7 +82,7 @@ public class OutboundInviteStateHandler : IStateHandler
                 if (callbackData.StartsWith("user_show_outbound_invite:"))
                 {
                     string userId = update.CallbackQuery!.Data!.Split(':')[1];
-                    await _interactionService.ReplyToUpdate(botClient, update, OutBoundKB.GetOutboundActionsKeyboardMarkup(userId), cancellationToken, _resourceService.GetResourceString("OutboundInviteMenu"));
+                    await _interactionService.ReplyToUpdate(botClient, update, OutBoundKB.GetOutboundActionsKeyboardMarkup(userId), cancellationToken, _uiResources.GetString("UI.ChooseAction"));
                 }
                 else if (callbackData.StartsWith("user_accept_revoke_outbound_invite:"))
                 {

@@ -25,14 +25,21 @@ public sealed class DefaultSummaryService : IDefaultSummaryService
     private readonly IGroupGetter _groupGetter;
     private readonly IPrivacySettingsGetter _privacyGetter;
     private readonly IResourceService _resourceService;
+    private readonly ISettingsResourceService _settingsResources;
 
-    public DefaultSummaryService(IUserGetter userGetter, IDefaultActionGetter defaultGetter, IGroupGetter groupGetter, IResourceService resourceService, IPrivacySettingsGetter privacyGetter)
+    public DefaultSummaryService(IUserGetter userGetter,
+    IDefaultActionGetter defaultGetter,
+    IGroupGetter groupGetter,
+    IResourceService resourceService,
+    IPrivacySettingsGetter privacyGetter,
+    ISettingsResourceService settingsResources)
     {
         _userGetter = userGetter;
         _defaultGetter = defaultGetter;
         _groupGetter = groupGetter;
         _privacyGetter = privacyGetter;
         _resourceService = resourceService;
+        _settingsResources = settingsResources;
     }
 
     public async Task<string> BuildDefaultsSummary(Update update)
@@ -58,10 +65,10 @@ public sealed class DefaultSummaryService : IDefaultSummaryService
                 try { string name = await _groupGetter.GetGroupNameById(gid); groupNames.Add($"{System.Net.WebUtility.HtmlEncode(name)} (ID: {gid})"); } catch { }
             }
             return $"<b>{_resourceService.GetResourceString("Summary.Defaults.Header")}</b>\n" +
-                   $"{_resourceService.GetResourceString("Summary.Defaults.Action")}: <code>{System.Net.WebUtility.HtmlEncode(action)}</code>\n" +
-                   $"{_resourceService.GetResourceString("Summary.Defaults.Timeout")}: <code>{System.Net.WebUtility.HtmlEncode(condition)}</code>\n" +
-                   $"{_resourceService.GetResourceString("Summary.Defaults.Users")}: <code>{string.Join(", ", users)}</code>\n" +
-                   (groupNames.Count > 0 ? $"{_resourceService.GetResourceString("Summary.Defaults.Groups")}: {string.Join(", ", groupNames)}\n\n" : "\n");
+                    $"{_resourceService.GetResourceString("Summary.Defaults.Action")}: <code>{System.Net.WebUtility.HtmlEncode(action)}</code>\n" +
+                    $"{_resourceService.GetResourceString("Summary.Defaults.Timeout")}: <code>{System.Net.WebUtility.HtmlEncode(condition)}</code>\n" +
+                    $"{_resourceService.GetResourceString("Summary.Defaults.Users")}: <code>{string.Join(", ", users)}</code>\n" +
+                    (groupNames.Count > 0 ? $"{_resourceService.GetResourceString("Summary.Defaults.Groups")}: {string.Join(", ", groupNames)}\n\n" : "\n");
         }
         catch { return string.Empty; }
     }
@@ -78,7 +85,7 @@ public sealed class DefaultSummaryService : IDefaultSummaryService
             List<string> groupNames = new List<string>();
             foreach (int gid in groups) { try { string name = await _groupGetter.GetGroupNameById(gid); groupNames.Add($"{System.Net.WebUtility.HtmlEncode(name)} (ID: {gid})"); } catch { } }
             return $"{_resourceService.GetResourceString("Summary.Defaults.Users")}: <code>{string.Join(", ", users)}</code>\n" +
-                   (groupNames.Count > 0 ? $"{_resourceService.GetResourceString("Summary.Defaults.Groups")}: {string.Join(", ", groupNames)}\n\n" : "\n");
+                    (groupNames.Count > 0 ? $"{_resourceService.GetResourceString("Summary.Defaults.Groups")}: {string.Join(", ", groupNames)}\n\n" : "\n");
         }
         catch { return string.Empty; }
     }
@@ -113,12 +120,11 @@ public sealed class DefaultSummaryService : IDefaultSummaryService
             if (_privacyGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.UNIFIED_SITE_FILTER)) enabled.Add(_resourceService.GetResourceString("PrivacyFilter.Unified"));
             bool domainsOn = _privacyGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.SITES_BY_DOMAIN_FILTER);
             bool inboxOn = _privacyGetter.GetIsActivePrivacyRule(userId, PrivacyRuleType.INBOX_DELIVERY);
-            string domainInfo = domainsOn ? _resourceService.GetResourceString("DomainsFilterOn") : _resourceService.GetResourceString("DomainsFilterOff");
-            string inboxInfo = inboxOn ? _resourceService.GetResourceString("InboxOn") : _resourceService.GetResourceString("InboxOff");
-            string preface = string.Format(_resourceService.GetResourceString("PrivacyPrefaceTemplate"), string.Join(", ", enabled), domainInfo, inboxInfo);
+            string domainInfo = domainsOn ? _settingsResources.GetString("Settings.DomainFilter.On") : _settingsResources.GetString("Settings.DomainFilter.Off");
+            string inboxInfo = inboxOn ? _settingsResources.GetString("Settings.Inbox.On") : _settingsResources.GetString("Settings.Inbox.Off");
+            string preface = string.Format(_settingsResources.GetString("Settings.Privacy.PrefaceTemplate"), string.Join(", ", enabled), domainInfo, inboxInfo);
             return Task.FromResult(preface);
         }
         catch { return Task.FromResult(string.Empty); }
     }
 }
-

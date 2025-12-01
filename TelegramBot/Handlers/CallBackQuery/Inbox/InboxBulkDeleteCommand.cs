@@ -9,11 +9,24 @@ using TelegramMediaRelayBot.TelegramBot.Validation;
 
 public class InboxBulkDeleteCommand : IBotCallbackQueryHandlers
 {
+    private readonly IUiResourceService _uiResources;
+    private readonly IInboxResourceService _inboxResources;
     private readonly IInboxRepository _inbox;
     private readonly IUserGetter _userGetter;
     private readonly IResourceService _resourceService;
     public string Name => "inbox:bulkdel:";
-    public InboxBulkDeleteCommand(IInboxRepository inbox, IUserGetter userGetter, IResourceService resourceService) { _inbox = inbox; _userGetter = userGetter; _resourceService = resourceService; }
+    public InboxBulkDeleteCommand(IInboxRepository inbox, 
+                                IUserGetter userGetter,
+                                IResourceService resourceService,
+                                IUiResourceService uiResources,
+                                IInboxResourceService inboxResources)
+    {
+        _inbox = inbox;
+        _inboxResources = inboxResources;
+        _userGetter = userGetter;
+        _resourceService = resourceService;
+        _uiResources = uiResources;
+    }
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         // inbox:bulkdel:read|unread:filter:page or inbox:bulkdel:confirm:which:filter:page
@@ -28,8 +41,8 @@ public class InboxBulkDeleteCommand : IBotCallbackQueryHandlers
             string status = which == "read" ? "viewed" : "new";
             await _inbox.DeleteForOwnerAsync(userId, status).ConfigureAwait(false);
             update.CallbackQuery!.Data = $"inbox:list:{page}:{filter}".TrimEnd(':');
-            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, _resourceService.GetResourceString("SuccessActionResult"), cancellationToken: ct).ConfigureAwait(false);
-            await new InboxListCommand(_userGetter, _inbox, _resourceService, new InboxListRequestValidator()).ExecuteAsync(update, botClient, ct);
+            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, _uiResources.GetString("UI.Success"), cancellationToken: ct).ConfigureAwait(false);
+            await new InboxListCommand(_userGetter, _inbox, _resourceService, new InboxListRequestValidator(), _inboxResources).ExecuteAsync(update, botClient, ct);
             return;
         }
         string target = parts[2];
@@ -37,9 +50,9 @@ public class InboxBulkDeleteCommand : IBotCallbackQueryHandlers
         int curPage = parts.Length >= 5 && int.TryParse(parts[4], out int pg) ? pg : 1;
         InlineKeyboardMarkup kb = new InlineKeyboardMarkup(new[]
         {
-            new[] { InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("YesButtonText"), $"inbox:bulkdel:confirm:{target}:{f}:{curPage}") },
-            new[] { InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("NoButtonText"), $"inbox:list:{curPage}:{f}".TrimEnd(':')) }
+            new[] { InlineKeyboardButton.WithCallbackData(_uiResources.GetString("UI.Button.Yes"), $"inbox:bulkdel:confirm:{target}:{f}:{curPage}") },
+            new[] { InlineKeyboardButton.WithCallbackData(_uiResources.GetString("UI.Button.No"), $"inbox:list:{curPage}:{f}".TrimEnd(':')) }
         });
-        await botClient.EditMessageText(chatId, update.CallbackQuery!.Message!.MessageId, _resourceService.GetResourceString("ConfirmDecision"), replyMarkup: kb, cancellationToken: ct).ConfigureAwait(false);
+        await botClient.EditMessageText(chatId, update.CallbackQuery!.Message!.MessageId, _uiResources.GetString("UI.ConfirmDecision"), replyMarkup: kb, cancellationToken: ct).ConfigureAwait(false);
     }
 }

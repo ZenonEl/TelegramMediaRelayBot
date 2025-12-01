@@ -7,11 +7,16 @@ using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
 public class InboxSenderBulkApplyCommand : IBotCallbackQueryHandlers
 {
+    private readonly IUiResourceService _uiResources;
     private readonly IUserGetter _userGetter;
     private readonly IInboxRepository _inbox;
-    private readonly IResourceService _resourceService;
     public string Name => "inbox:sender:";
-    public InboxSenderBulkApplyCommand(IUserGetter userGetter, IInboxRepository inbox, IResourceService resourceService) { _userGetter = userGetter; _inbox = inbox; _resourceService = resourceService; }
+    public InboxSenderBulkApplyCommand(IUserGetter userGetter, IInboxRepository inbox, IUiResourceService uiResources) 
+    {
+        _userGetter = userGetter;
+        _inbox = inbox;
+        _uiResources = uiResources;
+    }
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         // inbox:sender:mark:confirm:read|unread:senderId:page OR inbox:sender:del:confirm:read|unread:senderId:page
@@ -35,8 +40,7 @@ public class InboxSenderBulkApplyCommand : IBotCallbackQueryHandlers
             await _inbox.DeleteForOwnerAsync(ownerId, st, senderId).ConfigureAwait(false);
         }
         update.CallbackQuery!.Data = $"inbox:senders:";
-        await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, _resourceService.GetResourceString("SuccessActionResult"), cancellationToken: ct).ConfigureAwait(false);
-        await new InboxSendersCommand(_userGetter, _inbox, _resourceService).ExecuteAsync(update, botClient, ct);
+        await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, _uiResources.GetString("UI.Success"), cancellationToken: ct).ConfigureAwait(false);
+        await new InboxSendersCommand(_userGetter, _inbox, _uiResources).ExecuteAsync(update, botClient, ct);
     }
 }
-

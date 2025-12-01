@@ -38,6 +38,8 @@ public interface IUserMenuService
 
 public class UserMenuService : IUserMenuService
 {
+    private readonly IHelpResourceService _helpResources;
+    private readonly ISettingsResourceService _settingsResources;
     private readonly IUserStateManager _stateManager;
     private readonly IDefaultActionSetter _defaultActionSetter;
     private readonly IUserRepository _userRepository;
@@ -47,6 +49,8 @@ public class UserMenuService : IUserMenuService
     private readonly ITelegramInteractionService _interactionService;
 
     public UserMenuService(
+        IHelpResourceService helpResources,
+        ISettingsResourceService settingsResources,
         IUserStateManager stateManager,
         IDefaultActionSetter defaultActionSetter,
         IUserRepository userRepository,
@@ -55,6 +59,8 @@ public class UserMenuService : IUserMenuService
         IResourceService resourceService,
         ITelegramInteractionService interactionService)
     {
+        _helpResources = helpResources;
+        _settingsResources = settingsResources;
         _stateManager = stateManager;
         _defaultActionSetter = defaultActionSetter;
         _userRepository = userRepository;
@@ -69,19 +75,19 @@ public class UserMenuService : IUserMenuService
     public Task ViewSettings(ITelegramBotClient botClient, Update update)
     {
         return _interactionService.ReplyToUpdate(botClient, update, UsersKB.GetSettingsKeyboardMarkup(),
-            CancellationToken.None, _resourceService.GetResourceString("SettingsMenuText"));
+            CancellationToken.None, _settingsResources.GetString("Settings.WhoCanFindMe.Nobody"));
     }
 
     public Task ViewHelpMenu(ITelegramBotClient botClient, Update update)
     {
         return _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetReturnButtonMarkup("main_menu"),
-            CancellationToken.None, _resourceService.GetResourceString("HelpText"));
+            CancellationToken.None, _helpResources.GetString("Help.Main"));
     }
 
     public Task ViewDefaultActionsMenu(ITelegramBotClient botClient, Update update)
     {
         return _interactionService.ReplyToUpdate(botClient, update, UsersDefaultActionsMenuKB.GetDefaultActionsMenuKeyboardMarkup(),
-            CancellationToken.None, _resourceService.GetResourceString("DefaultActionsMenuText"));
+            CancellationToken.None, _settingsResources.GetString("Settings.DefaultActions.Title"));
     }
 
     public Task ViewPrivacyMenu(ITelegramBotClient botClient, Update update, string statusMessage = "")
@@ -93,43 +99,43 @@ public class UserMenuService : IUserMenuService
     public Task ViewLinkPrivacyMenu(ITelegramBotClient botClient, Update update)
     {
         return _interactionService.ReplyToUpdate(botClient, update, UsersPrivacyMenuKB.GetUpdateSelfLinkKeyboardMarkup(),
-            CancellationToken.None, _resourceService.GetResourceString("SelfLinkRefreshMenuText"));
+            CancellationToken.None, _settingsResources.GetString("Settings.Link.Menu.Title"));
     }
 
     public Task ViewWhoCanFindMeByLinkMenu(ITelegramBotClient botClient, Update update)
     {
         return _interactionService.ReplyToUpdate(botClient, update, UsersPrivacyMenuKB.GetWhoCanFindMeByLinkKeyboardMarkup(),
-            CancellationToken.None, _resourceService.GetResourceString("SearchPrivacyText"));
+            CancellationToken.None, _settingsResources.GetString("Settings.SearchPrivacy.Title"));
     }
 
     public Task ViewPermanentContentSpoilerMenu(ITelegramBotClient botClient, Update update)
     {
         return _interactionService.ReplyToUpdate(botClient, update, UsersPrivacyMenuKB.GetPermanentContentSpoilerKeyboardMarkup(),
-            CancellationToken.None, _resourceService.GetResourceString("AllowForwardContentRuleText"));
+            CancellationToken.None, _settingsResources.GetString("Settings.Forwarding.Description"));
     }
 
     public Task ProcessViewPermanentContentSpoilerAction(ITelegramBotClient botClient, Update update)
     {
         return _interactionService.ReplyToUpdate(botClient, update, UsersPrivacyMenuKB.GetPermanentContentSpoilerKeyboardMarkup(),
-            CancellationToken.None, _resourceService.GetResourceString("AllowForwardContentRuleText"));
+            CancellationToken.None, _settingsResources.GetString("Settings.Forwarding.Description"));
     }
 
     public Task ViewVideoDefaultActionsMenu(ITelegramBotClient botClient, Update update, string? preface = null)
     {
         return _interactionService.ReplyToUpdate(botClient, update, UsersDefaultActionsMenuKB.GetDefaultVideoDistributionKeyboardMarkup(),
-            CancellationToken.None, (preface ?? string.Empty) + _resourceService.GetResourceString("VideoDefaultActionsMenuText"));
+            CancellationToken.None, (preface ?? string.Empty) + _settingsResources.GetString("Settings.DefaultVideoActions.Title"));
     }
 
     public Task ViewUsersVideoSentUsersActionsMenu(ITelegramBotClient botClient, Update update, string? preface = null)
     {
         return _interactionService.ReplyToUpdate(botClient, update, UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
-            CancellationToken.None, (preface ?? string.Empty) + _resourceService.GetResourceString("UsersVideoSentUsersMenuText"));
+            CancellationToken.None, (preface ?? string.Empty) + _settingsResources.GetString("Settings.DefaultVideoActions.Summary.Header"));
     }
 
     public Task ViewAutoSendVideoTimeMenu(ITelegramBotClient botClient, Update update, string? preface = null)
     {
         return _interactionService.ReplyToUpdate(botClient, update, UsersDefaultActionsMenuKB.GetUsersAutoSendVideoTimeKeyboardMarkup(),
-            CancellationToken.None, (preface ?? string.Empty) + _resourceService.GetResourceString("AutoSendVideoTimeMenuText"));
+            CancellationToken.None, (preface ?? string.Empty) + _settingsResources.GetString("Settings.AutoSendTime.Title"));
     }
 
     public Task<bool> SetAutoSendVideoTimeToUser(long chatId, string time)

@@ -8,11 +8,14 @@ using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
 public class InboxSendersCommand : IBotCallbackQueryHandlers
 {
+    private readonly IUiResourceService _uiResources;
     private readonly IUserGetter _userGetter;
     private readonly IInboxRepository _inbox;
-    private readonly IResourceService _resourceService;
     public string Name => "inbox:senders:";
-    public InboxSendersCommand(IUserGetter userGetter, IInboxRepository inbox, IResourceService resourceService) { _userGetter = userGetter; _inbox = inbox; _resourceService = resourceService; }
+    public InboxSendersCommand(IUserGetter userGetter, IInboxRepository inbox, IUiResourceService uiResources) 
+    { _userGetter = userGetter;
+    _inbox = inbox;
+    _uiResources = uiResources;}
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
@@ -25,9 +28,8 @@ public class InboxSendersCommand : IBotCallbackQueryHandlers
             string text = $"{name} · {s.NewCount}/{s.Total}";
             rows.Add(new[] { InlineKeyboardButton.WithCallbackData(text, $"inbox:senderops:{s.FromContactId}:1") });
         }
-        rows.Add(new[] { InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("BackButtonText"), "inbox:list:1") });
+        rows.Add(new[] { InlineKeyboardButton.WithCallbackData(_uiResources.GetString("UI.Button.BackToMenu"), "inbox:list:1") });
         InlineKeyboardMarkup kb = new InlineKeyboardMarkup(rows);
-        await botClient.EditMessageText(chatId, update.CallbackQuery!.Message!.MessageId, _resourceService.GetResourceString("ChooseOptionText"), replyMarkup: kb, cancellationToken: ct).ConfigureAwait(false);
+        await botClient.EditMessageText(chatId, update.CallbackQuery!.Message!.MessageId, _uiResources.GetString("UI.ChooseOption"), replyMarkup: kb, cancellationToken: ct).ConfigureAwait(false);
     }
 }
-

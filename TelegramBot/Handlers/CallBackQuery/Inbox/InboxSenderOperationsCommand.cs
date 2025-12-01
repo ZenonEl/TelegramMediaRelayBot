@@ -8,11 +8,14 @@ using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
 public class InboxSenderOperationsCommand : IBotCallbackQueryHandlers
 {
+    private readonly IUiResourceService _uiResources;
     private readonly IUserGetter _userGetter;
     private readonly IResourceService _resourceService;
     public string Name => "inbox:senderops:";
-    public InboxSenderOperationsCommand(IUserGetter userGetter, IResourceService resourceService)
-    { _userGetter = userGetter; _resourceService = resourceService; }
+    public InboxSenderOperationsCommand(IUserGetter userGetter, IResourceService resourceService, IUiResourceService uiResources)
+    {
+        _uiResources = uiResources; _userGetter = userGetter; _resourceService = resourceService;
+    }
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         string[] parts = update.CallbackQuery!.Data!.Split(':');
@@ -29,9 +32,8 @@ public class InboxSenderOperationsCommand : IBotCallbackQueryHandlers
             new[] { InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("Inbox.Sender.MarkUnread"), $"inbox:sender:mark:confirm:unread:{senderContactId}:{page}") },
             new[] { InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("Inbox.Sender.DeleteRead"), $"inbox:sender:del:confirm:read:{senderContactId}:{page}") },
             new[] { InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("Inbox.Sender.DeleteUnread"), $"inbox:sender:del:confirm:unread:{senderContactId}:{page}") },
-            new[] { InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("BackButtonText"), "inbox:senders:") }
+            new[] { InlineKeyboardButton.WithCallbackData(_uiResources.GetString("UI.Button.BackToMenu"), "inbox:senders:") }
         });
         await botClient.EditMessageText(chatId, update.CallbackQuery!.Message!.MessageId, System.Net.WebUtility.HtmlEncode(name), replyMarkup: kb, cancellationToken: ct, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html).ConfigureAwait(false);
     }
 }
-

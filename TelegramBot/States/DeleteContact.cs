@@ -10,6 +10,9 @@ namespace TelegramMediaRelayBot.TelegramBot.States;
 
 public class RemoveContactsStateHandler : IStateHandler
 {
+    private readonly IUiResourceService _uiResources;
+    private readonly IStatesResourceService _statesResources;
+    private readonly IErrorsResourceService _errorsResources;
     private readonly IContactRemover _contactRemover;
     private readonly IContactGetter _contactGetter;
     private readonly IUserGetter _userGetter;
@@ -20,6 +23,9 @@ public class RemoveContactsStateHandler : IStateHandler
     public string Name => "RemoveContacts";
 
     public RemoveContactsStateHandler(
+        IUiResourceService uiResources,
+        IStatesResourceService statesResources,
+        IErrorsResourceService errorsResources,
         IContactRemover contactRemover,
         IContactGetter contactGetter,
         IUserGetter userGetter,
@@ -27,6 +33,9 @@ public class RemoveContactsStateHandler : IStateHandler
         ITelegramInteractionService interactionService,
         IStateBreakService stateBreaker)
     {
+        _uiResources = uiResources;
+        _statesResources = statesResources;
+        _errorsResources = errorsResources;
         _contactRemover = contactRemover;
         _contactGetter = contactGetter;
         _userGetter = userGetter;
@@ -52,7 +61,7 @@ public class RemoveContactsStateHandler : IStateHandler
                 string? messageText = update.Message?.Text;
                 if (string.IsNullOrEmpty(messageText))
                 {
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, _statesResources.GetString("State.RemoveContact.Prompt.EnterIds.Generic"), cancellationToken: cancellationToken);
                     return StateResult.Continue();
                 }
 
@@ -63,13 +72,13 @@ public class RemoveContactsStateHandler : IStateHandler
                 }
                 catch
                 {
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, _errorsResources.GetString("Error.Input.InvalidValues"), cancellationToken: cancellationToken);
                     return StateResult.Continue();
                 }
 
                 if (inputIds.Count == 0)
                 {
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, _statesResources.GetString("State.RemoveContact.Prompt.EnterIds.Generic"), cancellationToken: cancellationToken);
                     return StateResult.Continue();
                 }
 
@@ -81,7 +90,7 @@ public class RemoveContactsStateHandler : IStateHandler
 
                 if (!validTgIds.Any())
                 {
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("NoUsersFound"), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, _errorsResources.GetString("Error.Input.NoUsersFound"), cancellationToken: cancellationToken);
                     return StateResult.Continue(); // Остаемся в том же состоянии, ждем новый ввод
                 }
 
@@ -89,13 +98,13 @@ public class RemoveContactsStateHandler : IStateHandler
                 {
                     int id = _userGetter.GetUserIDbyTelegramID(tgId);
                     string username = _userGetter.GetUserNameByTelegramID(tgId);
-                    return string.Format(_resourceService.GetResourceString("ContactInfo"), id, username, "");
+                    return string.Format(_uiResources.GetString("UI.Format.ContactInfo"), id, username, "");
                 }).ToList();
 
                 List<int> targetIdsToStore = validTgIds.Select(tgid => _userGetter.GetUserIDbyTelegramID(tgid)).ToList();
                 stateData.Data["TargetIds"] = targetIdsToStore;
 
-                string message = $"{_resourceService.GetResourceString("ConfirmRemovalMessage")}\n\n{string.Join("\n", contactUsersInfo)}";
+                string message = $"{_statesResources.GetString("State.RemoveContact.Confirm.Removal")}\n\n{string.Join("\n", contactUsersInfo)}";
                 Telegram.Bot.Types.ReplyMarkups.InlineKeyboardMarkup keyboard = KeyboardUtils.GetConfirmForActionKeyboardMarkup("confirm_removal", "cancel_removal");
 
                 await botClient.SendMessage(chatId, message, replyMarkup: keyboard, cancellationToken: cancellationToken);
@@ -113,7 +122,7 @@ public class RemoveContactsStateHandler : IStateHandler
                 {
                     // Пользователь отменил, возвращаемся к вводу ID
                     await botClient.EditMessageText(chatId, update.CallbackQuery.Message!.MessageId,
-                        _resourceService.GetResourceString("PleaseEnterContactIDs"), cancellationToken: cancellationToken);
+                        _statesResources.GetString("State.RemoveContact.Prompt.EnterIds.Generic"), cancellationToken: cancellationToken);
                     stateData.Step = 0;
                     return StateResult.Continue();
                 }
@@ -126,7 +135,7 @@ public class RemoveContactsStateHandler : IStateHandler
                     List<int> targetIds = (List<int>)targetIdsObj;
 
                     bool success = await _contactRemover.RemoveUsersFromContacts(currentUserId, targetIds);
-                    string text = success ? _resourceService.GetResourceString("SuccessActionResult") : _resourceService.GetResourceString("ErrorActionResult");
+                    string text = success ? _uiResources.GetString("UI.Success") : _errorsResources.GetString("Error.ActionFailed");
 
                     await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), CancellationToken.None, text);
                     return StateResult.Complete();

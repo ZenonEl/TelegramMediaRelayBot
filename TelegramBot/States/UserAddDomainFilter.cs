@@ -12,6 +12,9 @@ namespace TelegramMediaRelayBot.TelegramBot.States;
 
 public class DomainFilterStateHandler : IStateHandler
 {
+    private readonly IUiResourceService _uiResources;
+    private readonly ISettingsResourceService _settingsResources;
+    private readonly IErrorsResourceService _errorsResources;
     private readonly IPrivacySettingsTargetsSetter _privacyTargetsSetter;
     private readonly Config.Services.IResourceService _resourceService;
     private readonly ITelegramInteractionService _interactionService;
@@ -20,11 +23,17 @@ public class DomainFilterStateHandler : IStateHandler
     public string Name => "DomainFilter";
 
     public DomainFilterStateHandler(
+        IUiResourceService uiResources,
+        ISettingsResourceService settingsResources,
+        IErrorsResourceService errorsResources,
         IPrivacySettingsTargetsSetter privacyTargetsSetter,
         Config.Services.IResourceService resourceService,
         ITelegramInteractionService interactionService,
         IStateBreakService stateBreaker)
     {
+        _uiResources = uiResources;
+        _settingsResources = settingsResources;
+        _errorsResources = errorsResources;
         _privacyTargetsSetter = privacyTargetsSetter;
         _resourceService = resourceService;
         _interactionService = interactionService;
@@ -48,21 +57,21 @@ public class DomainFilterStateHandler : IStateHandler
                 string? messageText = update.Message?.Text;
                 if (string.IsNullOrEmpty(messageText))
                 {
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, _errorsResources.GetString("Error.Input.InvalidValues"), cancellationToken: cancellationToken);
                     return StateResult.Continue();
                 }
 
                 List<string> inputDomains = messageText.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries).ToList();
                 if (inputDomains.Count == 0)
                 {
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, _errorsResources.GetString("Error.Input.InvalidValues"), cancellationToken: cancellationToken);
                     return StateResult.Continue();
                 }
 
                 List<string> checkedDomains = ValidateDomains(inputDomains);
                 if (checkedDomains.Count == 0)
                 {
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, _errorsResources.GetString("Error.Input.Generic"), cancellationToken: cancellationToken);
                     return StateResult.Continue();
                 }
 
@@ -70,7 +79,7 @@ public class DomainFilterStateHandler : IStateHandler
                 stateData.Data["CheckedDomains"] = checkedDomains;
 
                 string domainsListStr = string.Join(", ", checkedDomains);
-                string message = $"{_resourceService.GetResourceString("ConfirmDecision")}:\n\n{domainsListStr}";
+                string message = $"{_uiResources.GetString("UI.ConfirmDecision")}:\n\n{domainsListStr}";
 
                 await botClient.SendMessage(chatId, message,
                     replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
@@ -88,7 +97,7 @@ public class DomainFilterStateHandler : IStateHandler
                 if (update.CallbackQuery.Data != "accept")
                 {
                     await _interactionService.ReplyToUpdate(botClient, update, UsersPrivacyMenuKB.GetSiteFilterKeyboardMarkup(),
-                        cancellationToken, _resourceService.GetResourceString("SettingsMenuText"));
+                        cancellationToken, _settingsResources.GetString("Settings.WhoCanFindMe.Nobody"));
                     return StateResult.Complete();
                 }
 
@@ -122,7 +131,7 @@ public class DomainFilterStateHandler : IStateHandler
                 }
 
                 await _interactionService.ReplyToUpdate(botClient, update, UsersPrivacyMenuKB.GetSiteFilterKeyboardMarkup(),
-                    cancellationToken, _resourceService.GetResourceString("SuccessActionResult"));
+                    cancellationToken, _uiResources.GetString("UI.Success"));
 
                 return StateResult.Complete();
         }

@@ -12,6 +12,10 @@ namespace TelegramMediaRelayBot.TelegramBot.States;
 
 public class SetDistributionUsersStateHandler : IStateHandler
 {
+    private readonly IUiResourceService _uiResources;
+    private readonly ISettingsResourceService _settingsResources;
+    private readonly IStatesResourceService _statesResources;
+    private readonly IErrorsResourceService _errorsResources;
     private readonly IContactGetter _contactGetter;
     private readonly IDefaultAction _defaultAction;
     private readonly IDefaultActionGetter _defaultActionGetter;
@@ -23,6 +27,10 @@ public class SetDistributionUsersStateHandler : IStateHandler
     public string Name => "SetDistributionUsers";
 
     public SetDistributionUsersStateHandler(
+        IUiResourceService uiResources,
+        ISettingsResourceService settingsResources,
+        IStatesResourceService statesResources,
+        IErrorsResourceService errorsResources,
         IContactGetter contactGetter,
         IDefaultAction defaultAction,
         IDefaultActionGetter defaultActionGetter,
@@ -31,6 +39,10 @@ public class SetDistributionUsersStateHandler : IStateHandler
         ITelegramInteractionService interactionService,
         IStateBreakService stateBreaker)
     {
+        _uiResources = uiResources;
+        _settingsResources = settingsResources;
+        _statesResources = statesResources;
+        _errorsResources = errorsResources;
         _contactGetter = contactGetter;
         _defaultAction = defaultAction;
         _defaultActionGetter = defaultActionGetter;
@@ -54,7 +66,7 @@ public class SetDistributionUsersStateHandler : IStateHandler
                 string? messageText = update.Message?.Text;
                 if (string.IsNullOrEmpty(messageText))
                 {
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, _errorsResources.GetString("Error.Input.InvalidValues"), cancellationToken: cancellationToken);
                     return StateResult.Continue();
                 }
 
@@ -69,11 +81,11 @@ public class SetDistributionUsersStateHandler : IStateHandler
                     {
                         int cid = _userGetter.GetUserIDbyTelegramID(tg);
                         string uname = _userGetter.GetUserNameByTelegramID(tg);
-                        return string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, "");
+                        return string.Format(_uiResources.GetString("UI.Format.ContactInfo"), cid, uname, "");
                     }).ToList();
-                    string header = _resourceService.GetResourceString("YourContacts");
-                    string body = infos.Any() ? string.Join("\n", infos) : _resourceService.GetResourceString("NoUsersFound");
-                    await botClient.SendMessage(chatId, $"{header}\n{body}\n\n{_resourceService.GetResourceString("PleaseEnterContactIDs")}", cancellationToken: cancellationToken);
+                    string header = _uiResources.GetString("UI.Header.YourContacts");
+                    string body = infos.Any() ? string.Join("\n", infos) : _errorsResources.GetString("Error.Input.NoUsersFound");
+                    await botClient.SendMessage(chatId, $"{header}\n{body}\n\n{_statesResources.GetString("State.RemoveContact.Prompt.EnterIds.Generic")}", cancellationToken: cancellationToken);
                     return StateResult.Continue();
                 }
 
@@ -82,13 +94,13 @@ public class SetDistributionUsersStateHandler : IStateHandler
 
                 if (validTargetIds.Count == 0)
                 {
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("NoUsersFound"), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, _errorsResources.GetString("Error.Input.NoUsersFound"), cancellationToken: cancellationToken);
                     return StateResult.Continue();
                 }
 
                 stateData.Data["TargetIds"] = validTargetIds;
                 string idsList = string.Join(", ", validTargetIds);
-                string message = string.Format(_resourceService.GetResourceString("ProcessIDsList"), idsList);
+                string message = string.Format(_statesResources.GetString("State.Confirm.ProcessList"), idsList);
 
                 await botClient.SendMessage(chatId, message, replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup(), cancellationToken: cancellationToken);
                 stateData.Step = 1;
@@ -99,7 +111,7 @@ public class SetDistributionUsersStateHandler : IStateHandler
                 if (update.CallbackQuery?.Data != "accept")
                 {
                     await _interactionService.ReplyToUpdate(botClient, update, UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
-                        cancellationToken, _resourceService.GetResourceString("UsersVideoSentUsersMenuText"));
+                        cancellationToken, _settingsResources.GetString("Settings.DefaultVideoActions.Summary.Header"));
                     return StateResult.Complete();
                 }
 
@@ -115,7 +127,7 @@ public class SetDistributionUsersStateHandler : IStateHandler
                 }
 
                 await _interactionService.ReplyToUpdate(botClient, update, UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
-                    cancellationToken, string.Format(_resourceService.GetResourceString("SuccessMessageProcessIDsList"), targetIds.Count));
+                    cancellationToken, string.Format(_statesResources.GetString("State.Success.ItemsProcessed"), targetIds.Count));
 
                 return StateResult.Complete();
         }

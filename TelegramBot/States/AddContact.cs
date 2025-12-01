@@ -10,6 +10,9 @@ namespace TelegramMediaRelayBot.TelegramBot.States;
 
 public class AddContactStateHandler : IStateHandler
 {
+    private readonly IUiResourceService _uiResources;
+    private readonly IStatesResourceService _statesResources;
+    private readonly IErrorsResourceService _errorsResources;
     private readonly IContactAdder _contactAdder;
     private readonly IContactGetter _contactGetter;
     private readonly IUserGetter _userGetter;
@@ -20,6 +23,9 @@ public class AddContactStateHandler : IStateHandler
     public string Name => "AddContact";
 
     public AddContactStateHandler(
+        IUiResourceService uiResources,
+        IStatesResourceService statesResources,
+        IErrorsResourceService errorsResources,
         IContactAdder contactAdder,
         IContactGetter contactGetter,
         IUserGetter userGetter,
@@ -27,6 +33,9 @@ public class AddContactStateHandler : IStateHandler
         IStateBreakService stateBreaker,
         ITelegramInteractionService interactionService)
     {
+        _uiResources = uiResources;
+        _statesResources = statesResources;
+        _errorsResources = errorsResources;
         _contactAdder = contactAdder;
         _contactGetter = contactGetter;
         _userGetter = userGetter;
@@ -52,14 +61,14 @@ public class AddContactStateHandler : IStateHandler
                 string? link = update.Message?.Text?.Trim();
                 if (string.IsNullOrWhiteSpace(link))
                 {
-                    await _stateBreaker.AlertAndShowMenu(botClient, update, _resourceService.GetResourceString("InputErrorMessage"));
+                    await _stateBreaker.AlertAndShowMenu(botClient, update, _errorsResources.GetString("Error.Input.Generic"));
                     return StateResult.Complete();
                 }
 
                 int contactId = _contactGetter.GetContactIDByLink(link);
                 if (contactId == -1)
                 {
-                    await _stateBreaker.AlertAndShowMenu(botClient, update, _resourceService.GetResourceString("NoUserFoundByLink"));
+                    await _stateBreaker.AlertAndShowMenu(botClient, update, _errorsResources.GetString("Error.UserNotFoundByLink"));
                     return StateResult.Complete();
                 }
 
@@ -71,8 +80,8 @@ public class AddContactStateHandler : IStateHandler
                 stateData.Data["FoundContactId"] = contactId;
                 stateData.Data["FoundUserName"] = _userGetter.GetUserNameByID(contactId);
 
-                string summary = $"{_resourceService.GetResourceString("LinkText")}: {link} \n{_resourceService.GetResourceString("NameText")}: {stateData.Data["FoundUserName"]}";
-                await botClient.SendMessage(chatId, _resourceService.GetResourceString("ConfirmAdditionText") + summary,
+                string summary = $"{_uiResources.GetString("UI.Label.Link")}: {link} \n{_uiResources.GetString("UI.Label.Name")}: {stateData.Data["FoundUserName"]}";
+                await botClient.SendMessage(chatId, _statesResources.GetString("State.AddContact.Confirm.Addition") + summary,
                     cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetConfirmForActionKeyboardMarkup());
 
                 stateData.Step = 1; // Переходим на шаг подтверждения
@@ -100,9 +109,9 @@ public class AddContactStateHandler : IStateHandler
 
                     // Отправляем уведомление
                     await botClient.SendMessage(contactTelegramId,
-                        string.Format(_resourceService.GetResourceString("UserWantsToAddYou"), senderName),
+                        string.Format(_statesResources.GetString("State.AddContact.Notification"), senderName),
                         cancellationToken: cancellationToken);
-                    await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, _resourceService.GetResourceString("WaitForContactConfirmation"));
+                    await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.SendInlineKeyboardMenu(), cancellationToken, _statesResources.GetString("State.AddContact.Success"));
                 }
                 else // decline or any other callback
                 {

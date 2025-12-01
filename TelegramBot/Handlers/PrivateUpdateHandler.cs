@@ -18,6 +18,8 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers;
 
 public class PrivateUpdateHandler
 {
+    private readonly IUiResourceService _uiResources;
+    private readonly IErrorsResourceService _errorsResources;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly DownloadSessionManager _sessionManager;
     private readonly ILastUserTextCache _lastUserTextCache;
@@ -33,6 +35,8 @@ public class PrivateUpdateHandler
     private readonly IDefaultActionGetter _defaultActionGetter;
 
     public PrivateUpdateHandler(
+        IUiResourceService uiResources,
+        IErrorsResourceService errorsResources,
         IServiceScopeFactory scopeFactory,
         DownloadSessionManager sessionManager,
         ILastUserTextCache lastUserTextCache,
@@ -47,6 +51,8 @@ public class PrivateUpdateHandler
         IMediaDownloaderFactory downloaderFactory,
         IDefaultActionGetter defaultActionGetter)
     {
+        _uiResources = uiResources;
+        _errorsResources = errorsResources;
         _scopeFactory = scopeFactory;
         _sessionManager = sessionManager;
         _lastUserTextCache = lastUserTextCache;
@@ -85,7 +91,7 @@ public class PrivateUpdateHandler
                 return;
             }
 
-            Message statusMessage = await botClient.SendMessage(chatId, _resourceService.GetResourceString("VideoDistributionQuestion"),
+            Message statusMessage = await botClient.SendMessage(chatId, _uiResources.GetString("UI.InvisibleLetter"),
                 replyParameters: new ReplyParameters { MessageId = message.MessageId },
                 replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(0), cancellationToken: cancellationToken);
 
@@ -119,17 +125,17 @@ public class PrivateUpdateHandler
             else
             {
                 _lastUserTextCache.Set(chatId, message.Text);
-                await botClient.SendMessage(chatId, _resourceService.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, _errorsResources.GetString("Error.Generic"), cancellationToken: cancellationToken);
             }
         }
         else if (message.Text != null)
         {
             _lastUserTextCache.Set(chatId, message.Text);
-            await botClient.SendMessage(chatId, _resourceService.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken);
+            await botClient.SendMessage(chatId, _errorsResources.GetString("Error.Generic"), cancellationToken: cancellationToken);
         }
         else
         {
-            await botClient.SendMessage(chatId, _resourceService.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken);
+            await botClient.SendMessage(chatId, _errorsResources.GetString("Error.Generic"), cancellationToken: cancellationToken);
         }
     }
 
@@ -162,7 +168,7 @@ public class PrivateUpdateHandler
         if (!string.IsNullOrWhiteSpace(_botConfig.Value.AccessDeniedMessageContact))
         {
             await botClient.SendMessage(chatId,
-                string.Format(_resourceService.GetResourceString("AccessDeniedMessage"), _botConfig.Value.AccessDeniedMessageContact),
+                string.Format(_errorsResources.GetString("Error.AccessDenied"), _botConfig.Value.AccessDeniedMessageContact),
                 cancellationToken: cancellationToken, parseMode: ParseMode.Html);
         }
         return false;

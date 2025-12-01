@@ -11,17 +11,20 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
 public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
 {
+    private readonly IStatesResourceService _statesResources;
     private readonly IUserStateManager _stateManager;
     private readonly IUserMenuService _userMenuService;
     private readonly Config.Services.IResourceService _resourceService;
     private readonly ITelegramInteractionService _interactionService;
 
     public SetVideoSendUsersCommand(
+        IStatesResourceService statesResources,
         IUserStateManager stateManager,
         IUserMenuService userMenuService,
         Config.Services.IResourceService resourceService,
         ITelegramInteractionService interactionService)
     {
+        _statesResources = statesResources;
         _stateManager = stateManager;
         _userMenuService = userMenuService;
         _resourceService = resourceService;
@@ -50,7 +53,7 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
             _stateManager.Set(chatId, newState);
 
             // Отправляем первое сообщение (логика показа списка контактов/групп теперь внутри StateHandler)
-            string prompt = _resourceService.GetResourceString("EnterContactIdsPrompt");
+            string prompt = _statesResources.GetString("State.UpdateLink.Prompt.EnterIds");
             await botClient.SendMessage(chatId, prompt, cancellationToken: cancellationToken);
 
             // Также обновляем действие по умолчанию, если нужно
@@ -62,8 +65,8 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
         bool result = await _userMenuService.SetDefaultActionToUser(chatId, action);
 
         string message = result
-            ? _resourceService.GetResourceString("DefaultActionChangedMessage")
-            : _resourceService.GetResourceString("DefaultActionNotChangedMessage");
+            ? _statesResources.GetString("State.DefaultAction.ActionChanged")
+            : _statesResources.GetString("State.DefaultAction.ActionNotChanged");
 
         await _interactionService.ReplyToUpdate(botClient, update,
             KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"), cancellationToken, message);

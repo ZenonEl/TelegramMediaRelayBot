@@ -9,14 +9,16 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
 public class SetAutoSendTimeCommand : IBotCallbackQueryHandlers
 {
+    private readonly IStatesResourceService _statesResources;
     public string Name => "user_set_auto_send_video_time_to:";
 
     private readonly IUserMenuService _userMenuService;
     private readonly Config.Services.IResourceService _resourceService;
     private readonly ITelegramInteractionService _interactionService;
 
-    public SetAutoSendTimeCommand(IUserMenuService userMenuService, Config.Services.IResourceService resourceService, ITelegramInteractionService interactionService)
+    public SetAutoSendTimeCommand(IUserMenuService userMenuService, Config.Services.IResourceService resourceService, ITelegramInteractionService interactionService, IStatesResourceService statesResources)
     {
+        _statesResources = statesResources;
         _userMenuService = userMenuService;
         _resourceService = resourceService;
         _interactionService = interactionService;
@@ -31,8 +33,8 @@ public class SetAutoSendTimeCommand : IBotCallbackQueryHandlers
         bool result = await _userMenuService.SetAutoSendVideoTimeToUser(chatId, callbackQueryData);
 
         string message = result
-            ? _resourceService.GetResourceString("AutoSendTimeChangedMessage") + callbackQueryData
-            : _resourceService.GetResourceString("AutoSendTimeNotChangedMessage");
+            ? _statesResources.GetString("State.DefaultAction.AutoSendTimeChanged") + callbackQueryData
+            : _statesResources.GetString("State.DefaultAction.AutoSendTimeNotChanged");
 
         await _interactionService.ReplyToUpdate(botClient, update,
             KeyboardUtils.GetReturnButtonMarkup("user_set_auto_send_video_time"), ct, message);

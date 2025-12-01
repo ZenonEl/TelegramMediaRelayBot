@@ -13,14 +13,16 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
 public class InboxListCommand : IBotCallbackQueryHandlers
 {
+    private readonly IInboxResourceService _inboxResources;
     private readonly IUserGetter _userGetter;
     private readonly IInboxRepository _inbox;
     public string Name => "inbox:list:";
     private readonly IResourceService _resourceService;
     private readonly IValidator<InboxListRequest> _listValidator;
     private const int PageSize = 10;
-    public InboxListCommand(IUserGetter userGetter, IInboxRepository inbox, IResourceService resourceService, IValidator<InboxListRequest> listValidator)
+    public InboxListCommand(IUserGetter userGetter, IInboxRepository inbox, IResourceService resourceService, IValidator<InboxListRequest> listValidator, IInboxResourceService inboxResources)
     {
+        _inboxResources = inboxResources;
         _userGetter = userGetter;
         _inbox = inbox;
         _listValidator = listValidator;
@@ -140,7 +142,7 @@ public class InboxListCommand : IBotCallbackQueryHandlers
         }
         rows.Add(new[] { KeyboardUtils.GetReturnButton("main_menu") });
         InlineKeyboardMarkup kb = new InlineKeyboardMarkup(rows);
-        string header = items.Count == 0 ? _resourceService.GetResourceString("InboxListEmpty") : string.Format(_resourceService.GetResourceString("InboxListCurrentPage"), page);
+        string header = items.Count == 0 ? _inboxResources.GetString("Inbox.Filter.All") : string.Format(_inboxResources.GetString("Inbox.List.Header.Page"), page);
         // Важно всегда пытаться обновлять клавиатуру, даже если заголовок не изменился,
         // иначе переключение фильтра (Все/Непрочитанные) визуально не обновится.
         try

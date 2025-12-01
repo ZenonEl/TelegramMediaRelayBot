@@ -21,14 +21,16 @@ public interface IInboxService
 
 public class InboxService : IInboxService
 {
+    private readonly IInboxResourceService _inboxResources;
     private readonly IPrivacySettingsGetter _privacyGetter;
     private readonly IInboxRepository _inboxRepo;
     private readonly IUserGetter _userGetter;
     private readonly IResourceService _resourceService;
     private static readonly ConcurrentDictionary<int, DateTime> _lastInboxNotifyUtc = new();
 
-    public InboxService(IPrivacySettingsGetter privacyGetter, IInboxRepository inboxRepo, IUserGetter userGetter, IResourceService resourceService)
+    public InboxService(IPrivacySettingsGetter privacyGetter, IInboxRepository inboxRepo, IUserGetter userGetter, IResourceService resourceService, IInboxResourceService inboxResources)
     {
+        _inboxResources = inboxResources;
         _privacyGetter = privacyGetter;
         _inboxRepo = inboxRepo;
         _userGetter = userGetter;
@@ -110,7 +112,7 @@ public class InboxService : IInboxService
             {
                 _lastInboxNotifyUtc[recipientUserId] = nowUtc;
                 long recipientTgId = _userGetter.GetTelegramIDbyUserID(recipientUserId);
-                string note = string.Format(_resourceService.GetResourceString("InboxNewCountNotify"), newCount);
+                string note = string.Format(_inboxResources.GetString("Inbox.NewCountNotify"), newCount);
                 await botClient.SendMessage(recipientTgId, note);
             }
         }

@@ -11,6 +11,9 @@ namespace TelegramMediaRelayBot.TelegramBot.States;
 
 public class ManageContactsStateHandler : IStateHandler
 {
+    private readonly IUiResourceService _uiResources;
+    private readonly ISettingsResourceService _settingsResources;
+    private readonly IErrorsResourceService _errorsResources;
     private readonly IContactRemover _contactRemover;
     private readonly IContactGetter _contactGetter;
     private readonly IUserRepository _userRepository;
@@ -22,6 +25,9 @@ public class ManageContactsStateHandler : IStateHandler
     public string Name => "ManageContacts";
 
     public ManageContactsStateHandler(
+        IUiResourceService uiResources,
+        ISettingsResourceService settingsResources,
+        IErrorsResourceService errorsResources,
         IContactRemover contactRemover,
         IContactGetter contactGetter,
         IUserRepository userRepository,
@@ -30,6 +36,9 @@ public class ManageContactsStateHandler : IStateHandler
         ITelegramInteractionService interactionService,
         IStateBreakService stateBreaker)
     {
+        _uiResources = uiResources;
+        _settingsResources = settingsResources;
+        _errorsResources = errorsResources;
         _contactRemover = contactRemover;
         _contactGetter = contactGetter;
         _userRepository = userRepository;
@@ -68,7 +77,7 @@ public class ManageContactsStateHandler : IStateHandler
                 }
                 catch
                 {
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, _errorsResources.GetString("Error.Input.Generic"), cancellationToken: cancellationToken);
                     return StateResult.Continue();
                 }
 
@@ -80,11 +89,11 @@ public class ManageContactsStateHandler : IStateHandler
                     {
                         int cid = _userGetter.GetUserIDbyTelegramID(tg);
                         string uname = _userGetter.GetUserNameByTelegramID(tg);
-                        return string.Format(_resourceService.GetResourceString("ContactInfo"), cid, uname, "");
+                        return string.Format(_uiResources.GetString("UI.Format.ContactInfo"), cid, uname, "");
                     }).ToList();
 
-                    string header = _resourceService.GetResourceString("YourContacts");
-                    string body = lines.Any() ? string.Join("\n", lines) : _resourceService.GetResourceString("NoUsersFound");
+                    string header = _uiResources.GetString("UI.Header.YourContacts");
+                    string body = lines.Any() ? string.Join("\n", lines) : _errorsResources.GetString("Error.Input.NoUsersFound");
                     string prompt = _resourceService.GetResourceString("State.ContactLinks.NoValidIds");
                     await botClient.SendMessage(chatId, $"{header}\n{body}\n\n{prompt}", cancellationToken: cancellationToken);
                     return StateResult.Continue();
@@ -144,12 +153,12 @@ public class ManageContactsStateHandler : IStateHandler
                     actionStatus = await _contactRemover.RemoveAllContactsExcept(currentUserId, targetIds);
                 }
 
-                string statusMessage = actionStatus ? _resourceService.GetResourceString("SuccessActionResult") : _resourceService.GetResourceString("ErrorActionResult");
+                string statusMessage = actionStatus ? _uiResources.GetString("UI.Success") : _errorsResources.GetString("Error.ActionFailed");
 
                 _userRepository.ReCreateUserSelfLink(currentUserId);
 
                 await _interactionService.ReplyToUpdate(botClient, update, UsersPrivacyMenuKB.GetUpdateSelfLinkKeyboardMarkup(),
-                    cancellationToken, _resourceService.GetResourceString("SelfLinkRefreshMenuText") + "\n\n" + statusMessage);
+                    cancellationToken, _settingsResources.GetString("Settings.Link.Menu.Title") + "\n\n" + statusMessage);
 
                 return StateResult.Complete();
         }

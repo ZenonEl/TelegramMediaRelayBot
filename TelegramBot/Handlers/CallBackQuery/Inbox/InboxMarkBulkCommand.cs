@@ -9,11 +9,24 @@ using TelegramMediaRelayBot.TelegramBot.Validation;
 
 public class InboxMarkBulkCommand : IBotCallbackQueryHandlers
 {
+    private readonly IUiResourceService _uiResources;
+    private readonly IInboxResourceService _inboxResources;
     private readonly IInboxRepository _inbox;
     private readonly IUserGetter _userGetter;
     private readonly IResourceService _resourceService;
     public string Name => "inbox:mark:";
-    public InboxMarkBulkCommand(IInboxRepository inbox, IUserGetter userGetter, IResourceService resourceService) { _inbox = inbox; _userGetter = userGetter; _resourceService = resourceService; }
+    public InboxMarkBulkCommand(IInboxRepository inbox,
+                                IUserGetter userGetter,
+                                IResourceService resourceService,
+                                IUiResourceService uiResources,
+                                IInboxResourceService inboxResources) 
+    {
+        _inbox = inbox;
+        _userGetter = userGetter;
+        _resourceService = resourceService;
+        _uiResources = uiResources;
+        _inboxResources = inboxResources;
+    }
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         // inbox:mark:read|unread:filter:page or inbox:mark:confirm:toStatus:filter:page
@@ -29,8 +42,8 @@ public class InboxMarkBulkCommand : IBotCallbackQueryHandlers
             string fromStatus = to == "read" ? "new" : "viewed";
             await _inbox.SetStatusForOwnerAsync(userId, fromStatus, toStatus).ConfigureAwait(false);
             update.CallbackQuery!.Data = $"inbox:list:{page}:{filter}".TrimEnd(':');
-            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, _resourceService.GetResourceString("SuccessActionResult"), cancellationToken: ct).ConfigureAwait(false);
-            await new InboxListCommand(_userGetter, _inbox, _resourceService, new InboxListRequestValidator()).ExecuteAsync(update, botClient, ct);
+            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, _uiResources.GetString("UI.Success"), cancellationToken: ct).ConfigureAwait(false);
+            await new InboxListCommand(_userGetter, _inbox, _resourceService, new InboxListRequestValidator(), _inboxResources).ExecuteAsync(update, botClient, ct);
             return;
         }
         string toStatusKey = parts[2];
@@ -38,10 +51,9 @@ public class InboxMarkBulkCommand : IBotCallbackQueryHandlers
         int curPage = parts.Length >= 5 && int.TryParse(parts[4], out int pg) ? pg : 1;
         InlineKeyboardMarkup kb = new InlineKeyboardMarkup(new[]
         {
-            new[] { InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("YesButtonText"), $"inbox:mark:confirm:{toStatusKey}:{f}:{curPage}") },
-            new[] { InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("NoButtonText"), $"inbox:list:{curPage}:{f}".TrimEnd(':')) }
+            new[] { InlineKeyboardButton.WithCallbackData(_uiResources.GetString("UI.Button.Yes"), $"inbox:mark:confirm:{toStatusKey}:{f}:{curPage}") },
+            new[] { InlineKeyboardButton.WithCallbackData(_uiResources.GetString("UI.Button.No"), $"inbox:list:{curPage}:{f}".TrimEnd(':')) }
         });
-        await botClient.EditMessageText(chatId, update.CallbackQuery!.Message!.MessageId, _resourceService.GetResourceString("ConfirmDecision"), replyMarkup: kb, cancellationToken: ct).ConfigureAwait(false);
+        await botClient.EditMessageText(chatId, update.CallbackQuery!.Message!.MessageId, _uiResources.GetString("UI.ConfirmDecision"), replyMarkup: kb, cancellationToken: ct).ConfigureAwait(false);
     }
 }
-

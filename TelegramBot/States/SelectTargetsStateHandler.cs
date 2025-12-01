@@ -11,6 +11,9 @@ namespace TelegramMediaRelayBot.TelegramBot.States;
 
 public class SelectTargetsStateHandler : IStateHandler
 {
+    private readonly IUiResourceService _uiResources;
+    private readonly IStatesResourceService _statesResources;
+    private readonly IErrorsResourceService _errorsResources;
     private readonly IUserGetter _userGetter;
     private readonly IContactGetter _contactGetter;
     private readonly IGroupGetter _groupGetter;
@@ -23,6 +26,9 @@ public class SelectTargetsStateHandler : IStateHandler
     public string Name => "SelectTargets";
 
     public SelectTargetsStateHandler(
+        IUiResourceService uiResources,
+        IStatesResourceService statesResources,
+        IErrorsResourceService errorsResources,
         IUserGetter userGetter,
         IContactGetter contactGetter,
         IGroupGetter groupGetter,
@@ -32,6 +38,9 @@ public class SelectTargetsStateHandler : IStateHandler
         DownloadSessionManager sessionManager,
         IMediaProcessingFlow mediaFlow)
     {
+        _uiResources = uiResources;
+        _statesResources = statesResources;
+        _errorsResources = errorsResources;
         _userGetter = userGetter;
         _contactGetter = contactGetter;
         _groupGetter = groupGetter;
@@ -51,7 +60,7 @@ public class SelectTargetsStateHandler : IStateHandler
         if (update.CallbackQuery?.Data.Split(':')[0] == "cancel_download:")
         {
             int sessionId = int.Parse(update.CallbackQuery.Data.Split(':')[1]);
-            await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetVideoDistributionKeyboardMarkup(sessionId), cancellationToken, _resourceService.GetResourceString("VideoRecipientsButtonText"));
+            await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetVideoDistributionKeyboardMarkup(sessionId), cancellationToken, _uiResources.GetString("UI.Button.VideoRecipients"));
             return StateResult.Complete();
         }
         int contactListId = 0;
@@ -65,12 +74,12 @@ public class SelectTargetsStateHandler : IStateHandler
                 string messageText = update.Message?.Text;
                 if (update.CallbackQuery != null && update.CallbackQuery.Data!.Split(':')[0] != "cancel_download:")
                 {
-                    await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetVideoDistributionKeyboardMarkup(update.CallbackQuery.Message.Id), cancellationToken, _resourceService.GetResourceString("VideoRecipientsButtonText"));
+                    await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetVideoDistributionKeyboardMarkup(update.CallbackQuery.Message.Id), cancellationToken, _uiResources.GetString("UI.Button.VideoRecipients"));
                     return StateResult.Complete();
                 }
                 else if (string.IsNullOrEmpty(messageText))
                 {
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, _errorsResources.GetString("Error.Input.InvalidValues"), cancellationToken: cancellationToken);
                     return StateResult.Continue();
                 }
 
@@ -81,7 +90,7 @@ public class SelectTargetsStateHandler : IStateHandler
 
                 // Формируем сообщение для подтверждения
                 string idsList = string.Join(", ", validTargetIds);
-                string message = string.Format(_resourceService.GetResourceString("ProcessIDsList"), idsList);
+                string message = string.Format(_statesResources.GetString("State.Confirm.ProcessList"), idsList);
 
                 // Отправляем новое сообщение с кнопками "Да" / "Назад"
                 await botClient.SendMessage(chatId, message,
@@ -109,7 +118,7 @@ public class SelectTargetsStateHandler : IStateHandler
                         update,
                         KeyboardUtils.GetVideoDistributionKeyboardMarkup(sessionId),
                         cancellationToken,
-                        _resourceService.GetResourceString("VideoRecipientsButtonText"),
+                        _uiResources.GetString("UI.Button.VideoRecipients"),
                         messageIdToEdit: contactListId
                     );
 

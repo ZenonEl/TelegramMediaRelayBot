@@ -8,13 +8,17 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
 public class CancelDownloadCommand : IBotCallbackQueryHandlers
 {
+    private readonly IStatesResourceService _statesResources;
+    private readonly IErrorsResourceService _errorsResources;
     public string Name => "cancel_download:";
 
     private readonly DownloadSessionManager _sessionManager;
     private readonly Config.Services.IResourceService _resourceService;
 
-    public CancelDownloadCommand(DownloadSessionManager sessionManager, Config.Services.IResourceService resourceService)
+    public CancelDownloadCommand(DownloadSessionManager sessionManager, Config.Services.IResourceService resourceService, IErrorsResourceService errorsResources, IStatesResourceService statesResources)
     {
+        _statesResources = statesResources;
+        _errorsResources = errorsResources;
         _sessionManager = sessionManager;
         _resourceService = resourceService;
     }
@@ -40,7 +44,7 @@ public class CancelDownloadCommand : IBotCallbackQueryHandlers
                 if (callbackQuery.Message != null)
                 {
                     await botClient.EditMessageText(callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId,
-                        _resourceService.GetResourceString("CanceledByUserMessage"), cancellationToken: ct);
+                        _statesResources.GetString("State.CanceledByUser"), cancellationToken: ct);
                 }
             }
             catch { /* Игнорируем ошибки, если сообщение уже удалено и т.д. */ }
@@ -48,7 +52,7 @@ public class CancelDownloadCommand : IBotCallbackQueryHandlers
         else
         {
             await botClient.AnswerCallbackQuery(callbackQuery.Id,
-                _resourceService.GetResourceString("NothingToCancelMessage"), showAlert: false, cancellationToken: ct);
+                _errorsResources.GetString("Error.Cancel.NothingToCancel"), showAlert: false, cancellationToken: ct);
         }
     }
 }

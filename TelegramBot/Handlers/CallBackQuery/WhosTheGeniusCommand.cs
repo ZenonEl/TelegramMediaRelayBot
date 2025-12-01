@@ -9,13 +9,14 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
 public class WhosTheGeniusCommand(IResourceService recourceService, ITelegramInteractionService interactionService) : IBotCallbackQueryHandlers
 {
+    private readonly IHelpResourceService _helpResources;
     private readonly IResourceService _recourceService = recourceService;
     private readonly ITelegramInteractionService _interactionService = interactionService;
     public string Name => "whos_the_genius";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        string text = _recourceService.GetResourceString("WhosTheGeniusText");
+        string text = _helpResources.GetString("Help.AboutTheAuthor");
         await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), ct, text);
     }
 }

@@ -12,6 +12,9 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
 public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
 {
+    private readonly IUiResourceService _uiResources;
+    private readonly IStatesResourceService _statesResources;
+    private readonly IErrorsResourceService _errorsResources;
     private readonly IUserStateManager _stateManager;
     private readonly IPrivacySettingsSetter _privacySettingsSetter;
     private readonly IPrivacySettingsGetter _privacySettingsGetter;
@@ -21,6 +24,9 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
     private bool _isActive;
 
     public SetPrivacySiteFilterCommand(
+        IUiResourceService uiResources,
+        IStatesResourceService statesResources,
+        IErrorsResourceService errorsResources,
         IUserStateManager stateManager,
         IPrivacySettingsSetter privacySettingsSetter,
         IPrivacySettingsGetter privacySettingsGetter,
@@ -28,6 +34,9 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
         Config.Services.IResourceService resourceService,
         ITelegramInteractionService interactionService)
     {
+        _uiResources = uiResources;
+        _statesResources = statesResources;
+        _errorsResources = errorsResources;
         _stateManager = stateManager;
         _privacySettingsSetter = privacySettingsSetter;
         _privacySettingsGetter = privacySettingsGetter;
@@ -61,8 +70,8 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
             _ => false
         };
 
-        string text = switchResult ? _resourceService.GetResourceString("SuccessActionResult") : _resourceService.GetResourceString("ErrorActionResult");
-        string actionText = !_isActive ? _resourceService.GetResourceString("Enable") : _resourceService.GetResourceString("Disable");
+        string text = switchResult ? _uiResources.GetString("UI.Success") : _errorsResources.GetString("Error.ActionFailed");
+        string actionText = !_isActive ? _uiResources.GetString("UI.Button.Enable") : _uiResources.GetString("UI.Button.Disable");
 
         await _interactionService.ReplyToUpdate(botClient, update,
             KeyboardUtils.GetReturnButtonMarkup("user_update_site_stop_list"), ct, $"{text} ({actionText})");
@@ -91,8 +100,8 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
         _stateManager.Set(chatId, newState);
 
         string prompt = isRemove
-            ? _resourceService.GetResourceString("EnterDomainsToRemovePrompt")
-            : _resourceService.GetResourceString("EnterDomainsToAddPrompt");
+            ? _statesResources.GetString("State.RemoveDomain.Prompt.EnterDomains")
+            : _statesResources.GetString("State.AddDomain.Prompt.EnterDomains");
 
         await botClient.SendMessage(chatId, prompt, cancellationToken: ct);
         await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, cancellationToken: ct);

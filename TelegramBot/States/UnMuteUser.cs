@@ -9,6 +9,9 @@ namespace TelegramMediaRelayBot.TelegramBot.States;
 
 public class UnmuteUserStateHandler : IStateHandler
 {
+    private readonly IUiResourceService _uiResources;
+    private readonly IStatesResourceService _statesResources;
+    private readonly IErrorsResourceService _errorsResources;
     private readonly IContactRemover _contactRemover;
     private readonly IContactGetter _contactGetter;
     private readonly IUserGetter _userGetter;
@@ -19,6 +22,9 @@ public class UnmuteUserStateHandler : IStateHandler
     public string Name => "UnmuteUser";
 
     public UnmuteUserStateHandler(
+        IUiResourceService uiResources,
+        IStatesResourceService statesResources,
+        IErrorsResourceService errorsResources,
         IContactRemover contactRemover,
         IContactGetter contactGetter,
         IUserGetter userGetter,
@@ -26,6 +32,9 @@ public class UnmuteUserStateHandler : IStateHandler
         ITelegramInteractionService interactionService,
         IStateBreakService stateBreaker)
     {
+        _uiResources = uiResources;
+        _statesResources = statesResources;
+        _errorsResources = errorsResources;
         _contactRemover = contactRemover;
         _contactGetter = contactGetter;
         _userGetter = userGetter;
@@ -51,7 +60,7 @@ public class UnmuteUserStateHandler : IStateHandler
                 Message? message = update.Message;
                 if (message == null || string.IsNullOrWhiteSpace(message.Text))
                 {
-                    await botClient.SendMessage(chatId, _resourceService.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, _errorsResources.GetString("Error.Input.InvalidValues"), cancellationToken: cancellationToken);
                     return StateResult.Continue();
                 }
 
@@ -67,7 +76,7 @@ public class UnmuteUserStateHandler : IStateHandler
 
                     if (string.IsNullOrEmpty(userName) || !allowedIds.Contains(contactTelegramId))
                     {
-                        await botClient.SendMessage(chatId, _resourceService.GetResourceString("NoUserFoundByID"), cancellationToken: cancellationToken);
+                        await botClient.SendMessage(chatId, _errorsResources.GetString("Error.UserNotFoundById"), cancellationToken: cancellationToken);
                         return StateResult.Complete();
                     }
                 }
@@ -78,7 +87,7 @@ public class UnmuteUserStateHandler : IStateHandler
 
                     if (contactId == -1 || !allowedIds.Contains(contactTelegramId))
                     {
-                        await botClient.SendMessage(chatId, _resourceService.GetResourceString("NoUserFoundByLink"), cancellationToken: cancellationToken);
+                        await botClient.SendMessage(chatId, _errorsResources.GetString("Error.UserNotFoundByLink"), cancellationToken: cancellationToken);
                         return StateResult.Complete();
                     }
                 }
@@ -86,7 +95,7 @@ public class UnmuteUserStateHandler : IStateHandler
                 stateData.Data["MutedByUserId"] = userId;
                 stateData.Data["MutedContactId"] = contactId;
 
-                await botClient.SendMessage(chatId, _resourceService.GetResourceString("ConfirmDecision"), cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, _uiResources.GetString("UI.ConfirmDecision"), cancellationToken: cancellationToken);
 
                 stateData.Step = 1;
                 return StateResult.Continue();
@@ -98,7 +107,7 @@ public class UnmuteUserStateHandler : IStateHandler
                 if (!stateData.Data.TryGetValue("MutedContactId", out object? contactIdObj)) return StateResult.Complete();
 
                 string activeMuteTime = _contactGetter.GetActiveMuteTimeByContactID((int)contactIdObj);
-                string text = string.Format(_resourceService.GetResourceString("UserInMute"), activeMuteTime);
+                string text = string.Format(_statesResources.GetString("State.Unmute.Confirm.IsMuted"), activeMuteTime);
                 await botClient.SendMessage(chatId, text, cancellationToken: cancellationToken);
 
                 stateData.Step = 2;
@@ -115,7 +124,7 @@ public class UnmuteUserStateHandler : IStateHandler
                 }
 
                 await _contactRemover.RemoveMutedContact((int)mutedByObj, (int)contactIdObj);
-                await _stateBreaker.AlertAndShowMenu(botClient, update, _resourceService.GetResourceString("UserUnmuted"));
+                await _stateBreaker.AlertAndShowMenu(botClient, update, _statesResources.GetString("State.Unmute.Success"));
 
                 return StateResult.Complete();
         }

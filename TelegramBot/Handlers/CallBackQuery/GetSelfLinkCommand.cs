@@ -10,13 +10,15 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
 public class GetSelfLinkCommand : IBotCallbackQueryHandlers
 {
+    private readonly IUiResourceService _uiResources;
     private readonly IUserGetter _userGetter;
     private readonly IResourceService _recourceService;
     private readonly ITelegramInteractionService _interactionService;
     public string Name => "get_self_link";
 
-    public GetSelfLinkCommand(IUserGetter userGetter, IResourceService resourceService, ITelegramInteractionService interactionService)
+    public GetSelfLinkCommand(IUserGetter userGetter, IResourceService resourceService, ITelegramInteractionService interactionService, IUiResourceService uiResources)
     {
+        _uiResources = uiResources;
         _userGetter = userGetter;
         _recourceService = resourceService;
         _interactionService = interactionService;
@@ -27,6 +29,6 @@ public class GetSelfLinkCommand : IBotCallbackQueryHandlers
         string link = _userGetter.GetUserSelfLink(update.CallbackQuery!.Message!.Chat.Id);
         User me = await botClient.GetMe();
         string startLink = $"\nhttps://t.me/{me.Username}?start={link}";
-        await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), ct, string.Format(_recourceService.GetResourceString("YourLink") + startLink, link));
+        await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), ct, string.Format(_uiResources.GetString("UI.Format.UserLink") + startLink, link));
     }
 }

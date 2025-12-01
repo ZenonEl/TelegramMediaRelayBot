@@ -10,6 +10,7 @@ namespace TelegramMediaRelayBot.Database.Repositories.MySql;
 
 public class MySqlContactAdder(IContactUoW contactUoWService) : IContactAdder
 {
+    private readonly IErrorsResourceService _errorsResources;
     // Методы-прослойки, которые вызывают новый сервис
     public Task AddContact(long telegramId, string link)
     {
@@ -72,10 +73,10 @@ public class MySqlContactSetter(IContactUoW contactUoWService) : IContactSetter
     }
 }
 
-public class MySqlContactGetter(IDbConnection dbConnection, TelegramMediaRelayBot.Config.Services.IResourceService resourceService) : IContactGetter
+public class MySqlContactGetter(IDbConnection dbConnection, IErrorsResourceService errorsResources) : IContactGetter
 {
 
-    private readonly TelegramMediaRelayBot.Config.Services.IResourceService _resourceService = resourceService;
+    private readonly IErrorsResourceService _errorsResources = errorsResources;
 
     public async Task<List<long>> GetAllContactUserTGIds(int userId)
     {
@@ -158,7 +159,7 @@ public class MySqlContactGetter(IDbConnection dbConnection, TelegramMediaRelayBo
                 new { contactID });
 
             return expirationDate?.ToString("yyyy-MM-dd HH:mm:ss")
-                ?? _resourceService.GetResourceString("NoActiveMute");
+                ?? _errorsResources.GetString("Error.Mute.NotActive");
         }
         catch (Exception ex)
         {
@@ -180,7 +181,7 @@ public class MySqlContactGetter(IDbConnection dbConnection, TelegramMediaRelayBo
                 new { contactID });
 
             return expirationDate?.ToString("yyyy-MM-dd HH:mm:ss")
-                ?? _resourceService.GetResourceString("NoActiveMute");
+                ?? _errorsResources.GetString("Error.Mute.NotActive");
         }
         catch (Exception ex)
         {

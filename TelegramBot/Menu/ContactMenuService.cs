@@ -25,6 +25,9 @@ public interface IContactMenuService
 
 public class ContactMenuService : IContactMenuService
 {
+    private readonly IUiResourceService _uiResources;
+    private readonly IStatesResourceService _statesResources;
+    private readonly IErrorsResourceService _errorsResources;
     private readonly IUserStateManager _stateManager;
     private readonly IUserGetter _userGetter;
     private readonly IContactGetter _contactGetter;
@@ -33,6 +36,9 @@ public class ContactMenuService : IContactMenuService
     private readonly ITelegramInteractionService _interactionService;
 
     public ContactMenuService(
+        IUiResourceService uiResources,
+        IStatesResourceService statesResources,
+        IErrorsResourceService errorsResources,
         IUserStateManager stateManager,
         IUserGetter userGetter,
         IContactGetter contactGetter,
@@ -40,6 +46,9 @@ public class ContactMenuService : IContactMenuService
         IResourceService resourceService,
         ITelegramInteractionService interactionService)
     {
+        _uiResources = uiResources;
+        _statesResources = statesResources;
+        _errorsResources = errorsResources;
         _stateManager = stateManager;
         _userGetter = userGetter;
         _contactGetter = contactGetter;
@@ -53,7 +62,7 @@ public class ContactMenuService : IContactMenuService
         long chatId = _interactionService.GetChatId(update);
         UserStateData newState = new UserStateData { StateName = "AddContact", Step = 0 };
         _stateManager.Set(chatId, newState);
-        await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), CancellationToken.None, _resourceService.GetResourceString("SpecifyContactLink"));
+        await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), CancellationToken.None, _statesResources.GetString("State.AddContact.Prompt.EnterLink"));
     }
 
     public async Task StartDeleteContactFlow(ITelegramBotClient botClient, Update update)
@@ -73,12 +82,12 @@ public class ContactMenuService : IContactMenuService
             string uname = _userGetter.GetUserNameByTelegramID(tg);
             string membership = await BuildMembershipInfo(userId, id);
 
-            string info = string.Format(_resourceService.GetResourceString("ContactInfo"), id, uname, "") +
+            string info = string.Format(_uiResources.GetString("UI.Format.ContactInfo"), id, uname, "") +
                             (string.IsNullOrEmpty(membership) ? "" : $"\n{membership}");
             infoList.Add(info);
         }
 
-        string prompt = $"{_resourceService.GetResourceString("YourContacts")}\n{string.Join("\n", infoList)}\n\n{_resourceService.GetResourceString("InputContactId")}";
+        string prompt = $"{_uiResources.GetString("UI.Header.YourContacts")}\n{string.Join("\n", infoList)}\n\n{_statesResources.GetString("State.RemoveContact.Prompt.EnterIds")}";
         await botClient.SendMessage(chatId, prompt, cancellationToken: CancellationToken.None);
     }
 
@@ -151,10 +160,10 @@ public class ContactMenuService : IContactMenuService
             long id = _userGetter.GetUserIDbyTelegramID(tgId);
             string username = _userGetter.GetUserNameByTelegramID(tgId);
             string link = _userGetter.GetUserSelfLink(tgId);
-            return string.Format(_resourceService.GetResourceString("ContactInfo"), id, username, link);
+            return string.Format(_uiResources.GetString("UI.Format.ContactInfo"), id, username, link);
         }).ToList();
 
-        await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), CancellationToken.None, $"{_resourceService.GetResourceString("YourContacts")}\n{string.Join("\n", contactUsersInfo)}");
+        await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), CancellationToken.None, $"{_uiResources.GetString("UI.Header.YourContacts")}\n{string.Join("\n", contactUsersInfo)}");
     }
 
     public async Task StartEditContactGroupFlow(ITelegramBotClient botClient, Update update)
@@ -178,7 +187,7 @@ public class ContactMenuService : IContactMenuService
                 update,
                 KeyboardUtils.GetReturnButtonMarkup(),
                 CancellationToken.None,
-                _resourceService.GetResourceString("AltYourGroupsText") // "У вас нет групп"
+                _uiResources.GetString("UI.Info.NoGroups") // "У вас нет групп"
             );
             return;
         }
@@ -198,7 +207,7 @@ public class ContactMenuService : IContactMenuService
             });
         }
         // Кнопка "Назад"
-        buttons.Add(new[] { InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("BackButtonText"), "show_groups") });
+        buttons.Add(new[] { InlineKeyboardButton.WithCallbackData(_uiResources.GetString("UI.Button.BackToMenu"), "show_groups") });
 
         // 4. Отправляем меню
         // TODO: Вынести текст в ресурсы "Group.SelectForEdit"
@@ -240,21 +249,21 @@ public class ContactMenuService : IContactMenuService
         List<ContactViewModel> contacts = await GetContactsForDisplay(userId);
 
         StringBuilder sb = new StringBuilder();
-        sb.AppendLine(_resourceService.GetResourceString("YourContacts"));
+        sb.AppendLine(_uiResources.GetString("UI.Header.YourContacts"));
 
         if (contacts.Any())
         {
             foreach (ContactViewModel contact in contacts)
             {
-                sb.AppendLine(string.Format(_resourceService.GetResourceString("ContactInfo"), contact.Id, contact.Name, contact.Link));
+                sb.AppendLine(string.Format(_uiResources.GetString("UI.Format.ContactInfo"), contact.Id, contact.Name, contact.Link));
                 sb.AppendLine(contact.MembershipInfo);
             }
         }
         else
         {
-            sb.AppendLine(_resourceService.GetResourceString("NoUsersFound"));
+            sb.AppendLine(_errorsResources.GetString("Error.Input.NoUsersFound"));
         }
-        sb.AppendLine($"\n{_resourceService.GetResourceString("PleaseEnterContactIDs")}");
+        sb.AppendLine($"\n{_statesResources.GetString("State.RemoveContact.Prompt.EnterIds.Generic")}");
 
         return await _interactionService.ReplyToUpdate(
             botClient,
@@ -279,6 +288,6 @@ public class ContactMenuService : IContactMenuService
             }
         }
         if (membership.Count == 0) return string.Empty;
-        return $"<i>{_resourceService.GetResourceString("ContactGroupsLabel")}</i> {string.Join(", ", membership)}";
+        return $"<i>{_uiResources.GetString("UI.Label.Groups")}</i> {string.Join(", ", membership)}";
     }
 }

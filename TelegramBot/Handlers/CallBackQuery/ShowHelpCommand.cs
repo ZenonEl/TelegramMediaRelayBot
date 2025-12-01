@@ -9,17 +9,19 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
 public class ShowHelpCommand : IBotCallbackQueryHandlers
 {
+    private readonly IHelpResourceService _helpResources;
     private readonly Config.Services.IResourceService _resourceService;
     public string Name => "show_help";
 
-    public ShowHelpCommand(Config.Services.IResourceService resourceService)
+    public ShowHelpCommand(Config.Services.IResourceService resourceService, IHelpResourceService helpResources)
     {
+        _helpResources = helpResources;
         _resourceService = resourceService;
     }
 
     public Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        string helpText = _resourceService.GetResourceString("HelpText");
+        string helpText = _helpResources.GetString("Help.Main");
         return botClient.EditMessageText(
             chatId: update.CallbackQuery!.Message!.Chat.Id,
             messageId: update.CallbackQuery!.Message!.MessageId,

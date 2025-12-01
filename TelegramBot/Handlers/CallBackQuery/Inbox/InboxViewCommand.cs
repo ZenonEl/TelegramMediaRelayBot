@@ -10,13 +10,17 @@ using TelegramMediaRelayBot.TelegramBot.Validation;
 
 public class InboxViewCommand : IBotCallbackQueryHandlers
 {
+    private readonly IUiResourceService _uiResources;
+    private readonly IInboxResourceService _inboxResources;
     private readonly IUserGetter _userGetter;
     private readonly IInboxRepository _inbox;
     private readonly IResourceService _resourceService;
     public string Name => "inbox:view:";
     private readonly IValidator<InboxViewRequest> _viewValidator;
-    public InboxViewCommand(IUserGetter userGetter, IInboxRepository inbox, IValidator<InboxViewRequest> viewValidator, IResourceService resourceService)
+    public InboxViewCommand(IUserGetter userGetter, IInboxRepository inbox, IValidator<InboxViewRequest> viewValidator, IResourceService resourceService, IInboxResourceService inboxResources, IUiResourceService uiResources)
     {
+        _uiResources = uiResources;
+        _inboxResources = inboxResources;
         _userGetter = userGetter;
         _inbox = inbox;
         _viewValidator = viewValidator;
@@ -52,7 +56,7 @@ public class InboxViewCommand : IBotCallbackQueryHandlers
         InboxItemDto? item = await _inbox.GetItemAsync(id).ConfigureAwait(false);
         if (item == null)
         {
-            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, _resourceService.GetResourceString("InboxItemNotFound"), cancellationToken: ct).ConfigureAwait(false);
+            await botClient.AnswerCallbackQuery(update.CallbackQuery!.Id, _inboxResources.GetString("Inbox.View.ItemNotFound"), cancellationToken: ct).ConfigureAwait(false);
             return;
         }
         Payload payload = System.Text.Json.JsonSerializer.Deserialize<Payload>(item.PayloadJson) ?? new Payload();
@@ -120,8 +124,8 @@ public class InboxViewCommand : IBotCallbackQueryHandlers
         string info = string.Format(_resourceService.GetResourceString("Inbox.ViewInfoTemplate"), senderName, h1, h2, captionEsc);
         InlineKeyboardMarkup kb = new InlineKeyboardMarkup(new[]
         {
-            new[] { InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("InboxDeleteButtonText"), $"inbox:delete:{id}:{page}") },
-            new[] { InlineKeyboardButton.WithCallbackData(_resourceService.GetResourceString("BackButtonText"), $"inbox:list:{page}") }
+            new[] { InlineKeyboardButton.WithCallbackData(_uiResources.GetString("UI.Button.Delete"), $"inbox:delete:{id}:{page}") },
+            new[] { InlineKeyboardButton.WithCallbackData(_uiResources.GetString("UI.Button.BackToMenu"), $"inbox:list:{page}") }
         });
         // Сначала отправляем текст с данными отправителя
         await botClient.SendMessage(chatId, info, cancellationToken: ct, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html).ConfigureAwait(false);

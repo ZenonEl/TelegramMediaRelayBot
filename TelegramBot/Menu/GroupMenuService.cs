@@ -20,6 +20,7 @@ public interface IGroupMenuService
 
 public class GroupMenuService : IGroupMenuService
 {
+    private readonly IUiResourceService _uiResources;
     private readonly IUserStateManager _stateManager;
     private readonly IUserGetter _userGetter;
     private readonly IGroupGetter _groupGetter;
@@ -27,12 +28,14 @@ public class GroupMenuService : IGroupMenuService
     private readonly ITelegramInteractionService _interactionService;
 
     public GroupMenuService(
+        IUiResourceService uiResources,
         IUserStateManager stateManager,
         IUserGetter userGetter,
         IGroupGetter groupGetter,
         Config.Services.IResourceService resourceService,
         ITelegramInteractionService interactionService)
     {
+        _uiResources = uiResources;
         _stateManager = stateManager;
         _userGetter = userGetter;
         _groupGetter = groupGetter;
@@ -52,8 +55,8 @@ public class GroupMenuService : IGroupMenuService
         List<string> groupInfos = await UsersGroup.GetUserGroupInfoByUserId(userId, _groupGetter);
 
         string messageText = groupInfos.Any()
-            ? $"{_resourceService.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}"
-            : _resourceService.GetResourceString("AltYourGroupsText");
+            ? $"{_uiResources.GetString("UI.Header.YourGroups")}\n{string.Join("\n", groupInfos)}"
+            : _uiResources.GetString("UI.Info.NoGroups");
 
         await _interactionService.ReplyToUpdate(
             botClient,

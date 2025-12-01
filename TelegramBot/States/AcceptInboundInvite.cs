@@ -12,6 +12,8 @@ namespace TelegramMediaRelayBot.TelegramBot.States;
 
 public class InboundInviteStateHandler : IStateHandler
 {
+    private readonly IUiResourceService _uiResources;
+    private readonly IStatesResourceService _statesResources;
     private readonly IContactSetter _contactSetter;
     private readonly IContactRemover _contactRemover;
     private readonly IInboundDBGetter _inboundDbGetter;
@@ -23,6 +25,8 @@ public class InboundInviteStateHandler : IStateHandler
     public string Name => "InboundInvite";
 
     public InboundInviteStateHandler(
+        IUiResourceService uiResources,
+        IStatesResourceService statesResources,
         IContactSetter contactSetter,
         IContactRemover contactRemover,
         IInboundDBGetter inboundDbGetter,
@@ -31,6 +35,8 @@ public class InboundInviteStateHandler : IStateHandler
         IStateBreakService stateBreaker,
         ITelegramInteractionService interactionService)
     {
+        _uiResources = uiResources;
+        _statesResources = statesResources;
         _contactSetter = contactSetter;
         _contactRemover = contactRemover;
         _inboundDbGetter = inboundDbGetter;
@@ -69,7 +75,7 @@ public class InboundInviteStateHandler : IStateHandler
                     stateData.Data["TargetUserId"] = userIdStr;
 
                     await _interactionService.ReplyToUpdate(botClient, update, InBoundKB.GetInBoundActionsKeyboardMarkup(userIdStr, "view_inbound_invite_links"),
-                                                cancellationToken, _resourceService.GetResourceString("SelectAction"));
+                                                cancellationToken, _uiResources.GetString("UI.ChooseActionForRequest"));
 
                     // Переходим на следующий шаг
                     stateData.Step = 1;
@@ -93,14 +99,14 @@ public class InboundInviteStateHandler : IStateHandler
                 if (callbackData.StartsWith("user_accept_inbounds_invite:"))
                 {
                     await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_accept_invite:{targetUserId}", $"decline_accept_invite:{targetUserId}"),
-                                                cancellationToken, _resourceService.GetResourceString("WaitAcceptInboundInvite"));
+                                                cancellationToken, _statesResources.GetString("State.InboundInvite.Confirm.Accept"));
                     stateData.Step = 2; // Переходим на шаг завершения
                     return StateResult.Continue();
                 }
                 else if (callbackData.StartsWith("user_decline_inbounds_invite:"))
                 {
                     await _interactionService.ReplyToUpdate(botClient, update, KeyboardUtils.GetConfirmForActionKeyboardMarkup($"accept_decline_invite:{targetUserId}", $"decline_decline_invite:{targetUserId}"),
-                                                cancellationToken, _resourceService.GetResourceString("WaitDeclineInboundInvite"));
+                                                cancellationToken, _statesResources.GetString("State.InboundInvite.Confirm.Decline"));
                     stateData.Step = 2; // Переходим на шаг завершения
                     return StateResult.Continue();
                 }
