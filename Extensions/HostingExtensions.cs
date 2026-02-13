@@ -14,6 +14,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MySql.Data.MySqlClient;
+using Serilog.Settings.Configuration;
 using TelegramBot.Services;
 using TelegramMediaRelayBot.Config;
 using TelegramMediaRelayBot.Config.Downloaders;
@@ -51,9 +52,17 @@ public static class HostingExtensions
     /// </summary>
     public static IHostBuilder AddSerilogLogging(this IHostBuilder builder)
     {
-        builder.UseSerilog((hostingContext, loggerConfiguration) =>
+        builder.UseSerilog((context, services, configuration) =>
         {
-            loggerConfiguration.ReadFrom.Configuration(hostingContext.Configuration);
+            ConfigurationReaderOptions options = new ConfigurationReaderOptions(
+                typeof(ConsoleLoggerConfigurationExtensions).Assembly, // Serilog.Sinks.Console
+                typeof(FileLoggerConfigurationExtensions).Assembly     // Serilog.Sinks.File
+            );
+
+            configuration
+                .ReadFrom.Configuration(context.Configuration, options)
+                .ReadFrom.Services(services)
+                .Enrich.FromLogContext();
         });
 
         return builder;
