@@ -25,7 +25,7 @@ namespace TelegramMediaRelayBot
         public static string? telegramApiProxy;
         public static string sqlConnectionString;
         public static string databaseName = "TelegramMediaRelayBot";
-        public static string dbType = "mysql";
+        public static string dbType = "sqlite";
         public static string? language;
         public static string proxy = "";
         public static int userUnMuteCheckInterval = 20; // Seconds

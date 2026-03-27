@@ -9,7 +9,7 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using DotNetTor.SocksPort;
+using System.Net;
 using TelegramMediaRelayBot.Database.Interfaces;
 
 
@@ -61,12 +61,11 @@ class Scheduler
     {
         try
         {
-            var controlPortClient = new DotNetTor.ControlPort.Client(Config.torSocksHost, controlPort: Config.torControlPort,
-                                                                    password: Config.torControlPassword);
+            await SendTorSignalNewnym();
 
-            await controlPortClient.ChangeCircuitAsync();
-
-            using (var httpClient = new HttpClient(new SocksPortHandler(Config.torSocksHost, socksPort: Config.torSocksPort)))
+            var proxy = new WebProxy($"socks5://{Config.torSocksHost}:{Config.torSocksPort}");
+            var handler = new HttpClientHandler { Proxy = proxy, UseProxy = true };
+            using (var httpClient = new HttpClient(handler))
             {
                 var result = await httpClient.GetStringAsync("https://check.torproject.org/api/ip");
                 Log.Debug("New Tor IP: " + result);
@@ -76,5 +75,24 @@ class Scheduler
         {
             Log.Error(ex, "An error occurred in the method{MethodName}", nameof(TorChangingChain));
         }
+    }
+
+    private static async Task SendTorSignalNewnym()
+    {
+        using var client = new System.Net.Sockets.TcpClient();
+        await client.ConnectAsync(Config.torSocksHost!, Config.torControlPort);
+        using var stream = client.GetStream();
+        using var writer = new StreamWriter(stream) { AutoFlush = true };
+        using var reader = new StreamReader(stream);
+
+        await writer.WriteLineAsync($"AUTHENTICATE \"{Config.torControlPassword}\"");
+        var authResponse = await reader.ReadLineAsync();
+        if (authResponse == null || !authResponse.StartsWith("250"))
+            throw new Exception($"Tor authentication failed: {authResponse}");
+
+        await writer.WriteLineAsync("SIGNAL NEWNYM");
+        var signalResponse = await reader.ReadLineAsync();
+        if (signalResponse == null || !signalResponse.StartsWith("250"))
+            throw new Exception($"Tor NEWNYM signal failed: {signalResponse}");
     }
 }

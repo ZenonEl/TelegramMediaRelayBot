@@ -40,23 +40,13 @@ public abstract class BaseDBMigration : Migration
         // Contacts
         if (!Schema.Table("Contacts").Exists())
         {
-            if (DBType == "sqlite")
-            {
-                Execute.Sql(@"
-                    CREATE TABLE Contacts (
-                        UserId INTEGER NOT NULL,
-                        ContactId INTEGER NOT NULL,
-                        status TEXT,
-                        PRIMARY KEY (UserId, ContactId)
-                    )");
-            }
-            else
-            {
-                Create.Table("Contacts")
-                    .WithColumn("UserId").AsInt32().NotNullable()
-                    .WithColumn("ContactId").AsInt32().NotNullable()
-                    .WithColumn("status").AsString(255).Nullable();
-            }
+            Execute.Sql(@"
+                CREATE TABLE Contacts (
+                    UserId INTEGER NOT NULL,
+                    ContactId INTEGER NOT NULL,
+                    status TEXT,
+                    PRIMARY KEY (UserId, ContactId)
+                )");
         }
 
         // MutedContacts
