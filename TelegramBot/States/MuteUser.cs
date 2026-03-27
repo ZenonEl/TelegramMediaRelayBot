@@ -111,7 +111,7 @@ public class ProcessUserMuteState : IUserState
 
                 if (int.TryParse(muteTime, out int time))
                 {
-                    DateTime unmuteTime = DateTime.Now.AddSeconds(time);
+                    DateTime unmuteTime = DateTime.UtcNow.AddSeconds(time);
                     expirationDate = unmuteTime;
                     string unmuteMessage = string.Format(Config.GetResourceString("UserWillBeUnmuted"), unmuteTime, time);
                     await botClient.SendMessage(chatId, unmuteMessage, cancellationToken: cancellationToken);
@@ -141,7 +141,7 @@ public class ProcessUserMuteState : IUserState
                 await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
 
                 UserSessionManager.Remove(chatId);
-                if (_contactAdder.AddMutedContact(mutedByUserId, mutedContactId, expirationDate))
+                if (!_contactAdder.MuteContact(mutedByUserId, mutedContactId, expirationDate))
                 {
                     await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("ActionCancelledError"));
                     return;

@@ -100,7 +100,9 @@ public class ProcessUserUnMuteState : IUserState
             case UserUnMuteState.WaitingForUnMute:
                 if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId)) return;
 
-                string activeMuteTime = _contactGetter.GetActiveMuteTimeByContactID(mutedContactId);
+                DateTime? mutedUntil = _contactGetter.GetMutedUntil(mutedByUserId, mutedContactId);
+                string activeMuteTime = mutedUntil?.ToString("yyyy-MM-dd HH:mm:ss")
+                    ?? Config.GetResourceString("NoActiveMute");
                 string text = string.Format(Config.GetResourceString("UserInMute"), activeMuteTime);
                 await botClient.SendMessage(chatId, text, cancellationToken: cancellationToken,
                                             replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.GetResourceString("YesButtonText")));
@@ -111,7 +113,7 @@ public class ProcessUserUnMuteState : IUserState
                 if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId)) return;
                 await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
 
-                _contactRemover.RemoveMutedContact(mutedByUserId, mutedContactId);
+                _contactRemover.UnmuteContact(mutedByUserId, mutedContactId);
                 await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("UserUnmuted"));
                 UserSessionManager.Remove(chatId);
                 break;

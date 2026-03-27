@@ -15,7 +15,6 @@ public interface IUserRepository
 {
     bool CheckUserExists(long telegramId);
     void AddUser(string name, long telegramID, bool user);
-    void UnMuteUserByMuteId(int userId);
     bool ReCreateUserSelfLink(int userId);
 }
 
@@ -26,7 +25,7 @@ public interface IUserGetter
     int GetUserIDbyTelegramID(long telegramID);
     string GetUserNameByTelegramID(long telegramID);
     List<long> GetUsersIdForMuteContactId(int contactId);
-    List<int> GetExpiredUsersMutes();
+    Task<List<(int UserId, int ContactId)>> GetExpiredMutesAsync();
     long GetUserTelegramIdByLink(string link);
     string GetUserSelfLink(long telegramId);
     Task<int> GetAllUsersCount();
