@@ -22,14 +22,14 @@ public class Contacts
 
     public static async Task AddContact(ITelegramBotClient botClient, Update update, long chatId, IContactAdder contactRepository, IContactGetter contactGetter, IUserGetter userGetter, IPrivacySettingsGetter privacySettingsGetter)
     {
-        TGBot.userStates[chatId] = new ProcessContactState(contactRepository, contactGetter, userGetter, privacySettingsGetter);
+        UserSessionManager.Set(chatId, new ProcessContactState(contactRepository, contactGetter, userGetter, privacySettingsGetter));
         await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, Config.GetResourceString("SpecifyContactLink"));
     }
 
     public static async Task DeleteContact(ITelegramBotClient botClient, Update update, long chatId, IContactRemover contactRemoverRepository, IContactGetter contactGetterRepository, IUserGetter userGetter)
     {
         Message statusMessage = await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Config.GetResourceString("InputContactId"), cancellationToken: cancellationToken);
-        TGBot.userStates[chatId] = new ProcessRemoveUser(statusMessage, contactRemoverRepository, contactGetterRepository, userGetter);
+        UserSessionManager.Set(chatId, new ProcessRemoveUser(statusMessage, contactRemoverRepository, contactGetterRepository, userGetter));
     }
 
     public static async Task MuteUserContact(
@@ -41,7 +41,7 @@ public class Contacts
         IUserGetter userGetter)
     {
         await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Config.GetResourceString("MuteUserInstructions"), cancellationToken: cancellationToken);
-        TGBot.userStates[chatId] = new ProcessUserMuteState(contactAdderRepository, contactGetterRepository, userGetter);
+        UserSessionManager.Set(chatId, new ProcessUserMuteState(contactAdderRepository, contactGetterRepository, userGetter));
     }
 
     public static async Task UnMuteUserContact(
@@ -53,7 +53,7 @@ public class Contacts
         IUserGetter userGetter)
     {
         await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Config.GetResourceString("UnmuteUserInstructions"), cancellationToken: cancellationToken);
-        TGBot.userStates[chatId] = new ProcessUserUnMuteState(contactRemoverRepository, contactGetter, userGetter);
+        UserSessionManager.Set(chatId, new ProcessUserUnMuteState(contactRemoverRepository, contactGetter, userGetter));
     }
 
     public static async Task ViewContacts(ITelegramBotClient botClient, Update update, IContactGetter contactGetterRepository, IUserGetter userGetter)
@@ -81,7 +81,7 @@ public class Contacts
         IUserGetter userGetter,
         IGroupGetter groupGetter)
     {
-        TGBot.userStates[chatId] = new ProcessContactGroupState(contactGroupRepository, userGetter, groupGetter);
+        UserSessionManager.Set(chatId, new ProcessContactGroupState(contactGroupRepository, userGetter, groupGetter));
 
         int userId = userGetter.GetUserIDbyTelegramID(chatId);
         List<string> groupInfos = await UsersGroup.GetUserGroupInfoByUserId(userId, groupGetter);

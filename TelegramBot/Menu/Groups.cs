@@ -30,7 +30,7 @@ public class Groups
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
         int userId = userGetter.GetUserIDbyTelegramID(chatId);
 
-        TGBot.userStates[chatId] = new ProcessUsersGroupState(userGetter, groupGetter, groupSetter);
+        UserSessionManager.Set(chatId, new ProcessUsersGroupState(userGetter, groupGetter, groupSetter));
         List<string> groupInfos = await UsersGroup.GetUserGroupInfoByUserId(userId, groupGetter);
 
         string messageText = groupInfos.Any() 

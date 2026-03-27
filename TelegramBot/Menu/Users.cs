@@ -176,7 +176,7 @@ public class UsersDB
         IUserGetter userGetter)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
-        TGBot.userStates[chatId] = new ProcessContactLinksState(false, contactRemoverRepository, contactGetterRepository, userRepository, userGetter);
+        UserSessionManager.Set(chatId, new ProcessContactLinksState(false, contactRemoverRepository, contactGetterRepository, userRepository, userGetter));
     }
 
     public static void UpdateSelfLinkWithDeleteSelectedContacts(Update update,
@@ -186,7 +186,7 @@ public class UsersDB
         IUserGetter userGetter)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
-        TGBot.userStates[chatId] = new ProcessContactLinksState(true, contactRemoverRepository, contactGetterRepository, userRepository, userGetter);
+        UserSessionManager.Set(chatId, new ProcessContactLinksState(true, contactRemoverRepository, contactGetterRepository, userRepository, userGetter));
     }
 
     public static bool UpdateSelfLinkWithContacts(Update update, IUserRepository userRepository, IUserGetter userGetter)

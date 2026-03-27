@@ -50,7 +50,7 @@ public class UserProcessOutboundState : IUserState
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (!TGBot.userStates.TryGetValue(chatId, out IUserState? value))
+        if (!UserSessionManager.TryGetValue(chatId, out IUserState? value))
         {
             return;
         }
@@ -68,7 +68,7 @@ public class UserProcessOutboundState : IUserState
                     userState.currentState = UserOutboundState.Finish;
                     return;
                 }
-                TGBot.userStates.Remove(chatId);
+                UserSessionManager.Remove(chatId);
                 await CallbackQueryMenuUtils.ViewOutboundInviteLinks(botClient, update, _outboundDBGetter, _userGetter);
                 break;
 
@@ -77,7 +77,7 @@ public class UserProcessOutboundState : IUserState
                 {
                     if (update.CallbackQuery.Data!.StartsWith("user_show_outbound_invite:"))
                     {
-                        TGBot.userStates.Remove(chatId);
+                        UserSessionManager.Remove(chatId);
                         await CallbackQueryMenuUtils.ShowOutboundInvite(botClient, update, chatId, _contactRepository, _outboundDBGetter, _userGetter);
                         return;
                     }
@@ -88,7 +88,7 @@ public class UserProcessOutboundState : IUserState
                         _contactRepository.RemoveContactByStatus(_userGetter.GetUserIDbyTelegramID(chatId), accepterTelegramID, ContactsStatus.WAITING_FOR_ACCEPT);
                     }
                 }
-                TGBot.userStates.Remove(chatId);
+                UserSessionManager.Remove(chatId);
                 await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                 break;

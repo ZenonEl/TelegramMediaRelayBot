@@ -52,7 +52,7 @@ public class UserProcessInboundState : IUserState
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (!TGBot.userStates.TryGetValue(chatId, out IUserState? value))
+        if (!UserSessionManager.TryGetValue(chatId, out IUserState? value))
         {
             return;
         }
@@ -70,14 +70,14 @@ public class UserProcessInboundState : IUserState
                     userState.currentState = UserInboundState.ProcessAction;
                     return;
                 }
-                TGBot.userStates.Remove(chatId);
+                UserSessionManager.Remove(chatId);
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                 break;
 
             case UserInboundState.ProcessAction:
                 if (update.Message != null && update.Message.Text != null)
                 {
-                    TGBot.userStates.Remove(chatId);
+                    UserSessionManager.Remove(chatId);
                     await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                     return;
                 }
@@ -125,7 +125,7 @@ public class UserProcessInboundState : IUserState
                     userState.currentState = UserInboundState.ProcessAction;
                     return;
                 }
-                TGBot.userStates.Remove(chatId);
+                UserSessionManager.Remove(chatId);
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
                 break;
         }

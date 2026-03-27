@@ -31,7 +31,7 @@ public partial class TGBot
     private readonly IPrivacySettingsGetter _privacySettingsGetter;
     private readonly ILinkCategorizer _categorizer;
     private readonly IUserFilterService _userFilter;
-    public static Dictionary<long, IUserState> userStates = [];
+    // User states are now managed by UserSessionManager
     public static CancellationToken cancellationToken;
 
     public TGBot(
@@ -89,7 +89,7 @@ public partial class TGBot
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (userStates[chatId] is IUserState userState)
+        if (UserSessionManager.Get(chatId) is IUserState userState)
         {
             await userState.ProcessState(botClient, update, cancellationToken);
         }
@@ -104,7 +104,7 @@ public partial class TGBot
 
         if (CommonUtilities.CheckPrivateChatType(update))
         {
-            if (userStates.ContainsKey(chatId))
+            if (UserSessionManager.ContainsKey(chatId))
             {
                 await ProcessState(botClient, update);
                 return;
@@ -346,7 +346,7 @@ public partial class TGBot
             return;
         }
 
-        if (userStates.TryGetValue(chatId, out IUserState? value))
+        if (UserSessionManager.TryGetValue(chatId, out IUserState? value))
         {
             IUserState userState = value;
             currentUserStatus = userState.GetCurrentState();

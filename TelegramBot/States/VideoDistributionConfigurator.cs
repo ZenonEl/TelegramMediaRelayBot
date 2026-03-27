@@ -72,7 +72,7 @@ public class ProcessVideoDC : IUserState
             case UsersStandardState.ProcessAction:
                 if (update.CallbackQuery != null)
                 {
-                    if (TGBot.userStates.TryGetValue(chatId, out var state) && state is ProcessVideoDC videoState)
+                    if (UserSessionManager.TryGetValue(chatId, out var state) && state is ProcessVideoDC videoState)
                     {
                         videoState.timeoutCTS.Cancel();
                     }
@@ -233,7 +233,7 @@ public class ProcessVideoDC : IUserState
                 }
                 else
                 {
-                    TGBot.userStates.Remove(chatId);
+                    UserSessionManager.Remove(chatId);
                 }
 
                 break;

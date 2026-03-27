@@ -53,7 +53,7 @@ public class ProcessUserMuteState : IUserState
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (!TGBot.userStates.TryGetValue(chatId, out IUserState? value))
+        if (!UserSessionManager.TryGetValue(chatId, out IUserState? value))
         {
             return;
         }
@@ -140,7 +140,7 @@ public class ProcessUserMuteState : IUserState
                 if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId)) return;
                 await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
 
-                TGBot.userStates.Remove(chatId);
+                UserSessionManager.Remove(chatId);
                 if (_contactAdder.AddMutedContact(mutedByUserId, mutedContactId, expirationDate))
                 {
                     await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("ActionCancelledError"));

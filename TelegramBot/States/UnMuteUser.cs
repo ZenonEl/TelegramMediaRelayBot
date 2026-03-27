@@ -52,7 +52,7 @@ public class ProcessUserUnMuteState : IUserState
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (!TGBot.userStates.TryGetValue(chatId, out IUserState? value))
+        if (!UserSessionManager.TryGetValue(chatId, out IUserState? value))
         {
             return;
         }
@@ -113,7 +113,7 @@ public class ProcessUserUnMuteState : IUserState
 
                 _contactRemover.RemoveMutedContact(mutedByUserId, mutedContactId);
                 await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("UserUnmuted"));
-                TGBot.userStates.Remove(chatId);
+                UserSessionManager.Remove(chatId);
                 break;
         }
     }
