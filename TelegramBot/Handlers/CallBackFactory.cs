@@ -10,6 +10,7 @@
 // (по вашему выбору) любой более поздней версии.
 
 
+using Serilog;
 using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers;
@@ -24,11 +25,12 @@ public class CallbackQueryHandlersFactory
         _commands = commands.ToDictionary(c => c.Name);
     }
 
-    public IBotCallbackQueryHandlers GetCommand(string commandName)
+    public IBotCallbackQueryHandlers? GetCommand(string commandName)
     {
         if (_commands.TryGetValue(commandName, out var command))
             return command;
 
-        throw new Exception($"CallbackQuery command: {commandName} not found");
+        Log.Warning("CallbackQuery command not found: {CommandName}", commandName);
+        return null;
     }
 }

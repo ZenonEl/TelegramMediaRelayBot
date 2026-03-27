@@ -119,7 +119,13 @@ public class PrivateUpdateHandler
         string commandName = colonIndex >= 0 ? data[..(colonIndex + 1)] : data;
 
         var command = _handlersFactory.GetCommand(commandName);
-        
+
+        if (command is null)
+        {
+            await botClient.AnswerCallbackQuery(callbackQuery!.Id, "Unknown action");
+            return;
+        }
+
         await command.ExecuteAsync(update, botClient, cancellationToken);
     }
 }
