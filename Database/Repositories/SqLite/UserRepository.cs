@@ -48,17 +48,6 @@ public class SqliteUserRepository(string connectionString) : IUserRepository
         connection.Execute(query, new { telegramID, name, link });
     }
 
-    public void UnMuteUserByMuteId(int muteId)
-    {
-        const string query = @"
-            UPDATE MutedContacts 
-            SET IsActive = 0 
-            WHERE MutedId = @muteId";
-        
-        using var connection = new SqliteConnection(_connectionString);
-        connection.Execute(query, new { muteId });
-    }
-
     public bool ReCreateUserSelfLink(int userId)
     {
         string newLink = Utils.GenerateUserLink();
@@ -111,13 +100,15 @@ public class SqliteUserGetter(string connectionString) : IUserGetter
     public List<long> GetUsersIdForMuteContactId(int contactId)
     {
         const string query = @"
-            SELECT MutedByUserId 
-            FROM MutedContacts 
-            WHERE MutedContactId = @ContactId AND IsActive = 1";
-        
+            SELECT UserId
+            FROM Contacts
+            WHERE ContactId = @ContactId
+            AND MutedUntil IS NOT NULL
+            AND MutedUntil > datetime('now')";
+
         using var connection = new SqliteConnection(_connectionString);
         var mutedByUserIds = connection.Query<int>(query, new { ContactId = contactId }).ToList();
-        
+
         return mutedByUserIds.Select(GetTelegramIDbyUserID).ToList();
     }
 
@@ -163,24 +154,24 @@ public class SqliteUserGetter(string connectionString) : IUserGetter
         return "";
     }
 
-    public List<int> GetExpiredUsersMutes()
+    public async Task<List<(int UserId, int ContactId)>> GetExpiredMutesAsync()
     {
         const string query = @"
-            SELECT MutedId 
-            FROM MutedContacts 
-            WHERE ExpirationDate <= datetime('now') 
-            AND IsActive = 1";
+            SELECT UserId, ContactId
+            FROM Contacts
+            WHERE MutedUntil IS NOT NULL
+            AND MutedUntil <= datetime('now')";
 
         try
         {
             using var connection = new SqliteConnection(_connectionString);
-            var expiredMuteIds = connection.Query<int>(query).ToList();
-            return expiredMuteIds;
+            var results = await connection.QueryAsync<(int UserId, int ContactId)>(query);
+            return results.ToList();
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetExpiredUsersMutes));
-            return new List<int>();
+            Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetExpiredMutesAsync));
+            return new List<(int UserId, int ContactId)>();
         }
     }
 

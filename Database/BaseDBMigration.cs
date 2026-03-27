@@ -45,20 +45,9 @@ public abstract class BaseDBMigration : Migration
                     UserId INTEGER NOT NULL,
                     ContactId INTEGER NOT NULL,
                     status TEXT,
+                    MutedUntil TEXT,
                     PRIMARY KEY (UserId, ContactId)
                 )");
-        }
-
-        // MutedContacts
-        if (!Schema.Table("MutedContacts").Exists())
-        {
-            Create.Table("MutedContacts")
-                .WithColumn("MutedId").AsInt32().PrimaryKey().Identity()
-                .WithColumn("MutedByUserId").AsInt32().NotNullable()
-                .WithColumn("MutedContactId").AsInt32().NotNullable()
-                .WithColumn("MuteDate").AsDateTime().NotNullable()
-                .WithColumn("ExpirationDate").AsDateTime().Nullable()
-                .WithColumn("IsActive").AsBoolean().NotNullable().WithDefaultValue(true);
         }
 
         // UsersGroups

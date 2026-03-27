@@ -19,16 +19,16 @@ class Scheduler
 {
     private Timer? _unMuteTimer;
     private Timer? _torChangingChainTimer;
-    private readonly IUserRepository _userRepository;
     private readonly IUserGetter _userGetter;
+    private readonly IContactRemover _contactRemover;
 
     public Scheduler(
-        IUserRepository userRepository,
-        IUserGetter userGetter
+        IUserGetter userGetter,
+        IContactRemover contactRemover
     )
     {
-        _userRepository = userRepository;
         _userGetter = userGetter;
+        _contactRemover = contactRemover;
     }
 
     public void Init()
@@ -39,23 +39,21 @@ class Scheduler
         Log.Information("Scheduler started");
     }
 
-    private Task CheckForUnmuteContacts()
+    private async Task CheckForUnmuteContacts()
     {
         try
         {
-            List<int> expiredMutes = _userGetter.GetExpiredUsersMutes();
+            var expiredMutes = await _userGetter.GetExpiredMutesAsync();
 
-            foreach (var muteUserId in expiredMutes)
+            foreach (var (userId, contactId) in expiredMutes)
             {
-                _userRepository.UnMuteUserByMuteId(muteUserId);
+                _contactRemover.UnmuteContact(userId, contactId);
             }
         }
         catch (Exception ex)
         {
             Log.Error(ex, "An error occurred in the method{MethodName}", nameof(CheckForUnmuteContacts));
         }
-
-        return Task.CompletedTask;
     }
 
     private static async Task TorChangingChain()

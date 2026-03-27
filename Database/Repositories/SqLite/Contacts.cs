@@ -44,34 +44,25 @@ public class SqliteContactAdder(string connectionString) : IContactAdder
         }
     }
 
-    public bool AddMutedContact(int mutedByUserId, int mutedContactId, DateTime? expirationDate = null, DateTime muteDate = default)
+    public bool MuteContact(int userId, int contactId, DateTime? mutedUntil = null)
     {
-        if (muteDate == default)
-        {
-            muteDate = DateTime.Now;
-        }
-
         const string query = @"
-            INSERT INTO MutedContacts (MutedByUserId, MutedContactId, MuteDate, ExpirationDate)
-            VALUES (@mutedByUserId, @mutedContactId, @muteDate, @expirationDate)
-            ON CONFLICT(MutedByUserId, MutedContactId) 
-            DO UPDATE SET
-                MuteDate = @muteDate,
-                ExpirationDate = @expirationDate,
-                IsActive = 1";
+            UPDATE Contacts
+            SET MutedUntil = @mutedUntil
+            WHERE UserId = @userId AND ContactId = @contactId";
 
         using (var connection = new SqliteConnection(_connectionString))
         {
             try
             {
-                connection.Execute(query, new 
+                string? mutedUntilStr = mutedUntil?.ToString("o");
+                int affected = connection.Execute(query, new
                 {
-                    mutedByUserId,
-                    mutedContactId,
-                    muteDate,
-                    expirationDate
+                    userId,
+                    contactId,
+                    mutedUntil = mutedUntilStr
                 });
-                return true;
+                return affected > 0;
             }
             catch (Exception ex)
             {
@@ -86,22 +77,24 @@ public class SqliteContactRemover(string connectionString) : IContactRemover
 {
     private readonly string _connectionString = connectionString;
 
-    public void RemoveMutedContact(int userId, int contactId)
+    public bool UnmuteContact(int userId, int contactId)
     {
         const string query = @"
-            UPDATE MutedContacts
-            SET IsActive = 0
-            WHERE MutedByUserId = @userId AND MutedContactId = @contactId";
+            UPDATE Contacts
+            SET MutedUntil = NULL
+            WHERE UserId = @userId AND ContactId = @contactId";
 
         using (var connection = new SqliteConnection(_connectionString))
         {
             try
             {
-                connection.Execute(query, new { userId, contactId });
+                int affected = connection.Execute(query, new { userId, contactId });
+                return affected > 0;
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "An error occurred in the method {MethodName}", nameof(RemoveMutedContact));
+                Log.Error(ex, "An error occurred in the method {MethodName}", nameof(UnmuteContact));
+                return false;
             }
         }
     }
@@ -385,26 +378,28 @@ public class SqliteContactGetter(string connectionString) : IContactGetter
         }
     }
 
-    public string GetActiveMuteTimeByContactID(int contactID)
+    public DateTime? GetMutedUntil(int userId, int contactId)
     {
         try
         {
             using var connection = new SqliteConnection(_connectionString);
-            
-            var expirationDate = connection.QueryFirstOrDefault<DateTime?>(
-                @"SELECT ExpirationDate 
-                FROM MutedContacts 
-                WHERE MutedContactId = @contactID 
-                AND IsActive = 1",
-                new { contactID });
 
-            return expirationDate?.ToString("yyyy-MM-dd HH:mm:ss") 
-                ?? Config.GetResourceString("NoActiveMute");
+            var mutedUntilStr = connection.QueryFirstOrDefault<string?>(
+                @"SELECT MutedUntil
+                FROM Contacts
+                WHERE UserId = @userId AND ContactId = @contactId",
+                new { userId, contactId });
+
+            if (mutedUntilStr != null && DateTime.TryParse(mutedUntilStr, out var result))
+            {
+                return result;
+            }
+            return null;
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetActiveMuteTimeByContactID));
-            return "";
+            Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetMutedUntil));
+            return null;
         }
     }
 

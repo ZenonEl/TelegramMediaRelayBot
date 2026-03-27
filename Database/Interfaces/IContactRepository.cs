@@ -15,12 +15,12 @@ namespace TelegramMediaRelayBot.Database.Interfaces;
 public interface IContactAdder
 {
     void AddContact(long telegramID, string link);
-    bool AddMutedContact(int mutedByUserId, int mutedContactId, DateTime? expirationDate = null, DateTime muteDate = default);
+    bool MuteContact(int userId, int contactId, DateTime? mutedUntil = null);
 }
 
 public interface IContactRemover
 {
-    void RemoveMutedContact(int userId, int contactId);
+    bool UnmuteContact(int userId, int contactId);
     bool RemoveContactByStatus(int senderTelegramID, int accepterTelegramID, string? status = null);
     bool RemoveUsersFromContacts(int userId, List<int> contactIds);
     bool RemoveAllContactsExcept(int userId, List<int> excludeIds);
@@ -36,7 +36,7 @@ public interface IContactGetter
 {
     Task<List<long>> GetAllContactUserTGIds(int userId);
     Task<List<int>> GetAllContactUserIds(int userId);
-    string GetActiveMuteTimeByContactID(int contactID);
+    DateTime? GetMutedUntil(int userId, int contactId);
     int GetContactIDByLink(string link);
     int GetContactByTelegramID(long telegramID);
 }

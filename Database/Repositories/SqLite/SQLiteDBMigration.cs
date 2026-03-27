@@ -44,15 +44,6 @@ public class SQLiteDBMigration : BaseDBMigration
             .OnTable("Contacts")
             .OnColumn("ContactId");
 
-        // ========== Индексы для MutedContacts ==========
-        Create.Index("IX_MutedContacts_MutedByUserId")
-            .OnTable("MutedContacts")
-            .OnColumn("MutedByUserId");
-
-        Create.Index("IX_MutedContacts_MutedContactId")
-            .OnTable("MutedContacts")
-            .OnColumn("MutedContactId");
-
         // ========== Индексы для UsersGroups ==========
         Create.Index("IX_UsersGroups_UserId")
             .OnTable("UsersGroups")
