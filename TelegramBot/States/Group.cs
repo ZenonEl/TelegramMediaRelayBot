@@ -55,7 +55,7 @@ public class ProcessUsersGroupState : IUserState
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (!TGBot.userStates.TryGetValue(chatId, out IUserState? value))
+        if (!UserSessionManager.TryGetValue(chatId, out IUserState? value))
         {
             return;
         }
@@ -128,7 +128,7 @@ public class ProcessUsersGroupState : IUserState
                 await ProcessFinish(chatId);
                 string text = isDBActionSuccessful ? Config.GetResourceString("SuccessActionResult") : Config.GetResourceString("ErrorActionResult");
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, text);
-                TGBot.userStates.Remove(chatId);
+                UserSessionManager.Remove(chatId);
                 break;
         }
     }

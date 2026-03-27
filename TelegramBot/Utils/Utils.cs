@@ -98,7 +98,7 @@ public static class CommonUtilities
     {
         await botClient.SendMessage(chatId, text, cancellationToken: cancellationToken);
         await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-        TGBot.userStates.Remove(chatId);
+        UserSessionManager.Remove(chatId);
     }
 
     public static async Task<bool> HandleStateBreakCommand(ITelegramBotClient botClient,
@@ -113,7 +113,7 @@ public static class CommonUtilities
         {
             if (removeReplyMarkup) await ReplyKeyboardUtils.RemoveReplyMarkup(botClient, chatId, cancellationToken);
             await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken);
-            TGBot.userStates.Remove(chatId);
+            UserSessionManager.Remove(chatId);
             return true;
         }
         return false;

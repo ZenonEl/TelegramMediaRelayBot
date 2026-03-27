@@ -35,6 +35,9 @@ namespace TelegramMediaRelayBot
         public static int videoGetDelay = 1000;
         public static int contactSendDelay = 1000;
 
+        public static int sessionTtlMinutes = 30;
+        public static int sessionCleanupIntervalMinutes = 5;
+
         public static LogEventLevel logLevel = LogEventLevel.Information;
         public static bool showVideoDownloadProgress = false;
         public static bool showVideoUploadProgress = false;
@@ -79,6 +82,9 @@ namespace TelegramMediaRelayBot
 
             videoGetDelay = configuration.GetValue("MessageDelaySettings:VideoGetDelay", 1000);
             contactSendDelay = configuration.GetValue("MessageDelaySettings:ContactSendDelay", 1000);
+
+            sessionTtlMinutes = configuration.GetValue("AppSettings:SessionTtlMinutes", 30);
+            sessionCleanupIntervalMinutes = configuration.GetValue("AppSettings:SessionCleanupIntervalMinutes", 5);
 
             logLevel = configuration.GetValue("ConsoleOutputSettings:LogLevel", LogEventLevel.Information);
             showVideoDownloadProgress = configuration.GetValue("ConsoleOutputSettings:ShowVideoDownloadProgress", false);

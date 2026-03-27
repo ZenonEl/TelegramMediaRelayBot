@@ -83,7 +83,7 @@ public class PrivateUpdateHandler
             string defaultActionData = _defaultActionGetter.GetDefaultActionByUserIDAndType(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
 
             CancellationTokenSource timeoutCTS = new CancellationTokenSource();
-            TGBot.userStates[chatId] = new ProcessVideoDC(link, statusMessage, text, timeoutCTS, _tgBot, _contactGetterRepository, _userGetter, _groupGetter);
+            UserSessionManager.Set(chatId, new ProcessVideoDC(link, statusMessage, text, timeoutCTS, _tgBot, _contactGetterRepository, _userGetter, _groupGetter));
 
             if (defaultActionData == UsersAction.NO_VALUE) return;
 

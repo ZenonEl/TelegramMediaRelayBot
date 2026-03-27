@@ -52,7 +52,7 @@ public class ProcessContactLinksState : IUserState
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
-        if (!TGBot.userStates.TryGetValue(chatId, out IUserState? value) || value is not ProcessContactLinksState userState)
+        if (!UserSessionManager.TryGetValue(chatId, out IUserState? value) || value is not ProcessContactLinksState userState)
             return;
 
         switch (userState.currentState)
@@ -151,7 +151,7 @@ public class ProcessContactLinksState : IUserState
             actionStatus = _contactRemover.RemoveAllContactsExcept(userState.actingUserId, userState.targetIds);
         }
 
-        TGBot.userStates.Remove(chatId);
+        UserSessionManager.Remove(chatId);
 
         string statusMessage = actionStatus 
             ? Config.GetResourceString("SuccessActionResult") 
@@ -170,7 +170,7 @@ public class ProcessContactLinksState : IUserState
 
     private static async Task FinishState(ITelegramBotClient botClient, Update update, long chatId, CancellationToken cancellationToken)
     {
-        TGBot.userStates.Remove(chatId);
+        UserSessionManager.Remove(chatId);
         await CommonUtilities.SendMessage(
             botClient,
             update,
