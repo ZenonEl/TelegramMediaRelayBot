@@ -10,7 +10,7 @@
 // (по вашему выбору) любой более поздней версии.
 
 using System.Diagnostics;
-using DotNetTor.SocksPort;
+using System.Net;
 
 namespace TelegramMediaRelayBot
 {
@@ -38,10 +38,11 @@ namespace TelegramMediaRelayBot
                 string tempDirPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
                 Directory.CreateDirectory(tempDirPath);
                 
-                using var httpClient = new HttpClient(new SocksPortHandler(Config.torSocksHost, socksPort: Config.torSocksPort));
-
                 if (Config.torEnabled)
                 {
+                    var proxy = new WebProxy($"socks5://{Config.torSocksHost}:{Config.torSocksPort}");
+                    var handler = new HttpClientHandler { Proxy = proxy, UseProxy = true };
+                    using var httpClient = new HttpClient(handler);
                     var result = await httpClient.GetStringAsync("https://check.torproject.org/api/ip");
                     Log.Debug("Tor IP: " + result);
                 }

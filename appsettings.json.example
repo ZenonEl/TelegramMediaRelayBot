@@ -1,9 +1,9 @@
 {
     "AppSettings": {
         "TelegramBotToken": "1234:abcd",
-        "SqlConnectionString": "Server=IPAddress;Database=DatabaseName;User ID=UserName;Password=UserPassword;",
+        "SqlConnectionString": "Data Source=TelegramMediaRelayBot.db",
         "DatabaseName": "TelegramMediaRelayBot",
-        "DatabaseType": "MySql",
+        "DatabaseType": "sqlite",
         "Language": "en-US",
         "Proxy": "socks5://127.0.0.1:9050",
         "UserUnMuteCheckInterval": 20,
