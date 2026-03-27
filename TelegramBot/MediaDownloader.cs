@@ -63,8 +63,7 @@ public partial class TGBot
 
     public async Task Start()
     {
-        string telegramBotToken = Config.telegramBotToken!;
-        ITelegramBotClient _botClient = new TelegramBotClient(telegramBotToken);
+        ITelegramBotClient _botClient = Config.CreateTelegramBotClient();
 
         var me = await _botClient.GetMe();
         Log.Information($"Hello, I am {me.Id} ready and my name is {me.FirstName}.");

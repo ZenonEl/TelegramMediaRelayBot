@@ -56,7 +56,7 @@ public class FluentDBMigrator
     {
         var builder = WebApplication.CreateBuilder(args);
         builder.Services.AddSingleton<ITelegramBotClient>(_ =>
-            new TelegramBotClient(Config.telegramBotToken!));
+            Config.CreateTelegramBotClient());
 
         builder.Services.AddSingleton<ILinkCategorizer>(_ =>
                     new HashTableLinkCategorizer(new DomainsLoader()));

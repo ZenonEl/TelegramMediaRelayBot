@@ -8,7 +8,9 @@
         "Proxy": "socks5://127.0.0.1:9050",
         "UserUnMuteCheckInterval": 20,
         "UseGalleryDl": true,
-        "AccessDeniedMessageContact": ""
+        "AccessDeniedMessageContact": "",
+        "TelegramApiBaseUrl": null,
+        "TelegramApiProxy": null
     },
     "Tor": {
         "Enabled": true,

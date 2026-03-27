@@ -12,6 +12,7 @@
 using System.Resources;
 using Serilog.Events;
 using Microsoft.Extensions.Configuration;
+using Telegram.Bot;
 using TelegramMediaRelayBot.Database.Interfaces;
 
 
@@ -20,6 +21,8 @@ namespace TelegramMediaRelayBot
     class Config
     {
         public static string? telegramBotToken;
+        public static string? telegramApiBaseUrl;
+        public static string? telegramApiProxy;
         public static string sqlConnectionString;
         public static string databaseName = "TelegramMediaRelayBot";
         public static string dbType = "mysql";
@@ -64,6 +67,8 @@ namespace TelegramMediaRelayBot
                 .Build();
 
             telegramBotToken = configuration["AppSettings:TelegramBotToken"]!;
+            telegramApiBaseUrl = configuration["AppSettings:TelegramApiBaseUrl"];
+            telegramApiProxy = configuration["AppSettings:TelegramApiProxy"];
             sqlConnectionString = configuration["AppSettings:SqlConnectionString"]!;
             databaseName = configuration["AppSettings:DatabaseName"]!;
             language = configuration["AppSettings:Language"]!;
@@ -94,6 +99,34 @@ namespace TelegramMediaRelayBot
 
             whitelistedReferrerIds = configuration.GetSection("AccessPolicy:NewUsersPolicy:AllowRules:WhitelistedReferrerIds").Get<List<long>>() ?? new List<long>();
             blacklistedReferrerIds = configuration.GetSection("AccessPolicy:NewUsersPolicy:AllowRules:BlacklistedReferrerIds").Get<List<long>>() ?? new List<long>();
+        }
+
+        public static ITelegramBotClient CreateTelegramBotClient()
+        {
+            if (string.IsNullOrWhiteSpace(telegramBotToken))
+                throw new ArgumentException("Telegram Bot Token is not configured.");
+
+            HttpClient? httpClient = null;
+            if (!string.IsNullOrWhiteSpace(telegramApiProxy))
+            {
+                var proxy = new System.Net.WebProxy(telegramApiProxy);
+                var handler = new System.Net.Http.SocketsHttpHandler { Proxy = proxy, UseProxy = true };
+                httpClient = new HttpClient(handler);
+            }
+
+            TelegramBotClientOptions options;
+            if (!string.IsNullOrWhiteSpace(telegramApiBaseUrl))
+            {
+                options = new TelegramBotClientOptions(telegramBotToken, telegramApiBaseUrl);
+            }
+            else
+            {
+                options = new TelegramBotClientOptions(telegramBotToken);
+            }
+
+            return httpClient != null
+                ? new TelegramBotClient(options, httpClient)
+                : new TelegramBotClient(options);
         }
 
         public static string GetResourceString(string key)
