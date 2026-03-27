@@ -5,13 +5,18 @@
         "DatabaseName": "TelegramMediaRelayBot",
         "DatabaseType": "sqlite",
         "Language": "en-US",
-        "Proxy": "socks5://127.0.0.1:9050",
         "UserUnMuteCheckInterval": 20,
         "UseGalleryDl": true,
         "AccessDeniedMessageContact": "",
+
+        "_comment_proxy": "Proxy for media downloads via yt-dlp/gallery-dl. Supports HTTP and SOCKS5.",
+        "Proxy": "socks5://127.0.0.1:9050",
+
+        "_comment_telegram_api": "TelegramApiBaseUrl: custom Bot API server URL (null = default). TelegramApiProxy: proxy for Telegram API requests, useful in regions where Telegram is blocked.",
         "TelegramApiBaseUrl": null,
         "TelegramApiProxy": null
     },
+    "_comment_tor": "Tor SOCKS proxy for media downloads and automatic circuit rotation.",
     "Tor": {
         "Enabled": true,
         "TorControlPassword": "Password",

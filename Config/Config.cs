@@ -20,34 +20,42 @@ namespace TelegramMediaRelayBot
 {
     class Config
     {
+        // General Settings
         public static string? telegramBotToken;
         public static string? telegramApiBaseUrl;
-        public static string? telegramApiProxy;
         public static string sqlConnectionString;
         public static string databaseName = "TelegramMediaRelayBot";
         public static string dbType = "sqlite";
         public static string? language;
-        public static string proxy = "";
         public static int userUnMuteCheckInterval = 20; // Seconds
         public static bool isUseGalleryDl = false;
         public static string accessDeniedMessageContact = " ";
 
-        public static int videoGetDelay = 1000;
-        public static int contactSendDelay = 1000;
-
-        public static int sessionTtlMinutes = 30;
-        public static int sessionCleanupIntervalMinutes = 5;
-
-        public static LogEventLevel logLevel = LogEventLevel.Information;
-        public static bool showVideoDownloadProgress = false;
-        public static bool showVideoUploadProgress = false;
-
+        // Proxy Configuration
+        // Proxy for media downloads (yt-dlp/gallery-dl). Supports HTTP/SOCKS5.
+        public static string proxy = "";
+        // Proxy for Telegram Bot API requests. Useful in regions where Telegram is blocked.
+        public static string? telegramApiProxy;
+        // Tor SOCKS proxy and circuit control settings (see "Tor" config section).
         public static bool torEnabled = false;
         public static string? torControlPassword;
         public static string? torSocksHost;
         public static int torSocksPort = 9050;
         public static int torControlPort = 9051;
         public static int torChangingChainInterval = 5; // Minutes
+
+        // Delays
+        public static int videoGetDelay = 1000;
+        public static int contactSendDelay = 1000;
+
+        // Session
+        public static int sessionTtlMinutes = 30;
+        public static int sessionCleanupIntervalMinutes = 5;
+
+        // Console Output
+        public static LogEventLevel logLevel = LogEventLevel.Information;
+        public static bool showVideoDownloadProgress = false;
+        public static bool showVideoUploadProgress = false;
 
         private static bool isAccessPolicyEnabled = true;
         private static bool isAccessNewUsersEnabled = true;
