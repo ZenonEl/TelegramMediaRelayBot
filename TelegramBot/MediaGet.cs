@@ -38,12 +38,11 @@ namespace TelegramMediaRelayBot
                 string tempDirPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
                 Directory.CreateDirectory(tempDirPath);
                 
-                var proxy = new WebProxy($"socks5://{Config.torSocksHost}:{Config.torSocksPort}");
-                var handler = new HttpClientHandler { Proxy = proxy, UseProxy = true };
-                using var httpClient = new HttpClient(handler);
-
                 if (Config.torEnabled)
                 {
+                    var proxy = new WebProxy($"socks5://{Config.torSocksHost}:{Config.torSocksPort}");
+                    var handler = new HttpClientHandler { Proxy = proxy, UseProxy = true };
+                    using var httpClient = new HttpClient(handler);
                     var result = await httpClient.GetStringAsync("https://check.torproject.org/api/ip");
                     Log.Debug("Tor IP: " + result);
                 }

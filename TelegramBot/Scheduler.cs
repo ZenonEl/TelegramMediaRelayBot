@@ -85,7 +85,8 @@ class Scheduler
         using var writer = new StreamWriter(stream) { AutoFlush = true };
         using var reader = new StreamReader(stream);
 
-        await writer.WriteLineAsync($"AUTHENTICATE \"{Config.torControlPassword}\"");
+        string hexPassword = Convert.ToHexString(System.Text.Encoding.UTF8.GetBytes(Config.torControlPassword ?? ""));
+        await writer.WriteLineAsync($"AUTHENTICATE {hexPassword}");
         var authResponse = await reader.ReadLineAsync();
         if (authResponse == null || !authResponse.StartsWith("250"))
             throw new Exception($"Tor authentication failed: {authResponse}");

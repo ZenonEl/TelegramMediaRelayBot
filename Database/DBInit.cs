@@ -25,7 +25,7 @@ namespace TelegramMediaRelayBot.Database;
 
 public class FluentDBMigrator
 {
-    public static ServiceProvider GetCurrentServiceProvider(string DBType)
+    public static ServiceProvider GetCurrentServiceProvider()
     {
         var serviceCollection = new ServiceCollection()
             .AddFluentMigratorCore()
@@ -39,7 +39,7 @@ public class FluentDBMigrator
         return serviceCollection.BuildServiceProvider(false);
     }
 
-    public static WebApplicationBuilder CreateBuilderByDBType(string[] args, string DBType)
+    public static WebApplicationBuilder CreateBuilderByDBType(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
         builder.Services.AddSingleton<ITelegramBotClient>(_ =>
