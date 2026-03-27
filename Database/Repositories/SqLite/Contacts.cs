@@ -55,7 +55,7 @@ public class SqliteContactAdder(string connectionString) : IContactAdder
         {
             try
             {
-                string? mutedUntilStr = mutedUntil?.ToString("o");
+                string? mutedUntilStr = mutedUntil?.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss");
                 int affected = connection.Execute(query, new
                 {
                     userId,

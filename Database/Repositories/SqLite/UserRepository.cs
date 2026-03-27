@@ -103,8 +103,7 @@ public class SqliteUserGetter(string connectionString) : IUserGetter
             SELECT UserId
             FROM Contacts
             WHERE ContactId = @ContactId
-            AND MutedUntil IS NOT NULL
-            AND MutedUntil > datetime('now')";
+            AND (MutedUntil IS NULL OR MutedUntil > datetime('now'))";
 
         using var connection = new SqliteConnection(_connectionString);
         var mutedByUserIds = connection.Query<int>(query, new { ContactId = contactId }).ToList();

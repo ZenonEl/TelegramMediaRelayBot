@@ -111,7 +111,7 @@ public class ProcessUserMuteState : IUserState
 
                 if (int.TryParse(muteTime, out int time))
                 {
-                    DateTime unmuteTime = DateTime.Now.AddSeconds(time);
+                    DateTime unmuteTime = DateTime.UtcNow.AddSeconds(time);
                     expirationDate = unmuteTime;
                     string unmuteMessage = string.Format(Config.GetResourceString("UserWillBeUnmuted"), unmuteTime, time);
                     await botClient.SendMessage(chatId, unmuteMessage, cancellationToken: cancellationToken);
