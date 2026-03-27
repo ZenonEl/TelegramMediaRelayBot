@@ -45,3 +45,5 @@ todo
 *.db
 .env
 data/
+/.claude
+TelegramMediaRelayBot.sln
