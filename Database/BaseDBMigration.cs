@@ -117,6 +117,22 @@ public abstract class BaseDBMigration : Migration
                 .WithColumn("TargetType").AsString(255).NotNullable()
                 .WithColumn("TargetValue").AsString(255).NotNullable();
         }
+
+        // UserStates
+        if (!Schema.Table("UserStates").Exists())
+        {
+            Execute.Sql(@"
+                CREATE TABLE IF NOT EXISTS UserStates (
+                    ChatId INTEGER PRIMARY KEY,
+                    StateName TEXT NOT NULL,
+                    StateDataJson TEXT NOT NULL DEFAULT '{}',
+                    CreatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+                    ExpiresAt TEXT NOT NULL
+                )");
+
+            Execute.Sql(@"
+                CREATE INDEX IF NOT EXISTS IX_UserStates_ExpiresAt ON UserStates(ExpiresAt)");
+        }
     }
 
     protected abstract void CreateSpecificConstraints();
