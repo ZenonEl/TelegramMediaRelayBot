@@ -15,7 +15,7 @@ namespace TelegramMediaRelayBot.TelegramBot.Handlers;
 
 public class GroupUpdateHandler
 {
-    private TGBot _tgBot;
+    private readonly TGBot _tgBot;
 
     public GroupUpdateHandler(
         TGBot tgBot)
@@ -26,39 +26,107 @@ public class GroupUpdateHandler
     public async Task HandleGroupUpdate(Update update, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
         string messageText = update.Message!.Text!;
-        if (messageText.Contains("/link"))
+        long chatId = update.Message.Chat.Id;
+
+        if (messageText.StartsWith("/link"))
         {
-            string link;
-            string text = "";
-
-            string trimmedMessage = messageText[5..].Trim();
-
-            int separatorIndex = trimmedMessage.IndexOfAny([' ', '\n']);
-
-            if (separatorIndex != -1)
-            {
-                link = trimmedMessage[..separatorIndex].Trim();
-                text = trimmedMessage[separatorIndex..].Trim();
-            }
-            else
-            {
-                link = trimmedMessage.Trim();
-            }
-
-            if (CommonUtilities.IsLink(link))
-            {
-                Message statusMessage = await botClient.SendMessage(update.Message.Chat.Id, Config.GetResourceString("WaitDownloadingVideo"), cancellationToken: cancellationToken);
-                _ = _tgBot.HandleMediaRequest(botClient, link, update.Message.Chat.Id, statusMessage: statusMessage, groupChat: true, caption: text);
-            }
-            else
-            {
-                await botClient.SendMessage(update.Message.Chat.Id, Config.GetResourceString("InvalidLinkFormat"), cancellationToken: cancellationToken);
-            }
+            await HandleLinkCommand(messageText, chatId, botClient, cancellationToken);
         }
         else if (messageText == "/help")
         {
             string text = Config.GetResourceString("GroupHelpText");
-            await botClient.SendMessage(update.Message.Chat.Id, text, cancellationToken: cancellationToken);
+            await botClient.SendMessage(chatId, text, cancellationToken: cancellationToken);
+        }
+        else
+        {
+            await HandlePlainUrl(messageText, chatId, update.Message.MessageId, botClient, cancellationToken);
+        }
+    }
+
+    private async Task HandleLinkCommand(string messageText, long chatId, ITelegramBotClient botClient, CancellationToken cancellationToken)
+    {
+        string link;
+        string caption = "";
+
+        string trimmedMessage = messageText[5..].Trim();
+
+        int separatorIndex = trimmedMessage.IndexOfAny([' ', '\n']);
+
+        if (separatorIndex != -1)
+        {
+            link = trimmedMessage[..separatorIndex].Trim();
+            caption = trimmedMessage[separatorIndex..].Trim();
+        }
+        else
+        {
+            link = trimmedMessage.Trim();
+        }
+
+        if (CommonUtilities.IsLink(link))
+        {
+            await DownloadAndSend(botClient, link, chatId, caption, cancellationToken);
+        }
+        else
+        {
+            await botClient.SendMessage(chatId, Config.GetResourceString("InvalidLinkFormat"), cancellationToken: cancellationToken);
+        }
+    }
+
+    private async Task HandlePlainUrl(string messageText, long chatId, int replyToMessageId, ITelegramBotClient botClient, CancellationToken cancellationToken)
+    {
+        string link;
+        string caption = "";
+
+        int newLineIndex = messageText.IndexOf('\n');
+
+        if (newLineIndex != -1)
+        {
+            link = messageText[..newLineIndex].Trim();
+            caption = messageText[(newLineIndex + 1)..].Trim();
+        }
+        else
+        {
+            link = messageText.Trim();
+        }
+
+        if (CommonUtilities.IsLink(link))
+        {
+            await DownloadAndSend(botClient, link, chatId, caption, cancellationToken);
+        }
+    }
+
+    private async Task DownloadAndSend(ITelegramBotClient botClient, string link, long chatId, string caption, CancellationToken cancellationToken)
+    {
+        Message statusMessage = await botClient.SendMessage(
+            chatId,
+            Config.GetResourceString("WaitDownloadingVideo"),
+            cancellationToken: cancellationToken
+        );
+
+        try
+        {
+            await _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage: statusMessage, groupChat: true, caption: caption);
+        }
+        catch (OperationCanceledException)
+        {
+            Log.Debug("Group media download was cancelled for chat {ChatId}", chatId);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to process media in group chat {ChatId}", chatId);
+            try
+            {
+                await botClient.EditMessageText(
+                    statusMessage.Chat.Id,
+                    statusMessage.MessageId,
+                    Config.GetResourceString("FailedToProcessLink"),
+                    cancellationToken: cancellationToken
+                );
+            }
+            catch (Exception editEx)
+            {
+                Log.Debug(editEx, "Failed to edit error status message");
+            }
         }
     }
 }
