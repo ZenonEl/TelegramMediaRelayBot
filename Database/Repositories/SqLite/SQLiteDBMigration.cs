@@ -80,5 +80,8 @@ public class SQLiteDBMigration : BaseDBMigration
         Create.Index("IX_PrivacySettings_UserId")
             .OnTable("PrivacySettings")
             .OnColumn("UserId");
+
+        // ========== Индексы для UserStates ==========
+        // IX_UserStates_ExpiresAt is created inline via Execute.Sql in BaseDBMigration
     }
 }

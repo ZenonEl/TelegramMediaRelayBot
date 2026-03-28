@@ -101,6 +101,10 @@ public class FluentDBMigrator
             new SqliteGroupGetter(Config.sqlConnectionString!));
         builder.Services.AddSingleton<IGroupSetter>(_ =>
             new SqliteGroupSetter(Config.sqlConnectionString!));
+
+        builder.Services.AddSingleton<IUserStateRepository>(_ =>
+            new SqliteUserStateRepository(Config.sqlConnectionString!));
+
         return builder;
     }
 }
