@@ -139,9 +139,9 @@ public partial class TGBot
                 await _updateHandler.ProcessCallbackQuery(botClient, update, cancellationToken);
             }
         }
-        else 
+        else
         {
-            if (update.Message != null && update.Message.Text != null && update.Message.Text.Contains('/'))
+            if (update.Message != null && update.Message.Text != null)
             {
                 GroupUpdateHandler groupUpdateHandler = new GroupUpdateHandler(this);
                 await groupUpdateHandler.HandleGroupUpdate(update, botClient, cancellationToken);
@@ -332,7 +332,8 @@ public partial class TGBot
                 
                 if (!CommonUtilities.CheckPrivateChatType(update))
                 {
-                    if (!update.Message.Text.Contains("/link") && !update.Message.Text.Contains("/help")) return;
+                    if (!update.Message.Text.Contains("/link") && !update.Message.Text.Contains("/help")
+                        && !CommonUtilities.IsLink(update.Message.Text.Split('\n')[0].Trim())) return;
                 }
             }
             else
