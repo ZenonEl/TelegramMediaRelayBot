@@ -43,5 +43,6 @@
     <None Update="yt-dlp">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <PackageReference Include="YoutubeDLSharp" Version="1.2.0" />
   </ItemGroup>
 </Project>

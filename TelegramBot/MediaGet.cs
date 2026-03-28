@@ -11,13 +11,13 @@
 
 using System.Diagnostics;
 using System.Net;
+using YoutubeDLSharp;
+using YoutubeDLSharp.Options;
 
 namespace TelegramMediaRelayBot
 {
     public class MediaGet
     {
-        private static readonly string[] ColonSpaceSeparator = [": "];
-
         public static async Task<List<byte[]>?> DownloadMedia(ITelegramBotClient botClient, string videoUrl, Message statusMessage, CancellationToken cancellationToken)
         {
             try
@@ -34,93 +34,111 @@ namespace TelegramMediaRelayBot
                 }
 
                 Log.Debug("Starting video download via yt-dlp...");
-                
+
                 string tempDirPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
                 Directory.CreateDirectory(tempDirPath);
-                
-                if (Config.torEnabled)
+                try
                 {
-                    var proxy = new WebProxy($"socks5://{Config.torSocksHost}:{Config.torSocksPort}");
-                    var handler = new HttpClientHandler { Proxy = proxy, UseProxy = true };
-                    using var httpClient = new HttpClient(handler);
-                    var result = await httpClient.GetStringAsync("https://check.torproject.org/api/ip");
-                    Log.Debug("Tor IP: " + result);
-                }
-
-                var startInfo = new ProcessStartInfo
-                {
-                    FileName = "yt-dlp",
-                    Arguments = $"--proxy \"{Config.proxy}\" -v -f mp4 --output \"{tempDirPath}/video.%(ext)s\" {videoUrl}",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                using (Process process = new Process { StartInfo = startInfo })
-                {
-                    process.Start();
-                    Log.Debug("Process started.");
-
-                    List<string> outputLines = new List<string>();
-                    List<string> errorLines = new List<string>();
-
-                    Task readOutputTask = ReadLinesAsync(process.StandardOutput, outputLines, botClient, statusMessage, cancellationToken);
-                    Task readErrorTask = ReadLinesAsync(process.StandardError, errorLines, botClient, statusMessage, cancellationToken);
-
-                    await process.WaitForExitAsync();
-
-                    await Task.WhenAll(readOutputTask, readErrorTask);
-
-                    string output = string.Join("\n", outputLines);
-                    string error = string.Join("\n", errorLines);
-
-                    if (process.ExitCode == 0)
+                    if (Config.torEnabled)
                     {
-                        try
+                        var proxy = new WebProxy($"socks5://{Config.torSocksHost}:{Config.torSocksPort}");
+                        var handler = new HttpClientHandler { Proxy = proxy, UseProxy = true };
+                        using var httpClient = new HttpClient(handler);
+                        var result = await httpClient.GetStringAsync("https://check.torproject.org/api/ip");
+                        Log.Debug("Tor IP: " + result);
+                    }
+
+                    var ytdl = new YoutubeDL
+                    {
+                        YoutubeDLPath = "yt-dlp",
+                        OutputFolder = tempDirPath,
+                        OutputFileTemplate = "video.%(ext)s",
+                        OverwriteFiles = true
+                    };
+
+                    var overrideOptions = new OptionSet();
+
+                    string effectiveProxy = Config.proxy;
+                    if (string.IsNullOrEmpty(effectiveProxy) && Config.torEnabled)
+                        effectiveProxy = $"socks5://{Config.torSocksHost}:{Config.torSocksPort}";
+
+                    if (!string.IsNullOrEmpty(effectiveProxy))
+                        overrideOptions.Proxy = effectiveProxy;
+
+                    DateTime lastProgressUpdate = DateTime.MinValue;
+                    var progress = new Progress<DownloadProgress>(p =>
+                    {
+                        if (DateTime.UtcNow - lastProgressUpdate < TimeSpan.FromMilliseconds(Config.videoGetDelay))
+                            return;
+
+                        lastProgressUpdate = DateTime.UtcNow;
+                        int percent = (int)(p.Progress * 100);
+                        string statusText = $"[download] {percent}%";
+                        if (!string.IsNullOrEmpty(p.DownloadSpeed))
+                            statusText += $" at {p.DownloadSpeed}";
+                        if (!string.IsNullOrEmpty(p.ETA))
+                            statusText += $" ETA {p.ETA}";
+
+                        if (Config.showVideoDownloadProgress)
+                            Log.Debug($"Video download progress: {statusText}");
+
+                        _ = Task.Run(async () =>
                         {
-                            string? downloadLine = output.Split('\n').FirstOrDefault(line => line.StartsWith("[download] Destination:"));
-                            if (downloadLine == null)
+                            try
                             {
-                                Log.Error("Could not find download destination in yt-dlp output.");
-                                return null;
+                                await botClient.EditMessageText(
+                                    statusMessage.Chat.Id,
+                                    statusMessage.MessageId,
+                                    statusText,
+                                    cancellationToken: cancellationToken);
                             }
-
-                            string[] parts = downloadLine.Split(ColonSpaceSeparator, 2, StringSplitOptions.None);
-                            if (parts.Length < 2)
+                            catch (Exception ex)
                             {
-                                Log.Error("Download destination not found in yt-dlp output.");
-                                return null;
+                                Log.Debug(ex, "Error editing message.");
                             }
+                        });
+                    });
 
-                            string finalFilePath = parts[1].Trim();
-                            Log.Debug($"Final file path: {finalFilePath}");
+                    var downloadResult = await ytdl.RunVideoDownload(
+                        videoUrl,
+                        ct: cancellationToken,
+                        progress: progress,
+                        overrideOptions: overrideOptions);
 
-                            if (System.IO.File.Exists(finalFilePath))
-                            {
-                                List<byte[]>? videoBytes = new List<byte[]> { System.IO.File.ReadAllBytes(finalFilePath) };
+                    if (downloadResult.Success)
+                    {
+                        string filePath = downloadResult.Data;
+                        Log.Debug($"Final file path: {filePath}");
 
-                                System.IO.File.Delete(finalFilePath);
-                                Directory.Delete(tempDirPath, recursive: true);
-
-                                return videoBytes;
-                            }
-                            
-                            Log.Error($"Final file does not exist: {finalFilePath}");
-                        }
-                        catch (Exception ex)
+                        if (System.IO.File.Exists(filePath))
                         {
-                            Log.Error(ex, $"Error reading file: {ex.Message}");
+                            byte[] videoBytes = await System.IO.File.ReadAllBytesAsync(filePath, cancellationToken);
+                            return new List<byte[]> { videoBytes };
                         }
+
+                        Log.Error($"Final file does not exist: {filePath}");
                     }
                     else
                     {
-                        Log.Error("Video download failed: " + error);
+                        string errors = string.Join("\n", downloadResult.ErrorOutput);
+                        Log.Error("Video download failed: " + errors);
                     }
-                    
-                    Directory.Delete(tempDirPath, recursive: true);
+
                     return null;
                 }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                finally
+                {
+                    if (Directory.Exists(tempDirPath))
+                        Directory.Delete(tempDirPath, recursive: true);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
