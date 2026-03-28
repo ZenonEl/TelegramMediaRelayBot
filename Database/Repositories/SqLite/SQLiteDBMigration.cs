@@ -67,6 +67,9 @@ public class SQLiteDBMigration : BaseDBMigration
             .OnTable("DefaultUsersActions")
             .OnColumn("UserId");
 
+        Execute.Sql("CREATE UNIQUE INDEX IF NOT EXISTS IX_DefaultUsersActions_UserId_Type ON DefaultUsersActions(UserId, Type);");
+        Execute.Sql("CREATE UNIQUE INDEX IF NOT EXISTS IX_PrivacySettings_UserId_Type ON PrivacySettings(UserId, Type);");
+
         // ========== Индексы для DefaultUsersActionTargets ==========
         Create.Index("IX_DefaultUsersActionTargets_UserId")
             .OnTable("DefaultUsersActionTargets")
