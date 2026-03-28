@@ -9,6 +9,7 @@
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+    <DefaultItemExcludes>$(DefaultItemExcludes);TelegramMediaRelayBot.Tests/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
