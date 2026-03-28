@@ -63,6 +63,8 @@ public class FluentDBMigrator
             new SqliteUserRepository(Config.sqlConnectionString!));
         builder.Services.AddSingleton<IUserGetter>(_ =>
             new SqliteUserGetter(Config.sqlConnectionString!));
+        builder.Services.AddSingleton<IUserSettingsRepository>(_ =>
+            new SqliteUserSettingsRepository(Config.sqlConnectionString!));
 
         builder.Services.AddSingleton<IContactGroupRepository>(_ =>
             new SqliteContactGroupRepository(Config.sqlConnectionString!));

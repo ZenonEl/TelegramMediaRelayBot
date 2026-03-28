@@ -34,7 +34,8 @@ public abstract class BaseDBMigration : Migration
                 .WithColumn("TelegramID").AsInt64().NotNullable()
                 .WithColumn("Name").AsString(255).NotNullable()
                 .WithColumn("Link").AsString(255).NotNullable()
-                .WithColumn("Status").AsString(255).Nullable();
+                .WithColumn("Status").AsString(255).Nullable()
+                .WithColumn("SettingsJson").AsString(int.MaxValue).NotNullable().WithDefaultValue("{}");
         }
 
         // Contacts
