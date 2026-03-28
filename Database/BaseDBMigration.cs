@@ -47,6 +47,7 @@ public abstract class BaseDBMigration : Migration
                     ContactId INTEGER NOT NULL,
                     status TEXT,
                     MutedUntil TEXT,
+                    DisplayName TEXT,
                     PRIMARY KEY (UserId, ContactId)
                 )");
         }

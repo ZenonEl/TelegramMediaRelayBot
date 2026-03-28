@@ -292,10 +292,10 @@ public class SqliteContactSetter(string connectionString) : IContactSetter
     public void SetContactStatus(long SenderTelegramID, long AccepterTelegramID, string status)
     {
         const string query = @"
-            UPDATE Contacts 
-            SET Status = @Status 
+            UPDATE Contacts
+            SET Status = @Status
             WHERE UserId = @UserId AND ContactId = @ContactId";
-            
+
         SqliteContactGetter contactGetter = new(_connectionString);
         SqliteUserGetter userGetter = new(_connectionString);
 
@@ -303,7 +303,7 @@ public class SqliteContactSetter(string connectionString) : IContactSetter
         {
             try
             {
-                connection.Execute(query, new 
+                connection.Execute(query, new
                 {
                     Status = status,
                     UserId = userGetter.GetUserIDbyTelegramID(SenderTelegramID),
@@ -313,6 +313,28 @@ public class SqliteContactSetter(string connectionString) : IContactSetter
             catch (Exception ex)
             {
                 Log.Error("Error editing database: " + ex.Message);
+            }
+        }
+    }
+
+    public bool SetContactDisplayName(int userId, int contactId, string? displayName)
+    {
+        const string query = @"
+            UPDATE Contacts
+            SET DisplayName = @displayName
+            WHERE UserId = @userId AND ContactId = @contactId";
+
+        using (var connection = new SqliteConnection(_connectionString))
+        {
+            try
+            {
+                int affected = connection.Execute(query, new { userId, contactId, displayName });
+                return affected > 0;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Error editing database: " + ex.Message);
+                return false;
             }
         }
     }
@@ -432,6 +454,24 @@ public class SqliteContactGetter(string connectionString) : IContactGetter
         {
             Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetContactByTelegramID));
             return -1;
+        }
+    }
+
+    public string? GetContactDisplayName(int userId, int contactId)
+    {
+        const string query = @"
+            SELECT DisplayName
+            FROM Contacts
+            WHERE UserId = @userId AND ContactId = @contactId";
+        try
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            return connection.QueryFirstOrDefault<string?>(query, new { userId, contactId });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetContactDisplayName));
+            return null;
         }
     }
 }

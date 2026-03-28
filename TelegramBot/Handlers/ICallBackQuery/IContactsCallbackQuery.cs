@@ -220,6 +220,31 @@ public class UnmuteContactCommand : IBotCallbackQueryHandlers
     }
 }
 
+public class RenameContactCommand : IBotCallbackQueryHandlers
+{
+    private readonly IContactSetter _contactSetterRepository;
+    private readonly IContactGetter _contactGetterRepository;
+    private readonly IUserGetter _userGetter;
+
+    public RenameContactCommand(
+        IContactSetter contactSetterRepository,
+        IContactGetter contactGetterRepository,
+        IUserGetter userGetter)
+    {
+        _contactSetterRepository = contactSetterRepository;
+        _contactGetterRepository = contactGetterRepository;
+        _userGetter = userGetter;
+    }
+
+    public string Name => "edit_contact_name";
+
+    public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
+    {
+        long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        await Contacts.RenameContact(botClient, update, chatId, _contactSetterRepository, _contactGetterRepository, _userGetter);
+    }
+}
+
 public class DeleteContactCommand : IBotCallbackQueryHandlers
 {
     private readonly IContactRemover _contactRemoverRepository;

@@ -172,6 +172,23 @@ ID: {0}
         <value>Укажите ID контактов для удаления:</value>
     </data>
 
+    <!-- Переименование контакта -->
+    <data name="RenameContactInstructions" xml:space="preserve">
+        <value>Чтобы переименовать контакт, укажите его ID или ссылку.</value>
+    </data>
+    <data name="InputNewDisplayName" xml:space="preserve">
+        <value>Введите новое отображаемое имя для этого контакта:</value>
+    </data>
+    <data name="ResetDisplayNameButtonText" xml:space="preserve">
+        <value>Сбросить к оригиналу</value>
+    </data>
+    <data name="DisplayNameSet" xml:space="preserve">
+        <value>Отображаемое имя изменено на: {0}</value>
+    </data>
+    <data name="DisplayNameReset" xml:space="preserve">
+        <value>Отображаемое имя сброшено к оригиналу.</value>
+    </data>
+
     <!-- Муты и размуты -->
     <data name="MuteUserInstructions" xml:space="preserve">
         <value>Чтобы замутить человека (вы не будете получать от него медиа) вам нужно указать либо его ID либо его ссылку</value>
