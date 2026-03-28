@@ -37,98 +37,108 @@ namespace TelegramMediaRelayBot
 
                 string tempDirPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
                 Directory.CreateDirectory(tempDirPath);
-
-                if (Config.torEnabled)
+                try
                 {
-                    var proxy = new WebProxy($"socks5://{Config.torSocksHost}:{Config.torSocksPort}");
-                    var handler = new HttpClientHandler { Proxy = proxy, UseProxy = true };
-                    using var httpClient = new HttpClient(handler);
-                    var result = await httpClient.GetStringAsync("https://check.torproject.org/api/ip");
-                    Log.Debug("Tor IP: " + result);
-                }
-
-                var ytdl = new YoutubeDL
-                {
-                    YoutubeDLPath = "yt-dlp",
-                    OutputFolder = tempDirPath,
-                    OutputFileTemplate = "video.%(ext)s",
-                    OverwriteFiles = true
-                };
-
-                var overrideOptions = new OptionSet
-                {
-                    Format = "mp4",
-                    Verbose = true
-                };
-
-                if (!string.IsNullOrEmpty(Config.proxy))
-                {
-                    overrideOptions.Proxy = Config.proxy;
-                }
-
-                DateTime lastProgressUpdate = DateTime.MinValue;
-                var progress = new Progress<DownloadProgress>(p =>
-                {
-                    if (DateTime.UtcNow - lastProgressUpdate < TimeSpan.FromMilliseconds(Config.videoGetDelay))
-                        return;
-
-                    lastProgressUpdate = DateTime.UtcNow;
-                    int percent = (int)(p.Progress * 100);
-                    string statusText = $"[download] {percent}%";
-                    if (!string.IsNullOrEmpty(p.DownloadSpeed))
-                        statusText += $" at {p.DownloadSpeed}";
-                    if (!string.IsNullOrEmpty(p.ETA))
-                        statusText += $" ETA {p.ETA}";
-
-                    if (Config.showVideoDownloadProgress)
-                        Log.Debug($"Video download progress: {statusText}");
-
-                    _ = Task.Run(async () =>
+                    if (Config.torEnabled)
                     {
-                        try
-                        {
-                            await botClient.EditMessageText(
-                                statusMessage.Chat.Id,
-                                statusMessage.MessageId,
-                                statusText,
-                                cancellationToken: cancellationToken);
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Debug(ex, "Error editing message.");
-                        }
-                    });
-                });
-
-                var downloadResult = await ytdl.RunVideoDownload(
-                    videoUrl,
-                    format: "mp4",
-                    ct: cancellationToken,
-                    progress: progress,
-                    overrideOptions: overrideOptions);
-
-                if (downloadResult.Success)
-                {
-                    string filePath = downloadResult.Data;
-                    Log.Debug($"Final file path: {filePath}");
-
-                    if (System.IO.File.Exists(filePath))
-                    {
-                        byte[] videoBytes = await System.IO.File.ReadAllBytesAsync(filePath, cancellationToken);
-                        Directory.Delete(tempDirPath, recursive: true);
-                        return new List<byte[]> { videoBytes };
+                        var proxy = new WebProxy($"socks5://{Config.torSocksHost}:{Config.torSocksPort}");
+                        var handler = new HttpClientHandler { Proxy = proxy, UseProxy = true };
+                        using var httpClient = new HttpClient(handler);
+                        var result = await httpClient.GetStringAsync("https://check.torproject.org/api/ip");
+                        Log.Debug("Tor IP: " + result);
                     }
 
-                    Log.Error($"Final file does not exist: {filePath}");
-                }
-                else
-                {
-                    string errors = string.Join("\n", downloadResult.ErrorOutput);
-                    Log.Error("Video download failed: " + errors);
-                }
+                    var ytdl = new YoutubeDL
+                    {
+                        YoutubeDLPath = "yt-dlp",
+                        OutputFolder = tempDirPath,
+                        OutputFileTemplate = "video.%(ext)s",
+                        OverwriteFiles = true
+                    };
 
-                Directory.Delete(tempDirPath, recursive: true);
-                return null;
+                    var overrideOptions = new OptionSet();
+
+                    string effectiveProxy = Config.proxy;
+                    if (string.IsNullOrEmpty(effectiveProxy) && Config.torEnabled)
+                        effectiveProxy = $"socks5://{Config.torSocksHost}:{Config.torSocksPort}";
+
+                    if (!string.IsNullOrEmpty(effectiveProxy))
+                        overrideOptions.Proxy = effectiveProxy;
+
+                    DateTime lastProgressUpdate = DateTime.MinValue;
+                    var progress = new Progress<DownloadProgress>(p =>
+                    {
+                        if (DateTime.UtcNow - lastProgressUpdate < TimeSpan.FromMilliseconds(Config.videoGetDelay))
+                            return;
+
+                        lastProgressUpdate = DateTime.UtcNow;
+                        int percent = (int)(p.Progress * 100);
+                        string statusText = $"[download] {percent}%";
+                        if (!string.IsNullOrEmpty(p.DownloadSpeed))
+                            statusText += $" at {p.DownloadSpeed}";
+                        if (!string.IsNullOrEmpty(p.ETA))
+                            statusText += $" ETA {p.ETA}";
+
+                        if (Config.showVideoDownloadProgress)
+                            Log.Debug($"Video download progress: {statusText}");
+
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await botClient.EditMessageText(
+                                    statusMessage.Chat.Id,
+                                    statusMessage.MessageId,
+                                    statusText,
+                                    cancellationToken: cancellationToken);
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Debug(ex, "Error editing message.");
+                            }
+                        });
+                    });
+
+                    var downloadResult = await ytdl.RunVideoDownload(
+                        videoUrl,
+                        ct: cancellationToken,
+                        progress: progress,
+                        overrideOptions: overrideOptions);
+
+                    if (downloadResult.Success)
+                    {
+                        string filePath = downloadResult.Data;
+                        Log.Debug($"Final file path: {filePath}");
+
+                        if (System.IO.File.Exists(filePath))
+                        {
+                            byte[] videoBytes = await System.IO.File.ReadAllBytesAsync(filePath, cancellationToken);
+                            return new List<byte[]> { videoBytes };
+                        }
+
+                        Log.Error($"Final file does not exist: {filePath}");
+                    }
+                    else
+                    {
+                        string errors = string.Join("\n", downloadResult.ErrorOutput);
+                        Log.Error("Video download failed: " + errors);
+                    }
+
+                    return null;
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                finally
+                {
+                    if (Directory.Exists(tempDirPath))
+                        Directory.Delete(tempDirPath, recursive: true);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
