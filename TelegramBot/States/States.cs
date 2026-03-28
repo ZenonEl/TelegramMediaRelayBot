@@ -58,6 +58,13 @@ public enum UserInboundState
     Finish
 }
 
+public enum UserRenameContactState
+{
+    WaitingForLinkOrID,
+    WaitingForNewName,
+    Finish
+}
+
 public enum UsersStandardState
 {
     ProcessAction,

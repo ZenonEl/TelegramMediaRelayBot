@@ -73,6 +73,18 @@ public class Contacts
         await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), cancellationToken, $"{Config.GetResourceString("YourContacts")}\n{string.Join("\n", contactUsersInfo)}");
     }
 
+    public static async Task RenameContact(
+        ITelegramBotClient botClient,
+        Update update,
+        long chatId,
+        IContactSetter contactSetterRepository,
+        IContactGetter contactGetterRepository,
+        IUserGetter userGetter)
+    {
+        await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Config.GetResourceString("RenameContactInstructions"), cancellationToken: cancellationToken);
+        UserSessionManager.Set(chatId, new ProcessRenameContactState(contactSetterRepository, contactGetterRepository, userGetter));
+    }
+
     public static async Task EditContactGroup(
         ITelegramBotClient botClient,
         Update update,

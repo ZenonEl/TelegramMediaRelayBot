@@ -30,6 +30,7 @@ public interface IContactRemover
 public interface IContactSetter
 {
     void SetContactStatus(long SenderTelegramID, long AccepterTelegramID, string status);
+    bool SetContactDisplayName(int userId, int contactId, string? displayName);
 }
 
 public interface IContactGetter
@@ -39,4 +40,5 @@ public interface IContactGetter
     DateTime? GetMutedUntil(int userId, int contactId);
     int GetContactIDByLink(string link);
     int GetContactByTelegramID(long telegramID);
+    string? GetContactDisplayName(int userId, int contactId);
 }

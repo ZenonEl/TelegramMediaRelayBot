@@ -32,6 +32,7 @@ public static class CallbackNames
     public const string ViewContacts = "view_contacts";
     public const string MuteContact = "mute_contact";
     public const string UnmuteContact = "unmute_contact";
+    public const string RenameContact = "edit_contact_name";
     public const string DeleteContact = "delete_contact";
 
     // Settings

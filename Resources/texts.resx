@@ -173,6 +173,23 @@ Please specify the group ID for work:</value>
         <value>Specify the contact ID to delete:</value>
     </data>
 
+    <!-- Rename contact -->
+    <data name="RenameContactInstructions" xml:space="preserve">
+        <value>To rename a contact, provide their ID or link.</value>
+    </data>
+    <data name="InputNewDisplayName" xml:space="preserve">
+        <value>Enter a new display name for this contact:</value>
+    </data>
+    <data name="ResetDisplayNameButtonText" xml:space="preserve">
+        <value>Reset to original</value>
+    </data>
+    <data name="DisplayNameSet" xml:space="preserve">
+        <value>Display name changed to: {0}</value>
+    </data>
+    <data name="DisplayNameReset" xml:space="preserve">
+        <value>Display name has been reset to the original.</value>
+    </data>
+
     <!-- Mutes and unmutes -->
     <data name="MuteUserInstructions" xml:space="preserve">
         <value>To mute a person (you won't receive videos from them), you need to provide either their ID or their link.</value>
