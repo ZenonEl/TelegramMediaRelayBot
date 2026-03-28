@@ -47,3 +47,4 @@ todo
 data/
 /.claude
 TelegramMediaRelayBot.sln
+/TelegramMediaRelayBot.Tests
