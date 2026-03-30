@@ -65,6 +65,11 @@ namespace TelegramMediaRelayBot
                     if (!string.IsNullOrEmpty(effectiveProxy))
                         overrideOptions.Proxy = effectiveProxy;
 
+                    if (!string.IsNullOrEmpty(Config.cookiesFromBrowser))
+                        overrideOptions.CookiesFromBrowser = Config.cookiesFromBrowser;
+                    if (!string.IsNullOrEmpty(Config.cookiesFile))
+                        overrideOptions.Cookies = Config.cookiesFile;
+
                     DateTime lastProgressUpdate = DateTime.MinValue;
                     var progress = new Progress<DownloadProgress>(p =>
                     {

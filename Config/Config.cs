@@ -31,6 +31,10 @@ namespace TelegramMediaRelayBot
         public static bool isUseGalleryDl = false;
         public static string accessDeniedMessageContact = " ";
 
+        // Cookie Configuration
+        public static string? cookiesFromBrowser; // e.g. "firefox", "chrome" — reads fresh cookies each time
+        public static string? cookiesFile;        // path to Netscape cookies.txt file
+
         // Proxy Configuration
         // Proxy for media downloads (yt-dlp/gallery-dl). Supports HTTP/SOCKS5.
         public static string proxy = "";
@@ -91,6 +95,9 @@ namespace TelegramMediaRelayBot
             isUseGalleryDl = configuration.GetValue("AppSettings:UseGalleryDl", false);
             accessDeniedMessageContact = configuration.GetValue("AppSettings:AccessDeniedMessageContact", " ");
             maxConcurrentDownloads = configuration.GetValue("AppSettings:MaxConcurrentDownloads", 3);
+
+            cookiesFromBrowser = configuration["AppSettings:CookiesFromBrowser"];
+            cookiesFile = configuration["AppSettings:CookiesFile"];
 
             videoGetDelay = configuration.GetValue("MessageDelaySettings:VideoGetDelay", 1000);
             contactSendDelay = configuration.GetValue("MessageDelaySettings:ContactSendDelay", 1000);
