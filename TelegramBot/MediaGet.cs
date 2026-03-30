@@ -56,7 +56,11 @@ namespace TelegramMediaRelayBot
                         OverwriteFiles = true
                     };
 
-                    var overrideOptions = new OptionSet();
+                    var overrideOptions = new OptionSet
+                    {
+                        IgnoreConfig = true,
+                        NoCheckCertificates = true
+                    };
 
                     string effectiveProxy = Config.proxy;
                     if (string.IsNullOrEmpty(effectiveProxy) && Config.torEnabled)
@@ -69,6 +73,9 @@ namespace TelegramMediaRelayBot
                         overrideOptions.CookiesFromBrowser = Config.cookiesFromBrowser;
                     if (!string.IsNullOrEmpty(Config.cookiesFile))
                         overrideOptions.Cookies = Config.cookiesFile;
+
+                    Log.Debug("yt-dlp options: proxy={Proxy}, cookies_browser={Browser}, ignore_config=true",
+                        effectiveProxy, Config.cookiesFromBrowser);
 
                     DateTime lastProgressUpdate = DateTime.MinValue;
                     string lastStatusText = "";
