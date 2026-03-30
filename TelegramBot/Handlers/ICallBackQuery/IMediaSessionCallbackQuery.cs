@@ -13,22 +13,23 @@
 using TelegramMediaRelayBot.TelegramBot.Sessions;
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 
 
 public class SendToAllContactsSessionCommand : IBotCallbackQueryHandlers
 {
-    private readonly TGBot _tgBot;
+    private readonly IServiceProvider _serviceProvider;
     private readonly IContactGetter _contactGetterRepository;
     private readonly IUserGetter _userGetter;
 
     public SendToAllContactsSessionCommand(
-        TGBot tgBot,
+        IServiceProvider serviceProvider,
         IContactGetter contactGetterRepository,
         IUserGetter userGetter)
     {
-        _tgBot = tgBot;
+        _serviceProvider = serviceProvider;
         _contactGetterRepository = contactGetterRepository;
         _userGetter = userGetter;
     }
@@ -65,22 +66,23 @@ public class SendToAllContactsSessionCommand : IBotCallbackQueryHandlers
             cancellationToken: ct
         );
 
-        _ = _tgBot.HandleMediaRequest(botClient, session.Url, chatId, statusMessage, targetUserIds, caption: session.Caption ?? "");
+        var tgBot = _serviceProvider.GetRequiredService<TGBot>();
+        _ = tgBot.HandleMediaRequest(botClient, session.Url, chatId, statusMessage, targetUserIds, caption: session.Caption ?? "");
     }
 }
 
 public class SendToDefaultGroupsSessionCommand : IBotCallbackQueryHandlers
 {
-    private readonly TGBot _tgBot;
+    private readonly IServiceProvider _serviceProvider;
     private readonly IUserGetter _userGetter;
     private readonly IGroupGetter _groupGetter;
 
     public SendToDefaultGroupsSessionCommand(
-        TGBot tgBot,
+        IServiceProvider serviceProvider,
         IUserGetter userGetter,
         IGroupGetter groupGetter)
     {
-        _tgBot = tgBot;
+        _serviceProvider = serviceProvider;
         _userGetter = userGetter;
         _groupGetter = groupGetter;
     }
@@ -120,17 +122,18 @@ public class SendToDefaultGroupsSessionCommand : IBotCallbackQueryHandlers
             cancellationToken: ct
         );
 
-        _ = _tgBot.HandleMediaRequest(botClient, session.Url, chatId, statusMessage, targetUserIds, caption: session.Caption ?? "");
+        var tgBot = _serviceProvider.GetRequiredService<TGBot>();
+        _ = tgBot.HandleMediaRequest(botClient, session.Url, chatId, statusMessage, targetUserIds, caption: session.Caption ?? "");
     }
 }
 
 public class SendOnlyToMeSessionCommand : IBotCallbackQueryHandlers
 {
-    private readonly TGBot _tgBot;
+    private readonly IServiceProvider _serviceProvider;
 
-    public SendOnlyToMeSessionCommand(TGBot tgBot)
+    public SendOnlyToMeSessionCommand(IServiceProvider serviceProvider)
     {
-        _tgBot = tgBot;
+        _serviceProvider = serviceProvider;
     }
 
     public string Name => "send_only_to_me:";
@@ -159,24 +162,25 @@ public class SendOnlyToMeSessionCommand : IBotCallbackQueryHandlers
             cancellationToken: ct
         );
 
-        _ = _tgBot.HandleMediaRequest(botClient, session.Url, chatId, statusMessage, caption: session.Caption ?? "");
+        var tgBot = _serviceProvider.GetRequiredService<TGBot>();
+        _ = tgBot.HandleMediaRequest(botClient, session.Url, chatId, statusMessage, caption: session.Caption ?? "");
     }
 }
 
 public class SendToSpecifiedGroupsSessionCommand : IBotCallbackQueryHandlers
 {
-    private readonly TGBot _tgBot;
+    private readonly IServiceProvider _serviceProvider;
     private readonly IUserGetter _userGetter;
     private readonly IGroupGetter _groupGetter;
     private readonly IDefaultActionGetter _defaultActionGetter;
 
     public SendToSpecifiedGroupsSessionCommand(
-        TGBot tgBot,
+        IServiceProvider serviceProvider,
         IUserGetter userGetter,
         IGroupGetter groupGetter,
         IDefaultActionGetter defaultActionGetter)
     {
-        _tgBot = tgBot;
+        _serviceProvider = serviceProvider;
         _userGetter = userGetter;
         _groupGetter = groupGetter;
         _defaultActionGetter = defaultActionGetter;
@@ -224,22 +228,23 @@ public class SendToSpecifiedGroupsSessionCommand : IBotCallbackQueryHandlers
             cancellationToken: ct
         );
 
-        _ = _tgBot.HandleMediaRequest(botClient, session.Url, chatId, statusMessage, targetUserIds, caption: session.Caption ?? "");
+        var tgBot = _serviceProvider.GetRequiredService<TGBot>();
+        _ = tgBot.HandleMediaRequest(botClient, session.Url, chatId, statusMessage, targetUserIds, caption: session.Caption ?? "");
     }
 }
 
 public class SendToSpecifiedUsersSessionCommand : IBotCallbackQueryHandlers
 {
-    private readonly TGBot _tgBot;
+    private readonly IServiceProvider _serviceProvider;
     private readonly IUserGetter _userGetter;
     private readonly IDefaultActionGetter _defaultActionGetter;
 
     public SendToSpecifiedUsersSessionCommand(
-        TGBot tgBot,
+        IServiceProvider serviceProvider,
         IUserGetter userGetter,
         IDefaultActionGetter defaultActionGetter)
     {
-        _tgBot = tgBot;
+        _serviceProvider = serviceProvider;
         _userGetter = userGetter;
         _defaultActionGetter = defaultActionGetter;
     }
@@ -280,7 +285,8 @@ public class SendToSpecifiedUsersSessionCommand : IBotCallbackQueryHandlers
             cancellationToken: ct
         );
 
-        _ = _tgBot.HandleMediaRequest(botClient, session.Url, chatId, statusMessage, targetUserIds, caption: session.Caption ?? "");
+        var tgBot = _serviceProvider.GetRequiredService<TGBot>();
+        _ = tgBot.HandleMediaRequest(botClient, session.Url, chatId, statusMessage, targetUserIds, caption: session.Caption ?? "");
     }
 }
 
