@@ -61,10 +61,13 @@ public class Contacts
         List<long> contactUserTGIds = await contactGetterRepository.GetAllContactUserTGIds(userGetter.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id));
         List<string> contactUsersInfo = new List<string>();
 
+        int ownerUserId = userGetter.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id);
         foreach (var contactUserId in contactUserTGIds)
         {
             int id = userGetter.GetUserIDbyTelegramID(contactUserId);
-            string username = userGetter.GetUserNameByTelegramID(contactUserId);
+            string actualName = userGetter.GetUserNameByTelegramID(contactUserId);
+            string? displayName = contactGetterRepository.GetContactDisplayName(ownerUserId, id);
+            string username = !string.IsNullOrEmpty(displayName) ? $"{displayName} ({actualName})" : actualName;
             string link = userGetter.GetUserSelfLink(contactUserId);
 
             contactUsersInfo.Add(string.Format(Config.GetResourceString("ContactInfo"), id, username, link));
