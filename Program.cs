@@ -67,6 +67,7 @@ namespace TelegramMediaRelayBot
                 Scheduler scheduler = app.Services.GetRequiredService<Scheduler>();
 
                 Log.Information($"Log level: {Config.logLevel}");
+                DownloadQueue.Initialize(Config.maxConcurrentDownloads);
                 scheduler.Init();
 
                 await tgBot.Start();

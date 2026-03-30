@@ -14,7 +14,10 @@
 
         "_comment_telegram_api": "TelegramApiBaseUrl: custom Bot API server URL (null = default). TelegramApiProxy: proxy for Telegram API requests, useful in regions where Telegram is blocked.",
         "TelegramApiBaseUrl": null,
-        "TelegramApiProxy": null
+        "TelegramApiProxy": null,
+
+        "_comment_queue": "Maximum number of simultaneous media downloads. Prevents system overload when many links arrive at once.",
+        "MaxConcurrentDownloads": 3
     },
     "_comment_tor": "Tor SOCKS proxy for media downloads and automatic circuit rotation.",
     "Tor": {
