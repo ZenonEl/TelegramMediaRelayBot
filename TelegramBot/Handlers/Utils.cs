@@ -12,6 +12,7 @@
 
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot.Sessions;
 
 
 namespace TelegramMediaRelayBot.TelegramBot.Handlers;
@@ -40,14 +41,20 @@ class PrivateUtils
     }
 
     public void ProcessDefaultSendAction(ITelegramBotClient botClient, long chatId, Message statusMessage, string defaultAction,
-                                        CancellationToken cancellationToken, int userId, int defaultCondition, CancellationTokenSource timeoutCTS,
+                                        CancellationToken cancellationToken, int userId, int defaultCondition, string sessionId,
                                         string link, string text)
     {
         _ = Task.Run(async () =>
         {
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(defaultCondition), timeoutCTS.Token);
+                var session = MediaSessionManager.Get(sessionId);
+                if (session == null) return;
+
+                await Task.Delay(TimeSpan.FromSeconds(defaultCondition), session.Cts.Token);
+
+                // Check session still exists (not cancelled by user pressing a button)
+                if (MediaSessionManager.Get(sessionId) == null) return;
 
                 List<long> targetUserIds = new List<long>();
                 List<long> mutedByUserIds = new List<long>();
@@ -96,7 +103,8 @@ class PrivateUtils
                         break;
                 }
 
-                if (UserSessionManager.TryGetValue(chatId, out var state) && state is ProcessVideoDC videoState)
+                // Remove session before processing (user didn't press any button in time)
+                if (MediaSessionManager.Remove(sessionId))
                 {
                     await botClient.EditMessageText(
                         statusMessage.Chat.Id,
@@ -105,33 +113,6 @@ class PrivateUtils
                         cancellationToken: cancellationToken
                     );
                     _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);
-
-                    if (videoState.linkQueue.Count > 0)
-                    {
-                        var nextLink = videoState.linkQueue.Dequeue();
-                        statusMessage = await botClient.EditMessageText(
-                            chatId,
-                            nextLink.MessageId,
-                            Config.GetResourceString("WaitDownloadingVideo"),
-                            cancellationToken: cancellationToken
-                        );
-                        ProcessDefaultSendAction(
-                            botClient,
-                            chatId,
-                            statusMessage,
-                            defaultAction,
-                            cancellationToken,
-                            userId,
-                            defaultCondition,
-                            timeoutCTS,
-                            nextLink.Link,
-                            nextLink.Text
-                        );
-                    }
-                    else
-                    {
-                        UserSessionManager.Remove(chatId, out _);
-                    }
                 }
             }
             catch (TaskCanceledException) { }

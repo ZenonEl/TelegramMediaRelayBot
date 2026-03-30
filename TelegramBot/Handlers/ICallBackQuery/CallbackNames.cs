@@ -66,4 +66,12 @@ public static class CallbackNames
     public const string UserSetAutoSendVideoTimeTo = "user_set_auto_send_video_time_to:";
     public const string UserSetVideoSendUsersParameterized = "user_set_video_send_users:";
     public const string UserSetSiteStopList = "user_set_site_stop_list:";
+
+    // Media session parameterized callbacks
+    public const string SendToAllContactsSession = "send_to_all_contacts:";
+    public const string SendToDefaultGroupsSession = "send_to_default_groups:";
+    public const string SendToSpecifiedGroupsSession = "send_to_specified_groups:";
+    public const string SendToSpecifiedUsersSession = "send_to_specified_users:";
+    public const string SendOnlyToMeSession = "send_only_to_me:";
+    public const string CancelMediaSession = "cancel_media:";
 }

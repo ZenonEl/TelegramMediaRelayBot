@@ -632,4 +632,13 @@ If you'd like to get access, you can contact &lt;a href="{0}"&gt;me here&lt;/a&g
     <data name="MessageProcessMediaSend" xml:space="preserve">
         <value>The mailing list is over. Sent {0}/{1}</value>
     </data>
+    <data name="CancelButtonText" xml:space="preserve">
+        <value>Cancel</value>
+    </data>
+    <data name="SessionExpiredMessage" xml:space="preserve">
+        <value>Session expired. Please send the link again.</value>
+    </data>
+    <data name="CancelledMessage" xml:space="preserve">
+        <value>Cancelled</value>
+    </data>
 </root>

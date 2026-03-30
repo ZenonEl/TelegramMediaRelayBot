@@ -15,6 +15,7 @@ using System.Text.RegularExpressions;
 using Telegram.Bot.Types.Enums;
 using TelegramMediaRelayBot.TelegramBot.Utils;
 using TelegramMediaRelayBot.TelegramBot.Handlers;
+using TelegramMediaRelayBot.TelegramBot.Sessions;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot.SiteFilter;
@@ -103,6 +104,13 @@ public partial class TGBot
 
         if (CommonUtilities.CheckPrivateChatType(update))
         {
+            // Media session callbacks are handled by the factory, not by user state
+            if (update.CallbackQuery != null && IsMediaSessionCallback(update.CallbackQuery.Data))
+            {
+                await _updateHandler.ProcessCallbackQuery(botClient, update, cancellationToken);
+                return;
+            }
+
             if (UserSessionManager.ContainsKey(chatId))
             {
                 await ProcessState(botClient, update);
@@ -374,6 +382,26 @@ public partial class TGBot
         }
 
         Log.Information($"Event: {logMessageType}, UserId: {userId}, ChatId: {chatId}, {logMessageType}: {logMessageData}, State: {currentUserStatus}");
+    }
+
+    private static readonly string[] _mediaSessionPrefixes = new[]
+    {
+        "send_to_all_contacts:",
+        "send_to_default_groups:",
+        "send_to_specified_groups:",
+        "send_to_specified_users:",
+        "send_only_to_me:",
+        "cancel_media:",
+    };
+
+    private static bool IsMediaSessionCallback(string? data)
+    {
+        if (string.IsNullOrEmpty(data)) return false;
+        foreach (var prefix in _mediaSessionPrefixes)
+        {
+            if (data.StartsWith(prefix)) return true;
+        }
+        return false;
     }
 
     [GeneratedRegex(@"[^a-zA-Zа-яА-Я0-9]")]
