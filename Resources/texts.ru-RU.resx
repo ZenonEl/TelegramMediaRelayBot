@@ -676,4 +676,13 @@ PS: квадратные скобки не нужны :)</value>
     <data name="MessageProcessMediaSend" xml:space="preserve">
         <value>Рассылка окончена. Отправлено {0}/{1}</value>
     </data>
+    <data name="CancelButtonText" xml:space="preserve">
+        <value>Отмена</value>
+    </data>
+    <data name="SessionExpiredMessage" xml:space="preserve">
+        <value>Сессия истекла. Отправьте ссылку заново.</value>
+    </data>
+    <data name="CancelledMessage" xml:space="preserve">
+        <value>Отменено</value>
+    </data>
 </root>

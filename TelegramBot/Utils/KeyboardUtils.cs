@@ -113,29 +113,30 @@ public static class KeyboardUtils
         return CommonUtilities.SendMessage(botClient, update, inlineKeyboard, cancellationToken, text);
     }
 
-    public static InlineKeyboardMarkup GetVideoDistributionKeyboardMarkup()
-{
-    var inlineKeyboard = new InlineKeyboardMarkup(new[]
-                    {
-                        new[]
+    public static InlineKeyboardMarkup GetVideoDistributionKeyboardMarkup(string? sessionId = null)
+    {
+        string suffix = sessionId != null ? $":{sessionId}" : "";
+        var inlineKeyboard = new InlineKeyboardMarkup(new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SendToAllContactsButtonText"), "send_to_all_contacts"),
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SendToDefaultGroupsButtonText"), "send_to_default_groups"),
-                        },
-                        new[]
-                        {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SendToSpecifiedGroupsButtonText"), "send_to_specified_groups"),
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SendToSpecifiedUsersButtonText"), "send_to_specified_users"),
-                        },
-                        new[]
-                        {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SendOnlyToMeButtonText"), "send_only_to_me"),
-                        },
-                        new[]
-                        {
-                            GetReturnButton()
-                        },
-                    });
-        return inlineKeyboard;
-}
+                            new[]
+                            {
+                                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SendToAllContactsButtonText"), $"send_to_all_contacts{suffix}"),
+                                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SendToDefaultGroupsButtonText"), $"send_to_default_groups{suffix}"),
+                            },
+                            new[]
+                            {
+                                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SendToSpecifiedGroupsButtonText"), $"send_to_specified_groups{suffix}"),
+                                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SendToSpecifiedUsersButtonText"), $"send_to_specified_users{suffix}"),
+                            },
+                            new[]
+                            {
+                                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SendOnlyToMeButtonText"), $"send_only_to_me{suffix}"),
+                            },
+                            new[]
+                            {
+                                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("CancelButtonText"), $"cancel_media{suffix}"),
+                            },
+                        });
+            return inlineKeyboard;
+    }
 }

@@ -11,6 +11,7 @@
 
 using System.Net;
 using TelegramMediaRelayBot.Database.Interfaces;
+using TelegramMediaRelayBot.TelegramBot.Sessions;
 
 
 namespace TelegramMediaRelayBot.TelegramBot;
@@ -36,6 +37,7 @@ class Scheduler
         _unMuteTimer = new Timer(async _ => await CheckForUnmuteContacts(), null, TimeSpan.Zero, TimeSpan.FromSeconds(Config.userUnMuteCheckInterval));
         if (Config.torEnabled) _torChangingChainTimer = new Timer(async _ => await TorChangingChain(), null, TimeSpan.Zero, TimeSpan.FromMinutes(Config.torChangingChainInterval));
         UserSessionManager.StartCleanupTimer();
+        MediaSessionManager.StartCleanupTimer();
         Log.Information("Scheduler started");
     }
 
