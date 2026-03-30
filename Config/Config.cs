@@ -44,6 +44,9 @@ namespace TelegramMediaRelayBot
         public static int torControlPort = 9051;
         public static int torChangingChainInterval = 5; // Minutes
 
+        // Download Queue
+        public static int maxConcurrentDownloads = 3;
+
         // Delays
         public static int videoGetDelay = 1000;
         public static int contactSendDelay = 1000;
@@ -87,6 +90,7 @@ namespace TelegramMediaRelayBot
             dbType = configuration.GetValue("AppSettings:DatabaseType", "sqlite");
             isUseGalleryDl = configuration.GetValue("AppSettings:UseGalleryDl", false);
             accessDeniedMessageContact = configuration.GetValue("AppSettings:AccessDeniedMessageContact", " ");
+            maxConcurrentDownloads = configuration.GetValue("AppSettings:MaxConcurrentDownloads", 3);
 
             videoGetDelay = configuration.GetValue("MessageDelaySettings:VideoGetDelay", 1000);
             contactSendDelay = configuration.GetValue("MessageDelaySettings:ContactSendDelay", 1000);

@@ -152,7 +152,28 @@ public partial class TGBot
     public async Task HandleMediaRequest(ITelegramBotClient botClient, string contentUrl, long chatId, Message statusMessage,
                                                 List<long>? targetUserIds = null, bool groupChat = false, string caption = "")
     {
-        List<byte[]>? mediaFiles = await MediaGet.DownloadMedia(botClient, contentUrl, statusMessage, cancellationToken);
+        List<byte[]>? mediaFiles = await DownloadQueue.EnqueueAsync(
+            async () => await MediaGet.DownloadMedia(botClient, contentUrl, statusMessage, cancellationToken),
+            position =>
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await botClient.EditMessageText(
+                            statusMessage.Chat.Id,
+                            statusMessage.MessageId,
+                            $"⏳ Queued (#{position})",
+                            cancellationToken: cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Debug(ex, "Error editing queue status message.");
+                    }
+                });
+            },
+            cancellationToken);
+
         if (mediaFiles?.Count > 0)
         {
             Log.Debug($"Downloaded {mediaFiles.Count} files");
