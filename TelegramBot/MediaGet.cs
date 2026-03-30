@@ -71,6 +71,7 @@ namespace TelegramMediaRelayBot
                         overrideOptions.Cookies = Config.cookiesFile;
 
                     DateTime lastProgressUpdate = DateTime.MinValue;
+                    string lastStatusText = "";
                     var progress = new Progress<DownloadProgress>(p =>
                     {
                         if (DateTime.UtcNow - lastProgressUpdate < TimeSpan.FromMilliseconds(Config.videoGetDelay))
@@ -83,6 +84,9 @@ namespace TelegramMediaRelayBot
                             statusText += $" at {p.DownloadSpeed}";
                         if (!string.IsNullOrEmpty(p.ETA))
                             statusText += $" ETA {p.ETA}";
+
+                        if (statusText == lastStatusText) return;
+                        lastStatusText = statusText;
 
                         if (Config.showVideoDownloadProgress)
                             Log.Debug($"Video download progress: {statusText}");
