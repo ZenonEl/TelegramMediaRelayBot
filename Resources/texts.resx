@@ -326,8 +326,41 @@ Are you sure you want to unmute them? If not, type /start</value>
     <data name="DefaultActionChangedMessage" xml:space="preserve">
         <value>Default action successfully changed.</value>
     </data>
+    <data name="DefaultActionDisabledMessage" xml:space="preserve">
+        <value>Default action has been disabled.</value>
+    </data>
     <data name="DefaultActionNotChangedMessage" xml:space="preserve">
         <value>Default action not changed.</value>
+    </data>
+    <data name="SettingsCurrentStateText" xml:space="preserve">
+        <value>Current settings:</value>
+    </data>
+    <data name="SettingsActionLabel" xml:space="preserve">
+        <value>Action</value>
+    </data>
+    <data name="SettingsDelayLabel" xml:space="preserve">
+        <value>Delay</value>
+    </data>
+    <data name="SettingsStatusLabel" xml:space="preserve">
+        <value>Status</value>
+    </data>
+    <data name="SettingsNotConfigured" xml:space="preserve">
+        <value>not configured</value>
+    </data>
+    <data name="SettingsEnabled" xml:space="preserve">
+        <value>enabled</value>
+    </data>
+    <data name="SettingsDisabled" xml:space="preserve">
+        <value>disabled</value>
+    </data>
+    <data name="SettingsSecondsLabel" xml:space="preserve">
+        <value>sec.</value>
+    </data>
+    <data name="EnableAutoSendButtonText" xml:space="preserve">
+        <value>Enable Auto-Send</value>
+    </data>
+    <data name="DefaultActionGetGroupOrUserIDs" xml:space="preserve">
+        <value>Please specify the IDs of groups or users:</value>
     </data>
     <data name="DefaultActionTimeoutMessage" xml:space="preserve">
         <value>⏳ Time is up, the default action will be performed...</value>
@@ -378,6 +411,12 @@ Are you sure you want to unmute them? If not, type /start</value>
     </data>
     <data name="OnlyMeButtonText" xml:space="preserve">
         <value>Only Me</value>
+    </data>
+    <data name="Enable" xml:space="preserve">
+        <value>Enable</value>
+    </data>
+    <data name="Disable" xml:space="preserve">
+        <value>Disable</value>
     </data>
     <data name="DisableAutoSendButtonText" xml:space="preserve">
         <value>Disable Auto-Send</value>

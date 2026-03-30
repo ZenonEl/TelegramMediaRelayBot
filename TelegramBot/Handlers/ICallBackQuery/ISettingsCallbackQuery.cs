@@ -45,31 +45,64 @@ public class DefaultActionsMenuCommand : IBotCallbackQueryHandlers
 
 public class VideoDefaultActionsMenuCommand : IBotCallbackQueryHandlers
 {
+    private readonly IDefaultActionGetter _defaultActionGetter;
+    private readonly IUserGetter _userGetter;
+
+    public VideoDefaultActionsMenuCommand(
+        IDefaultActionGetter defaultActionGetter,
+        IUserGetter userGetter)
+    {
+        _defaultActionGetter = defaultActionGetter;
+        _userGetter = userGetter;
+    }
+
     public string Name => "video_default_actions_menu";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        await Users.ViewVideoDefaultActionsMenu(botClient, update);
+        await Users.ViewVideoDefaultActionsMenu(botClient, update, _defaultActionGetter, _userGetter);
     }
 }
 
 public class UserSetAutoSendVideoTimeCommand : IBotCallbackQueryHandlers
 {
+    private readonly IDefaultActionGetter _defaultActionGetter;
+    private readonly IUserGetter _userGetter;
+
+    public UserSetAutoSendVideoTimeCommand(
+        IDefaultActionGetter defaultActionGetter,
+        IUserGetter userGetter)
+    {
+        _defaultActionGetter = defaultActionGetter;
+        _userGetter = userGetter;
+    }
+
     public string Name => "user_set_auto_send_video_time";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        await Users.ViewAutoSendVideoTimeMenu(botClient, update);
+        await Users.ViewAutoSendVideoTimeMenu(botClient, update, _defaultActionGetter, _userGetter);
     }
 }
 
 public class UserSetVideoSendUsersCommand : IBotCallbackQueryHandlers
 {
+    private readonly IDefaultActionGetter _defaultActionGetter;
+    private readonly IUserGetter _userGetter;
+
+    public UserSetVideoSendUsersCommand(
+        IDefaultActionGetter defaultActionGetter,
+        IUserGetter userGetter)
+    {
+        _defaultActionGetter = defaultActionGetter;
+        _userGetter = userGetter;
+    }
+
     public string Name => "user_set_video_send_users";
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
-        await Users.ViewUsersVideoSentUsersActionsMenu(botClient, update);
+        await Users.ViewUsersVideoSentUsersActionsMenu(botClient, update, _defaultActionGetter, _userGetter);
     }
 }
 

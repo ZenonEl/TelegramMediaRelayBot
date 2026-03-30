@@ -58,9 +58,9 @@ public class SqliteDefaultActionSetter : IDefaultActionSetter
     public bool SetAutoSendVideoConditionToUser(int userId, string actionCondition, string type)
     {
         const string query = @"
-            INSERT INTO DefaultUsersActions (UserId, Type, ActionCondition) 
-            VALUES (@userId, @type, @actionCondition)
-            ON CONFLICT(UserId, Type) 
+            INSERT INTO DefaultUsersActions (UserId, Type, ActionCondition, IsActive)
+            VALUES (@userId, @type, @actionCondition, 1)
+            ON CONFLICT(UserId, Type)
             DO UPDATE SET ActionCondition = @actionCondition";
 
         using var connection = new SqliteConnection(_connectionString);
@@ -70,13 +70,24 @@ public class SqliteDefaultActionSetter : IDefaultActionSetter
     public bool SetAutoSendVideoActionToUser(int userId, string action, string type)
     {
         const string query = @"
-            INSERT INTO DefaultUsersActions (UserId, Type, Action) 
-            VALUES (@userId, @type, @action)
-            ON CONFLICT(UserId, Type) 
-            DO UPDATE SET Action = @action";
+            INSERT INTO DefaultUsersActions (UserId, Type, Action, IsActive)
+            VALUES (@userId, @type, @action, 1)
+            ON CONFLICT(UserId, Type)
+            DO UPDATE SET Action = @action, IsActive = 1";
 
         using var connection = new SqliteConnection(_connectionString);
         return connection.Execute(query, new {userId, type, action}) > 0;
+    }
+
+    public bool SetDefaultActionIsActive(int userId, string type, bool isActive)
+    {
+        const string query = @"
+            UPDATE DefaultUsersActions
+            SET IsActive = @isActive
+            WHERE UserId = @userId AND Type = @type";
+
+        using var connection = new SqliteConnection(_connectionString);
+        return connection.Execute(query, new {userId, type, isActive}) > 0;
     }
 }
 
@@ -129,7 +140,7 @@ public class SqliteDefaultActionGetter : IDefaultActionGetter
         try
         {
             using var connection = new SqliteConnection(_connectionString);
-            
+
             var result = connection.QueryFirstOrDefault<(string Action, string ActionCondition)>(
                 @"SELECT Action, ActionCondition
                 FROM DefaultUsersActions
@@ -138,14 +149,35 @@ public class SqliteDefaultActionGetter : IDefaultActionGetter
                 AND IsActive = 1",
                 new { userID, type });
 
-            return result != default 
-                ? $"{result.Action};{result.ActionCondition}" 
+            return result != default
+                ? $"{result.Action};{result.ActionCondition}"
                 : UsersAction.NO_VALUE;
         }
         catch (Exception ex)
         {
             Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetDefaultActionByUserIDAndType));
             return "";
+        }
+    }
+
+    public (string Action, string ActionCondition, bool IsActive) GetDefaultActionSettings(int userId, string type)
+    {
+        try
+        {
+            using var connection = new SqliteConnection(_connectionString);
+
+            var result = connection.QueryFirstOrDefault<(string Action, string ActionCondition, bool IsActive)>(
+                @"SELECT Action, ActionCondition, IsActive
+                FROM DefaultUsersActions
+                WHERE UserId = @userId AND Type = @type",
+                new { userId, type });
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred in the method {MethodName}", nameof(GetDefaultActionSettings));
+            return (string.Empty, string.Empty, false);
         }
     }
 }

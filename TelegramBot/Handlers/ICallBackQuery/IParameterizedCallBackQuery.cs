@@ -49,25 +49,31 @@ public class SetAutoSendTimeCommand : IBotCallbackQueryHandlers
     public string Name => "user_set_auto_send_video_time_to:";
 
     private readonly IDefaultActionSetter _defaultActionSetter;
+    private readonly IDefaultActionGetter _defaultActionGetter;
     private readonly IUserGetter _userGetter;
 
     public SetAutoSendTimeCommand(
         IUserGetter userGetter,
-        IDefaultActionSetter defaultActionSetter)
+        IDefaultActionSetter defaultActionSetter,
+        IDefaultActionGetter defaultActionGetter)
     {
         _userGetter = userGetter;
         _defaultActionSetter = defaultActionSetter;
+        _defaultActionGetter = defaultActionGetter;
     }
 
     public async Task ExecuteAsync(Update update, ITelegramBotClient botClient, CancellationToken ct)
     {
         string callbackQueryData = update.CallbackQuery!.Data!.Split(':')[1];
         var chatId = update.CallbackQuery!.Message!.Chat.Id;
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
         bool result = Users.SetAutoSendVideoTimeToUser(chatId, callbackQueryData, _defaultActionSetter, _userGetter);
 
-        var message = result 
-            ? Config.GetResourceString("AutoSendTimeChangedMessage") + callbackQueryData
+        string statusText = Users.FormatSettingsStatus(_defaultActionGetter, userId);
+        var message = result
+            ? Config.GetResourceString("AutoSendTimeChangedMessage") + callbackQueryData + " " + Config.GetResourceString("SettingsSecondsLabel")
             : Config.GetResourceString("AutoSendTimeNotChangedMessage");
+        message += "\n\n" + statusText;
 
         await CommonUtilities.SendMessage(
             botClient,
@@ -112,6 +118,45 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
     {
         string action = update.CallbackQuery!.Data!.Split(':')[1];
         long chatId = update.CallbackQuery!.Message!.Chat.Id;
+        int userId = _userGetter.GetUserIDbyTelegramID(chatId);
+
+        // Handle "enable" action: re-enable existing settings without changing them
+        if (action == "enable")
+        {
+            bool enableResult = _defaultActionSetter.SetDefaultActionIsActive(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION, true);
+            string enableMessage = enableResult
+                ? Config.GetResourceString("DefaultActionChangedMessage")
+                : Config.GetResourceString("DefaultActionNotChangedMessage");
+
+            string statusText = Users.FormatSettingsStatus(_defaultActionGetter, userId);
+            await CommonUtilities.SendMessage(
+                botClient,
+                update,
+                KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
+                cancellationToken,
+                enableMessage + "\n\n" + statusText
+            );
+            return;
+        }
+
+        // Handle "off" action: disable the default action
+        if (action == UsersAction.OFF)
+        {
+            bool disableResult = _defaultActionSetter.SetDefaultActionIsActive(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION, false);
+            string disableMessage = disableResult
+                ? Config.GetResourceString("DefaultActionDisabledMessage")
+                : Config.GetResourceString("DefaultActionNotChangedMessage");
+
+            string statusText = Users.FormatSettingsStatus(_defaultActionGetter, userId);
+            await CommonUtilities.SendMessage(
+                botClient,
+                update,
+                KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
+                cancellationToken,
+                disableMessage + "\n\n" + statusText
+            );
+            return;
+        }
 
         List<string> extendActions = new List<string>
                                         {
@@ -148,12 +193,13 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
 
         if (result)
         {
+            string confirmStatusText = Users.FormatSettingsStatus(_defaultActionGetter, userId);
             await CommonUtilities.SendMessage(
                 botClient,
                 update,
                 KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
                 cancellationToken,
-                Config.GetResourceString("DefaultActionChangedMessage")
+                Config.GetResourceString("DefaultActionChangedMessage") + "\n\n" + confirmStatusText
             );
             return;
         }

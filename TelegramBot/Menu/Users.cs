@@ -10,6 +10,7 @@
 // (по вашему выбору) любой более поздней версии.
 
 
+using System.Text;
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.TelegramBot.Utils;
@@ -98,37 +99,131 @@ public class Users
         );
     }
 
-    public static async Task ViewVideoDefaultActionsMenu(ITelegramBotClient botClient, Update update)
+    public static async Task ViewVideoDefaultActionsMenu(ITelegramBotClient botClient, Update update,
+        IDefaultActionGetter? defaultActionGetter = null, IUserGetter? userGetter = null)
     {
+        string statusText = "";
+        if (defaultActionGetter != null && userGetter != null)
+        {
+            long chatId = CommonUtilities.GetIDfromUpdate(update);
+            int userId = userGetter.GetUserIDbyTelegramID(chatId);
+            statusText = FormatSettingsStatus(defaultActionGetter, userId);
+        }
+
+        string message = Config.GetResourceString("VideoDefaultActionsMenuText");
+        if (!string.IsNullOrEmpty(statusText))
+            message += "\n\n" + statusText;
+
         await CommonUtilities.SendMessage(
             botClient,
             update,
             UsersDefaultActionsMenuKB.GetDefaultVideoDistributionKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("VideoDefaultActionsMenuText")
+            message
         );
     }
 
-    public static async Task ViewUsersVideoSentUsersActionsMenu(ITelegramBotClient botClient, Update update)
+    public static async Task ViewUsersVideoSentUsersActionsMenu(ITelegramBotClient botClient, Update update,
+        IDefaultActionGetter? defaultActionGetter = null, IUserGetter? userGetter = null)
     {
+        string statusText = "";
+        if (defaultActionGetter != null && userGetter != null)
+        {
+            long chatId = CommonUtilities.GetIDfromUpdate(update);
+            int userId = userGetter.GetUserIDbyTelegramID(chatId);
+            var settings = defaultActionGetter.GetDefaultActionSettings(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+            if (!string.IsNullOrEmpty(settings.Action))
+            {
+                string actionName = GetActionDisplayName(settings.Action);
+                string activeIndicator = settings.IsActive ? "✅" : "❌";
+                statusText = $"{activeIndicator} {Config.GetResourceString("SettingsActionLabel")}: {actionName}";
+            }
+        }
+
+        string message = Config.GetResourceString("UsersVideoSentUsersMenuText");
+        if (!string.IsNullOrEmpty(statusText))
+            message += "\n\n" + statusText;
+
         await CommonUtilities.SendMessage(
             botClient,
             update,
             UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("UsersVideoSentUsersMenuText")
+            message
         );
     }
 
-    public static async Task ViewAutoSendVideoTimeMenu(ITelegramBotClient botClient, Update update)
+    public static async Task ViewAutoSendVideoTimeMenu(ITelegramBotClient botClient, Update update,
+        IDefaultActionGetter? defaultActionGetter = null, IUserGetter? userGetter = null)
     {
+        string statusText = "";
+        if (defaultActionGetter != null && userGetter != null)
+        {
+            long chatId = CommonUtilities.GetIDfromUpdate(update);
+            int userId = userGetter.GetUserIDbyTelegramID(chatId);
+            var settings = defaultActionGetter.GetDefaultActionSettings(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+            if (!string.IsNullOrEmpty(settings.ActionCondition))
+            {
+                string activeIndicator = settings.IsActive ? "✅" : "❌";
+                statusText = $"{activeIndicator} {Config.GetResourceString("SettingsDelayLabel")}: {settings.ActionCondition} {Config.GetResourceString("SettingsSecondsLabel")}";
+            }
+        }
+
+        string message = Config.GetResourceString("AutoSendVideoTimeMenuText");
+        if (!string.IsNullOrEmpty(statusText))
+            message += "\n\n" + statusText;
+
         await CommonUtilities.SendMessage(
             botClient,
             update,
             UsersDefaultActionsMenuKB.GetUsersAutoSendVideoTimeKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("AutoSendVideoTimeMenuText")
+            message
         );
+    }
+
+    public static string FormatSettingsStatus(IDefaultActionGetter defaultActionGetter, int userId)
+    {
+        var settings = defaultActionGetter.GetDefaultActionSettings(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
+
+        if (string.IsNullOrEmpty(settings.Action) && string.IsNullOrEmpty(settings.ActionCondition))
+            return $"📋 {Config.GetResourceString("SettingsCurrentStateText")} {Config.GetResourceString("SettingsNotConfigured")}";
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"📋 {Config.GetResourceString("SettingsCurrentStateText")}");
+
+        string statusIndicator = settings.IsActive ? "✅" : "❌";
+        string statusText = settings.IsActive
+            ? Config.GetResourceString("SettingsEnabled")
+            : Config.GetResourceString("SettingsDisabled");
+        sb.AppendLine($"  {Config.GetResourceString("SettingsStatusLabel")}: {statusIndicator} {statusText}");
+
+        if (!string.IsNullOrEmpty(settings.Action))
+        {
+            string actionName = GetActionDisplayName(settings.Action);
+            sb.AppendLine($"  {Config.GetResourceString("SettingsActionLabel")}: {actionName}");
+        }
+
+        if (!string.IsNullOrEmpty(settings.ActionCondition))
+        {
+            sb.AppendLine($"  {Config.GetResourceString("SettingsDelayLabel")}: {settings.ActionCondition} {Config.GetResourceString("SettingsSecondsLabel")}");
+        }
+
+        return sb.ToString().TrimEnd();
+    }
+
+    private static string GetActionDisplayName(string action)
+    {
+        return action switch
+        {
+            UsersAction.SEND_MEDIA_TO_ALL_CONTACTS => Config.GetResourceString("AllContactsButtonText"),
+            UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS => Config.GetResourceString("DefaultGroupsButtonText"),
+            UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS => Config.GetResourceString("SpecifiedContactsButtonText"),
+            UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS => Config.GetResourceString("SpecifiedGroupsButtonText"),
+            UsersAction.SEND_MEDIA_ONLY_TO_ME => Config.GetResourceString("OnlyMeButtonText"),
+            UsersAction.OFF => Config.GetResourceString("DisableAutoSendButtonText"),
+            _ => action
+        };
     }
 
     public static bool SetAutoSendVideoTimeToUser(long chatId, string time, IDefaultActionSetter defaultActionSetter, IUserGetter userGetter)
