@@ -25,6 +25,7 @@ public interface IDefaultActionSetter
 
     public bool SetAutoSendVideoActionToUser(int userId, string action, string type);
 
+    public bool SetDefaultActionIsActive(int userId, string type, bool isActive);
 }
 
 public interface IDefaultActionGetter
@@ -33,4 +34,5 @@ public interface IDefaultActionGetter
 
     public int GetDefaultActionId(int userId, string type);
     public string GetDefaultActionByUserIDAndType(int userID, string type);
+    public (string Action, string ActionCondition, bool IsActive) GetDefaultActionSettings(int userId, string type);
 }

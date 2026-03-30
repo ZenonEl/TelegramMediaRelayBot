@@ -331,8 +331,41 @@ ID: {0}
     <data name="DefaultActionChangedMessage" xml:space="preserve">
         <value>Действие по умолчанию успешно изменено.</value>
     </data>
+    <data name="DefaultActionDisabledMessage" xml:space="preserve">
+        <value>Действие по умолчанию отключено.</value>
+    </data>
     <data name="DefaultActionNotChangedMessage" xml:space="preserve">
         <value>Действие по умолчанию не изменено.</value>
+    </data>
+    <data name="SettingsCurrentStateText" xml:space="preserve">
+        <value>Текущие настройки:</value>
+    </data>
+    <data name="SettingsActionLabel" xml:space="preserve">
+        <value>Действие</value>
+    </data>
+    <data name="SettingsDelayLabel" xml:space="preserve">
+        <value>Задержка</value>
+    </data>
+    <data name="SettingsStatusLabel" xml:space="preserve">
+        <value>Статус</value>
+    </data>
+    <data name="SettingsNotConfigured" xml:space="preserve">
+        <value>не настроено</value>
+    </data>
+    <data name="SettingsEnabled" xml:space="preserve">
+        <value>включено</value>
+    </data>
+    <data name="SettingsDisabled" xml:space="preserve">
+        <value>отключено</value>
+    </data>
+    <data name="SettingsSecondsLabel" xml:space="preserve">
+        <value>сек.</value>
+    </data>
+    <data name="EnableAutoSendButtonText" xml:space="preserve">
+        <value>Включить авто-рассылку</value>
+    </data>
+    <data name="DefaultActionGetGroupOrUserIDs" xml:space="preserve">
+        <value>Укажите ID групп или пользователей:</value>
     </data>
     <data name="DefaultActionTimeoutMessage" xml:space="preserve">
         <value>⏳ Время вышло, будет выполнено действие по умолчанию...</value>

@@ -271,6 +271,7 @@ public static class UsersDefaultActionsMenuKB
             },
             new[]
             {
+                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("EnableAutoSendButtonText"), "user_set_video_send_users:enable"),
                 InlineKeyboardButton.WithCallbackData(Config.GetResourceString("DisableAutoSendButtonText"), $"user_set_video_send_users:{UsersAction.OFF}"),
             },
             new[]
