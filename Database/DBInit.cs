@@ -117,6 +117,8 @@ public class FluentDBMigrator
 
         builder.Services.AddSingleton<IDownloadJobRepository>(_ =>
             new SqliteDownloadJobRepository(Config.sqlConnectionString!));
+        // Registered AFTER PollingService on purpose: hosted services start in order,
+        // so TGBot.cancellationToken is set by PollingService before resume runs.
         builder.Services.AddHostedService<DownloadJobResumeService>();
 
         return builder;

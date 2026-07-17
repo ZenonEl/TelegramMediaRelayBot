@@ -81,6 +81,25 @@ public partial class TGBot
 
     public async Task UpdateHandler(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
+        // A single bad update must not escape: if it did, the receiver would stop
+        // without advancing the offset, and the supervised loop would re-poll the
+        // same update forever — the bot alive but permanently stuck. Log and skip.
+        try
+        {
+            await DispatchUpdate(botClient, update, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw; // shutdown: let the receiver stop
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Unhandled error processing update {UpdateId}; skipping it", update.Id);
+        }
+    }
+
+    private async Task DispatchUpdate(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
 
@@ -174,8 +193,11 @@ public partial class TGBot
             }
         }
 
-        // Reached only on normal completion (sent or reported as failed);
-        // on crash/shutdown the row stays and the job is resumed after restart.
+        // Reached only on normal completion (sent or reported as failed); on
+        // crash/shutdown the row stays and the job is resumed after restart.
+        // This gives at-least-once delivery: a crash between a successful send and
+        // this line replays the whole job, so a duplicate is possible (acceptable —
+        // losing a requested download is worse than an occasional repeat).
         TryRemoveJob(jobId);
     }
 

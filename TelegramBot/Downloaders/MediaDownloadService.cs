@@ -67,9 +67,13 @@ public sealed class MediaDownloadService
 
             foreach (var downloader in _downloaders.Where(d => d.CanHandle(uri)))
             {
+                // Each backend gets its own subdirectory so a later backend never
+                // picks up partial/junk files left by an earlier failed attempt.
+                string backendDir = Path.Combine(workDir, downloader.Name.Replace('/', '_'));
+                Directory.CreateDirectory(backendDir);
                 try
                 {
-                    var files = await downloader.DownloadAsync(uri, workDir, proxy, progress, ct);
+                    var files = await downloader.DownloadAsync(uri, backendDir, proxy, progress, ct);
                     if (files.Count > 0)
                         return new MediaDownloadResult(workDir, files);
                 }
