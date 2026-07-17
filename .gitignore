@@ -48,3 +48,5 @@ data/
 /.claude
 TelegramMediaRelayBot.sln
 /TelegramMediaRelayBot.Tests
+yt-dlp
+/yt-dlp
