@@ -74,22 +74,9 @@ public class GroupUpdateHandler
 
     private async Task HandlePlainUrl(string messageText, long chatId, int replyToMessageId, ITelegramBotClient botClient, CancellationToken cancellationToken)
     {
-        string link;
-        string caption = "";
+        var (link, caption) = CommonUtilities.ExtractLinkAndCaption(messageText);
 
-        int newLineIndex = messageText.IndexOf('\n');
-
-        if (newLineIndex != -1)
-        {
-            link = messageText[..newLineIndex].Trim();
-            caption = messageText[(newLineIndex + 1)..].Trim();
-        }
-        else
-        {
-            link = messageText.Trim();
-        }
-
-        if (CommonUtilities.IsLink(link))
+        if (link != null && CommonUtilities.IsLink(link))
         {
             await DownloadAndSend(botClient, link, chatId, caption, cancellationToken);
         }

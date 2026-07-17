@@ -16,7 +16,7 @@ using System.Text.RegularExpressions;
 
 namespace TelegramMediaRelayBot.TelegramBot.Utils;
 
-public static class CommonUtilities
+public static partial class CommonUtilities
 {
 
     // Property, not a field: a field would capture the token at class-init time,
@@ -115,6 +115,29 @@ public static class CommonUtilities
 
         return Uri.TryCreate(input, UriKind.Absolute, out Uri? uriResult)
                             && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+    }
+
+    [GeneratedRegex(@"https?://[^\s]+", RegexOptions.IgnoreCase)]
+    private static partial Regex UrlRegex();
+
+    /// <summary>
+    /// Pulls the first URL out of a message. Text before the URL is treated as
+    /// share junk and dropped (e.g. "Take a look! 📌 https://…"); text after the
+    /// URL becomes the caption (e.g. "https://… \n my note").
+    /// Returns (null, "") when no URL is present.
+    /// </summary>
+    public static (string? Link, string Caption) ExtractLinkAndCaption(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            return (null, "");
+
+        var match = UrlRegex().Match(message);
+        if (!match.Success)
+            return (null, "");
+
+        string link = match.Value.TrimEnd('.', ',', '!', '?', ';', ':', ')', ']', '}', '"', '\'');
+        string caption = message[(match.Index + match.Length)..].Trim();
+        return (link, caption);
     }
 
     public static string ExtractDomain(string url)

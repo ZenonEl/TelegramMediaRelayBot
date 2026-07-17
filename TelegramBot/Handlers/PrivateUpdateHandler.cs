@@ -47,23 +47,12 @@ public class PrivateUpdateHandler
     public async Task ProcessMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken, long chatId)
     {
         string messageText = update.Message!.Text!;
-        string link;
-        string text = "";
 
-        int newLineIndex = messageText.IndexOf('\n');
+        var (extractedLink, text) = CommonUtilities.ExtractLinkAndCaption(messageText);
 
-        if (newLineIndex != -1)
+        if (extractedLink != null && CommonUtilities.IsLink(extractedLink))
         {
-            link = messageText[..newLineIndex].Trim();
-            text = messageText[(newLineIndex + 1)..].Trim();
-        }
-        else
-        {
-            link = messageText.Trim();
-        }
-
-        if (CommonUtilities.IsLink(link))
-        {
+            string link = extractedLink;
             int replyToMessageId = update.Message.MessageId;
             Message statusMessage = await botClient.SendMessage(
                 chatId,
