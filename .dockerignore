@@ -1,0 +1,24 @@
+# Build artifacts
+bin/
+obj/
+**/bin/
+**/obj/
+
+# Runtime data & secrets — must never enter the image or build context
+data/
+.env
+appsettings.json
+*.db
+*.db-wal
+*.db-shm
+
+# VCS & tooling
+.git/
+.github/
+.vscode/
+.claude/
+*.user
+
+# Docs / local
+Downloads/
+downloader-config.yaml

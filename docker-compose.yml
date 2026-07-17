@@ -22,7 +22,16 @@
 
 services:
   bot:
-    build: .
+    build:
+      context: .
+      # Build in host network so the restore/publish steps can reach the host's
+      # proxy at 127.0.0.1 — NuGet is otherwise unreachable via the system
+      # tunnel's exit. Only those steps are proxied (see BUILD_PROXY in the
+      # Dockerfile); apt/pypi go direct. Leave BUILD_PROXY empty if NuGet is
+      # directly reachable on your network.
+      network: host
+      args:
+        BUILD_PROXY: socks5://127.0.0.1:2080
     restart: unless-stopped
     network_mode: host
     volumes:
@@ -31,6 +40,14 @@ services:
       - ./data/telegram-bot-api:/var/lib/telegram-bot-api
     environment:
       Bot__ApiBaseUrl: "http://127.0.0.1:8081"
+      # The bot talks to the LOCAL bot-api over loopback; the Telegram tunnel is
+      # the bot-api container's job (--tdlib-proxy-*). So the bot itself uses no
+      # proxy. (.NET also rejects socks5h, which only the yt-dlp downloader needs.)
+      Bot__Proxy: ""
+      # No browser inside the container: cookies-from-browser can't work here.
+      # For auth-walled sites, export cookies to a file on the host and mount it,
+      # then set Download__CookiesFile instead.
+      Download__CookiesFromBrowser: ""
       Download__TempDir: "/var/lib/telegram-bot-api/tmrb"
       Database__ConnectionString: "Data Source=/app/data/TelegramMediaRelayBot.db"
       Proxies__vpn: "socks5h://127.0.0.1:${VPN_PROXY_PORT}"
