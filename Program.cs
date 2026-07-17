@@ -12,9 +12,9 @@
 global using Serilog;
 global using Telegram.Bot;
 global using Telegram.Bot.Types;
-using System.Globalization;
 using FluentMigrator.Runner;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot;
 
@@ -36,15 +36,7 @@ namespace TelegramMediaRelayBot
             Console.WriteLine("============================================\n");
 
             Config.LoadConfig();
-            CultureInfo currentCulture = CultureInfo.CurrentUICulture;
-
-            if (Config.language != null)
-            {
-                currentCulture = new CultureInfo(Config.language);
-            }
-
-            Thread.CurrentThread.CurrentUICulture = currentCulture;
-            Thread.CurrentThread.CurrentCulture = currentCulture;
+            Localization.SetCulture(Config.language);
 
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Is(Config.logLevel)
@@ -53,7 +45,7 @@ namespace TelegramMediaRelayBot
 
             try
             {
-                var builder = FluentDBMigrator.CreateBuilderByDBType(args);
+                var builder = FluentDBMigrator.CreateAppBuilder(args);
 
                 ServiceProvider serviceProvider = FluentDBMigrator.GetCurrentServiceProvider();
                 using (var scope = serviceProvider.CreateScope())
@@ -62,25 +54,26 @@ namespace TelegramMediaRelayBot
                     migrator.MigrateUp();
                 }
 
-                var app = builder.Build();
-                TGBot tgBot = app.Services.GetRequiredService<TGBot>();
-                Scheduler scheduler = app.Services.GetRequiredService<Scheduler>();
+                using var host = builder.Build();
+                Scheduler scheduler = host.Services.GetRequiredService<Scheduler>();
 
                 Log.Information($"Log level: {Config.logLevel}");
                 DownloadQueue.Initialize(Config.maxConcurrentDownloads);
+                host.Services.GetRequiredService<TelegramMediaRelayBot.TelegramBot.Downloaders.MediaDownloadService>().SweepOrphans();
                 scheduler.Init();
 
-                await tgBot.Start();
                 if (Environment.GetEnvironmentVariable("CI") == "true")
                 {
-                    await Task.Delay(118000); // 1 минута 58 секунд
-                    Log.Information("CI build: exiting gracefully after test delay.");
-                    Environment.Exit(0);
+                    var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(118000); // 1 минута 58 секунд
+                        Log.Information("CI build: exiting gracefully after test delay.");
+                        lifetime.StopApplication();
+                    });
                 }
-                else
-                {
-                    await Task.Delay(-1);
-                }
+
+                await host.RunAsync();
             }
             catch (Exception ex)
             {

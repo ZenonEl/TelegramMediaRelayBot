@@ -25,7 +25,7 @@ public static class UsersGroup
             new[]
         {
             InlineKeyboardButton.WithCallbackData(
-                Config.GetResourceString("CreateGroupButtonText"),
+                Localization.Get("CreateGroupButtonText"),
                 "user_create_group"
             )
         }.ToList()
@@ -36,7 +36,7 @@ public static class UsersGroup
             kb.Add(new[] 
             { 
                 InlineKeyboardButton.WithCallbackData(
-                    Config.GetResourceString("EditGroupButtonText"), 
+                    Localization.Get("EditGroupButtonText"), 
                     "user_edit_group"
                 ) 
             }.ToList());
@@ -44,7 +44,7 @@ public static class UsersGroup
             kb.Add(new[] 
             { 
                 InlineKeyboardButton.WithCallbackData(
-                    Config.GetResourceString("DeleteGroupButtonText"), 
+                    Localization.Get("DeleteGroupButtonText"), 
                     "user_delete_group"
                 ) 
             }.ToList());
@@ -63,15 +63,15 @@ public static class UsersGroup
                 {
                     new[]
                     {
-                        InlineKeyboardButton.WithCallbackData(Config.GetResourceString("ChangeNameText"), $"user_change_group_name:{groupId}"),
+                        InlineKeyboardButton.WithCallbackData(Localization.Get("ChangeNameText"), $"user_change_group_name:{groupId}"),
                     },
                     new[]
                     {
-                        InlineKeyboardButton.WithCallbackData(Config.GetResourceString("ChangeDescriptionText"), $"user_change_group_description:{groupId}"),
+                        InlineKeyboardButton.WithCallbackData(Localization.Get("ChangeDescriptionText"), $"user_change_group_description:{groupId}"),
                     },
                     new[]
                     {
-                        InlineKeyboardButton.WithCallbackData(Config.GetResourceString("ChangeIsDefaultEnabledText"), $"user_change_is_default:{groupId}"),
+                        InlineKeyboardButton.WithCallbackData(Localization.Get("ChangeIsDefaultEnabledText"), $"user_change_is_default:{groupId}"),
                     },
                     new[]
                     {
@@ -96,7 +96,7 @@ public static class UsersGroup
             int memberCount = await groupGetter.GetGroupMemberCount(groupId);
             bool isDefault = await groupGetter.GetIsDefaultGroup(groupId);
             groupInfo = string.Format(
-                Config.GetResourceString("GroupInfoText"), 
+                Localization.Get("GroupInfoText"), 
                 await groupGetter.GetGroupNameById(groupId),
                 groupId,
                 await groupGetter.GetGroupDescriptionById(groupId),
@@ -110,7 +110,7 @@ public static class UsersGroup
 
     public static async Task<string> GetUserGroupInfoByGroupId(int groupId, IGroupGetter groupGetter)
     {
-        return string.Format(Config.GetResourceString("GroupInfoText"), await groupGetter.GetGroupNameById(groupId),
+        return string.Format(Localization.Get("GroupInfoText"), await groupGetter.GetGroupNameById(groupId),
                                                 groupId,
                                                 await groupGetter.GetGroupDescriptionById(groupId), 
                                                 await groupGetter.GetGroupMemberCount(groupId), 

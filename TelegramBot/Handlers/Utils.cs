@@ -109,7 +109,7 @@ class PrivateUtils
                     await botClient.EditMessageText(
                         statusMessage.Chat.Id,
                         statusMessage.MessageId,
-                        Config.GetResourceString("DefaultActionTimeoutMessage"),
+                        Localization.Get("DefaultActionTimeoutMessage"),
                         cancellationToken: cancellationToken
                     );
                     _ = _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage, targetUserIds, caption: text);

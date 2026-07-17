@@ -77,14 +77,14 @@ namespace TelegramMediaRelayBot
                     update,
                     UsersDefaultActionsMenuKB.GetUsersVideoSentUsersKeyboardMarkup(),
                     cancellationToken,
-                    Config.GetResourceString("UsersVideoSentUsersMenuText")
+                    Localization.Get("UsersVideoSentUsersMenuText")
                 );
                 return;
             }
             var messageText = update.Message?.Text;
             if (string.IsNullOrEmpty(messageText))
             {
-                await botClient.SendMessage(chatId, Config.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, Localization.Get("InvalidInputValues"), cancellationToken: cancellationToken);
                 return;
             }
 
@@ -92,7 +92,7 @@ namespace TelegramMediaRelayBot
 
             if (inputDomains.Count == 0)
             {
-                await botClient.SendMessage(chatId, Config.GetResourceString("InvalidInputValues"), cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, Localization.Get("InvalidInputValues"), cancellationToken: cancellationToken);
                 return;
             }
 
@@ -100,12 +100,12 @@ namespace TelegramMediaRelayBot
 
             if (_checkedDomains.Count == 0)
             {
-                await botClient.SendMessage(chatId, Config.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken);
+                await botClient.SendMessage(chatId, Localization.Get("InputErrorMessage"), cancellationToken: cancellationToken);
                 return;
             }
 
             var domains = string.Join(", ", _checkedDomains);
-            var message = $"{Config.GetResourceString("ConfirmDecision")}:\n\n{domains}";
+            var message = $"{Localization.Get("ConfirmDecision")}:\n\n{domains}";
             
             await botClient.SendMessage(
                 chatId,
@@ -137,7 +137,7 @@ namespace TelegramMediaRelayBot
                     update,
                     UsersPrivacyMenuKB.GetSiteFilterKeyboardMarkup(),
                     cancellationToken,
-                    Config.GetResourceString("SettingsMenuText")
+                    Localization.Get("SettingsMenuText")
                 );
             }
         }
@@ -163,7 +163,7 @@ namespace TelegramMediaRelayBot
                 update,
                 UsersPrivacyMenuKB.GetSiteFilterKeyboardMarkup(),
                 cancellationToken,
-                Config.GetResourceString("SuccessActionResult")
+                Localization.Get("SuccessActionResult")
             );
         }
 

@@ -38,7 +38,7 @@ public class OutBoundKB
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("DeclineButtonText"), $"revoke_outbound_invite:{userId}"),
+                            InlineKeyboardButton.WithCallbackData(Localization.Get("DeclineButtonText"), $"revoke_outbound_invite:{userId}"),
                         },
                         new[]
                         {
@@ -54,7 +54,7 @@ public class OutBoundKB
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("YesButtonText"), $"user_accept_revoke_outbound_invite:{userId}"),
+                            InlineKeyboardButton.WithCallbackData(Localization.Get("YesButtonText"), $"user_accept_revoke_outbound_invite:{userId}"),
                         },
                         new[]
                         {

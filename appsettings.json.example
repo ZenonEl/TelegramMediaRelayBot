@@ -1,55 +1,65 @@
 {
-    "AppSettings": {
-        "TelegramBotToken": "1234:abcd",
-        "SqlConnectionString": "Data Source=TelegramMediaRelayBot.db",
-        "DatabaseName": "TelegramMediaRelayBot",
-        "DatabaseType": "sqlite",
-        "Language": "en-US",
-        "UserUnMuteCheckInterval": 20,
+    "Bot": {
+        "Token": "123456:PUT-YOUR-BOTFATHER-TOKEN-HERE",
+        "ApiBaseUrl": null,
+        "Proxy": null,
+        "Language": "en-US"
+    },
+
+    "Database": {
+        "ConnectionString": "Data Source=TelegramMediaRelayBot.db",
+        "Name": "TelegramMediaRelayBot"
+    },
+
+    "_comment_proxies": "Named proxies, referenced by name below. Use socks5h:// so DNS is resolved through the proxy (important when not on a global VPN).",
+    "Proxies": {
+        "vpn": "socks5h://127.0.0.1:1080"
+    },
+
+    "Download": {
         "UseGalleryDl": true,
-        "AccessDeniedMessageContact": "",
-
-        "_comment_proxy": "Proxy for media downloads via yt-dlp/gallery-dl. Supports HTTP and SOCKS5.",
-        "Proxy": "socks5://127.0.0.1:9050",
-
-        "_comment_telegram_api": "TelegramApiBaseUrl: custom Bot API server URL (null = default). TelegramApiProxy: proxy for Telegram API requests, useful in regions where Telegram is blocked.",
-        "TelegramApiBaseUrl": null,
-        "TelegramApiProxy": null,
-
-        "_comment_queue": "Maximum number of simultaneous media downloads. Prevents system overload when many links arrive at once.",
-        "MaxConcurrentDownloads": 3
+        "MaxConcurrent": 3,
+        "DefaultProxy": null,
+        "CookiesFromBrowser": null,
+        "CookiesFile": null,
+        "_comment_rules": "Per-host proxy overrides, first match wins. Host = exact ('vk.com') or suffix ('*.vk.com'). Proxy = a name from Proxies, or null for a direct connection.",
+        "Rules": [
+            { "Hosts": ["vk.com", "*.vk.com"], "Proxy": null }
+        ]
     },
-    "_comment_tor": "Tor SOCKS proxy for media downloads and automatic circuit rotation.",
+
     "Tor": {
-        "Enabled": true,
-        "TorControlPassword": "Password",
-        "TorSocksHost": "127.0.0.1",
-        "TorSocksPort": 9050,
-        "TorControlPort": 9051,
-        "TorChangingChainInterval": 5
-    },
-    "MessageDelaySettings": {
-        "VideoGetDelay": 1000,
-        "ContactSendDelay": 1000
-    },
-    "ConsoleOutputSettings": {
-        "LogLevel": "Information",
-        "ShowVideoDownloadProgress": false,
-        "ShowVideoUploadProgress": false
-    },
-    "AccessPolicy": {
+        "_comment": "Route downloads through a Tor SOCKS proxy. Requires a running Tor daemon.",
         "Enabled": false,
+        "SocksHost": "127.0.0.1",
+        "SocksPort": 9050
+    },
 
-        "NewUsersPolicy": {
-            "Enabled": false,
-            "ShowAccessDeniedMessage": false,
+    "Session": {
+        "TtlMinutes": 30,
+        "CleanupIntervalMinutes": 5,
+        "UnMuteCheckIntervalSeconds": 20
+    },
 
-            "AllowNewUsers": true,
-            "AllowRules": {
-                "AllowAll": true,
-                "WhitelistedReferrerIds": [],
-                "BlacklistedReferrerIds": []
-            }
-        }
+    "Delays": {
+        "VideoGetMs": 1000,
+        "ContactSendMs": 1000
+    },
+
+    "Logging": {
+        "Level": "Information",
+        "ShowDownloadProgress": false,
+        "ShowUploadProgress": false
+    },
+
+    "Access": {
+        "_comment": "Controls who may use the bot. Disabled = anyone with an invite link. Enabled with AllowAll = anyone; use Whitelisted/BlacklistedReferrerIds to gate by inviter.",
+        "Enabled": false,
+        "ShowDeniedMessage": false,
+        "DeniedMessageContact": "",
+        "AllowNewUsers": true,
+        "AllowAll": true,
+        "WhitelistedReferrerIds": [],
+        "BlacklistedReferrerIds": []
     }
 }

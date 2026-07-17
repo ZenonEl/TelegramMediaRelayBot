@@ -23,11 +23,11 @@ public static class InBoundKB
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("AcceptButtonText"), $"user_accept_inbounds_invite:{userId}"),
+                            InlineKeyboardButton.WithCallbackData(Localization.Get("AcceptButtonText"), $"user_accept_inbounds_invite:{userId}"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("DeclineButtonText"), $"user_decline_inbounds_invite:{userId}"),
+                            InlineKeyboardButton.WithCallbackData(Localization.Get("DeclineButtonText"), $"user_decline_inbounds_invite:{userId}"),
                         },
                         new[]
                         {

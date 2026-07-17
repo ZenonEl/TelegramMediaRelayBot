@@ -23,12 +23,12 @@ public class Contacts
     public static async Task AddContact(ITelegramBotClient botClient, Update update, long chatId, IContactAdder contactRepository, IContactGetter contactGetter, IUserGetter userGetter, IPrivacySettingsGetter privacySettingsGetter)
     {
         UserSessionManager.Set(chatId, new ProcessContactState(contactRepository, contactGetter, userGetter, privacySettingsGetter));
-        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, Config.GetResourceString("SpecifyContactLink"));
+        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, Localization.Get("SpecifyContactLink"));
     }
 
     public static async Task DeleteContact(ITelegramBotClient botClient, Update update, long chatId, IContactRemover contactRemoverRepository, IContactGetter contactGetterRepository, IUserGetter userGetter)
     {
-        Message statusMessage = await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Config.GetResourceString("InputContactId"), cancellationToken: cancellationToken);
+        Message statusMessage = await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Localization.Get("InputContactId"), cancellationToken: cancellationToken);
         UserSessionManager.Set(chatId, new ProcessRemoveUser(statusMessage, contactRemoverRepository, contactGetterRepository, userGetter));
     }
 
@@ -40,7 +40,7 @@ public class Contacts
         IContactGetter contactGetterRepository,
         IUserGetter userGetter)
     {
-        await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Config.GetResourceString("MuteUserInstructions"), cancellationToken: cancellationToken);
+        await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Localization.Get("MuteUserInstructions"), cancellationToken: cancellationToken);
         UserSessionManager.Set(chatId, new ProcessUserMuteState(contactAdderRepository, contactGetterRepository, userGetter));
     }
 
@@ -52,7 +52,7 @@ public class Contacts
         IContactGetter contactGetter,
         IUserGetter userGetter)
     {
-        await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Config.GetResourceString("UnmuteUserInstructions"), cancellationToken: cancellationToken);
+        await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Localization.Get("UnmuteUserInstructions"), cancellationToken: cancellationToken);
         UserSessionManager.Set(chatId, new ProcessUserUnMuteState(contactRemoverRepository, contactGetter, userGetter));
     }
 
@@ -70,10 +70,10 @@ public class Contacts
             string username = !string.IsNullOrEmpty(displayName) ? $"{displayName} ({actualName})" : actualName;
             string link = userGetter.GetUserSelfLink(contactUserId);
 
-            contactUsersInfo.Add(string.Format(Config.GetResourceString("ContactInfo"), id, username, link));
+            contactUsersInfo.Add(string.Format(Localization.Get("ContactInfo"), id, username, link));
         }
 
-        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), cancellationToken, $"{Config.GetResourceString("YourContacts")}\n{string.Join("\n", contactUsersInfo)}");
+        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetViewContactsKeyboardMarkup(), cancellationToken, $"{Localization.Get("YourContacts")}\n{string.Join("\n", contactUsersInfo)}");
     }
 
     public static async Task RenameContact(
@@ -84,7 +84,7 @@ public class Contacts
         IContactGetter contactGetterRepository,
         IUserGetter userGetter)
     {
-        await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Config.GetResourceString("RenameContactInstructions"), cancellationToken: cancellationToken);
+        await botClient.SendMessage(update.CallbackQuery!.Message!.Chat.Id, Localization.Get("RenameContactInstructions"), cancellationToken: cancellationToken);
         UserSessionManager.Set(chatId, new ProcessRenameContactState(contactSetterRepository, contactGetterRepository, userGetter));
     }
 
@@ -102,9 +102,9 @@ public class Contacts
         List<string> groupInfos = await UsersGroup.GetUserGroupInfoByUserId(userId, groupGetter);
 
         string messageText = groupInfos.Any() 
-            ? $"{Config.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
-            : Config.GetResourceString("AltYourGroupsText");
+            ? $"{Localization.Get("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
+            : Localization.Get("AltYourGroupsText");
 
-        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(Config.GetResourceString("ContactGroupInfoText"), messageText));
+        await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken, string.Format(Localization.Get("ContactGroupInfoText"), messageText));
     }
 }

@@ -10,7 +10,6 @@
 // (по вашему выбору) любой более поздней версии.
 
 
-using Telegram.Bot.Polling;
 using System.Text.RegularExpressions;
 using Telegram.Bot.Types.Enums;
 using TelegramMediaRelayBot.TelegramBot.Utils;
@@ -19,6 +18,7 @@ using TelegramMediaRelayBot.TelegramBot.Sessions;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot.SiteFilter;
+using TelegramMediaRelayBot.TelegramBot.Downloaders;
 
 
 namespace TelegramMediaRelayBot;
@@ -32,6 +32,8 @@ public partial class TGBot
     private readonly IPrivacySettingsGetter _privacySettingsGetter;
     private readonly ILinkCategorizer _categorizer;
     private readonly IUserFilterService _userFilter;
+    private readonly MediaDownloadService _downloadService;
+    private readonly IDownloadJobRepository _jobRepository;
     // User states are now managed by UserSessionManager
     public static CancellationToken cancellationToken;
 
@@ -43,7 +45,9 @@ public partial class TGBot
         IDefaultActionGetter defaultActionGetter,
         IPrivacySettingsGetter privacySettingsGetter,
         IGroupGetter groupGetter,
-        ILinkCategorizer categorizer
+        ILinkCategorizer categorizer,
+        MediaDownloadService downloadService,
+        IDownloadJobRepository jobRepository
         )
     {
         _userRepo = userRepo;
@@ -60,28 +64,8 @@ public partial class TGBot
         _privacySettingsGetter = privacySettingsGetter;
         _categorizer = categorizer;
         _userFilter = new DefaultUserFilterService(_userGetter, _privacySettingsGetter);
-    }
-
-    public async Task Start()
-    {
-        ITelegramBotClient _botClient = Config.CreateTelegramBotClient();
-
-        var me = await _botClient.GetMe();
-        Log.Information($"Hello, I am {me.Id} ready and my name is {me.FirstName}.");
-
-        var cts = new CancellationTokenSource();
-        var receiverOptions = new ReceiverOptions
-        {
-            AllowedUpdates = { }
-        };
-        cancellationToken = cts.Token;
-
-        _botClient.StartReceiving(
-            updateHandler: UpdateHandler,
-            errorHandler: CommonUtilities.ErrorHandler,
-            receiverOptions: new ReceiverOptions { AllowedUpdates = Array.Empty<UpdateType>() },
-            cancellationToken: cts.Token
-        );
+        _downloadService = downloadService;
+        _jobRepository = jobRepository;
     }
 
     public static async Task ProcessState(ITelegramBotClient botClient, Update update)
@@ -95,7 +79,26 @@ public partial class TGBot
         }
     }
 
-    private async Task UpdateHandler(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    public async Task UpdateHandler(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    {
+        // A single bad update must not escape: if it did, the receiver would stop
+        // without advancing the offset, and the supervised loop would re-poll the
+        // same update forever — the bot alive but permanently stuck. Log and skip.
+        try
+        {
+            await DispatchUpdate(botClient, update, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw; // shutdown: let the receiver stop
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Unhandled error processing update {UpdateId}; skipping it", update.Id);
+        }
+    }
+
+    private async Task DispatchUpdate(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;
@@ -133,7 +136,7 @@ public partial class TGBot
                     }
                     else if (Config.showAccessDeniedMessage)
                     {
-                        await botClient.SendMessage(chatId, string.Format(Config.GetResourceString("AccessDeniedMessage"), Config.accessDeniedMessageContact), cancellationToken: cancellationToken, parseMode: ParseMode.Html);
+                        await botClient.SendMessage(chatId, string.Format(Localization.Get("AccessDeniedMessage"), Config.accessDeniedMessageContact), cancellationToken: cancellationToken, parseMode: ParseMode.Html);
                     }
                 }
 
@@ -158,81 +161,118 @@ public partial class TGBot
     }
 
     public async Task HandleMediaRequest(ITelegramBotClient botClient, string contentUrl, long chatId, Message statusMessage,
-                                                List<long>? targetUserIds = null, bool groupChat = false, string caption = "")
+                                                List<long>? targetUserIds = null, bool groupChat = false, string caption = "",
+                                                string? persistedJobId = null)
     {
-        List<byte[]>? mediaFiles = await DownloadQueue.EnqueueAsync(
-            async () => await MediaGet.DownloadMedia(botClient, contentUrl, statusMessage, cancellationToken),
-            position =>
-            {
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await botClient.EditMessageText(
-                            statusMessage.Chat.Id,
-                            statusMessage.MessageId,
-                            $"⏳ Queued (#{position})",
-                            cancellationToken: cancellationToken);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Debug(ex, "Error editing queue status message.");
-                    }
-                });
-            },
-            cancellationToken);
+        // Persist the job so a crash or reboot mid-download does not lose the request;
+        // DownloadJobResumeService re-enqueues leftovers at startup.
+        string jobId = persistedJobId ?? Guid.NewGuid().ToString("N");
+        if (persistedJobId is null)
+            TryPersistJob(new DownloadJob(jobId, chatId, contentUrl, caption, targetUserIds, groupChat));
 
-        if (mediaFiles?.Count > 0)
+        var progress = BuildStatusProgress(botClient, statusMessage, cancellationToken);
+
+        using (MediaDownloadResult? result = await DownloadQueue.EnqueueAsync(
+            () => _downloadService.DownloadAsync(contentUrl, progress, cancellationToken),
+            position => EditStatus(botClient, statusMessage, $"⏳ Queued (#{position})", cancellationToken),
+            cancellationToken))
         {
-            Log.Debug($"Downloaded {mediaFiles.Count} files");
-            await SendMediaToTelegram(botClient, chatId, mediaFiles, statusMessage, targetUserIds, contentUrl, groupChat, caption);
-            return;
+            if (result is { Files.Count: > 0 })
+            {
+                Log.Debug($"Downloaded {result.Files.Count} files");
+                await SendMediaToTelegram(botClient, chatId, result.Files, statusMessage, targetUserIds, contentUrl, groupChat, caption);
+
+                // With contact targets SendVideoToContacts writes the final status itself;
+                // otherwise the message would stay stuck on the last progress edit.
+                if (groupChat || targetUserIds is not { Count: > 0 })
+                    EditStatus(botClient, statusMessage, Localization.Get("DownloadCompleted"), cancellationToken);
+            }
+            else
+            {
+                await botClient.SendMessage(chatId, Localization.Get("FailedToProcessLink"));
+            }
         }
 
-        await botClient.SendMessage(chatId, Config.GetResourceString("FailedToProcessLink"));
+        // Reached only on normal completion (sent or reported as failed); on
+        // crash/shutdown the row stays and the job is resumed after restart.
+        // This gives at-least-once delivery: a crash between a successful send and
+        // this line replays the whole job, so a duplicate is possible (acceptable —
+        // losing a requested download is worse than an occasional repeat).
+        TryRemoveJob(jobId);
     }
 
-    private async Task SendMediaToTelegram(ITelegramBotClient botClient, long chatId, List<byte[]> mediaFiles,
+    private void TryPersistJob(DownloadJob job)
+    {
+        try { _jobRepository.Add(job); }
+        catch (Exception ex) { Log.Error(ex, "Failed to persist download job {JobId}", job.Id); }
+    }
+
+    private void TryRemoveJob(string jobId)
+    {
+        try { _jobRepository.Remove(jobId); }
+        catch (Exception ex) { Log.Error(ex, "Failed to remove download job {JobId}", jobId); }
+    }
+
+    private async Task SendMediaToTelegram(ITelegramBotClient botClient, long chatId, IReadOnlyList<MediaFile> mediaFiles,
                                                         Message statusMessage, List<long>? targetUserIds, string contentUrl, bool groupChat = false,
                                                         string caption = "")
     {
-        var groupedFiles = mediaFiles.GroupBy(CommonUtilities.DetermineFileType)
-                                    .ToDictionary(g => g.Key, g => g.Reverse().ToList());
+        var groups = mediaFiles.GroupBy(f => f.Kind).ToList();
 
         try
         {
             string text = string.Empty;
             bool lastMediaGroup = false;
 
-            foreach (var fileGroup in groupedFiles.Values)
+            foreach (var group in groups)
             {
-                var mediaGroup = CommonUtilities.CreateMediaGroup(fileGroup);
-                
-                for (int i = 0; i < mediaGroup.Count(); i += 10)
+                var files = group.ToList();
+
+                // With a local Bot API server the file lives on a volume shared with it,
+                // so we pass a file:// URI and the server reads it from disk directly —
+                // no HTTP upload, no size-dependent memory use (2 GB files included).
+                bool useLocalPaths = !string.IsNullOrWhiteSpace(Config.telegramApiBaseUrl);
+
+                for (int i = 0; i < files.Count; i += 10)
                 {
-                    var chunk = mediaGroup.Skip(i).Take(10).ToList();
-                    
-                    Message[] mess = await botClient.SendMediaGroup(
-                        chatId: chatId,
-                        media: chunk,
-                        replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
-                        disableNotification: true,
-                        cancellationToken: cancellationToken
-                    );
+                    var chunk = files.Skip(i).Take(10).ToList();
+                    var streams = useLocalPaths
+                        ? new List<Stream>()
+                        : chunk.Select(f => (Stream)File.OpenRead(f.Path)).ToList();
+                    try
+                    {
+                        var album = useLocalPaths
+                            ? chunk.Select(f => CreateAlbumItem(f.Kind,
+                                InputFile.FromString(new Uri(Path.GetFullPath(f.Path)).AbsoluteUri))).ToList()
+                            : chunk.Zip(streams, (f, s) => CreateAlbumItem(f.Kind,
+                                InputFile.FromStream(s, Path.GetFileName(f.Path)))).ToList();
 
-                    List<InputMedia> savedMediaGroupIDs = mess.Select<Message, InputMedia>(msg => 
-                                    msg.Photo != null ? new InputMediaPhoto(msg.Photo[0].FileId) :
-                                    msg.Video != null ? new InputMediaVideo(msg.Video.FileId) :
-                                    msg.Audio != null ? new InputMediaAudio(msg.Audio.FileId) :
-                                    new InputMediaDocument(msg.Document!.FileId)).ToList();
+                        Message[] mess = await botClient.SendMediaGroup(
+                            chatId: chatId,
+                            media: album,
+                            replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
+                            disableNotification: true,
+                            cancellationToken: cancellationToken
+                        );
 
-                    if (i + 10 >= mediaGroup.Count()) { lastMediaGroup = true; text = caption; }
+                        List<InputMedia> savedMediaGroupIDs = mess.Select<Message, InputMedia>(msg =>
+                                        msg.Photo != null ? new InputMediaPhoto(msg.Photo[0].FileId) :
+                                        msg.Video != null ? new InputMediaVideo(msg.Video.FileId) :
+                                        msg.Audio != null ? new InputMediaAudio(msg.Audio.FileId) :
+                                        new InputMediaDocument(msg.Document!.FileId)).ToList();
 
-                    if (!groupChat && targetUserIds != null && targetUserIds.Count > 0) 
-                        await SendVideoToContacts(chatId, botClient, statusMessage, targetUserIds,
-                            savedMediaGroupIDs: savedMediaGroupIDs, contentUrl, caption: text,
-                            lastMediaGroup: lastMediaGroup);
-                    
+                        if (i + 10 >= files.Count) { lastMediaGroup = true; text = caption; }
+
+                        if (!groupChat && targetUserIds != null && targetUserIds.Count > 0)
+                            await SendVideoToContacts(chatId, botClient, statusMessage, targetUserIds,
+                                savedMediaGroupIDs: savedMediaGroupIDs, contentUrl, caption: text,
+                                lastMediaGroup: lastMediaGroup);
+                    }
+                    finally
+                    {
+                        foreach (var s in streams) await s.DisposeAsync();
+                    }
+
                     await Task.Delay(1000, cancellationToken);
                 }
             }
@@ -244,6 +284,44 @@ public partial class TGBot
             Log.Error(ex, $"Failed to send media group");
             throw;
         }
+    }
+
+    private static IAlbumInputMedia CreateAlbumItem(MediaKind kind, InputFile file) => kind switch
+    {
+        MediaKind.Photo => new InputMediaPhoto(file),
+        MediaKind.Video => new InputMediaVideo(file),
+        MediaKind.Audio => new InputMediaAudio(file),
+        _ => new InputMediaDocument(file),
+    };
+
+    private static IProgress<string> BuildStatusProgress(ITelegramBotClient botClient, Message statusMessage, CancellationToken ct)
+    {
+        DateTime last = DateTime.MinValue;
+        string lastText = "";
+        return new Progress<string>(text =>
+        {
+            if (DateTime.UtcNow - last < TimeSpan.FromMilliseconds(Config.videoGetDelay)) return;
+            if (text == lastText) return;
+            last = DateTime.UtcNow;
+            lastText = text;
+            if (Config.showVideoDownloadProgress) Log.Debug("Download progress: {Text}", text);
+            EditStatus(botClient, statusMessage, text, ct);
+        });
+    }
+
+    private static void EditStatus(ITelegramBotClient botClient, Message statusMessage, string text, CancellationToken ct)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, text, cancellationToken: ct);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Error editing status message.");
+            }
+        }, ct);
     }
 
     private async Task SendVideoToContacts(
@@ -269,7 +347,7 @@ public partial class TGBot
 
         DateTime now = DateTime.Now;
         string name = _userGetter.GetUserNameByTelegramID(telegramId);
-        string text = string.Format(Config.GetResourceString("ContactSentVideo"), 
+        string text = string.Format(Localization.Get("ContactSentVideo"), 
                                     name, now.ToString("yyyy_MM_dd_HH_mm_ss"), MyRegex().Replace(name, "_"), caption);
         int sentCount = 0;
 
@@ -319,7 +397,7 @@ public partial class TGBot
         if (filteredContactUserTGIds.Count > 0)
         {
             await botClient.SendMessage(telegramId, 
-                                            string.Format(Config.GetResourceString("VideoSentToContacts"), 
+                                            string.Format(Localization.Get("VideoSentToContacts"), 
                                             $"{sentCount}/{filteredContactUserTGIds.Count}", now.ToString("yyyy_MM_dd_HH_mm_ss"),
                                             MyRegex().Replace(name, "_")),
                                             replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
@@ -329,12 +407,12 @@ public partial class TGBot
         if (mutedByUserIds.Count > 0)
         {
             await botClient.SendMessage(telegramId, 
-                                            string.Format(Config.GetResourceString("MutedByContacts"), mutedByUserIds.Count),
+                                            string.Format(Localization.Get("MutedByContacts"), mutedByUserIds.Count),
                                             replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId });
         }
 
         await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId,
-            string.Format(Config.GetResourceString("MessageProcessMediaSend"), sentCount, filteredContactUserTGIds.Count),
+            string.Format(Localization.Get("MessageProcessMediaSend"), sentCount, filteredContactUserTGIds.Count),
             cancellationToken: cancellationToken);
     }
 

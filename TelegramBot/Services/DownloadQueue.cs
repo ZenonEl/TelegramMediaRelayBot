@@ -26,20 +26,25 @@ namespace TelegramMediaRelayBot
             Action<int>? onQueued = null,
             CancellationToken ct = default)
         {
-            int position = Interlocked.Increment(ref _queuedCount);
+            Interlocked.Increment(ref _queuedCount);
+            bool acquired = false;
             try
             {
                 if (_semaphore.CurrentCount == 0)
-                    onQueued?.Invoke(position);
+                    onQueued?.Invoke(_queuedCount);
 
                 await _semaphore.WaitAsync(ct);
+                acquired = true;
                 Interlocked.Decrement(ref _queuedCount);
 
                 return await downloadFunc();
             }
             finally
             {
-                _semaphore.Release();
+                // Only release a permit we actually took; releasing when WaitAsync was
+                // cancelled before acquiring would inflate the semaphore and break the cap.
+                if (acquired) _semaphore.Release();
+                else Interlocked.Decrement(ref _queuedCount);
             }
         }
 

@@ -67,7 +67,7 @@ public class PrivateUpdateHandler
             int replyToMessageId = update.Message.MessageId;
             Message statusMessage = await botClient.SendMessage(
                 chatId,
-                Config.GetResourceString("WaitDownloadingVideo"),
+                Localization.Get("WaitDownloadingVideo"),
                 replyParameters: new ReplyParameters { MessageId = replyToMessageId },
                 cancellationToken: cancellationToken
             );
@@ -79,7 +79,7 @@ public class PrivateUpdateHandler
             await botClient.EditMessageText(
                 statusMessage.Chat.Id,
                 statusMessage.MessageId,
-                Config.GetResourceString("VideoDistributionQuestion"),
+                Localization.Get("VideoDistributionQuestion"),
                 replyMarkup: KeyboardUtils.GetVideoDistributionKeyboardMarkup(sessionId),
                 cancellationToken: cancellationToken
             );
@@ -103,12 +103,12 @@ public class PrivateUpdateHandler
         }
         else if (update.Message.Text == "/help")
         {
-            string helpText = Config.GetResourceString("HelpText");
+            string helpText = Localization.Get("HelpText");
             await CommonUtilities.SendMessage(botClient, update, KeyboardUtils.GetReturnButtonMarkup(), cancellationToken: cancellationToken, helpText);
         }
         else
         {
-            await botClient.SendMessage(update.Message.Chat.Id, Config.GetResourceString("WhatShouldIDoWithThis"), cancellationToken: cancellationToken);
+            await botClient.SendMessage(update.Message.Chat.Id, Localization.Get("WhatShouldIDoWithThis"), cancellationToken: cancellationToken);
         }
     }
 

@@ -10,14 +10,15 @@
 // (по вашему выбору) любой более поздней версии.
 
 using FluentMigrator.Runner;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database.Repositories.Sqlite;
 using TelegramMediaRelayBot.TelegramBot;
 using TelegramMediaRelayBot.TelegramBot.Handlers;
 using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 using TelegramMediaRelayBot.TelegramBot.SiteFilter;
+using TelegramMediaRelayBot.TelegramBot.Downloaders;
 
 
 namespace TelegramMediaRelayBot.Database;
@@ -39,11 +40,14 @@ public class FluentDBMigrator
         return serviceCollection.BuildServiceProvider(false);
     }
 
-    public static WebApplicationBuilder CreateBuilderByDBType(string[] args)
+    public static HostApplicationBuilder CreateAppBuilder(string[] args)
     {
-        var builder = WebApplication.CreateBuilder(args);
+        var builder = Host.CreateApplicationBuilder(args);
+        builder.Services.AddSingleton(Config.Current);
         builder.Services.AddSingleton<ITelegramBotClient>(_ =>
             Config.CreateTelegramBotClient());
+
+        builder.Services.AddHostedService<PollingService>();
 
         builder.Services.AddSingleton<ILinkCategorizer>(_ =>
                     new HashTableLinkCategorizer(new DomainsLoader()));
@@ -51,6 +55,10 @@ public class FluentDBMigrator
         builder.Services.AddSingleton<CallbackQueryHandlersFactory>();
         builder.Services.AddSingleton<TGBot>();
         builder.Services.AddSingleton<Scheduler>();
+
+        builder.Services.AddSingleton<IMediaDownloader, YtDlpDownloader>();
+        builder.Services.AddSingleton<IMediaDownloader, GalleryDlDownloader>();
+        builder.Services.AddSingleton<MediaDownloadService>();
 
         builder.Services.Scan(scan => scan
             .FromAssemblyOf<IBotCallbackQueryHandlers>()
@@ -106,6 +114,12 @@ public class FluentDBMigrator
 
         builder.Services.AddSingleton<IUserStateRepository>(_ =>
             new SqliteUserStateRepository(Config.sqlConnectionString!));
+
+        builder.Services.AddSingleton<IDownloadJobRepository>(_ =>
+            new SqliteDownloadJobRepository(Config.sqlConnectionString!));
+        // Registered AFTER PollingService on purpose: hosted services start in order,
+        // so TGBot.cancellationToken is set by PollingService before resume runs.
+        builder.Services.AddHostedService<DownloadJobResumeService>();
 
         return builder;
     }

@@ -34,8 +34,8 @@ public class Groups
         List<string> groupInfos = await UsersGroup.GetUserGroupInfoByUserId(userId, groupGetter);
 
         string messageText = groupInfos.Any() 
-            ? $"{Config.GetResourceString("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
-            : Config.GetResourceString("AltYourGroupsText");
+            ? $"{Localization.Get("YourGroupsText")}\n{string.Join("\n", groupInfos)}" 
+            : Localization.Get("AltYourGroupsText");
 
         await CommonUtilities.SendMessage(
             botClient,

@@ -19,20 +19,9 @@ namespace TelegramMediaRelayBot.TelegramBot.Utils;
 public static class CommonUtilities
 {
 
-    public static CancellationToken cancellationToken = TGBot.cancellationToken;
-    public static Task ErrorHandler(ITelegramBotClient _, Exception exception, CancellationToken __)
-    {
-        Log.Error($"Error occurred: {exception.Message}");
-        Log.Error($"Stack trace: {exception.StackTrace}");
-
-        if (exception.InnerException != null)
-        {
-            Log.Error($"Inner exception: {exception.InnerException.Message}");
-            Log.Error($"Inner exception stack trace: {exception.InnerException.StackTrace}");
-        }
-
-        return Task.CompletedTask;
-    }
+    // Property, not a field: a field would capture the token at class-init time,
+    // before the polling service assigns it, leaving a permanent CancellationToken.None.
+    public static CancellationToken cancellationToken => TGBot.cancellationToken;
 
     public static long GetIDfromUpdate(Update update)
     {
@@ -64,7 +53,7 @@ public static class CommonUtilities
     public static Task SendMessage(ITelegramBotClient botClient, Update update, InlineKeyboardMarkup replyMarkup,
                                     CancellationToken cancellationToken, string? text = null)
     {
-        text ??= Config.GetResourceString("ChooseOptionText");
+        text ??= Localization.Get("ChooseOptionText");
 
         long chatId = GetIDfromUpdate(update);
 
@@ -156,50 +145,6 @@ public static class CommonUtilities
         }
     }
 
-    public static MediaFileType DetermineFileType(byte[] bytes)
-    {
-        if (bytes == null || bytes.Length < 4)
-            return MediaFileType.Document;
-
-        string start = BitConverter.ToString(bytes.Take(4).ToArray()).Replace("-", "");
-        
-        var patterns = new Dictionary<MediaFileType, string>
-        {
-            { MediaFileType.Video, @"^(424242|00000018|0000001C|00000020|57415645)" },
-            { MediaFileType.Photo, @"^(FFD8FF|89504E47|52494646|424D|49492A|4D4D2A)" },
-            { MediaFileType.Audio, @"^(49443304)" } // MP3
-        };
-
-        foreach (var pattern in patterns)
-        {
-            Log.Verbose($"File bytes start: {start}");
-            if (Regex.IsMatch(start, pattern.Value, RegexOptions.IgnoreCase))
-                return pattern.Key;
-        }
-
-        return MediaFileType.Document;
-    }
-
-    public static IEnumerable<IAlbumInputMedia> CreateMediaGroup(List<byte[]> files)
-    {
-        return files.Select(CreateMedia);
-    }
-
-    private static IAlbumInputMedia CreateMedia(byte[] file)
-    {
-        MediaFileType fileType = DetermineFileType(file);
-        switch (fileType)
-        {
-            case MediaFileType.Photo:
-                return new InputMediaPhoto(new MemoryStream(file));
-            case MediaFileType.Video:
-                return new InputMediaVideo(new MemoryStream(file));
-            case MediaFileType.Audio:
-                return new InputMediaAudio(new MemoryStream(file));
-            default:
-                return new InputMediaDocument(new MemoryStream(file));
-        }
-    }
 }
 
 public class ProgressReportingStream : Stream

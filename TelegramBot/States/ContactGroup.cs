@@ -79,7 +79,7 @@ public class ProcessContactGroupState : IUserState
                         update,
                         KeyboardUtils.GetReturnButtonMarkup(),
                         cancellationToken,
-                        Config.GetResourceString("InputErrorMessage"));
+                        Localization.Get("InputErrorMessage"));
                 }
 
                 break;
@@ -94,7 +94,7 @@ public class ProcessContactGroupState : IUserState
                         update,
                         UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
                         cancellationToken,
-                        $"{groupInfo}\n{Config.GetResourceString("ChooseOptionText")}");
+                        $"{groupInfo}\n{Localization.Get("ChooseOptionText")}");
                     return;
                 }
 
@@ -107,7 +107,7 @@ public class ProcessContactGroupState : IUserState
                 }
                 else if (isActionSuccessful == null)
                 {
-                    await botClient.SendMessage(chatId, Config.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
+                    await botClient.SendMessage(chatId, Localization.Get("InputErrorMessage"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
                     return;
                 }
                 break;
@@ -122,7 +122,7 @@ public class ProcessContactGroupState : IUserState
                         update,
                         UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
                         cancellationToken,
-                        $"{groupInfo}\n{Config.GetResourceString("ChooseOptionText")}");
+                        $"{groupInfo}\n{Localization.Get("ChooseOptionText")}");
                     return;
                 }
                 bool? isMessage = null;
@@ -132,12 +132,12 @@ public class ProcessContactGroupState : IUserState
                 {
                     callbackAction = update.CallbackQuery!.Data!;
                     ProcessFinish(chatId);
-                    string text = !isDBActionSuccessful.Contains(false) ? Config.GetResourceString("SuccessActionResult") : Config.GetResourceString("ErrorActionResult");
+                    string text = !isDBActionSuccessful.Contains(false) ? Localization.Get("SuccessActionResult") : Localization.Get("ErrorActionResult");
                     await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, text);
                     UserSessionManager.Remove(chatId);
                     return;
                 }
-                await botClient.SendMessage(chatId, Config.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
+                await botClient.SendMessage(chatId, Localization.Get("InputErrorMessage"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
                 break;
         }
     }
@@ -166,9 +166,9 @@ public class ProcessContactGroupState : IUserState
                     }
 
                     string allContactsText;
-                    allContactsText = $"{Config.GetResourceString("AllContactsText")} {string.Join("\n", allContactsNames)}";
+                    allContactsText = $"{Localization.Get("AllContactsText")} {string.Join("\n", allContactsNames)}";
                     
-                    string messageText = $"{groupInfo}\n{allContactsText}\n{Config.GetResourceString("ChooseOptionText")}";
+                    string messageText = $"{groupInfo}\n{allContactsText}\n{Localization.Get("ChooseOptionText")}";
                     await CommonUtilities.SendMessage(
                         botClient,
                         update,
@@ -187,7 +187,7 @@ public class ProcessContactGroupState : IUserState
                         update,
                         KeyboardUtils.GetReturnButton(),
                         cancellationToken,
-                        Config.GetResourceString("InputContactIDsText"));
+                        Localization.Get("InputContactIDsText"));
                     return true;
                 }
                 else if (callbackAction.StartsWith("user_remove_contact_from_group:"))
@@ -195,7 +195,7 @@ public class ProcessContactGroupState : IUserState
                     groupId = int.Parse(callbackAction.Split(':')[1]);
                     await botClient.SendMessage(
                         CommonUtilities.GetIDfromUpdate(update),
-                        Config.GetResourceString("InputContactIDsText"),
+                        Localization.Get("InputContactIDsText"),
                         replyMarkup: KeyboardUtils.GetReturnButtonMarkup(),
                         cancellationToken: cancellationToken);
                     return true;
@@ -228,7 +228,7 @@ public class ProcessContactGroupState : IUserState
                     update,
                     KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_add_contact_to_group"),
                     cancellationToken,
-                    Config.GetResourceString("ConfirmAddContactsToGroupText"));
+                    Localization.Get("ConfirmAddContactsToGroupText"));
                 contactIDs = allowedIds;
                 return true;
             }
@@ -241,7 +241,7 @@ public class ProcessContactGroupState : IUserState
                     update,
                     KeyboardUtils.GetConfirmForActionKeyboardMarkup("accept_delete_contact_from_group"),
                     cancellationToken,
-                    Config.GetResourceString("ConfirmDeleteContactsFromGroupText"));
+                    Localization.Get("ConfirmDeleteContactsFromGroupText"));
                 return true;
             }
             return null;

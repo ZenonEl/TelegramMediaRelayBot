@@ -54,8 +54,7 @@ public static class MediaSessionManager
     {
         if (_sessions.TryRemove(sessionId, out var session))
         {
-            try { session.Cts.Cancel(); }
-            catch (ObjectDisposedException) { }
+            CancelAndDispose(session);
             return true;
         }
         return false;
@@ -65,12 +64,19 @@ public static class MediaSessionManager
     {
         if (_sessions.TryRemove(sessionId, out session))
         {
-            try { session.Cts.Cancel(); }
-            catch (ObjectDisposedException) { }
+            CancelAndDispose(session);
             return true;
         }
         session = null;
         return false;
+    }
+
+    private static void CancelAndDispose(MediaSession session)
+    {
+        try { session.Cts.Cancel(); }
+        catch (ObjectDisposedException) { }
+        try { session.Cts.Dispose(); }
+        catch (ObjectDisposedException) { }
     }
 
     private static void CleanupExpired()
@@ -85,8 +91,7 @@ public static class MediaSessionManager
 
             if (_sessions.TryRemove(kvp.Key, out var session))
             {
-                try { session.Cts.Cancel(); }
-                catch (ObjectDisposedException) { }
+                CancelAndDispose(session);
                 cleaned++;
                 Log.Debug("Expired media session removed: {SessionId}", kvp.Key);
             }

@@ -18,7 +18,7 @@ public static class KeyboardUtils
 {
     public static InlineKeyboardButton GetReturnButton(string callback = "main_menu", string? text = null)
     {
-        text ??= Config.GetResourceString("BackButtonText");
+        text ??= Localization.Get("BackButtonText");
         return InlineKeyboardButton.WithCallbackData(text, callback);
     }
 
@@ -40,7 +40,7 @@ public static class KeyboardUtils
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("YesButtonText"), acceptCallback),
+                            InlineKeyboardButton.WithCallbackData(Localization.Get("YesButtonText"), acceptCallback),
                         },
                         new[]
                         {
@@ -56,17 +56,17 @@ public static class KeyboardUtils
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("MuteUserButtonText"), "mute_contact"),
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("UnmuteUserButtonText"), "unmute_contact"),
+                            InlineKeyboardButton.WithCallbackData(Localization.Get("MuteUserButtonText"), "mute_contact"),
+                            InlineKeyboardButton.WithCallbackData(Localization.Get("UnmuteUserButtonText"), "unmute_contact"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("EditContactNameButtonText"), "edit_contact_name"),
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("EditContactGroupButtonText"), "edit_contact_group"),
+                            InlineKeyboardButton.WithCallbackData(Localization.Get("EditContactNameButtonText"), "edit_contact_name"),
+                            InlineKeyboardButton.WithCallbackData(Localization.Get("EditContactGroupButtonText"), "edit_contact_group"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("DeleteContactButtonText"), "delete_contact"),
+                            InlineKeyboardButton.WithCallbackData(Localization.Get("DeleteContactButtonText"), "delete_contact"),
                         },
                         new[]
                         {
@@ -82,32 +82,32 @@ public static class KeyboardUtils
                     {
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("AddContactButtonText"), "add_contact"),
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("MyLinkButtonText"), "get_self_link"),
+                            InlineKeyboardButton.WithCallbackData(Localization.Get("AddContactButtonText"), "add_contact"),
+                            InlineKeyboardButton.WithCallbackData(Localization.Get("MyLinkButtonText"), "get_self_link"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("ViewInboundInvitesButtonText"), "view_inbound_invite_links"),
+                            InlineKeyboardButton.WithCallbackData(Localization.Get("ViewInboundInvitesButtonText"), "view_inbound_invite_links"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("ViewOutboundInvitesButtonText"), "view_outbound_invite_links"),
+                            InlineKeyboardButton.WithCallbackData(Localization.Get("ViewOutboundInvitesButtonText"), "view_outbound_invite_links"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("ViewAllContactsButtonText"), "view_contacts"),
+                            InlineKeyboardButton.WithCallbackData(Localization.Get("ViewAllContactsButtonText"), "view_contacts"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("UsersGroupButtonText"), "show_groups"),
+                            InlineKeyboardButton.WithCallbackData(Localization.Get("UsersGroupButtonText"), "show_groups"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SettingsButtonText"), "show_settings"),
+                            InlineKeyboardButton.WithCallbackData(Localization.Get("SettingsButtonText"), "show_settings"),
                         },
                         new[]
                         {
-                            InlineKeyboardButton.WithCallbackData(Config.GetResourceString("BehindTheScenesButtonText"), "whos_the_genius")
+                            InlineKeyboardButton.WithCallbackData(Localization.Get("BehindTheScenesButtonText"), "whos_the_genius")
                         }
                     });
         return CommonUtilities.SendMessage(botClient, update, inlineKeyboard, cancellationToken, text);
@@ -120,21 +120,21 @@ public static class KeyboardUtils
                         {
                             new[]
                             {
-                                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SendToAllContactsButtonText"), $"send_to_all_contacts{suffix}"),
-                                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SendToDefaultGroupsButtonText"), $"send_to_default_groups{suffix}"),
+                                InlineKeyboardButton.WithCallbackData(Localization.Get("SendToAllContactsButtonText"), $"send_to_all_contacts{suffix}"),
+                                InlineKeyboardButton.WithCallbackData(Localization.Get("SendToDefaultGroupsButtonText"), $"send_to_default_groups{suffix}"),
                             },
                             new[]
                             {
-                                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SendToSpecifiedGroupsButtonText"), $"send_to_specified_groups{suffix}"),
-                                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SendToSpecifiedUsersButtonText"), $"send_to_specified_users{suffix}"),
+                                InlineKeyboardButton.WithCallbackData(Localization.Get("SendToSpecifiedGroupsButtonText"), $"send_to_specified_groups{suffix}"),
+                                InlineKeyboardButton.WithCallbackData(Localization.Get("SendToSpecifiedUsersButtonText"), $"send_to_specified_users{suffix}"),
                             },
                             new[]
                             {
-                                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("SendOnlyToMeButtonText"), $"send_only_to_me{suffix}"),
+                                InlineKeyboardButton.WithCallbackData(Localization.Get("SendOnlyToMeButtonText"), $"send_only_to_me{suffix}"),
                             },
                             new[]
                             {
-                                InlineKeyboardButton.WithCallbackData(Config.GetResourceString("CancelButtonText"), $"cancel_media{suffix}"),
+                                InlineKeyboardButton.WithCallbackData(Localization.Get("CancelButtonText"), $"cancel_media{suffix}"),
                             },
                         });
             return inlineKeyboard;
