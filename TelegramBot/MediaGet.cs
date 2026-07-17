@@ -46,10 +46,19 @@ namespace TelegramMediaRelayBot
                         OverwriteFiles = true
                     };
 
+                    // Telegram's inline player wants MP4 + H.264 + AAC; without an explicit
+                    // format yt-dlp can pick a video-only stream or merge into webm/mkv,
+                    // which plays silently or falls back to a document.
                     var overrideOptions = new OptionSet
                     {
                         IgnoreConfig = true,
-                        NoCheckCertificates = true
+                        NoCheckCertificates = true,
+                        Format = "bv*+ba/b",
+                        FormatSort = "vcodec:h264,lang,quality,res,fps,hdr:12,acodec:aac",
+                        MergeOutputFormat = DownloadMergeFormat.Mp4,
+                        RemuxVideo = "mp4",
+                        PostprocessorArgs = "ffmpeg:-movflags +faststart",
+                        NoPlaylist = true
                     };
 
                     string effectiveProxy = Config.proxy;
