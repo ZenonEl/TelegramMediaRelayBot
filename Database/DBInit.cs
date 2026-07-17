@@ -39,7 +39,7 @@ public class FluentDBMigrator
         return serviceCollection.BuildServiceProvider(false);
     }
 
-    public static WebApplicationBuilder CreateBuilderByDBType(string[] args)
+    public static WebApplicationBuilder CreateAppBuilder(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
         builder.Services.AddSingleton<ITelegramBotClient>(_ =>

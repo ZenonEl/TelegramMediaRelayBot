@@ -53,7 +53,7 @@ namespace TelegramMediaRelayBot
 
             try
             {
-                var builder = FluentDBMigrator.CreateBuilderByDBType(args);
+                var builder = FluentDBMigrator.CreateAppBuilder(args);
 
                 ServiceProvider serviceProvider = FluentDBMigrator.GetCurrentServiceProvider();
                 using (var scope = serviceProvider.CreateScope())

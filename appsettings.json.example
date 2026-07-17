@@ -3,7 +3,6 @@
         "TelegramBotToken": "1234:abcd",
         "SqlConnectionString": "Data Source=TelegramMediaRelayBot.db",
         "DatabaseName": "TelegramMediaRelayBot",
-        "DatabaseType": "sqlite",
         "Language": "en-US",
         "UserUnMuteCheckInterval": 20,
         "UseGalleryDl": true,

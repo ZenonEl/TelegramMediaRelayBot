@@ -25,7 +25,6 @@ namespace TelegramMediaRelayBot
         public static string? telegramApiBaseUrl;
         public static string sqlConnectionString;
         public static string databaseName = "TelegramMediaRelayBot";
-        public static string dbType = "sqlite";
         public static string? language;
         public static int userUnMuteCheckInterval = 20; // Seconds
         public static bool isUseGalleryDl = false;
@@ -88,7 +87,6 @@ namespace TelegramMediaRelayBot
             databaseName = configuration["AppSettings:DatabaseName"]!;
             language = configuration["AppSettings:Language"]!;
             proxy = configuration["AppSettings:Proxy"]!;
-            dbType = configuration.GetValue("AppSettings:DatabaseType", "sqlite");
             isUseGalleryDl = configuration.GetValue("AppSettings:UseGalleryDl", false);
             accessDeniedMessageContact = configuration.GetValue("AppSettings:AccessDeniedMessageContact", " ");
             maxConcurrentDownloads = configuration.GetValue("AppSettings:MaxConcurrentDownloads", 3);

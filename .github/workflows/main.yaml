@@ -15,7 +15,6 @@ jobs:
       AppSettings__TelegramBotToken: ${{ secrets.BOT_TOKEN }}
       AppSettings__SqlConnectionString: "Data Source=sqlite.db"
       AppSettings__DatabaseName: "TelegramMediaRelayBot"
-      AppSettings__DatabaseType: "SQLite"
       AppSettings__UseGalleryDl: true
 
     steps:

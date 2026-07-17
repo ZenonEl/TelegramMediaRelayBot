@@ -15,20 +15,135 @@ using Microsoft.Data.Sqlite;
 
 namespace TelegramMediaRelayBot.Database;
 
-// SQLite Implementation
 [Migration(20240428, TransactionBehavior.None)]
-public class SQLiteDBMigration : BaseDBMigration
+public class SQLiteDBMigration : Migration
 {
-    protected override string DBType => "sqlite";
+    public override void Up()
+    {
+        CreateTables();
+        CreateIndexes();
+    }
 
     public override void Down()
     {
         throw new NotImplementedException();
     }
 
-    protected override void CreateSpecificConstraints()
+    private void CreateTables()
     {
-        if (Config.dbType != "sqlite") return;
+        // Users
+        if (!Schema.Table("Users").Exists())
+        {
+            Create.Table("Users")
+                .WithColumn("ID").AsInt32().PrimaryKey().Identity()
+                .WithColumn("TelegramID").AsInt64().NotNullable()
+                .WithColumn("Name").AsString(255).NotNullable()
+                .WithColumn("Link").AsString(255).NotNullable()
+                .WithColumn("Status").AsString(255).Nullable()
+                .WithColumn("SettingsJson").AsString(int.MaxValue).NotNullable().WithDefaultValue("{}");
+        }
+
+        // Contacts
+        if (!Schema.Table("Contacts").Exists())
+        {
+            Execute.Sql(@"
+                CREATE TABLE Contacts (
+                    UserId INTEGER NOT NULL,
+                    ContactId INTEGER NOT NULL,
+                    status TEXT,
+                    MutedUntil TEXT,
+                    DisplayName TEXT,
+                    PRIMARY KEY (UserId, ContactId)
+                )");
+        }
+
+        // UsersGroups
+        if (!Schema.Table("UsersGroups").Exists())
+        {
+            Create.Table("UsersGroups")
+                .WithColumn("ID").AsInt32().PrimaryKey().Identity()
+                .WithColumn("UserId").AsInt32().NotNullable()
+                .WithColumn("GroupName").AsString(255).NotNullable()
+                .WithColumn("Description").AsString(int.MaxValue).Nullable()
+                .WithColumn("IsDefaultEnabled").AsBoolean().NotNullable().WithDefaultValue(true);
+        }
+
+        // GroupMembers
+        if (!Schema.Table("GroupMembers").Exists())
+        {
+            Create.Table("GroupMembers")
+                .WithColumn("ID").AsInt32().PrimaryKey().Identity()
+                .WithColumn("UserId").AsInt32().NotNullable()
+                .WithColumn("ContactId").AsInt32().NotNullable()
+                .WithColumn("GroupId").AsInt32().NotNullable()
+                .WithColumn("Status").AsBoolean().NotNullable().WithDefaultValue(true);
+        }
+
+        // DefaultUsersActions
+        if (!Schema.Table("DefaultUsersActions").Exists())
+        {
+            Create.Table("DefaultUsersActions")
+                .WithColumn("ID").AsInt32().PrimaryKey().Identity()
+                .WithColumn("UserId").AsInt32().NotNullable()
+                .WithColumn("Type").AsString(255).NotNullable()
+                .WithColumn("Action").AsString(255).Nullable()
+                .WithColumn("IsActive").AsBoolean().NotNullable().WithDefaultValue(true)
+                .WithColumn("ActionCondition").AsString(255).Nullable();
+        }
+
+        // DefaultUsersActionTargets
+        if (!Schema.Table("DefaultUsersActionTargets").Exists())
+        {
+            Create.Table("DefaultUsersActionTargets")
+                .WithColumn("ID").AsInt32().PrimaryKey().Identity()
+                .WithColumn("UserId").AsInt32().NotNullable()
+                .WithColumn("ActionID").AsInt32().NotNullable()
+                .WithColumn("TargetType").AsString(255).NotNullable()
+                .WithColumn("TargetID").AsString(255).NotNullable();
+        }
+
+        // PrivacySettings
+        if (!Schema.Table("PrivacySettings").Exists())
+        {
+            Create.Table("PrivacySettings")
+                .WithColumn("ID").AsInt32().PrimaryKey().Identity()
+                .WithColumn("UserId").AsInt32().NotNullable()
+                .WithColumn("Type").AsString(255).NotNullable()
+                .WithColumn("Action").AsString(255).NotNullable()
+                .WithColumn("IsActive").AsBoolean().NotNullable().WithDefaultValue(true)
+                .WithColumn("ActionCondition").AsString(255).Nullable();
+        }
+
+        // PrivacySettingsTargets
+        if (!Schema.Table("PrivacySettingsTargets").Exists())
+        {
+            Create.Table("PrivacySettingsTargets")
+                .WithColumn("ID").AsInt32().PrimaryKey().Identity()
+                .WithColumn("UserId").AsInt32().NotNullable()
+                .WithColumn("PrivacySettingId").AsInt32().NotNullable()
+                .WithColumn("TargetType").AsString(255).NotNullable()
+                .WithColumn("TargetValue").AsString(255).NotNullable();
+        }
+
+        // UserStates
+        if (!Schema.Table("UserStates").Exists())
+        {
+            Execute.Sql(@"
+                CREATE TABLE IF NOT EXISTS UserStates (
+                    ChatId INTEGER PRIMARY KEY,
+                    StateName TEXT NOT NULL,
+                    StateDataJson TEXT NOT NULL DEFAULT '{}',
+                    CreatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+                    ExpiresAt TEXT NOT NULL
+                )");
+
+            Execute.Sql(@"
+                CREATE INDEX IF NOT EXISTS IX_UserStates_ExpiresAt ON UserStates(ExpiresAt)");
+        }
+    }
+
+    private void CreateIndexes()
+    {
         var builder = new SqliteConnectionStringBuilder(Config.sqlConnectionString);
         if (System.IO.File.Exists(builder.DataSource)) return;
 
@@ -85,6 +200,6 @@ public class SQLiteDBMigration : BaseDBMigration
             .OnColumn("UserId");
 
         // ========== Индексы для UserStates ==========
-        // IX_UserStates_ExpiresAt is created inline via Execute.Sql in BaseDBMigration
+        // IX_UserStates_ExpiresAt создаётся вместе с таблицей в CreateTables
     }
 }
