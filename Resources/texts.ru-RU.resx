@@ -688,4 +688,7 @@ PS: квадратные скобки не нужны :)</value>
     <data name="ResumingDownloadAfterRestart" xml:space="preserve">
         <value>♻️ Возобновляю загрузку после перезапуска…</value>
     </data>
+    <data name="DownloadCompleted" xml:space="preserve">
+        <value>✅ Готово</value>
+    </data>
 </root>

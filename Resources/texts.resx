@@ -644,4 +644,7 @@ If you'd like to get access, you can contact &lt;a href="{0}"&gt;me here&lt;/a&g
     <data name="ResumingDownloadAfterRestart" xml:space="preserve">
         <value>♻️ Resuming your download after a restart…</value>
     </data>
+    <data name="DownloadCompleted" xml:space="preserve">
+        <value>✅ Done</value>
+    </data>
 </root>

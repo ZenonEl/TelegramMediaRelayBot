@@ -19,7 +19,9 @@ namespace TelegramMediaRelayBot.TelegramBot.Utils;
 public static class CommonUtilities
 {
 
-    public static CancellationToken cancellationToken = TGBot.cancellationToken;
+    // Property, not a field: a field would capture the token at class-init time,
+    // before the polling service assigns it, leaving a permanent CancellationToken.None.
+    public static CancellationToken cancellationToken => TGBot.cancellationToken;
 
     public static long GetIDfromUpdate(Update update)
     {

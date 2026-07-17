@@ -349,24 +349,16 @@ public class SqliteContactGetter(string connectionString) : IContactGetter
         try
         {
             using var connection = new SqliteConnection(_connectionString);
-            SqliteUserGetter userGetter = new(_connectionString);
-            
-            var results = await connection.QueryAsync<(long UserId, long ContactId)>(
-                @"SELECT UserId, ContactId
-                FROM Contacts
-                WHERE (ContactId = @UserId OR UserId = @UserId) 
-                AND status = @Status",
+
+            var results = await connection.QueryAsync<long>(
+                @"SELECT DISTINCT u.TelegramID
+                FROM Contacts c
+                JOIN Users u ON u.ID = CASE WHEN c.UserId = @UserId THEN c.ContactId ELSE c.UserId END
+                WHERE (c.ContactId = @UserId OR c.UserId = @UserId)
+                AND c.status = @Status",
                 new { UserId = userId, Status = ContactsStatus.ACCEPTED });
 
-            var contactUserIds = results
-                .SelectMany(row => new[] { row.UserId, row.ContactId })
-                .Where(id => id != userId)
-                .Distinct()
-                .ToList();
-
-            return contactUserIds
-                .Select(contactUserId => userGetter.GetTelegramIDbyUserID((int)contactUserId))
-                .ToList();
+            return results.ToList();
         }
         catch (Exception ex)
         {

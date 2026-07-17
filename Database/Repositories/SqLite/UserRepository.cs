@@ -100,16 +100,15 @@ public class SqliteUserGetter(string connectionString) : IUserGetter
     public List<long> GetUsersIdForMuteContactId(int contactId)
     {
         const string query = @"
-            SELECT UserId
-            FROM Contacts
-            WHERE ContactId = @ContactId
-            AND MutedUntil IS NOT NULL
-            AND MutedUntil > datetime('now')";
+            SELECT u.TelegramID
+            FROM Contacts c
+            JOIN Users u ON u.ID = c.UserId
+            WHERE c.ContactId = @ContactId
+            AND c.MutedUntil IS NOT NULL
+            AND c.MutedUntil > datetime('now')";
 
         using var connection = new SqliteConnection(_connectionString);
-        var mutedByUserIds = connection.Query<int>(query, new { ContactId = contactId }).ToList();
-
-        return mutedByUserIds.Select(GetTelegramIDbyUserID).ToList();
+        return connection.Query<long>(query, new { ContactId = contactId }).ToList();
     }
 
     public long GetUserTelegramIdByLink(string link)

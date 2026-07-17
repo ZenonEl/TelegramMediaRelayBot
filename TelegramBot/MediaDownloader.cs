@@ -162,6 +162,11 @@ public partial class TGBot
             {
                 Log.Debug($"Downloaded {result.Files.Count} files");
                 await SendMediaToTelegram(botClient, chatId, result.Files, statusMessage, targetUserIds, contentUrl, groupChat, caption);
+
+                // With contact targets SendVideoToContacts writes the final status itself;
+                // otherwise the message would stay stuck on the last progress edit.
+                if (groupChat || targetUserIds is not { Count: > 0 })
+                    EditStatus(botClient, statusMessage, Localization.Get("DownloadCompleted"), cancellationToken);
             }
             else
             {
