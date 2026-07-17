@@ -12,10 +12,10 @@ jobs:
 
     env:
       CI: true
-      AppSettings__TelegramBotToken: ${{ secrets.BOT_TOKEN }}
-      AppSettings__SqlConnectionString: "Data Source=sqlite.db"
-      AppSettings__DatabaseName: "TelegramMediaRelayBot"
-      AppSettings__UseGalleryDl: true
+      Bot__Token: ${{ secrets.BOT_TOKEN }}
+      Database__ConnectionString: "Data Source=sqlite.db"
+      Database__Name: "TelegramMediaRelayBot"
+      Download__UseGalleryDl: true
 
     steps:
     - name: Checkout code
