@@ -2,11 +2,11 @@
  <img src="Logo.jpg" width="512" height="384" alt="Logo">
 </p>
 
-<div align="center"> 
- 
+<div align="center">
+
 ![License](https://img.shields.io/badge/License-AGPL--3.0-blue)
-![.NET Version](https://img.shields.io/badge/.NET-8.0-purple)
-![Telegram Bot API](https://img.shields.io/badge/Telegram%20Bot%20API-22.1.3-green)
+![.NET Version](https://img.shields.io/badge/.NET-10.0-purple)
+![Telegram Bot API](https://img.shields.io/badge/Telegram%20Bot%20API-22.10.2-green)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ZenonEl/TelegramMediaRelayBot)
 
 </div>
@@ -17,72 +17,80 @@
 
 </div>
 
-**TelegramMediaRelayBot** is a self-hosting bot for Telegram that allows you and your contacts to automatically download and send videos from multiple [platforms](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md) (thanks to [yt-dlp](https://github.com/yt-dlp/yt-dlp/tree/master)). The bot simplifies the process of sharing media files, eliminating the need to manually download and send videos to those who don't use a particular platform.
-
-
-#### Mini-Story of the Project Idea
-The idea for this project originated from my girlfriend's complaints about having to manually download videos from TikTok for my convenience, as I do not use the platform myself. This led me to the idea of creating a bot that would automatically download videos and send them. However, over time, I became so engrossed in the project that I decided to scale it up.
-
-Now, it does not just download videos and send them to a single user; it has evolved into something much greater—a constantly developing and growing mini-ecosystem that every user can recreate and invite the people they need into. This simplifies content sharing between users in various situations.
-
-Thus, the project has transformed into a multifunctional tool for content exchange that can adapt to the needs of each user.
+**TelegramMediaRelayBot** is a self-hosted Telegram bot that automates downloading media from 1000+ platforms (via [yt-dlp](https://github.com/yt-dlp/yt-dlp/tree/master) and gallery-dl) and forwards it to your contacts. It eliminates manual downloads, simplifies media sharing across platforms users don't have, and gives full control over privacy by running entirely on your infrastructure.
 
 ---
-
 
 ## Key Features
 
-- **Video Download**: Support for multiple platforms via **yt-dlp** and **gallery-dl** (**gallery-dl** needs to be downloaded independently).
-- **Contact Forwarding**: Ability to add contacts within the bot to whom downloaded videos will be automatically forwarded.
-- **Proxy**: Support for proxies (including Tor) for downloading videos.
+- **Multi-platform downloads**: yt-dlp for video, gallery-dl for galleries — tried as a fallback chain. Full list of [supported sites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md).
+- **Contact forwarding**: managed contact list inside the bot — downloaded media is forwarded automatically, with per-contact and per-link privacy rules.
+- **Large files up to 2 GB**: optional local Telegram Bot API server; media is streamed from disk instead of buffered in memory.
+- **Resumable queue**: pending downloads are persisted, so a crash or reboot never loses a request.
+- **Flexible proxying**: HTTP / SOCKS5 / Tor, with per-site rules — route some domains through a proxy and others directly.
+- **Self-hosted**: full control over your data and privacy. No third-party services.
 
-## Project Details
-For more detailed familiarization with the functionality of my project and its features, you can refer to the detailed documentation. It is available on my website at [link](https://zenonel.github.io/TelegramMediaRelayBot-Site) or in the folder [docs](documentation/en/index.md), which is located in the root directory of the project. In the documentation you will find information not only about the functionality, but also about the process of setting up, installing and using my solution. I recommend you to familiarize yourself with it in order to use all the functions of our project as efficiently as possible. 
+## Tech Stack
 
----
+| Layer | Technology |
+|-------|------------|
+| **Runtime** | .NET 10 |
+| **Bot framework** | Telegram.Bot 22.10.2 |
+| **Language** | C# 14 |
+| **Database** | SQLite (Dapper + FluentMigrator) |
+| **Media engines** | yt-dlp, gallery-dl |
+| **Container** | Docker / docker-compose |
+| **License** | AGPL-3.0 |
 
-## Changelog
+## Architecture Highlights
 
-The full history of changes can be found in [CHANGELOG.md](CHANGELOG.md).
+- **Self-healing long polling**: the update loop runs as a hosted service that logs and skips a failing update and restarts on error, so the bot can't silently stop responding.
+- **Modular download backends**: yt-dlp and gallery-dl sit behind one `IMediaDownloader` interface and run as an ordered fallback chain — adding a backend is one class.
+- **Per-host proxy routing**: named proxies resolved per download host from typed, startup-validated configuration.
+- **2 GB delivery path**: with a local Bot API server the bot sends media by file path off a shared volume — no HTTP upload, no memory blow-up.
+- **Persistent download queue** with bounded concurrency; jobs are resumed after a restart.
+- **Repository-pattern data layer** over SQLite with schema migrations.
 
-## Future Plans
-- Plugin support system and pre-built plugins for monetisation: It is planned to create a system of plugins that will extend the functionality of the bot. This will include plugins that allow you to use the bot for tasks related to commercial activities. These plugins will provide additional tools for convenient management and new features, making the bot a universal solution for both personal use and the possibility of monetising it.
-- (Under review) **Mobile device support**: For users who can't keep the bot running smoothly on the servers, there may be an option to run the bot directly on their mobile phone. If possible, the database will also be synchronised with the main database.
-- ~~(Under consideration) Adding support for **gallery-dl** to download media from even more platforms.~~
-- More detailed contact management (~~deletion~~, editing, etc.).
-- ~~Creating and managing contact groups within the bot~~.
-- (Under consideration) Support for text formatting.
-- ~~Ability to recreate the personal link within the bot (with the option to delete all contacts or keep them).~~
-- ~~Ability to enable a filter for accessing the bot (for example, you can only start using the bot by using someone's referral link).~~
-- (Under consideration) Administrative functions for managing the bot within itself.
-- ~~Creating a ready-to-use executable file.~~
-- And various other improvements and fixes ✨
+## Documentation
+
+Full documentation is available on the project site:
+**[zenonel.github.io/TelegramMediaRelayBot-Site](https://zenonel.github.io/TelegramMediaRelayBot-Site)**
+
+Or in [`docs/documentation/en/`](docs/documentation/en/index.md) inside the repo. Covers setup, installation, configuration, and usage.
 
 ## Roadmap
 
-Development plans and current goals for the new version are available on the latest release page. You can follow the progress of the tasks right there.
+Active development plans are tracked on the latest [release page](https://github.com/ZenonEl/TelegramMediaRelayBot/releases). Strategic direction:
+
+- **Plugin system** with monetization-ready plugins for commercial use cases.
+- *(Under review)* **Mobile-side runtime** for users who can't run servers.
+- *(Under consideration)* Text formatting support, in-bot administrative functions.
+- General improvements and fixes.
+
+[CHANGELOG.md](CHANGELOG.md) — full history of changes.
 
 ## Logging
-The bot logs all actions to the console. In the future, logging to a file is planned. Logs can be configured in the settings file.
 
+The bot logs all actions to console; file logging is on the roadmap. Logging level is configurable via the settings file.
 
+## Origin
+
+The project started from my girlfriend's complaints about manually downloading TikTok videos for me — I don't use the platform myself. What began as a one-off automation evolved into a full media-relay ecosystem: multi-user, multi-platform, plugin-extensible. The mission stayed simple — give people a self-hosted way to share content across platforms without surrendering their data to any single service.
 
 ## License
-The project is distributed under the **AGPL-3.0** license. Details can be found in the [LICENSE](LICENSE) file.
 
-
+This project is licensed under **AGPL-3.0**. See [LICENSE](LICENSE) for details.
 
 ## Feedback
-If you have questions, suggestions, or find a bug, please create an [issue](https://github.com/ZenonEl/TelegramMediaRelayBot/issues) in the repository.
-Or you can contact me at [Mastodon](https://lor.sh/@ZenonEl)
 
-
+If you have questions, suggestions, or found a bug — please open an [issue](https://github.com/ZenonEl/TelegramMediaRelayBot/issues).
 
 ## Contributing
-The project is not currently accepting contributions, but this may change in the future. Stay tuned for updates!
 
+The project is currently not accepting external contributions, but this may change in future. Stay tuned.
 
+---
 
-## Copyright (C) 2024-2025 ZenonEl
+**Copyright (C) 2024-2026 ZenonEl**
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
