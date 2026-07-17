@@ -18,6 +18,7 @@ using TelegramMediaRelayBot.TelegramBot.Sessions;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database;
 using TelegramMediaRelayBot.TelegramBot.SiteFilter;
+using TelegramMediaRelayBot.TelegramBot.Downloaders;
 
 
 namespace TelegramMediaRelayBot;
@@ -31,6 +32,7 @@ public partial class TGBot
     private readonly IPrivacySettingsGetter _privacySettingsGetter;
     private readonly ILinkCategorizer _categorizer;
     private readonly IUserFilterService _userFilter;
+    private readonly MediaDownloadService _downloadService;
     // User states are now managed by UserSessionManager
     public static CancellationToken cancellationToken;
 
@@ -42,7 +44,8 @@ public partial class TGBot
         IDefaultActionGetter defaultActionGetter,
         IPrivacySettingsGetter privacySettingsGetter,
         IGroupGetter groupGetter,
-        ILinkCategorizer categorizer
+        ILinkCategorizer categorizer,
+        MediaDownloadService downloadService
         )
     {
         _userRepo = userRepo;
@@ -59,6 +62,7 @@ public partial class TGBot
         _privacySettingsGetter = privacySettingsGetter;
         _categorizer = categorizer;
         _userFilter = new DefaultUserFilterService(_userGetter, _privacySettingsGetter);
+        _downloadService = downloadService;
     }
 
     public static async Task ProcessState(ITelegramBotClient botClient, Update update)
@@ -137,79 +141,73 @@ public partial class TGBot
     public async Task HandleMediaRequest(ITelegramBotClient botClient, string contentUrl, long chatId, Message statusMessage,
                                                 List<long>? targetUserIds = null, bool groupChat = false, string caption = "")
     {
-        List<byte[]>? mediaFiles = await DownloadQueue.EnqueueAsync(
-            async () => await MediaGet.DownloadMedia(botClient, contentUrl, statusMessage, cancellationToken),
-            position =>
-            {
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await botClient.EditMessageText(
-                            statusMessage.Chat.Id,
-                            statusMessage.MessageId,
-                            $"⏳ Queued (#{position})",
-                            cancellationToken: cancellationToken);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Debug(ex, "Error editing queue status message.");
-                    }
-                });
-            },
+        var progress = BuildStatusProgress(botClient, statusMessage, cancellationToken);
+
+        using MediaDownloadResult? result = await DownloadQueue.EnqueueAsync(
+            () => _downloadService.DownloadAsync(contentUrl, progress, cancellationToken),
+            position => EditStatus(botClient, statusMessage, $"⏳ Queued (#{position})", cancellationToken),
             cancellationToken);
 
-        if (mediaFiles?.Count > 0)
+        if (result is { Files.Count: > 0 })
         {
-            Log.Debug($"Downloaded {mediaFiles.Count} files");
-            await SendMediaToTelegram(botClient, chatId, mediaFiles, statusMessage, targetUserIds, contentUrl, groupChat, caption);
+            Log.Debug($"Downloaded {result.Files.Count} files");
+            await SendMediaToTelegram(botClient, chatId, result.Files, statusMessage, targetUserIds, contentUrl, groupChat, caption);
             return;
         }
 
         await botClient.SendMessage(chatId, Localization.Get("FailedToProcessLink"));
     }
 
-    private async Task SendMediaToTelegram(ITelegramBotClient botClient, long chatId, List<byte[]> mediaFiles,
+    private async Task SendMediaToTelegram(ITelegramBotClient botClient, long chatId, IReadOnlyList<MediaFile> mediaFiles,
                                                         Message statusMessage, List<long>? targetUserIds, string contentUrl, bool groupChat = false,
                                                         string caption = "")
     {
-        var groupedFiles = mediaFiles.GroupBy(CommonUtilities.DetermineFileType)
-                                    .ToDictionary(g => g.Key, g => g.Reverse().ToList());
+        var groups = mediaFiles.GroupBy(f => f.Kind).ToList();
 
         try
         {
             string text = string.Empty;
             bool lastMediaGroup = false;
 
-            foreach (var fileGroup in groupedFiles.Values)
+            foreach (var group in groups)
             {
-                var mediaGroup = CommonUtilities.CreateMediaGroup(fileGroup);
-                
-                for (int i = 0; i < mediaGroup.Count(); i += 10)
+                var files = group.ToList();
+
+                for (int i = 0; i < files.Count; i += 10)
                 {
-                    var chunk = mediaGroup.Skip(i).Take(10).ToList();
-                    
-                    Message[] mess = await botClient.SendMediaGroup(
-                        chatId: chatId,
-                        media: chunk,
-                        replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
-                        disableNotification: true,
-                        cancellationToken: cancellationToken
-                    );
+                    var chunk = files.Skip(i).Take(10).ToList();
+                    var streams = chunk.Select(f => (Stream)File.OpenRead(f.Path)).ToList();
+                    try
+                    {
+                        var album = chunk.Zip(streams, (f, s) =>
+                            CreateAlbumItem(f.Kind, s, Path.GetFileName(f.Path))).ToList();
 
-                    List<InputMedia> savedMediaGroupIDs = mess.Select<Message, InputMedia>(msg => 
-                                    msg.Photo != null ? new InputMediaPhoto(msg.Photo[0].FileId) :
-                                    msg.Video != null ? new InputMediaVideo(msg.Video.FileId) :
-                                    msg.Audio != null ? new InputMediaAudio(msg.Audio.FileId) :
-                                    new InputMediaDocument(msg.Document!.FileId)).ToList();
+                        Message[] mess = await botClient.SendMediaGroup(
+                            chatId: chatId,
+                            media: album,
+                            replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
+                            disableNotification: true,
+                            cancellationToken: cancellationToken
+                        );
 
-                    if (i + 10 >= mediaGroup.Count()) { lastMediaGroup = true; text = caption; }
+                        List<InputMedia> savedMediaGroupIDs = mess.Select<Message, InputMedia>(msg =>
+                                        msg.Photo != null ? new InputMediaPhoto(msg.Photo[0].FileId) :
+                                        msg.Video != null ? new InputMediaVideo(msg.Video.FileId) :
+                                        msg.Audio != null ? new InputMediaAudio(msg.Audio.FileId) :
+                                        new InputMediaDocument(msg.Document!.FileId)).ToList();
 
-                    if (!groupChat && targetUserIds != null && targetUserIds.Count > 0) 
-                        await SendVideoToContacts(chatId, botClient, statusMessage, targetUserIds,
-                            savedMediaGroupIDs: savedMediaGroupIDs, contentUrl, caption: text,
-                            lastMediaGroup: lastMediaGroup);
-                    
+                        if (i + 10 >= files.Count) { lastMediaGroup = true; text = caption; }
+
+                        if (!groupChat && targetUserIds != null && targetUserIds.Count > 0)
+                            await SendVideoToContacts(chatId, botClient, statusMessage, targetUserIds,
+                                savedMediaGroupIDs: savedMediaGroupIDs, contentUrl, caption: text,
+                                lastMediaGroup: lastMediaGroup);
+                    }
+                    finally
+                    {
+                        foreach (var s in streams) await s.DisposeAsync();
+                    }
+
                     await Task.Delay(1000, cancellationToken);
                 }
             }
@@ -221,6 +219,44 @@ public partial class TGBot
             Log.Error(ex, $"Failed to send media group");
             throw;
         }
+    }
+
+    private static IAlbumInputMedia CreateAlbumItem(MediaKind kind, Stream stream, string fileName) => kind switch
+    {
+        MediaKind.Photo => new InputMediaPhoto(InputFile.FromStream(stream, fileName)),
+        MediaKind.Video => new InputMediaVideo(InputFile.FromStream(stream, fileName)),
+        MediaKind.Audio => new InputMediaAudio(InputFile.FromStream(stream, fileName)),
+        _ => new InputMediaDocument(InputFile.FromStream(stream, fileName)),
+    };
+
+    private static IProgress<string> BuildStatusProgress(ITelegramBotClient botClient, Message statusMessage, CancellationToken ct)
+    {
+        DateTime last = DateTime.MinValue;
+        string lastText = "";
+        return new Progress<string>(text =>
+        {
+            if (DateTime.UtcNow - last < TimeSpan.FromMilliseconds(Config.videoGetDelay)) return;
+            if (text == lastText) return;
+            last = DateTime.UtcNow;
+            lastText = text;
+            if (Config.showVideoDownloadProgress) Log.Debug("Download progress: {Text}", text);
+            EditStatus(botClient, statusMessage, text, ct);
+        });
+    }
+
+    private static void EditStatus(ITelegramBotClient botClient, Message statusMessage, string text, CancellationToken ct)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId, text, cancellationToken: ct);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Error editing status message.");
+            }
+        }, ct);
     }
 
     private async Task SendVideoToContacts(

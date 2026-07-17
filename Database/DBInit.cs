@@ -18,6 +18,7 @@ using TelegramMediaRelayBot.TelegramBot;
 using TelegramMediaRelayBot.TelegramBot.Handlers;
 using TelegramMediaRelayBot.TelegramBot.Handlers.ICallBackQuery;
 using TelegramMediaRelayBot.TelegramBot.SiteFilter;
+using TelegramMediaRelayBot.TelegramBot.Downloaders;
 
 
 namespace TelegramMediaRelayBot.Database;
@@ -54,6 +55,10 @@ public class FluentDBMigrator
         builder.Services.AddSingleton<CallbackQueryHandlersFactory>();
         builder.Services.AddSingleton<TGBot>();
         builder.Services.AddSingleton<Scheduler>();
+
+        builder.Services.AddSingleton<IMediaDownloader, YtDlpDownloader>();
+        builder.Services.AddSingleton<IMediaDownloader, GalleryDlDownloader>();
+        builder.Services.AddSingleton<MediaDownloadService>();
 
         builder.Services.Scan(scan => scan
             .FromAssemblyOf<IBotCallbackQueryHandlers>()
