@@ -45,7 +45,9 @@ todo
 .env
 data/
 /.claude
-TelegramMediaRelayBot.sln
-/TelegramMediaRelayBot.Tests
 yt-dlp
 /yt-dlp
+
+# build output in any project (keep the test project itself tracked)
+**/bin/
+**/obj/

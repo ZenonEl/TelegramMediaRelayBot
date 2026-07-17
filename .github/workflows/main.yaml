@@ -37,6 +37,9 @@ jobs:
     - name: Build
       run: dotnet build --no-restore --configuration Release
 
+    - name: Test
+      run: dotnet test --no-build --configuration Release
+
     - name: Run bot (2 minutes)
       run: |
         dotnet run --configuration Release --project TelegramMediaRelayBot.csproj

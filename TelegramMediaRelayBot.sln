@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TelegramMediaRelayBot", "TelegramMediaRelayBot.csproj", "{670EB296-6885-B8AF-1DFB-C293EFCBEB29}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TelegramMediaRelayBot.Tests", "TelegramMediaRelayBot.Tests\TelegramMediaRelayBot.Tests.csproj", "{DC6627A1-4901-9B59-20EF-7DAD77CD7081}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{670EB296-6885-B8AF-1DFB-C293EFCBEB29}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{670EB296-6885-B8AF-1DFB-C293EFCBEB29}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{670EB296-6885-B8AF-1DFB-C293EFCBEB29}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{670EB296-6885-B8AF-1DFB-C293EFCBEB29}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC6627A1-4901-9B59-20EF-7DAD77CD7081}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC6627A1-4901-9B59-20EF-7DAD77CD7081}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC6627A1-4901-9B59-20EF-7DAD77CD7081}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC6627A1-4901-9B59-20EF-7DAD77CD7081}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {80755613-39F9-48DA-BC23-BC3678FBA50A}
+	EndGlobalSection
+EndGlobal
