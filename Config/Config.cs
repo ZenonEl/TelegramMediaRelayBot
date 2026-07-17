@@ -40,13 +40,10 @@ namespace TelegramMediaRelayBot
         public static string proxy = "";
         // Proxy for Telegram Bot API requests. Useful in regions where Telegram is blocked.
         public static string? telegramApiProxy;
-        // Tor SOCKS proxy and circuit control settings (see "Tor" config section).
+        // Tor SOCKS proxy for media downloads (see "Tor" config section).
         public static bool torEnabled = false;
-        public static string? torControlPassword;
         public static string? torSocksHost;
         public static int torSocksPort = 9050;
-        public static int torControlPort = 9051;
-        public static int torChangingChainInterval = 5; // Minutes
 
         // Download Queue
         public static int maxConcurrentDownloads = 3;
@@ -110,11 +107,8 @@ namespace TelegramMediaRelayBot
             showVideoUploadProgress = configuration.GetValue("ConsoleOutputSettings:ShowVideoUploadProgress", false);
 
             torEnabled = configuration.GetValue("Tor:Enabled", false);
-            torControlPassword = configuration.GetValue("Tor:TorControlPassword", "");
             torSocksHost = configuration.GetValue("Tor:TorSocksHost", "127.0.0.1");
             torSocksPort = configuration.GetValue("Tor:TorSocksPort", 9050);
-            torControlPort = configuration.GetValue("Tor:TorControlPort", 9051);
-            torChangingChainInterval = configuration.GetValue("Tor:TorChangingChainInterval", 5);
 
             isAccessPolicyEnabled = configuration.GetValue("AccessPolicy:Enabled", false);
             isAccessNewUsersEnabled = configuration.GetValue("AccessPolicy:NewUsersPolicy:Enabled", false);

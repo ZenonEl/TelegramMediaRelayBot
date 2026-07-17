@@ -19,14 +19,11 @@
         "_comment_queue": "Maximum number of simultaneous media downloads. Prevents system overload when many links arrive at once.",
         "MaxConcurrentDownloads": 3
     },
-    "_comment_tor": "Tor SOCKS proxy for media downloads and automatic circuit rotation.",
+    "_comment_tor": "Route media downloads through a Tor SOCKS proxy. Requires a running Tor daemon.",
     "Tor": {
-        "Enabled": true,
-        "TorControlPassword": "Password",
+        "Enabled": false,
         "TorSocksHost": "127.0.0.1",
-        "TorSocksPort": 9050,
-        "TorControlPort": 9051,
-        "TorChangingChainInterval": 5
+        "TorSocksPort": 9050
     },
     "MessageDelaySettings": {
         "VideoGetDelay": 1000,
