@@ -10,7 +10,6 @@
 // (по вашему выбору) любой более поздней версии.
 
 
-using Telegram.Bot.Polling;
 using System.Text.RegularExpressions;
 using Telegram.Bot.Types.Enums;
 using TelegramMediaRelayBot.TelegramBot.Utils;
@@ -62,28 +61,6 @@ public partial class TGBot
         _userFilter = new DefaultUserFilterService(_userGetter, _privacySettingsGetter);
     }
 
-    public async Task Start()
-    {
-        ITelegramBotClient _botClient = Config.CreateTelegramBotClient();
-
-        var me = await _botClient.GetMe();
-        Log.Information($"Hello, I am {me.Id} ready and my name is {me.FirstName}.");
-
-        var cts = new CancellationTokenSource();
-        var receiverOptions = new ReceiverOptions
-        {
-            AllowedUpdates = { }
-        };
-        cancellationToken = cts.Token;
-
-        _botClient.StartReceiving(
-            updateHandler: UpdateHandler,
-            errorHandler: CommonUtilities.ErrorHandler,
-            receiverOptions: new ReceiverOptions { AllowedUpdates = Array.Empty<UpdateType>() },
-            cancellationToken: cts.Token
-        );
-    }
-
     public static async Task ProcessState(ITelegramBotClient botClient, Update update)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
@@ -95,7 +72,7 @@ public partial class TGBot
         }
     }
 
-    private async Task UpdateHandler(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    public async Task UpdateHandler(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
         long chatId = CommonUtilities.GetIDfromUpdate(update);
         if (CommonUtilities.CheckNonZeroID(chatId)) return;

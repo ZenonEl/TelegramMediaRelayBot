@@ -20,19 +20,6 @@ public static class CommonUtilities
 {
 
     public static CancellationToken cancellationToken = TGBot.cancellationToken;
-    public static Task ErrorHandler(ITelegramBotClient _, Exception exception, CancellationToken __)
-    {
-        Log.Error($"Error occurred: {exception.Message}");
-        Log.Error($"Stack trace: {exception.StackTrace}");
-
-        if (exception.InnerException != null)
-        {
-            Log.Error($"Inner exception: {exception.InnerException.Message}");
-            Log.Error($"Inner exception stack trace: {exception.InnerException.StackTrace}");
-        }
-
-        return Task.CompletedTask;
-    }
 
     public static long GetIDfromUpdate(Update update)
     {

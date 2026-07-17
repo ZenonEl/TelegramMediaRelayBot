@@ -10,8 +10,8 @@
 // (по вашему выбору) любой более поздней версии.
 
 using FluentMigrator.Runner;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using TelegramMediaRelayBot.Database.Interfaces;
 using TelegramMediaRelayBot.Database.Repositories.Sqlite;
 using TelegramMediaRelayBot.TelegramBot;
@@ -39,11 +39,13 @@ public class FluentDBMigrator
         return serviceCollection.BuildServiceProvider(false);
     }
 
-    public static WebApplicationBuilder CreateAppBuilder(string[] args)
+    public static HostApplicationBuilder CreateAppBuilder(string[] args)
     {
-        var builder = WebApplication.CreateBuilder(args);
+        var builder = Host.CreateApplicationBuilder(args);
         builder.Services.AddSingleton<ITelegramBotClient>(_ =>
             Config.CreateTelegramBotClient());
+
+        builder.Services.AddHostedService<PollingService>();
 
         builder.Services.AddSingleton<ILinkCategorizer>(_ =>
                     new HashTableLinkCategorizer(new DomainsLoader()));

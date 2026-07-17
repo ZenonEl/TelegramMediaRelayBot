@@ -103,30 +103,35 @@ public class GroupUpdateHandler
             cancellationToken: cancellationToken
         );
 
-        try
+        // Updates are processed sequentially: awaiting the download here would
+        // freeze the bot for everyone until yt-dlp finishes.
+        _ = Task.Run(async () =>
         {
-            await _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage: statusMessage, groupChat: true, caption: caption);
-        }
-        catch (OperationCanceledException)
-        {
-            Log.Debug("Group media download was cancelled for chat {ChatId}", chatId);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Failed to process media in group chat {ChatId}", chatId);
             try
             {
-                await botClient.EditMessageText(
-                    statusMessage.Chat.Id,
-                    statusMessage.MessageId,
-                    Config.GetResourceString("FailedToProcessLink"),
-                    cancellationToken: cancellationToken
-                );
+                await _tgBot.HandleMediaRequest(botClient, link, chatId, statusMessage: statusMessage, groupChat: true, caption: caption);
             }
-            catch (Exception editEx)
+            catch (OperationCanceledException)
             {
-                Log.Debug(editEx, "Failed to edit error status message");
+                Log.Debug("Group media download was cancelled for chat {ChatId}", chatId);
             }
-        }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to process media in group chat {ChatId}", chatId);
+                try
+                {
+                    await botClient.EditMessageText(
+                        statusMessage.Chat.Id,
+                        statusMessage.MessageId,
+                        Config.GetResourceString("FailedToProcessLink"),
+                        cancellationToken: cancellationToken
+                    );
+                }
+                catch (Exception editEx)
+                {
+                    Log.Debug(editEx, "Failed to edit error status message");
+                }
+            }
+        }, cancellationToken);
     }
 }
