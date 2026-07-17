@@ -17,127 +17,80 @@ using TelegramMediaRelayBot.Database.Interfaces;
 
 namespace TelegramMediaRelayBot
 {
+    /// <summary>
+    /// Loads and validates <see cref="AppConfig"/> at startup and exposes the
+    /// values. The flat static fields are a transition bridge for existing static
+    /// consumers; new code should inject <see cref="AppConfig"/> instead.
+    /// </summary>
     class Config
     {
-        // General Settings
-        public static string? telegramBotToken;
-        public static string? telegramApiBaseUrl;
-        public static string sqlConnectionString;
-        public static string databaseName = "TelegramMediaRelayBot";
-        public static string? language;
-        public static int userUnMuteCheckInterval = 20; // Seconds
-        public static bool isUseGalleryDl = false;
-        public static string accessDeniedMessageContact = " ";
+        public static AppConfig Current { get; private set; } = new();
 
-        // Cookie Configuration
-        public static string? cookiesFromBrowser; // e.g. "firefox", "chrome" — reads fresh cookies each time
-        public static string? cookiesFile;        // path to Netscape cookies.txt file
-
-        // Proxy Configuration
-        // Proxy for media downloads (yt-dlp/gallery-dl). Supports HTTP/SOCKS5.
-        public static string proxy = "";
-        // Proxy for Telegram Bot API requests. Useful in regions where Telegram is blocked.
-        public static string? telegramApiProxy;
-        // Tor SOCKS proxy for media downloads (see "Tor" config section).
-        public static bool torEnabled = false;
-        public static string? torSocksHost;
-        public static int torSocksPort = 9050;
-
-        // Download Queue
-        public static int maxConcurrentDownloads = 3;
-
-        // Delays
-        public static int videoGetDelay = 1000;
-        public static int contactSendDelay = 1000;
-
-        // Session
-        public static int sessionTtlMinutes = 30;
-        public static int sessionCleanupIntervalMinutes = 5;
-
-        // Console Output
-        public static LogEventLevel logLevel = LogEventLevel.Information;
-        public static bool showVideoDownloadProgress = false;
-        public static bool showVideoUploadProgress = false;
-
-        private static bool isAccessPolicyEnabled = true;
-        private static bool isAccessNewUsersEnabled = true;
-        public static bool showAccessDeniedMessage = false;
-        private static bool isAllowNewUsers = true;
-        private static bool isAllowAll = false;
-        private static List<long>? whitelistedReferrerIds = [];
-        private static List<long>? blacklistedReferrerIds = [];
+        // ---- transition bridge: flat views over Current, kept for existing callers ----
+        public static string? telegramBotToken => Current.Bot.Token;
+        public static string? telegramApiBaseUrl => Current.Bot.ApiBaseUrl;
+        public static string? telegramApiProxy => Current.ResolveProxyUrl(Current.Bot.Proxy);
+        public static string sqlConnectionString => Current.Database.ConnectionString;
+        public static string databaseName => Current.Database.Name;
+        public static string? language => Current.Bot.Language;
+        public static int userUnMuteCheckInterval => Current.Session.UnMuteCheckIntervalSeconds;
+        public static bool isUseGalleryDl => Current.Download.UseGalleryDl;
+        public static string accessDeniedMessageContact => Current.Access.DeniedMessageContact;
+        public static string? cookiesFromBrowser => Current.Download.CookiesFromBrowser;
+        public static string? cookiesFile => Current.Download.CookiesFile;
+        public static string proxy => Current.ResolveProxyUrl(Current.Download.DefaultProxy) ?? "";
+        public static bool torEnabled => Current.Tor.Enabled;
+        public static string? torSocksHost => Current.Tor.SocksHost;
+        public static int torSocksPort => Current.Tor.SocksPort;
+        public static int maxConcurrentDownloads => Current.Download.MaxConcurrent;
+        public static int videoGetDelay => Current.Delays.VideoGetMs;
+        public static int contactSendDelay => Current.Delays.ContactSendMs;
+        public static int sessionTtlMinutes => Current.Session.TtlMinutes;
+        public static int sessionCleanupIntervalMinutes => Current.Session.CleanupIntervalMinutes;
+        public static LogEventLevel logLevel => Current.Logging.Level;
+        public static bool showVideoDownloadProgress => Current.Logging.ShowDownloadProgress;
+        public static bool showVideoUploadProgress => Current.Logging.ShowUploadProgress;
+        public static bool showAccessDeniedMessage => Current.Access.ShowDeniedMessage;
 
         public static void LoadConfig()
         {
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
-
-                .AddJsonFile("appsettings.example.json", optional: true, reloadOnChange: true)
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
                 .AddEnvironmentVariables()
                 .Build();
 
-            telegramBotToken = configuration["AppSettings:TelegramBotToken"]!;
-            telegramApiBaseUrl = configuration["AppSettings:TelegramApiBaseUrl"];
-            telegramApiProxy = configuration["AppSettings:TelegramApiProxy"];
-            sqlConnectionString = configuration["AppSettings:SqlConnectionString"]!;
-            databaseName = configuration["AppSettings:DatabaseName"]!;
-            language = configuration["AppSettings:Language"]!;
-            proxy = configuration["AppSettings:Proxy"]!;
-            isUseGalleryDl = configuration.GetValue("AppSettings:UseGalleryDl", false);
-            accessDeniedMessageContact = configuration.GetValue("AppSettings:AccessDeniedMessageContact", " ");
-            maxConcurrentDownloads = configuration.GetValue("AppSettings:MaxConcurrentDownloads", 3);
+            var config = new AppConfig();
+            configuration.Bind(config);
 
-            cookiesFromBrowser = configuration["AppSettings:CookiesFromBrowser"];
-            cookiesFile = configuration["AppSettings:CookiesFile"];
+            var problems = config.Validate().ToList();
+            if (problems.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    "Invalid configuration in appsettings.json:" + Environment.NewLine +
+                    string.Join(Environment.NewLine, problems.Select(p => "  - " + p)));
+            }
 
-            videoGetDelay = configuration.GetValue("MessageDelaySettings:VideoGetDelay", 1000);
-            contactSendDelay = configuration.GetValue("MessageDelaySettings:ContactSendDelay", 1000);
-
-            sessionTtlMinutes = configuration.GetValue("AppSettings:SessionTtlMinutes", 30);
-            sessionCleanupIntervalMinutes = configuration.GetValue("AppSettings:SessionCleanupIntervalMinutes", 5);
-
-            logLevel = configuration.GetValue("ConsoleOutputSettings:LogLevel", LogEventLevel.Information);
-            showVideoDownloadProgress = configuration.GetValue("ConsoleOutputSettings:ShowVideoDownloadProgress", false);
-            showVideoUploadProgress = configuration.GetValue("ConsoleOutputSettings:ShowVideoUploadProgress", false);
-
-            torEnabled = configuration.GetValue("Tor:Enabled", false);
-            torSocksHost = configuration.GetValue("Tor:TorSocksHost", "127.0.0.1");
-            torSocksPort = configuration.GetValue("Tor:TorSocksPort", 9050);
-
-            isAccessPolicyEnabled = configuration.GetValue("AccessPolicy:Enabled", false);
-            isAccessNewUsersEnabled = configuration.GetValue("AccessPolicy:NewUsersPolicy:Enabled", false);
-            showAccessDeniedMessage = configuration.GetValue("AccessPolicy:NewUsersPolicy:ShowAccessDeniedMessage", false);
-            isAllowNewUsers = configuration.GetValue("AccessPolicy:NewUsersPolicy:AllowNewUsers", true);
-            isAllowAll = configuration.GetValue("AccessPolicy:NewUsersPolicy:AllowRules:AllowAll", true);
-
-            whitelistedReferrerIds = configuration.GetSection("AccessPolicy:NewUsersPolicy:AllowRules:WhitelistedReferrerIds").Get<List<long>>() ?? new List<long>();
-            blacklistedReferrerIds = configuration.GetSection("AccessPolicy:NewUsersPolicy:AllowRules:BlacklistedReferrerIds").Get<List<long>>() ?? new List<long>();
+            Current = config;
         }
 
         public static ITelegramBotClient CreateTelegramBotClient()
         {
-            if (string.IsNullOrWhiteSpace(telegramBotToken))
+            if (string.IsNullOrWhiteSpace(Current.Bot.Token))
                 throw new ArgumentException("Telegram Bot Token is not configured.");
 
             HttpClient? httpClient = null;
-            if (!string.IsNullOrWhiteSpace(telegramApiProxy))
+            string? apiProxy = Current.ResolveProxyUrl(Current.Bot.Proxy);
+            if (!string.IsNullOrWhiteSpace(apiProxy))
             {
-                var proxy = new System.Net.WebProxy(telegramApiProxy);
-                var handler = new System.Net.Http.SocketsHttpHandler { Proxy = proxy, UseProxy = true };
+                var webProxy = new System.Net.WebProxy(apiProxy);
+                var handler = new System.Net.Http.SocketsHttpHandler { Proxy = webProxy, UseProxy = true };
                 httpClient = new HttpClient(handler);
             }
 
-            TelegramBotClientOptions options;
-            if (!string.IsNullOrWhiteSpace(telegramApiBaseUrl))
-            {
-                options = new TelegramBotClientOptions(telegramBotToken, telegramApiBaseUrl);
-            }
-            else
-            {
-                options = new TelegramBotClientOptions(telegramBotToken);
-            }
+            var options = string.IsNullOrWhiteSpace(Current.Bot.ApiBaseUrl)
+                ? new TelegramBotClientOptions(Current.Bot.Token)
+                : new TelegramBotClientOptions(Current.Bot.Token, Current.Bot.ApiBaseUrl);
 
             return httpClient != null
                 ? new TelegramBotClient(options, httpClient)
@@ -146,16 +99,17 @@ namespace TelegramMediaRelayBot
 
         public static bool CanUserStartUsingBot(string referrerLink, IUserGetter userGetter)
         {
-            if (!isAccessPolicyEnabled) return true;
+            var access = Current.Access;
+            if (!access.Enabled) return true;
 
             long referrerUserId = userGetter.GetUserTelegramIdByLink(referrerLink);
             if (referrerUserId == -1) return false;
 
-            bool isReferrerBlacklisted = blacklistedReferrerIds?.Contains(referrerUserId) ?? false;
-            bool isReferrerWhitelisted = whitelistedReferrerIds?.Contains(referrerUserId) ?? false;
+            bool isReferrerBlacklisted = access.BlacklistedReferrerIds.Contains(referrerUserId);
+            bool isReferrerWhitelisted = access.WhitelistedReferrerIds.Contains(referrerUserId);
 
-            return (isAllowAll && !isReferrerBlacklisted) ||
-                (isAccessNewUsersEnabled && isAllowNewUsers && isReferrerWhitelisted);
+            return (access.AllowAll && !isReferrerBlacklisted) ||
+                (access.AllowNewUsers && isReferrerWhitelisted);
         }
     }
 }

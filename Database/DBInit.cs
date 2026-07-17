@@ -42,6 +42,7 @@ public class FluentDBMigrator
     public static HostApplicationBuilder CreateAppBuilder(string[] args)
     {
         var builder = Host.CreateApplicationBuilder(args);
+        builder.Services.AddSingleton(Config.Current);
         builder.Services.AddSingleton<ITelegramBotClient>(_ =>
             Config.CreateTelegramBotClient());
 
