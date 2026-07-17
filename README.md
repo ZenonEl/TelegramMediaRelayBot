@@ -17,18 +17,18 @@
 
 </div>
 
-**TelegramMediaRelayBot** is a self-hosted Telegram bot that automates downloading media from 1000+ platforms (via [yt-dlp](https://github.com/yt-dlp/yt-dlp/tree/master) and gallery-dl) and forwards it to your contacts. It eliminates manual downloads, simplifies media sharing across platforms users don't have, and gives full control over privacy by running entirely on your infrastructure.
+**TelegramMediaRelayBot** is a self-hosted Telegram bot that downloads media from 1000+ platforms (via [yt-dlp](https://github.com/yt-dlp/yt-dlp/tree/master) and gallery-dl) and forwards it to your contacts. You send a link, it fetches the media and passes it to the people you pick. Because it runs on your own machine, the files and your contact list stay off third-party servers, which also lets you share from platforms your contacts don't use.
 
 ---
 
 ## Key Features
 
-- **Multi-platform downloads**: yt-dlp for video, gallery-dl for galleries — tried as a fallback chain. Full list of [supported sites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md).
-- **Contact forwarding**: managed contact list inside the bot — downloaded media is forwarded automatically, with per-contact and per-link privacy rules.
-- **Large files up to 2 GB**: optional local Telegram Bot API server; media is streamed from disk instead of buffered in memory.
+- **Multi-platform downloads**: yt-dlp for video, gallery-dl for galleries, run as a fallback chain. Full list of [supported sites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md).
+- **Contact forwarding**: a contact list lives inside the bot, and downloaded media is forwarded automatically, with per-contact and per-link privacy rules.
+- **Large files up to 2 GB**: with an optional local Telegram Bot API server, media is streamed from disk instead of buffered in memory.
 - **Resumable queue**: pending downloads are persisted, so a crash or reboot never loses a request.
-- **Flexible proxying**: HTTP / SOCKS5 / Tor, with per-site rules — route some domains through a proxy and others directly.
-- **Self-hosted**: full control over your data and privacy. No third-party services.
+- **Proxy support**: HTTP, SOCKS5, or Tor, with per-site rules that send some domains through a proxy and others directly.
+- **Self-hosted**: the bot runs entirely on your own infrastructure, with no third-party services in the loop.
 
 ## Tech Stack
 
@@ -45,9 +45,9 @@
 ## Architecture Highlights
 
 - **Self-healing long polling**: the update loop runs as a hosted service that logs and skips a failing update and restarts on error, so the bot can't silently stop responding.
-- **Modular download backends**: yt-dlp and gallery-dl sit behind one `IMediaDownloader` interface and run as an ordered fallback chain — adding a backend is one class.
+- **Modular download backends**: yt-dlp and gallery-dl sit behind one `IMediaDownloader` interface and run as an ordered fallback chain, so adding a backend means adding one class.
 - **Per-host proxy routing**: named proxies resolved per download host from typed, startup-validated configuration.
-- **2 GB delivery path**: with a local Bot API server the bot sends media by file path off a shared volume — no HTTP upload, no memory blow-up.
+- **2 GB delivery path**: with a local Bot API server the bot sends media by file path off a shared volume, so it never uploads the file over HTTP or holds it in memory.
 - **Persistent download queue** with bounded concurrency; jobs are resumed after a restart.
 - **Repository-pattern data layer** over SQLite with schema migrations.
 
@@ -67,7 +67,7 @@ Active development plans are tracked on the latest [release page](https://github
 - *(Under consideration)* Text formatting support, in-bot administrative functions.
 - General improvements and fixes.
 
-[CHANGELOG.md](CHANGELOG.md) — full history of changes.
+[CHANGELOG.md](CHANGELOG.md): full history of changes.
 
 ## Logging
 
@@ -75,7 +75,7 @@ The bot logs all actions to console; file logging is on the roadmap. Logging lev
 
 ## Origin
 
-The project started from my girlfriend's complaints about manually downloading TikTok videos for me — I don't use the platform myself. What began as a one-off automation evolved into a full media-relay ecosystem: multi-user, multi-platform, plugin-extensible. The mission stayed simple — give people a self-hosted way to share content across platforms without surrendering their data to any single service.
+The project started from my girlfriend's complaints about manually downloading TikTok videos for me, since I don't use the platform myself. What began as a one-off automation grew into a full media-relay ecosystem: multi-user, multi-platform, plugin-extensible. The mission stayed simple: give people a self-hosted way to share content across platforms without surrendering their data to any single service.
 
 ## License
 
@@ -83,7 +83,7 @@ This project is licensed under **AGPL-3.0**. See [LICENSE](LICENSE) for details.
 
 ## Feedback
 
-If you have questions, suggestions, or found a bug — please open an [issue](https://github.com/ZenonEl/TelegramMediaRelayBot/issues).
+If you have questions, suggestions, or found a bug, please open an [issue](https://github.com/ZenonEl/TelegramMediaRelayBot/issues).
 
 ## Contributing
 
