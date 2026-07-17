@@ -12,7 +12,6 @@
 global using Serilog;
 global using Telegram.Bot;
 global using Telegram.Bot.Types;
-using System.Globalization;
 using FluentMigrator.Runner;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -37,15 +36,7 @@ namespace TelegramMediaRelayBot
             Console.WriteLine("============================================\n");
 
             Config.LoadConfig();
-            CultureInfo currentCulture = CultureInfo.CurrentUICulture;
-
-            if (Config.language != null)
-            {
-                currentCulture = new CultureInfo(Config.language);
-            }
-
-            Thread.CurrentThread.CurrentUICulture = currentCulture;
-            Thread.CurrentThread.CurrentCulture = currentCulture;
+            Localization.SetCulture(Config.language);
 
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Is(Config.logLevel)

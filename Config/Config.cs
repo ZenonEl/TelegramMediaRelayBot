@@ -9,7 +9,6 @@
 // Фондом свободного программного обеспечения, либо версии 3 лицензии, либо
 // (по вашему выбору) любой более поздней версии.
 
-using System.Resources;
 using Serilog.Events;
 using Microsoft.Extensions.Configuration;
 using Telegram.Bot;
@@ -68,7 +67,6 @@ namespace TelegramMediaRelayBot
         private static List<long>? whitelistedReferrerIds = [];
         private static List<long>? blacklistedReferrerIds = [];
 
-        private static ResourceManager resourceManager = new ResourceManager("TelegramMediaRelayBot.Resources.texts", typeof(Program).Assembly);
         public static void LoadConfig()
         {
             var configuration = new ConfigurationBuilder()
@@ -144,11 +142,6 @@ namespace TelegramMediaRelayBot
             return httpClient != null
                 ? new TelegramBotClient(options, httpClient)
                 : new TelegramBotClient(options);
-        }
-
-        public static string GetResourceString(string key)
-        {
-            return resourceManager.GetString(key)!;
         }
 
         public static bool CanUserStartUsingBot(string referrerLink, IUserGetter userGetter)

@@ -110,7 +110,7 @@ public partial class TGBot
                     }
                     else if (Config.showAccessDeniedMessage)
                     {
-                        await botClient.SendMessage(chatId, string.Format(Config.GetResourceString("AccessDeniedMessage"), Config.accessDeniedMessageContact), cancellationToken: cancellationToken, parseMode: ParseMode.Html);
+                        await botClient.SendMessage(chatId, string.Format(Localization.Get("AccessDeniedMessage"), Config.accessDeniedMessageContact), cancellationToken: cancellationToken, parseMode: ParseMode.Html);
                     }
                 }
 
@@ -166,7 +166,7 @@ public partial class TGBot
             return;
         }
 
-        await botClient.SendMessage(chatId, Config.GetResourceString("FailedToProcessLink"));
+        await botClient.SendMessage(chatId, Localization.Get("FailedToProcessLink"));
     }
 
     private async Task SendMediaToTelegram(ITelegramBotClient botClient, long chatId, List<byte[]> mediaFiles,
@@ -246,7 +246,7 @@ public partial class TGBot
 
         DateTime now = DateTime.Now;
         string name = _userGetter.GetUserNameByTelegramID(telegramId);
-        string text = string.Format(Config.GetResourceString("ContactSentVideo"), 
+        string text = string.Format(Localization.Get("ContactSentVideo"), 
                                     name, now.ToString("yyyy_MM_dd_HH_mm_ss"), MyRegex().Replace(name, "_"), caption);
         int sentCount = 0;
 
@@ -296,7 +296,7 @@ public partial class TGBot
         if (filteredContactUserTGIds.Count > 0)
         {
             await botClient.SendMessage(telegramId, 
-                                            string.Format(Config.GetResourceString("VideoSentToContacts"), 
+                                            string.Format(Localization.Get("VideoSentToContacts"), 
                                             $"{sentCount}/{filteredContactUserTGIds.Count}", now.ToString("yyyy_MM_dd_HH_mm_ss"),
                                             MyRegex().Replace(name, "_")),
                                             replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId },
@@ -306,12 +306,12 @@ public partial class TGBot
         if (mutedByUserIds.Count > 0)
         {
             await botClient.SendMessage(telegramId, 
-                                            string.Format(Config.GetResourceString("MutedByContacts"), mutedByUserIds.Count),
+                                            string.Format(Localization.Get("MutedByContacts"), mutedByUserIds.Count),
                                             replyParameters: new ReplyParameters { MessageId = statusMessage.MessageId });
         }
 
         await botClient.EditMessageText(statusMessage.Chat.Id, statusMessage.MessageId,
-            string.Format(Config.GetResourceString("MessageProcessMediaSend"), sentCount, filteredContactUserTGIds.Count),
+            string.Format(Localization.Get("MessageProcessMediaSend"), sentCount, filteredContactUserTGIds.Count),
             cancellationToken: cancellationToken);
     }
 

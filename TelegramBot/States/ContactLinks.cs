@@ -154,15 +154,15 @@ public class ProcessContactLinksState : IUserState
         UserSessionManager.Remove(chatId);
 
         string statusMessage = actionStatus 
-            ? Config.GetResourceString("SuccessActionResult") 
-            : Config.GetResourceString("ErrorActionResult");
+            ? Localization.Get("SuccessActionResult") 
+            : Localization.Get("ErrorActionResult");
 
         await CommonUtilities.SendMessage(
             botClient,
             update,
             UsersPrivacyMenuKB.GetUpdateSelfLinkKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("SelfLinkRefreshMenuText") + "\n\n" + statusMessage
+            Localization.Get("SelfLinkRefreshMenuText") + "\n\n" + statusMessage
         );
         _userRepository.ReCreateUserSelfLink(userState.actingUserId);
 
@@ -176,7 +176,7 @@ public class ProcessContactLinksState : IUserState
             update,
             UsersPrivacyMenuKB.GetUpdateSelfLinkKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("SelfLinkRefreshMenuText")
+            Localization.Get("SelfLinkRefreshMenuText")
         );
     }
 

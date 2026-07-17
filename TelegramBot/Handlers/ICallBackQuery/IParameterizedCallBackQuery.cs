@@ -71,8 +71,8 @@ public class SetAutoSendTimeCommand : IBotCallbackQueryHandlers
 
         string statusText = Users.FormatSettingsStatus(_defaultActionGetter, userId);
         var message = result
-            ? Config.GetResourceString("AutoSendTimeChangedMessage") + callbackQueryData + " " + Config.GetResourceString("SettingsSecondsLabel")
-            : Config.GetResourceString("AutoSendTimeNotChangedMessage");
+            ? Localization.Get("AutoSendTimeChangedMessage") + callbackQueryData + " " + Localization.Get("SettingsSecondsLabel")
+            : Localization.Get("AutoSendTimeNotChangedMessage");
         message += "\n\n" + statusText;
 
         await CommonUtilities.SendMessage(
@@ -125,8 +125,8 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
         {
             bool enableResult = _defaultActionSetter.SetDefaultActionIsActive(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION, true);
             string enableMessage = enableResult
-                ? Config.GetResourceString("DefaultActionChangedMessage")
-                : Config.GetResourceString("DefaultActionNotChangedMessage");
+                ? Localization.Get("DefaultActionChangedMessage")
+                : Localization.Get("DefaultActionNotChangedMessage");
 
             string statusText = Users.FormatSettingsStatus(_defaultActionGetter, userId);
             await CommonUtilities.SendMessage(
@@ -144,8 +144,8 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
         {
             bool disableResult = _defaultActionSetter.SetDefaultActionIsActive(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION, false);
             string disableMessage = disableResult
-                ? Config.GetResourceString("DefaultActionDisabledMessage")
-                : Config.GetResourceString("DefaultActionNotChangedMessage");
+                ? Localization.Get("DefaultActionDisabledMessage")
+                : Localization.Get("DefaultActionNotChangedMessage");
 
             string statusText = Users.FormatSettingsStatus(_defaultActionGetter, userId);
             await CommonUtilities.SendMessage(
@@ -171,7 +171,7 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
                 update,
                 KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
                 cancellationToken,
-                Config.GetResourceString("DefaultActionGetGroupOrUserIDs")
+                Localization.Get("DefaultActionGetGroupOrUserIDs")
             );
 
             bool isGroup = false;
@@ -199,7 +199,7 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
                 update,
                 KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
                 cancellationToken,
-                Config.GetResourceString("DefaultActionChangedMessage") + "\n\n" + confirmStatusText
+                Localization.Get("DefaultActionChangedMessage") + "\n\n" + confirmStatusText
             );
             return;
         }
@@ -208,7 +208,7 @@ public class SetVideoSendUsersCommand : IBotCallbackQueryHandlers
             update,
             KeyboardUtils.GetReturnButtonMarkup("user_set_video_send_users"),
             cancellationToken,
-            Config.GetResourceString("DefaultActionNotChangedMessage")
+            Localization.Get("DefaultActionNotChangedMessage")
         );
     }
 }
@@ -268,8 +268,8 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
                 return;
         }
 
-        string text = switchResult ? Config.GetResourceString("SuccessActionResult") : Config.GetResourceString("ErrorActionResult");
-        string actionText = !isActive ? Config.GetResourceString("Enable") : Config.GetResourceString("Disable");
+        string text = switchResult ? Localization.Get("SuccessActionResult") : Localization.Get("ErrorActionResult");
+        string actionText = !isActive ? Localization.Get("Enable") : Localization.Get("Disable");
 
         await CommonUtilities.SendMessage(
             botClient,
@@ -315,14 +315,14 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
                 update,
                 KeyboardUtils.GetReturnButtonMarkup("user_update_site_stop_list"),
                 ct,
-                Config.GetResourceString("DomainFilterNotEnabledError")
+                Localization.Get("DomainFilterNotEnabledError")
             );
             return;
         }
 
         await botClient.SendMessage(
             chatId, 
-            Config.GetResourceString("EnterDomainsToAddPrompt"), 
+            Localization.Get("EnterDomainsToAddPrompt"), 
             cancellationToken: ct
         );
 
@@ -345,7 +345,7 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
                 update,
                 KeyboardUtils.GetReturnButtonMarkup("user_update_site_stop_list"),
                 ct,
-                Config.GetResourceString("NoDomainsAddedError")
+                Localization.Get("NoDomainsAddedError")
             );
             return;
         }
@@ -353,7 +353,7 @@ public class SetPrivacySiteFilterCommand : IBotCallbackQueryHandlers
         int privacyRuleId = await _privacySettingsGetter.GetPrivacyRuleId(userId, PrivacyRuleType.SITES_BY_DOMAIN_FILTER);
         await botClient.SendMessage(
             chatId, 
-            Config.GetResourceString("EnterDomainsToRemovePrompt"), 
+            Localization.Get("EnterDomainsToRemovePrompt"), 
             cancellationToken: ct
         );
 

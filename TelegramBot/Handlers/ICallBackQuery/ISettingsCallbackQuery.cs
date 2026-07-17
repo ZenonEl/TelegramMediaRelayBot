@@ -143,7 +143,7 @@ public class UserUpdateSelfLinkWithContactsCommand : IBotCallbackQueryHandlers
                 $"process_user_update_self_link_with_contacts",
                 $"user_update_self_link"),
             ct,
-            Config.GetResourceString("UpdateLinkKeepContactsConfirmation"));
+            Localization.Get("UpdateLinkKeepContactsConfirmation"));
     }
 }
 
@@ -166,7 +166,7 @@ public class UserUpdateSelfLinkWithNewContactsCommand : IBotCallbackQueryHandler
                 $"process_user_update_self_link_with_new_contacts",
                 $"user_update_self_link"),
             ct,
-            Config.GetResourceString("UpdateLinkNewContactsWarning"));
+            Localization.Get("UpdateLinkNewContactsWarning"));
     }
 }
 
@@ -198,7 +198,7 @@ public class UserUpdateSelfLinkWithKeepSelectedContactsCommand : IBotCallbackQue
             update,
             KeyboardUtils.GetReturnButtonMarkup("user_update_self_link"),
             ct,
-            Config.GetResourceString("EnterContactIdsPrompt"));
+            Localization.Get("EnterContactIdsPrompt"));
         UsersDB.UpdateSelfLinkWithKeepSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository, _userRepository, _userGetter);
     }
 }
@@ -231,7 +231,7 @@ public class UserUpdateSelfLinkWithDeleteSelectedContactsCommand : IBotCallbackQ
             update,
             KeyboardUtils.GetReturnButtonMarkup("user_update_self_link"),
             ct,
-            Config.GetResourceString("EnterContactIdsPrompt"));
+            Localization.Get("EnterContactIdsPrompt"));
         UsersDB.UpdateSelfLinkWithDeleteSelectedContacts(update, _contactRemoverRepository, _contactGetterRepository, _userRepository, _userGetter);
     }
 }
@@ -410,8 +410,8 @@ public class UserDisablePermanentContentSpoilerCommand : IBotCallbackQueryHandle
         int userId = _userGetter.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id);
         bool actionStatus = _privacySettingsSetter.SetPrivacyRuleToDisabled(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING);
         string statusMessage = actionStatus
-            ? Config.GetResourceString("SuccessActionResult")
-            : Config.GetResourceString("ErrorActionResult");
+            ? Localization.Get("SuccessActionResult")
+            : Localization.Get("ErrorActionResult");
         await Users.ViewPrivacyMenu(botClient, update, statusMessage);
     }
 }
@@ -436,8 +436,8 @@ public class UserEnablePermanentContentSpoilerCommand : IBotCallbackQueryHandler
         int userId = _userGetter.GetUserIDbyTelegramID(update.CallbackQuery!.Message!.Chat.Id);
         bool actionStatus = await _privacySettingsSetter.SetPrivacyRule(userId, PrivacyRuleType.ALLOW_CONTENT_FORWARDING, "disallow_content_forwarding", true, "always");
         string statusMessage = actionStatus
-            ? Config.GetResourceString("SuccessActionResult")
-            : Config.GetResourceString("ErrorActionResult");
+            ? Localization.Get("SuccessActionResult")
+            : Localization.Get("ErrorActionResult");
         await Users.ViewPrivacyMenu(botClient, update, statusMessage);
     }
 }

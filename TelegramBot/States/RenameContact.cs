@@ -64,11 +64,11 @@ public class ProcessRenameContactState : IUserState
                     string name = _userGetter.GetUserNameByID(contactId);
                     if (name == "" || !allowedIds.Contains(_userGetter.GetTelegramIDbyUserID(contactId)))
                     {
-                        await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByID"));
+                        await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Localization.Get("NoUserFoundByID"));
                         return;
                     }
-                    await botClient.SendMessage(chatId, string.Format(Config.GetResourceString("WillWorkWithContact"), contactId, name), cancellationToken: cancellationToken,
-                                                replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.GetResourceString("NextButtonText")));
+                    await botClient.SendMessage(chatId, string.Format(Localization.Get("WillWorkWithContact"), contactId, name), cancellationToken: cancellationToken,
+                                                replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Localization.Get("NextButtonText")));
                 }
                 else
                 {
@@ -78,16 +78,16 @@ public class ProcessRenameContactState : IUserState
 
                     if (contactId == -1 || !allowedIds.Contains(_userGetter.GetTelegramIDbyUserID(contactId)))
                     {
-                        await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("NoUserFoundByLink"));
+                        await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Localization.Get("NoUserFoundByLink"));
                         return;
                     }
                     string name = _userGetter.GetUserNameByID(contactId);
-                    await botClient.SendMessage(chatId, string.Format(Config.GetResourceString("WillWorkWithContact"), contactId, name), cancellationToken: cancellationToken);
+                    await botClient.SendMessage(chatId, string.Format(Localization.Get("WillWorkWithContact"), contactId, name), cancellationToken: cancellationToken);
                 }
                 userState.userId = _userGetter.GetUserIDbyTelegramID(chatId);
                 userState.targetContactId = contactId;
-                await botClient.SendMessage(chatId, Config.GetResourceString("InputNewDisplayName"), cancellationToken: cancellationToken,
-                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Config.GetResourceString("ResetDisplayNameButtonText")));
+                await botClient.SendMessage(chatId, Localization.Get("InputNewDisplayName"), cancellationToken: cancellationToken,
+                                            replyMarkup: ReplyKeyboardUtils.GetSingleButtonKeyboardMarkup(Localization.Get("ResetDisplayNameButtonText")));
                 userState.currentState = UserRenameContactState.WaitingForNewName;
                 break;
 
@@ -95,7 +95,7 @@ public class ProcessRenameContactState : IUserState
                 if (await CommonUtilities.HandleStateBreakCommand(botClient, update, chatId)) return;
 
                 string newName = update.Message!.Text!;
-                string? displayName = newName.Equals(Config.GetResourceString("ResetDisplayNameButtonText"), StringComparison.OrdinalIgnoreCase)
+                string? displayName = newName.Equals(Localization.Get("ResetDisplayNameButtonText"), StringComparison.OrdinalIgnoreCase)
                     ? null
                     : newName;
 
@@ -107,13 +107,13 @@ public class ProcessRenameContactState : IUserState
                 if (success)
                 {
                     string resultText = displayName != null
-                        ? string.Format(Config.GetResourceString("DisplayNameSet"), displayName)
-                        : Config.GetResourceString("DisplayNameReset");
+                        ? string.Format(Localization.Get("DisplayNameSet"), displayName)
+                        : Localization.Get("DisplayNameReset");
                     await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, resultText);
                 }
                 else
                 {
-                    await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Config.GetResourceString("ActionCancelledError"));
+                    await CommonUtilities.AlertMessageAndShowMenu(botClient, update, chatId, Localization.Get("ActionCancelledError"));
                 }
                 break;
         }

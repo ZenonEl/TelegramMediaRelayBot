@@ -80,7 +80,7 @@ public class ProcessUsersGroupState : IUserState
                         update,
                         KeyboardUtils.GetReturnButtonMarkup(),
                         cancellationToken,
-                        Config.GetResourceString("InputErrorMessage"));
+                        Localization.Get("InputErrorMessage"));
                 }
 
                 break;
@@ -95,7 +95,7 @@ public class ProcessUsersGroupState : IUserState
                         update,
                         UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
                         cancellationToken,
-                        $"{groupInfo}\n{Config.GetResourceString("ChooseOptionText")}");
+                        $"{groupInfo}\n{Localization.Get("ChooseOptionText")}");
                     return;
                 }
                 bool? isActionSuccessful = await ProcessAction(botClient, update, cancellationToken);
@@ -106,7 +106,7 @@ public class ProcessUsersGroupState : IUserState
                 }
                 else if (isActionSuccessful == null)
                 {
-                    await botClient.SendMessage(chatId, Config.GetResourceString("InputErrorMessage"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
+                    await botClient.SendMessage(chatId, Localization.Get("InputErrorMessage"), cancellationToken: cancellationToken, replyMarkup: KeyboardUtils.GetReturnButtonMarkup());
                     return;
                 }
                 userState.currentState = UsersStandardState.ProcessAction;
@@ -122,11 +122,11 @@ public class ProcessUsersGroupState : IUserState
                         update,
                         UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
                         cancellationToken,
-                        $"{groupInfo}\n{Config.GetResourceString("ChooseOptionText")}");
+                        $"{groupInfo}\n{Localization.Get("ChooseOptionText")}");
                     return;
                 }
                 await ProcessFinish(chatId);
-                string text = isDBActionSuccessful ? Config.GetResourceString("SuccessActionResult") : Config.GetResourceString("ErrorActionResult");
+                string text = isDBActionSuccessful ? Localization.Get("SuccessActionResult") : Localization.Get("ErrorActionResult");
                 await KeyboardUtils.SendInlineKeyboardMenu(botClient, update, cancellationToken, text);
                 UserSessionManager.Remove(chatId);
                 break;
@@ -144,17 +144,17 @@ public class ProcessUsersGroupState : IUserState
                                                 update,
                                                 KeyboardUtils.GetReturnButtonMarkup(),
                                                 cancellationToken,
-                                                Config.GetResourceString("NewGroupText"));
+                                                Localization.Get("NewGroupText"));
                 return true;
             case "user_edit_group":
                 backCallback = action;
                 await botClient.SendMessage(update.CallbackQuery.Message!.Chat.Id,
-                                            Config.GetResourceString("EditInputText"),
+                                            Localization.Get("EditInputText"),
                                             cancellationToken: cancellationToken);
                 return true;
             case "user_delete_group":
                 await botClient.SendMessage(update.CallbackQuery.Message!.Chat.Id,
-                                            Config.GetResourceString("DeleteInputText"),
+                                            Localization.Get("DeleteInputText"),
                                             cancellationToken: cancellationToken);
                 return true;
             default:
@@ -165,7 +165,7 @@ public class ProcessUsersGroupState : IUserState
                                                     update,
                                                     KeyboardUtils.GetReturnButtonMarkup(backCallback),
                                                     cancellationToken,
-                                                    Config.GetResourceString("NewGroupNameText"));
+                                                    Localization.Get("NewGroupNameText"));
                 }
                 else if (action.StartsWith("user_change_group_description:"))
                 {
@@ -174,7 +174,7 @@ public class ProcessUsersGroupState : IUserState
                                                     update,
                                                     KeyboardUtils.GetReturnButtonMarkup(backCallback),
                                                     cancellationToken,
-                                                    Config.GetResourceString("NewGroupDescriptionText"));
+                                                    Localization.Get("NewGroupDescriptionText"));
                 }
                 else if (action.StartsWith("user_change_is_default:"))
                 {
@@ -202,7 +202,7 @@ public class ProcessUsersGroupState : IUserState
                     update,
                     KeyboardUtils.GetConfirmForActionKeyboardMarkup(),
                     cancellationToken,
-                    Config.GetResourceString("ConfirmDecision"));
+                    Localization.Get("ConfirmDecision"));
                 return true;
             case "user_edit_group":
                 if (int.TryParse(update.Message!.Text!, out groupId) && await _groupGetter.GetGroupOwnership(groupId, userId))
@@ -212,7 +212,7 @@ public class ProcessUsersGroupState : IUserState
                         update,
                         UsersGroup.GetUsersGroupEditActionsKeyboardMarkup(groupId),
                         cancellationToken,
-                        Config.GetResourceString("ChooseOptionText"));
+                        Localization.Get("ChooseOptionText"));
                     return false;
                 }
                 return null;
@@ -226,7 +226,7 @@ public class ProcessUsersGroupState : IUserState
                         update,
                         KeyboardUtils.GetConfirmForActionKeyboardMarkup(),
                         cancellationToken,
-                        $"{groupInfo}\n{Config.GetResourceString("ConfirmDecision")}");
+                        $"{groupInfo}\n{Localization.Get("ConfirmDecision")}");
                     return true;
                 }
                 return null;
@@ -240,7 +240,7 @@ public class ProcessUsersGroupState : IUserState
                         update,
                         KeyboardUtils.GetConfirmForActionKeyboardMarkup(denyCallback: backCallback),
                         cancellationToken,
-                        Config.GetResourceString("ConfirmDecision"));
+                        Localization.Get("ConfirmDecision"));
                     return true;
                 }
                 else if (action.StartsWith("user_change_group_description:"))
@@ -252,7 +252,7 @@ public class ProcessUsersGroupState : IUserState
                         update,
                         KeyboardUtils.GetConfirmForActionKeyboardMarkup(denyCallback: backCallback),
                         cancellationToken,
-                        Config.GetResourceString("ConfirmDecision"));
+                        Localization.Get("ConfirmDecision"));
                     return true;
                 }
                 return null;

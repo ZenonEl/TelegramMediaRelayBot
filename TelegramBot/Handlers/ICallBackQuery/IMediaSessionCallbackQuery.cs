@@ -41,7 +41,7 @@ public class SendToAllContactsSessionCommand : IBotCallbackQueryHandlers
         string sessionId = update.CallbackQuery!.Data!.Split(':')[1];
         if (!MediaSessionManager.TryGet(sessionId, out var session) || session == null)
         {
-            await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, Config.GetResourceString("SessionExpiredMessage"), showAlert: true);
+            await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, Localization.Get("SessionExpiredMessage"), showAlert: true);
             return;
         }
 
@@ -62,7 +62,7 @@ public class SendToAllContactsSessionCommand : IBotCallbackQueryHandlers
         await botClient.EditMessageText(
             chatId,
             messageId,
-            Config.GetResourceString("WaitDownloadingVideo"),
+            Localization.Get("WaitDownloadingVideo"),
             cancellationToken: ct
         );
 
@@ -94,7 +94,7 @@ public class SendToDefaultGroupsSessionCommand : IBotCallbackQueryHandlers
         string sessionId = update.CallbackQuery!.Data!.Split(':')[1];
         if (!MediaSessionManager.TryGet(sessionId, out var session) || session == null)
         {
-            await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, Config.GetResourceString("SessionExpiredMessage"), showAlert: true);
+            await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, Localization.Get("SessionExpiredMessage"), showAlert: true);
             return;
         }
 
@@ -118,7 +118,7 @@ public class SendToDefaultGroupsSessionCommand : IBotCallbackQueryHandlers
         await botClient.EditMessageText(
             chatId,
             messageId,
-            Config.GetResourceString("WaitDownloadingVideo"),
+            Localization.Get("WaitDownloadingVideo"),
             cancellationToken: ct
         );
 
@@ -143,7 +143,7 @@ public class SendOnlyToMeSessionCommand : IBotCallbackQueryHandlers
         string sessionId = update.CallbackQuery!.Data!.Split(':')[1];
         if (!MediaSessionManager.TryGet(sessionId, out var session) || session == null)
         {
-            await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, Config.GetResourceString("SessionExpiredMessage"), showAlert: true);
+            await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, Localization.Get("SessionExpiredMessage"), showAlert: true);
             return;
         }
 
@@ -158,7 +158,7 @@ public class SendOnlyToMeSessionCommand : IBotCallbackQueryHandlers
         await botClient.EditMessageText(
             chatId,
             messageId,
-            Config.GetResourceString("WaitDownloadingVideo"),
+            Localization.Get("WaitDownloadingVideo"),
             cancellationToken: ct
         );
 
@@ -193,7 +193,7 @@ public class SendToSpecifiedGroupsSessionCommand : IBotCallbackQueryHandlers
         string sessionId = update.CallbackQuery!.Data!.Split(':')[1];
         if (!MediaSessionManager.TryGet(sessionId, out var session) || session == null)
         {
-            await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, Config.GetResourceString("SessionExpiredMessage"), showAlert: true);
+            await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, Localization.Get("SessionExpiredMessage"), showAlert: true);
             return;
         }
 
@@ -224,7 +224,7 @@ public class SendToSpecifiedGroupsSessionCommand : IBotCallbackQueryHandlers
         await botClient.EditMessageText(
             chatId,
             messageId,
-            Config.GetResourceString("WaitDownloadingVideo"),
+            Localization.Get("WaitDownloadingVideo"),
             cancellationToken: ct
         );
 
@@ -256,7 +256,7 @@ public class SendToSpecifiedUsersSessionCommand : IBotCallbackQueryHandlers
         string sessionId = update.CallbackQuery!.Data!.Split(':')[1];
         if (!MediaSessionManager.TryGet(sessionId, out var session) || session == null)
         {
-            await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, Config.GetResourceString("SessionExpiredMessage"), showAlert: true);
+            await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, Localization.Get("SessionExpiredMessage"), showAlert: true);
             return;
         }
 
@@ -281,7 +281,7 @@ public class SendToSpecifiedUsersSessionCommand : IBotCallbackQueryHandlers
         await botClient.EditMessageText(
             chatId,
             messageId,
-            Config.GetResourceString("WaitDownloadingVideo"),
+            Localization.Get("WaitDownloadingVideo"),
             cancellationToken: ct
         );
 
@@ -299,7 +299,7 @@ public class CancelMediaSessionCommand : IBotCallbackQueryHandlers
         string sessionId = update.CallbackQuery!.Data!.Split(':')[1];
         if (!MediaSessionManager.TryGet(sessionId, out var session) || session == null)
         {
-            await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, Config.GetResourceString("SessionExpiredMessage"), showAlert: true);
+            await botClient.AnswerCallbackQuery(update.CallbackQuery.Id, Localization.Get("SessionExpiredMessage"), showAlert: true);
             return;
         }
 
@@ -311,7 +311,7 @@ public class CancelMediaSessionCommand : IBotCallbackQueryHandlers
         await botClient.EditMessageText(
             chatId,
             messageId,
-            Config.GetResourceString("CancelledMessage"),
+            Localization.Get("CancelledMessage"),
             cancellationToken: ct
         );
     }

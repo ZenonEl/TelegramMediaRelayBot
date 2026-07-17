@@ -29,7 +29,7 @@ public class Users
             update,
             UsersKB.GetSettingsKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("SettingsMenuText")
+            Localization.Get("SettingsMenuText")
         );
     }
 
@@ -40,7 +40,7 @@ public class Users
             update,
             UsersDefaultActionsMenuKB.GetDefaultActionsMenuKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("DefaultActionsMenuText")
+            Localization.Get("DefaultActionsMenuText")
         );
     }
 
@@ -51,7 +51,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetPrivacyMenuKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("ChosePrivacyOptionMenuText") + "\n\n" + statusMessage
+            Localization.Get("ChosePrivacyOptionMenuText") + "\n\n" + statusMessage
         );
     }
 
@@ -62,7 +62,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetUpdateSelfLinkKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("SelfLinkRefreshMenuText")
+            Localization.Get("SelfLinkRefreshMenuText")
         );
     }
 
@@ -73,7 +73,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetWhoCanFindMeByLinkKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("SearchPrivacyText")
+            Localization.Get("SearchPrivacyText")
         );
     }
 
@@ -84,7 +84,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetPermanentContentSpoilerKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("AllowForwardContentRuleText")
+            Localization.Get("AllowForwardContentRuleText")
         );
     }
 
@@ -95,7 +95,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetPermanentContentSpoilerKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("AllowForwardContentRuleText")
+            Localization.Get("AllowForwardContentRuleText")
         );
     }
 
@@ -110,7 +110,7 @@ public class Users
             statusText = FormatSettingsStatus(defaultActionGetter, userId);
         }
 
-        string message = Config.GetResourceString("VideoDefaultActionsMenuText");
+        string message = Localization.Get("VideoDefaultActionsMenuText");
         if (!string.IsNullOrEmpty(statusText))
             message += "\n\n" + statusText;
 
@@ -136,11 +136,11 @@ public class Users
             {
                 string actionName = GetActionDisplayName(settings.Action);
                 string activeIndicator = settings.IsActive ? "✅" : "❌";
-                statusText = $"{activeIndicator} {Config.GetResourceString("SettingsActionLabel")}: {actionName}";
+                statusText = $"{activeIndicator} {Localization.Get("SettingsActionLabel")}: {actionName}";
             }
         }
 
-        string message = Config.GetResourceString("UsersVideoSentUsersMenuText");
+        string message = Localization.Get("UsersVideoSentUsersMenuText");
         if (!string.IsNullOrEmpty(statusText))
             message += "\n\n" + statusText;
 
@@ -165,11 +165,11 @@ public class Users
             if (!string.IsNullOrEmpty(settings.ActionCondition))
             {
                 string activeIndicator = settings.IsActive ? "✅" : "❌";
-                statusText = $"{activeIndicator} {Config.GetResourceString("SettingsDelayLabel")}: {settings.ActionCondition} {Config.GetResourceString("SettingsSecondsLabel")}";
+                statusText = $"{activeIndicator} {Localization.Get("SettingsDelayLabel")}: {settings.ActionCondition} {Localization.Get("SettingsSecondsLabel")}";
             }
         }
 
-        string message = Config.GetResourceString("AutoSendVideoTimeMenuText");
+        string message = Localization.Get("AutoSendVideoTimeMenuText");
         if (!string.IsNullOrEmpty(statusText))
             message += "\n\n" + statusText;
 
@@ -187,26 +187,26 @@ public class Users
         var settings = defaultActionGetter.GetDefaultActionSettings(userId, UsersActionTypes.DEFAULT_MEDIA_DISTRIBUTION);
 
         if (string.IsNullOrEmpty(settings.Action) && string.IsNullOrEmpty(settings.ActionCondition))
-            return $"📋 {Config.GetResourceString("SettingsCurrentStateText")} {Config.GetResourceString("SettingsNotConfigured")}";
+            return $"📋 {Localization.Get("SettingsCurrentStateText")} {Localization.Get("SettingsNotConfigured")}";
 
         var sb = new StringBuilder();
-        sb.AppendLine($"📋 {Config.GetResourceString("SettingsCurrentStateText")}");
+        sb.AppendLine($"📋 {Localization.Get("SettingsCurrentStateText")}");
 
         string statusIndicator = settings.IsActive ? "✅" : "❌";
         string statusText = settings.IsActive
-            ? Config.GetResourceString("SettingsEnabled")
-            : Config.GetResourceString("SettingsDisabled");
-        sb.AppendLine($"  {Config.GetResourceString("SettingsStatusLabel")}: {statusIndicator} {statusText}");
+            ? Localization.Get("SettingsEnabled")
+            : Localization.Get("SettingsDisabled");
+        sb.AppendLine($"  {Localization.Get("SettingsStatusLabel")}: {statusIndicator} {statusText}");
 
         if (!string.IsNullOrEmpty(settings.Action))
         {
             string actionName = GetActionDisplayName(settings.Action);
-            sb.AppendLine($"  {Config.GetResourceString("SettingsActionLabel")}: {actionName}");
+            sb.AppendLine($"  {Localization.Get("SettingsActionLabel")}: {actionName}");
         }
 
         if (!string.IsNullOrEmpty(settings.ActionCondition))
         {
-            sb.AppendLine($"  {Config.GetResourceString("SettingsDelayLabel")}: {settings.ActionCondition} {Config.GetResourceString("SettingsSecondsLabel")}");
+            sb.AppendLine($"  {Localization.Get("SettingsDelayLabel")}: {settings.ActionCondition} {Localization.Get("SettingsSecondsLabel")}");
         }
 
         return sb.ToString().TrimEnd();
@@ -216,12 +216,12 @@ public class Users
     {
         return action switch
         {
-            UsersAction.SEND_MEDIA_TO_ALL_CONTACTS => Config.GetResourceString("AllContactsButtonText"),
-            UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS => Config.GetResourceString("DefaultGroupsButtonText"),
-            UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS => Config.GetResourceString("SpecifiedContactsButtonText"),
-            UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS => Config.GetResourceString("SpecifiedGroupsButtonText"),
-            UsersAction.SEND_MEDIA_ONLY_TO_ME => Config.GetResourceString("OnlyMeButtonText"),
-            UsersAction.OFF => Config.GetResourceString("DisableAutoSendButtonText"),
+            UsersAction.SEND_MEDIA_TO_ALL_CONTACTS => Localization.Get("AllContactsButtonText"),
+            UsersAction.SEND_MEDIA_TO_DEFAULT_GROUPS => Localization.Get("DefaultGroupsButtonText"),
+            UsersAction.SEND_MEDIA_TO_SPECIFIED_USERS => Localization.Get("SpecifiedContactsButtonText"),
+            UsersAction.SEND_MEDIA_TO_SPECIFIED_GROUPS => Localization.Get("SpecifiedGroupsButtonText"),
+            UsersAction.SEND_MEDIA_ONLY_TO_ME => Localization.Get("OnlyMeButtonText"),
+            UsersAction.OFF => Localization.Get("DisableAutoSendButtonText"),
             _ => action
         };
     }
@@ -245,7 +245,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetSiteFilterKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("SiteFilterMenuText")
+            Localization.Get("SiteFilterMenuText")
         );
     }
 
@@ -256,7 +256,7 @@ public class Users
             update,
             UsersPrivacyMenuKB.GetSiteFilterSettingsKeyboardMarkup(),
             cancellationToken,
-            Config.GetResourceString("SiteFilterMenuText")
+            Localization.Get("SiteFilterMenuText")
         );
     }
 }
