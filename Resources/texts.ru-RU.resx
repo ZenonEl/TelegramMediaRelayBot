@@ -685,4 +685,7 @@ PS: квадратные скобки не нужны :)</value>
     <data name="CancelledMessage" xml:space="preserve">
         <value>Отменено</value>
     </data>
+    <data name="ResumingDownloadAfterRestart" xml:space="preserve">
+        <value>♻️ Возобновляю загрузку после перезапуска…</value>
+    </data>
 </root>

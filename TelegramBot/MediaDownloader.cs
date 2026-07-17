@@ -33,6 +33,7 @@ public partial class TGBot
     private readonly ILinkCategorizer _categorizer;
     private readonly IUserFilterService _userFilter;
     private readonly MediaDownloadService _downloadService;
+    private readonly IDownloadJobRepository _jobRepository;
     // User states are now managed by UserSessionManager
     public static CancellationToken cancellationToken;
 
@@ -45,7 +46,8 @@ public partial class TGBot
         IPrivacySettingsGetter privacySettingsGetter,
         IGroupGetter groupGetter,
         ILinkCategorizer categorizer,
-        MediaDownloadService downloadService
+        MediaDownloadService downloadService,
+        IDownloadJobRepository jobRepository
         )
     {
         _userRepo = userRepo;
@@ -63,6 +65,7 @@ public partial class TGBot
         _categorizer = categorizer;
         _userFilter = new DefaultUserFilterService(_userGetter, _privacySettingsGetter);
         _downloadService = downloadService;
+        _jobRepository = jobRepository;
     }
 
     public static async Task ProcessState(ITelegramBotClient botClient, Update update)
@@ -139,23 +142,48 @@ public partial class TGBot
     }
 
     public async Task HandleMediaRequest(ITelegramBotClient botClient, string contentUrl, long chatId, Message statusMessage,
-                                                List<long>? targetUserIds = null, bool groupChat = false, string caption = "")
+                                                List<long>? targetUserIds = null, bool groupChat = false, string caption = "",
+                                                string? persistedJobId = null)
     {
+        // Persist the job so a crash or reboot mid-download does not lose the request;
+        // DownloadJobResumeService re-enqueues leftovers at startup.
+        string jobId = persistedJobId ?? Guid.NewGuid().ToString("N");
+        if (persistedJobId is null)
+            TryPersistJob(new DownloadJob(jobId, chatId, contentUrl, caption, targetUserIds, groupChat));
+
         var progress = BuildStatusProgress(botClient, statusMessage, cancellationToken);
 
-        using MediaDownloadResult? result = await DownloadQueue.EnqueueAsync(
+        using (MediaDownloadResult? result = await DownloadQueue.EnqueueAsync(
             () => _downloadService.DownloadAsync(contentUrl, progress, cancellationToken),
             position => EditStatus(botClient, statusMessage, $"⏳ Queued (#{position})", cancellationToken),
-            cancellationToken);
-
-        if (result is { Files.Count: > 0 })
+            cancellationToken))
         {
-            Log.Debug($"Downloaded {result.Files.Count} files");
-            await SendMediaToTelegram(botClient, chatId, result.Files, statusMessage, targetUserIds, contentUrl, groupChat, caption);
-            return;
+            if (result is { Files.Count: > 0 })
+            {
+                Log.Debug($"Downloaded {result.Files.Count} files");
+                await SendMediaToTelegram(botClient, chatId, result.Files, statusMessage, targetUserIds, contentUrl, groupChat, caption);
+            }
+            else
+            {
+                await botClient.SendMessage(chatId, Localization.Get("FailedToProcessLink"));
+            }
         }
 
-        await botClient.SendMessage(chatId, Localization.Get("FailedToProcessLink"));
+        // Reached only on normal completion (sent or reported as failed);
+        // on crash/shutdown the row stays and the job is resumed after restart.
+        TryRemoveJob(jobId);
+    }
+
+    private void TryPersistJob(DownloadJob job)
+    {
+        try { _jobRepository.Add(job); }
+        catch (Exception ex) { Log.Error(ex, "Failed to persist download job {JobId}", job.Id); }
+    }
+
+    private void TryRemoveJob(string jobId)
+    {
+        try { _jobRepository.Remove(jobId); }
+        catch (Exception ex) { Log.Error(ex, "Failed to remove download job {JobId}", jobId); }
     }
 
     private async Task SendMediaToTelegram(ITelegramBotClient botClient, long chatId, IReadOnlyList<MediaFile> mediaFiles,

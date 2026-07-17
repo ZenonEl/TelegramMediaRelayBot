@@ -115,6 +115,10 @@ public class FluentDBMigrator
         builder.Services.AddSingleton<IUserStateRepository>(_ =>
             new SqliteUserStateRepository(Config.sqlConnectionString!));
 
+        builder.Services.AddSingleton<IDownloadJobRepository>(_ =>
+            new SqliteDownloadJobRepository(Config.sqlConnectionString!));
+        builder.Services.AddHostedService<DownloadJobResumeService>();
+
         return builder;
     }
 }
