@@ -10,7 +10,6 @@
 // (по вашему выбору) любой более поздней версии.
 
 using System.Diagnostics;
-using System.Net;
 using YoutubeDLSharp;
 using YoutubeDLSharp.Options;
 
