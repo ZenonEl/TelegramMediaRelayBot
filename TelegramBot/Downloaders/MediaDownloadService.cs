@@ -43,8 +43,7 @@ public sealed class MediaDownloadResult : IDisposable
 /// </summary>
 public sealed class MediaDownloadService
 {
-    private static readonly string TempRoot = Path.Combine(Path.GetTempPath(), "tmrb");
-
+    private readonly string _tempRoot;
     private readonly IReadOnlyList<IMediaDownloader> _downloaders;
     private readonly AppConfig _config;
 
@@ -52,11 +51,14 @@ public sealed class MediaDownloadService
     {
         _downloaders = downloaders.OrderBy(d => d.Priority).ToList();
         _config = config;
+        _tempRoot = string.IsNullOrWhiteSpace(config.Download.TempDir)
+            ? Path.Combine(Path.GetTempPath(), "tmrb")
+            : config.Download.TempDir;
     }
 
     public async Task<MediaDownloadResult> DownloadAsync(string url, IProgress<string>? progress, CancellationToken ct)
     {
-        string workDir = Path.Combine(TempRoot, Guid.NewGuid().ToString("N"));
+        string workDir = Path.Combine(_tempRoot, Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(workDir);
         try
         {
@@ -91,12 +93,12 @@ public sealed class MediaDownloadService
     }
 
     /// <summary>Deletes temp directories left behind by a previous crash. Call once at startup.</summary>
-    public static void SweepOrphans()
+    public void SweepOrphans()
     {
         try
         {
-            if (!Directory.Exists(TempRoot)) return;
-            foreach (var dir in Directory.EnumerateDirectories(TempRoot))
+            if (!Directory.Exists(_tempRoot)) return;
+            foreach (var dir in Directory.EnumerateDirectories(_tempRoot))
                 TryDelete(dir);
         }
         catch (Exception ex)

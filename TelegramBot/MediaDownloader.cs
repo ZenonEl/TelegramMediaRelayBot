@@ -206,14 +206,24 @@ public partial class TGBot
             {
                 var files = group.ToList();
 
+                // With a local Bot API server the file lives on a volume shared with it,
+                // so we pass a file:// URI and the server reads it from disk directly —
+                // no HTTP upload, no size-dependent memory use (2 GB files included).
+                bool useLocalPaths = !string.IsNullOrWhiteSpace(Config.telegramApiBaseUrl);
+
                 for (int i = 0; i < files.Count; i += 10)
                 {
                     var chunk = files.Skip(i).Take(10).ToList();
-                    var streams = chunk.Select(f => (Stream)File.OpenRead(f.Path)).ToList();
+                    var streams = useLocalPaths
+                        ? new List<Stream>()
+                        : chunk.Select(f => (Stream)File.OpenRead(f.Path)).ToList();
                     try
                     {
-                        var album = chunk.Zip(streams, (f, s) =>
-                            CreateAlbumItem(f.Kind, s, Path.GetFileName(f.Path))).ToList();
+                        var album = useLocalPaths
+                            ? chunk.Select(f => CreateAlbumItem(f.Kind,
+                                InputFile.FromString(new Uri(Path.GetFullPath(f.Path)).AbsoluteUri))).ToList()
+                            : chunk.Zip(streams, (f, s) => CreateAlbumItem(f.Kind,
+                                InputFile.FromStream(s, Path.GetFileName(f.Path)))).ToList();
 
                         Message[] mess = await botClient.SendMediaGroup(
                             chatId: chatId,
@@ -254,12 +264,12 @@ public partial class TGBot
         }
     }
 
-    private static IAlbumInputMedia CreateAlbumItem(MediaKind kind, Stream stream, string fileName) => kind switch
+    private static IAlbumInputMedia CreateAlbumItem(MediaKind kind, InputFile file) => kind switch
     {
-        MediaKind.Photo => new InputMediaPhoto(InputFile.FromStream(stream, fileName)),
-        MediaKind.Video => new InputMediaVideo(InputFile.FromStream(stream, fileName)),
-        MediaKind.Audio => new InputMediaAudio(InputFile.FromStream(stream, fileName)),
-        _ => new InputMediaDocument(InputFile.FromStream(stream, fileName)),
+        MediaKind.Photo => new InputMediaPhoto(file),
+        MediaKind.Video => new InputMediaVideo(file),
+        MediaKind.Audio => new InputMediaAudio(file),
+        _ => new InputMediaDocument(file),
     };
 
     private static IProgress<string> BuildStatusProgress(ITelegramBotClient botClient, Message statusMessage, CancellationToken ct)

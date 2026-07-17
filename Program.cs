@@ -59,7 +59,7 @@ namespace TelegramMediaRelayBot
 
                 Log.Information($"Log level: {Config.logLevel}");
                 DownloadQueue.Initialize(Config.maxConcurrentDownloads);
-                TelegramMediaRelayBot.TelegramBot.Downloaders.MediaDownloadService.SweepOrphans();
+                host.Services.GetRequiredService<TelegramMediaRelayBot.TelegramBot.Downloaders.MediaDownloadService>().SweepOrphans();
                 scheduler.Init();
 
                 if (Environment.GetEnvironmentVariable("CI") == "true")

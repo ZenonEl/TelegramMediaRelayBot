@@ -112,6 +112,11 @@ public sealed class DownloadOptions
     public string? CookiesFromBrowser { get; set; }
     /// <summary>Path to a Netscape cookies.txt file.</summary>
     public string? CookiesFile { get; set; }
+    /// <summary>
+    /// Where downloads are stored; null = system temp. With a local Bot API server
+    /// point this at the volume shared with it so files are sent by path, not upload.
+    /// </summary>
+    public string? TempDir { get; set; }
     /// <summary>Per-host proxy overrides; first match wins.</summary>
     public List<ProxyRule> Rules { get; set; } = new();
 }

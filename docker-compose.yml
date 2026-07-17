@@ -1,32 +1,57 @@
+# TelegramMediaRelayBot stack: bot + local Bot API server (2 GB file limit).
+#
+# Prerequisites:
+#   1. Copy .env.example to .env and fill TELEGRAM_API_ID / TELEGRAM_API_HASH
+#      (one-time, from https://my.telegram.org -> API development tools).
+#   2. A local VPN/proxy client listening on 127.0.0.1:<port> (SOCKS5/HTTP).
+#      Both containers use host networking, so they reach it exactly like a
+#      process on the host does — no need to expose the proxy on 0.0.0.0.
+#      Set VPN_PROXY_* in .env.
+#   3. FIRST switch from the cloud API: call logOut once BEFORE starting
+#      (token is then locked out of the cloud API for ~10 minutes):
+#        curl "https://api.telegram.org/bot<TOKEN>/logOut"
+#   4. Autostart on boot: `systemctl enable docker` — restart: unless-stopped
+#      brings the whole stack back up after every reboot.
+#
+# Large files: bot and bot-api share ./data/telegram-bot-api at the SAME path,
+# so the bot sends media as file:// URIs and the server reads them from disk
+# (no HTTP upload, no memory blow-up — 2 GB files included).
+#
+# Host networking is used so the stack reaches a loopback-only VPN client and
+# keeps everything on localhost; suits a single-host self-hosted deployment.
+
 services:
   bot:
     build: .
     restart: unless-stopped
+    network_mode: host
     volumes:
       - ./data:/app/data
       - ./appsettings.json:/app/appsettings.json:ro
-      - ./downloader-config.yaml:/app/downloader-config.yaml:ro
+      - ./data/telegram-bot-api:/var/lib/telegram-bot-api
     environment:
-      - AppSettings__TelegramApiBaseUrl=http://telegram-bot-api:8081
+      Bot__ApiBaseUrl: "http://127.0.0.1:8081"
+      Download__TempDir: "/var/lib/telegram-bot-api/tmrb"
+      Database__ConnectionString: "Data Source=/app/data/TelegramMediaRelayBot.db"
+      Proxies__vpn: "socks5h://127.0.0.1:${VPN_PROXY_PORT}"
     depends_on:
       - telegram-bot-api
-    networks:
-      - bot-network
 
+  # Upstream telegram-bot-api + a small patch adding REAL proxy flags for the
+  # server<->Telegram-DC (MTProto) connection — the stock server cannot proxy it.
   telegram-bot-api:
-    image: aiogram/telegram-bot-api:latest
+    image: ghcr.io/avbor/docker-telegram-bot-api:latest
     restart: unless-stopped
+    network_mode: host
     environment:
       TELEGRAM_API_ID: ${TELEGRAM_API_ID}
       TELEGRAM_API_HASH: ${TELEGRAM_API_HASH}
-      TELEGRAM_LOCAL: "true"
+    command:
+      - "--local"
+      - "--http-port=8081"
+      - "--dir=/var/lib/telegram-bot-api"
+      - "--tdlib-proxy-type=${VPN_PROXY_TYPE}"
+      - "--proxy-server=127.0.0.1"
+      - "--proxy-port=${VPN_PROXY_PORT}"
     volumes:
       - ./data/telegram-bot-api:/var/lib/telegram-bot-api
-    ports:
-      - "8081:8081"
-    networks:
-      - bot-network
-
-networks:
-  bot-network:
-    driver: bridge
